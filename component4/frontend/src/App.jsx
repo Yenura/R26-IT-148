@@ -1,22 +1,19 @@
 import { Routes, Route, NavLink, useLocation } from 'react-router-dom'
 import {
-  LayoutDashboard, Search, MapPin, TrendingUp,
-  BookOpen, Trophy, Brain, ChevronRight
+  LayoutDashboard, Search, MapPin, TrendingUp, Brain
 } from 'lucide-react'
-import Dashboard    from './pages/Dashboard'
-import Analyze      from './pages/Analyze'
-import Report       from './pages/Report'
-import CareerPath   from './pages/CareerPath'
-import Progress     from './pages/Progress'
-import Leaderboard  from './pages/Leaderboard'
+import Dashboard  from './pages/Dashboard'
+import Analyze    from './pages/Analyze'
+import Report     from './pages/Report'
+import CareerPath from './pages/CareerPath'
+import Progress   from './pages/Progress'
 
 const NAV = [
-  { to: '/',            icon: LayoutDashboard, label: 'Dashboard'    },
-  { to: '/analyze',     icon: Search,          label: 'Analyze CV'   },
-  { to: '/report',      icon: Brain,           label: 'Gap Report'   },
-  { to: '/career',      icon: MapPin,          label: 'Career Path'  },
-  { to: '/progress',    icon: TrendingUp,      label: 'My Progress'  },
-  { to: '/leaderboard', icon: Trophy,          label: 'Leaderboard'  },
+  { to: '/',         icon: LayoutDashboard, label: 'Dashboard'  },
+  { to: '/analyze',  icon: Search,          label: 'Analyze CV' },
+  { to: '/report',   icon: Brain,           label: 'Gap Report' },
+  { to: '/career',   icon: MapPin,          label: 'Career Path'},
+  { to: '/progress', icon: TrendingUp,      label: 'My Progress'},
 ]
 
 export default function App() {
@@ -65,13 +62,12 @@ export default function App() {
       {/* ── Main ── */}
       <main className="main-content">
         <Routes>
-          <Route path="/"            element={<Dashboard   />} />
-          <Route path="/analyze"     element={<Analyze     />} />
-          <Route path="/report"      element={<Report      />} />
-          <Route path="/report/:id"  element={<Report      />} />
-          <Route path="/career"      element={<CareerPath  />} />
-          <Route path="/progress"    element={<Progress    />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="/"           element={<Dashboard  />} />
+          <Route path="/analyze"    element={<Analyze    />} />
+          <Route path="/report"     element={<Report     />} />
+          <Route path="/report/:id" element={<Report     />} />
+          <Route path="/career"     element={<CareerPath />} />
+          <Route path="/progress"   element={<Progress   />} />
         </Routes>
       </main>
     </div>
