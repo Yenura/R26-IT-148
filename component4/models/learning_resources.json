@@ -1,0 +1,86 @@
+{
+  "Python": {
+    "course": "Python for Everybody - Coursera",
+    "url": "https://coursera.org/specializations/python",
+    "duration": "3 months",
+    "level": "Beginner"
+  },
+  "Machine Learning": {
+    "course": "Machine Learning Specialization - Andrew Ng",
+    "url": "https://coursera.org/specializations/machine-learning-introduction",
+    "duration": "3 months",
+    "level": "Intermediate"
+  },
+  "Deep Learning": {
+    "course": "Deep Learning Specialization - deeplearning.ai",
+    "url": "https://coursera.org/specializations/deep-learning",
+    "duration": "4 months",
+    "level": "Intermediate"
+  },
+  "TensorFlow": {
+    "course": "TensorFlow Developer Certificate - Google",
+    "url": "https://coursera.org/professional-certificates/tensorflow-in-practice",
+    "duration": "2 months",
+    "level": "Intermediate"
+  },
+  "Pytorch": {
+    "course": "PyTorch for Deep Learning - Udemy",
+    "url": "https://pytorch.org/tutorials",
+    "duration": "2 months",
+    "level": "Intermediate"
+  },
+  "NLP": {
+    "course": "NLP Specialization - deeplearning.ai",
+    "url": "https://coursera.org/specializations/natural-language-processing",
+    "duration": "3 months",
+    "level": "Advanced"
+  },
+  "SQL": {
+    "course": "SQL for Data Science - Coursera",
+    "url": "https://coursera.org/learn/sql-for-data-science",
+    "duration": "1 month",
+    "level": "Beginner"
+  },
+  "Java": {
+    "course": "Java Programming Masterclass - Udemy",
+    "url": "https://udemy.com/course/java-the-complete-java-developer-course",
+    "duration": "2 months",
+    "level": "Beginner"
+  },
+  "React": {
+    "course": "React - The Complete Guide - Udemy",
+    "url": "https://udemy.com/course/react-the-complete-guide-incl-redux",
+    "duration": "2 months",
+    "level": "Intermediate"
+  },
+  "C++": {
+    "course": "C++ Programming Course - freeCodeCamp",
+    "url": "https://freecodecamp.org/news/learn-c-plus-plus-in-31-hours",
+    "duration": "2 months",
+    "level": "Beginner"
+  },
+  "Cybersecurity": {
+    "course": "Google Cybersecurity Professional Certificate",
+    "url": "https://coursera.org/professional-certificates/google-cybersecurity",
+    "duration": "6 months",
+    "level": "Beginner"
+  },
+  "Networking": {
+    "course": "CompTIA Network+ Study Course",
+    "url": "https://comptia.org/certifications/network",
+    "duration": "3 months",
+    "level": "Beginner"
+  },
+  "Ethical Hacking": {
+    "course": "Certified Ethical Hacker (CEH) - EC-Council",
+    "url": "https://eccouncil.org/train-certify/certified-ethical-hacker-ceh",
+    "duration": "4 months",
+    "level": "Advanced"
+  },
+  "Linux": {
+    "course": "Linux Foundation Certified SysAdmin",
+    "url": "https://training.linuxfoundation.org/certification/lfcs",
+    "duration": "2 months",
+    "level": "Intermediate"
+  }
+}

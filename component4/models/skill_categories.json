@@ -1,0 +1,23 @@
+{
+  "Technical": [
+    "Python",
+    "Java",
+    "C++",
+    "SQL",
+    "React",
+    "Linux"
+  ],
+  "ML/AI": [
+    "TensorFlow",
+    "Pytorch",
+    "Machine Learning",
+    "Deep Learning",
+    "NLP"
+  ],
+  "Security": [
+    "Cybersecurity",
+    "Networking",
+    "Ethical Hacking",
+    "Linux"
+  ]
+}

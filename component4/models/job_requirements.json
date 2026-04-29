@@ -1,0 +1,71 @@
+{
+  "Data Scientist": {
+    "required": [
+      "Python",
+      "Machine Learning",
+      "SQL",
+      "Deep Learning"
+    ],
+    "optional": [
+      "TensorFlow",
+      "Pytorch",
+      "NLP"
+    ],
+    "min_experience": 2,
+    "preferred_education": [
+      "PhD",
+      "M.Tech",
+      "MBA"
+    ]
+  },
+  "AI Researcher": {
+    "required": [
+      "Python",
+      "TensorFlow",
+      "NLP",
+      "Pytorch"
+    ],
+    "optional": [
+      "Deep Learning",
+      "Machine Learning"
+    ],
+    "min_experience": 1,
+    "preferred_education": [
+      "PhD",
+      "M.Tech"
+    ]
+  },
+  "Software Engineer": {
+    "required": [
+      "Java",
+      "SQL",
+      "C++"
+    ],
+    "optional": [
+      "React",
+      "Python"
+    ],
+    "min_experience": 1,
+    "preferred_education": [
+      "B.Tech",
+      "B.Sc",
+      "M.Tech"
+    ]
+  },
+  "Cybersecurity Analyst": {
+    "required": [
+      "Cybersecurity",
+      "Networking",
+      "Linux"
+    ],
+    "optional": [
+      "Ethical Hacking"
+    ],
+    "min_experience": 1,
+    "preferred_education": [
+      "B.Tech",
+      "M.Tech",
+      "B.Sc"
+    ]
+  }
+}
