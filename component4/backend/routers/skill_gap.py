@@ -48,11 +48,7 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
 
     # Persist to MongoDB
     doc = {**result, "created_at": datetime.utcnow()}
-    await db.skill_gap_reports.replace_one(
-        {"candidate_id": payload.candidate_id.strip(), "job_role": payload.job_role},
-        doc,
-        upsert=True,
-    )
+    await db.skill_gap_reports.insert_one(doc)
 
     return {"success": True, "data": result}
 

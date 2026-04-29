@@ -4,7 +4,7 @@ Adds 5 sample candidates and verifies all API endpoints.
 """
 import requests, json, sys
 
-BASE = "http://localhost:8004/api/v1"
+BASE = "http://localhost:8000/api/v1"
 OK   = "\033[92m[PASS]\033[0m"
 ERR  = "\033[91m[FAIL]\033[0m"
 INFO = "\033[94m[INFO]\033[0m"
@@ -25,8 +25,8 @@ def chk(label, r):
 
 # ── 1. Health check ───────────────────────────────────────────────────────────
 print("\n=== HEALTH CHECK ===")
-r = requests.get("http://localhost:8004/health")
-chk("GET /health", r)
+r = requests.get("http://localhost:8000/")
+chk("GET /", r)
 
 # ── 2. Add 5 candidates ───────────────────────────────────────────────────────
 print("\n=== ADDING TEST CANDIDATES ===")

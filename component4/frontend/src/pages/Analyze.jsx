@@ -4,25 +4,56 @@ import { analyzeSkillGap } from '../api'
 import toast from 'react-hot-toast'
 import { Brain, Plus, X, ChevronRight, Loader } from 'lucide-react'
 
-const JOB_ROLES    = ['Data Scientist','AI Researcher','Software Engineer','Cybersecurity Analyst']
-const EDU_OPTIONS  = ['B.Sc','B.Tech','MBA','M.Tech','PhD']
+const JOB_ROLES = [
+  'Software Engineer', 'Data Scientist', 'Machine Learning Engineer',
+  'DevOps Engineer', 'Cybersecurity Analyst', 'Cloud Solutions Architect',
+  'Database Administrator', 'Frontend Developer', 'Backend Developer',
+  'Mobile App Developer', 'Network Engineer', 'AI/NLP Engineer',
+  'QA/Test Engineer', 'IT Project Manager', 'Embedded Systems Engineer'
+]
+const EDU_OPTIONS  = [
+  'B.Sc (Computer Science / IT)',
+  'B.Tech / B.E (Computer Science / IT)',
+  'BCA',
+  'M.Sc (Computer Science / IT)',
+  'M.Tech / M.E (Computer Science / IT)',
+  'MCA',
+  'PhD (Computer Science / AI)',
+  'Diploma in IT',
+  'Bootcamp Graduate'
+]
 const CERT_OPTIONS = ['None','AWS Certified','Google ML','Deep Learning Specialization']
 const ALL_SKILLS   = ['Python','Java','C++','SQL','React','Linux','TensorFlow','Pytorch',
                       'Machine Learning','Deep Learning','NLP','Cybersecurity','Networking','Ethical Hacking']
 const PRESETS = {
-  'Data Scientist':        ['Python','SQL','Machine Learning','Deep Learning'],
-  'AI Researcher':         ['Python','TensorFlow','NLP','Pytorch'],
   'Software Engineer':     ['Java','SQL','C++','React'],
+  'Data Scientist':        ['Python','SQL','Machine Learning','Deep Learning'],
+  'Machine Learning Engineer': ['Python','TensorFlow','Pytorch','Linux'],
+  'DevOps Engineer':       ['Linux','Networking','Python'],
   'Cybersecurity Analyst': ['Cybersecurity','Networking','Linux','Ethical Hacking'],
+  'Cloud Solutions Architect': ['Linux','Networking'],
+  'Database Administrator':['SQL','Linux'],
+  'Frontend Developer':    ['React'],
+  'Backend Developer':     ['Java','SQL','Python'],
+  'Mobile App Developer':  ['Java','React'],
+  'Network Engineer':      ['Networking','Linux'],
+  'AI/NLP Engineer':       ['Python','NLP','Machine Learning','Deep Learning'],
+  'QA/Test Engineer':      ['Python','Java'],
+  'IT Project Manager':    [],
+  'Embedded Systems Engineer': ['C++','Linux']
 }
+
+const F = ({label,children}) => (
+  <div className="form-group"><label>{label}</label>{children}</div>
+)
 
 export default function Analyze() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [tab, setTab] = useState('basic')
   const [form, setForm] = useState({
-    candidate_id:'', candidate_name:'', job_role:'Data Scientist',
-    experience_years:2, education:'B.Tech', certifications:'None',
+    candidate_id:'', candidate_name:'', job_role:'Software Engineer',
+    experience_years:2, education:'B.Tech / B.E (Computer Science / IT)', certifications:'None',
     cv_matching_score:'', interview_score:'', mcq_score:'',
     descriptive_score:'', coding_score:'',
     skills:[], weak_topics:[], failed_mcq_topics:[],
@@ -64,9 +95,7 @@ export default function Analyze() {
     } finally { setLoading(false) }
   }
 
-  const F = ({label,children}) => (
-    <div className="form-group"><label>{label}</label>{children}</div>
-  )
+
 
   return (
     <div>
@@ -86,7 +115,7 @@ export default function Analyze() {
             <div className="card">
               <p className="card-title"><Brain size={15}/> Candidate Details</p>
               <F label="CANDIDATE ID *"><input className="form-control" placeholder="CAND-001" value={form.candidate_id} onChange={e=>set('candidate_id',e.target.value)} style={{width:'100%'}}/></F>
-              <F label="FULL NAME *"><input className="form-control" placeholder="Jane Smith" value={form.candidate_name} onChange={e=>set('candidate_name',e.target.value)} style={{width:'100%'}} maxLength={100}/></F>
+              <F label="FULL NAME *"><input className="form-control" placeholder="Jane Smith" value={form.candidate_name} onChange={e=>set('candidate_name',e.target.value)} style={{width:'100%'}}/></F>
               <F label="JOB ROLE">
                 <select className="form-control" value={form.job_role} onChange={e=>set('job_role',e.target.value)}>
                   {JOB_ROLES.map(r=><option key={r}>{r}</option>)}

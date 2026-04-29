@@ -1,6 +1,6 @@
 import requests
 
-BASE = 'http://localhost:8004/api/v1'
+BASE = 'http://localhost:8000/api/v1'
 OK  = "[PASS]"
 ERR = "[FAIL]"
 
