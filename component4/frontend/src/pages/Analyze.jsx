@@ -85,21 +85,19 @@ export default function Analyze() {
           <div className="grid-2" style={{gap:20}}>
             <div className="card">
               <p className="card-title"><Brain size={15}/> Candidate Details</p>
-              <F label="CANDIDATE ID *"><input className="form-control" placeholder="CAND-001" value={form.candidate_id} onChange={e=>set('candidate_id',e.target.value)}/></F>
-              <F label="FULL NAME *"><input className="form-control" placeholder="Jane Smith" value={form.candidate_name} onChange={e=>set('candidate_name',e.target.value)}/></F>
+              <F label="CANDIDATE ID *"><input className="form-control" placeholder="CAND-001" value={form.candidate_id} onChange={e=>set('candidate_id',e.target.value)} style={{width:'100%'}}/></F>
+              <F label="FULL NAME *"><input className="form-control" placeholder="Jane Smith" value={form.candidate_name} onChange={e=>set('candidate_name',e.target.value)} style={{width:'100%'}} maxLength={100}/></F>
               <F label="JOB ROLE">
                 <select className="form-control" value={form.job_role} onChange={e=>set('job_role',e.target.value)}>
                   {JOB_ROLES.map(r=><option key={r}>{r}</option>)}
                 </select>
               </F>
-              <div className="grid-2">
-                <F label="EXPERIENCE (YRS)"><input className="form-control" type="number" min={0} max={30} value={form.experience_years} onChange={e=>set('experience_years',e.target.value)}/></F>
-                <F label="EDUCATION">
-                  <select className="form-control" value={form.education} onChange={e=>set('education',e.target.value)}>
-                    {EDU_OPTIONS.map(o=><option key={o}>{o}</option>)}
-                  </select>
-                </F>
-              </div>
+              <F label="EXPERIENCE (YRS)"><input className="form-control" type="number" min={0} max={30} value={form.experience_years} onChange={e=>set('experience_years',e.target.value)}/></F>
+              <F label="EDUCATION">
+                <select className="form-control" value={form.education} onChange={e=>set('education',e.target.value)}>
+                  {EDU_OPTIONS.map(o=><option key={o}>{o}</option>)}
+                </select>
+              </F>
               <F label="CERTIFICATION">
                 <select className="form-control" value={form.certifications} onChange={e=>set('certifications',e.target.value)}>
                   {CERT_OPTIONS.map(o=><option key={o}>{o}</option>)}

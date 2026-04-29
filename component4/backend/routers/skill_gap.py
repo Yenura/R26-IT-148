@@ -12,9 +12,26 @@ router = APIRouter()
 async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
     db = request.app.state.db
 
+    # ── Server-side input validation ────────────────────────────────────────
+    if not payload.candidate_id.strip():
+        raise HTTPException(status_code=422, detail="candidate_id cannot be empty")
+    if not payload.candidate_name.strip():
+        raise HTTPException(status_code=422, detail="candidate_name cannot be empty")
+    if not payload.skills:
+        raise HTTPException(status_code=422, detail="At least one skill is required")
+    for score_field, val in [
+        ("cv_matching_score", payload.cv_matching_score),
+        ("interview_score",   payload.interview_score),
+        ("mcq_score",         payload.mcq_score),
+        ("descriptive_score", payload.descriptive_score),
+        ("coding_score",      payload.coding_score),
+    ]:
+        if val is not None and not (0 <= val <= 100):
+            raise HTTPException(status_code=422, detail=f"{score_field} must be between 0 and 100")
+
     result = run_skill_gap_analysis(
-        candidate_id      = payload.candidate_id,
-        candidate_name    = payload.candidate_name,
+        candidate_id      = payload.candidate_id.strip(),
+        candidate_name    = payload.candidate_name.strip(),
         job_role          = payload.job_role,
         skills            = payload.skills,
         experience_years  = payload.experience_years,
@@ -32,7 +49,7 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
     # Persist to MongoDB
     doc = {**result, "created_at": datetime.utcnow()}
     await db.skill_gap_reports.replace_one(
-        {"candidate_id": payload.candidate_id, "job_role": payload.job_role},
+        {"candidate_id": payload.candidate_id.strip(), "job_role": payload.job_role},
         doc,
         upsert=True,
     )
