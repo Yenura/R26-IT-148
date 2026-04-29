@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getAnalyticsSummary, getLeaderboard } from '../api'
+import { getAnalyticsSummary } from '../api'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend
@@ -12,16 +12,12 @@ const COLORS = ['#22c55e', '#f59e0b', '#ef4444', '#6c63ff', '#3b82f6']
 const SEV_COLOR = { Low: '#22c55e', Medium: '#f59e0b', High: '#ef4444' }
 
 export default function Dashboard() {
-  const [summary,     setSummary]     = useState(null)
-  const [leaderboard, setLeaderboard] = useState([])
-  const [loading,     setLoading]     = useState(true)
+  const [summary, setSummary] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([getAnalyticsSummary(), getLeaderboard(8)])
-      .then(([s, l]) => {
-        setSummary(s.data.data)
-        setLeaderboard(l.data.data)
-      })
+    getAnalyticsSummary()
+      .then(s => setSummary(s.data.data))
       .catch(() => {})
       .finally(() => setLoading(false))
   }, [])
@@ -121,7 +117,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* ── Missing skills + Leaderboard ── */}
+      {/* ── Missing skills + Top Candidates ── */}
       <div className="grid-2" style={{ marginBottom: 24 }}>
         {/* Top missing skills */}
         <div className="card">
@@ -141,42 +137,39 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Leaderboard mini */}
+        {/* Top Candidates from analytics */}
         <div className="card">
-          <p className="card-title"><Award size={16} /> Top Candidates</p>
-          {leaderboard.length ? (
+          <p className="card-title"><Award size={16} /> Top Missing Skills Summary</p>
+          {d.top_missing_skills?.length ? (
             <div>
-              {leaderboard.map((c, i) => (
-                <div key={c.candidate_id} style={{
+              {d.top_missing_skills.map((item, i) => (
+                <div key={item.skill} style={{
                   display: 'flex', alignItems: 'center', gap: 12,
                   padding: '10px 0',
-                  borderBottom: i < leaderboard.length - 1 ? '1px solid var(--border)' : 'none'
+                  borderBottom: i < d.top_missing_skills.length - 1 ? '1px solid var(--border)' : 'none'
                 }}>
                   <span style={{
-                    width: 24, height: 24, borderRadius: '50%',
-                    background: i < 3 ? '#6c63ff' : '#20243a',
-                    border: '1px solid var(--border)',
+                    width: 28, height: 28, borderRadius: 6,
+                    background: 'rgba(239,68,68,.12)', border: '1px solid rgba(239,68,68,.25)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0
+                    fontSize: 11, fontWeight: 800, color: '#ef4444', flexShrink: 0
                   }}>{i + 1}</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)',
-                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {c.candidate_name}
-                    </p>
-                    <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{c.job_role}</p>
+                  <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>{item.skill}</span>
+                  <div style={{ width: 80 }}>
+                    <div className="progress-bar-wrap">
+                      <div className="progress-bar-fill"
+                        style={{ width: `${Math.min(item.count * 10, 100)}%`,
+                                 background: 'linear-gradient(90deg,#ef4444,#f97316)' }}/>
+                    </div>
                   </div>
-                  <span className={`badge badge-${c.gap_severity === 'Low' ? 'success' : c.gap_severity === 'Medium' ? 'warning' : 'danger'}`}>
-                    {c.gap_severity}
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#22c55e', flexShrink: 0 }}>
-                    {c.hire_probability}%
+                  <span style={{ fontSize: 12, color: 'var(--text-muted)', flexShrink: 0 }}>
+                    {item.count} candidate{item.count !== 1 ? 's' : ''}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="empty-state"><p>No candidates analysed yet</p></div>
+            <div className="empty-state"><p>No skill gap data yet</p></div>
           )}
         </div>
       </div>
