@@ -1,71 +1,162 @@
 {
-  "Data Scientist": {
+  "Backend Developer": {
     "required": [
-      "Python",
-      "Machine Learning",
-      "SQL",
-      "Deep Learning"
+      "Python/Go/Java",
+      "PostgreSQL",
+      "REST APIs",
+      "Microservices",
+      "Docker"
     ],
     "optional": [
-      "TensorFlow",
-      "Pytorch",
-      "NLP"
+      "Go",
+      "Event Sourcing",
+      "NATS",
+      "Rate Limiting"
     ],
-    "min_experience": 2,
-    "preferred_education": [
-      "PhD",
-      "M.Tech",
-      "MBA"
-    ]
+    "min_experience": 5
   },
-  "AI Researcher": {
+  "Cloud Solutions Architect": {
     "required": [
-      "Python",
-      "TensorFlow",
-      "NLP",
-      "Pytorch"
+      "AWS/Azure/GCP",
+      "Terraform",
+      "Cloud Security",
+      "Architecture Design",
+      "Networking"
     ],
     "optional": [
-      "Deep Learning",
-      "Machine Learning"
+      "Pulumi",
+      "Disaster Recovery",
+      "Cost Optimization",
+      "SD-WAN"
     ],
-    "min_experience": 1,
-    "preferred_education": [
-      "PhD",
-      "M.Tech"
-    ]
-  },
-  "Software Engineer": {
-    "required": [
-      "Java",
-      "SQL",
-      "C++"
-    ],
-    "optional": [
-      "React",
-      "Python"
-    ],
-    "min_experience": 1,
-    "preferred_education": [
-      "B.Tech",
-      "B.Sc",
-      "M.Tech"
-    ]
+    "min_experience": 5
   },
   "Cybersecurity Analyst": {
     "required": [
-      "Cybersecurity",
-      "Networking",
+      "SIEM",
+      "Penetration Testing",
+      "Incident Response",
+      "Python",
+      "MITRE ATT&CK"
+    ],
+    "optional": [
+      "CrowdStrike",
+      "AWS Security",
+      "Zero Trust",
+      "Microsoft Sentinel"
+    ],
+    "min_experience": 5
+  },
+  "Data Scientist": {
+    "required": [
+      "Python",
+      "SQL",
+      "Machine Learning",
+      "Statistics",
+      "Feature Engineering"
+    ],
+    "optional": [
+      "BigQuery",
+      "Databricks",
+      "Looker",
+      "PyTorch"
+    ],
+    "min_experience": 5
+  },
+  "Database Administrator": {
+    "required": [
+      "PostgreSQL/Oracle",
+      "Query Optimization",
+      "Backup & Recovery",
+      "High Availability",
+      "SQL"
+    ],
+    "optional": [
+      "Oracle DB",
+      "TimescaleDB",
+      "Flyway",
+      "SQL Server"
+    ],
+    "min_experience": 5
+  },
+  "DevOps Engineer": {
+    "required": [
+      "Docker",
+      "Kubernetes",
+      "Terraform",
+      "CI/CD",
       "Linux"
     ],
     "optional": [
-      "Ethical Hacking"
+      "Nginx",
+      "Azure",
+      "Grafana",
+      "Jenkins"
     ],
-    "min_experience": 1,
-    "preferred_education": [
-      "B.Tech",
-      "M.Tech",
-      "B.Sc"
-    ]
+    "min_experience": 5
+  },
+  "Frontend Developer": {
+    "required": [
+      "React",
+      "TypeScript",
+      "HTML/CSS",
+      "Web Performance",
+      "Accessibility"
+    ],
+    "optional": [
+      "Edge Runtime",
+      "WebSockets",
+      "WebGL",
+      "Cypress"
+    ],
+    "min_experience": 5
+  },
+  "Machine Learning Engineer": {
+    "required": [
+      "Python",
+      "PyTorch/TensorFlow",
+      "MLOps",
+      "Model Deployment",
+      "Feature Engineering"
+    ],
+    "optional": [
+      "Model Quantization",
+      "Git",
+      "MLflow",
+      "Docker"
+    ],
+    "min_experience": 5
+  },
+  "Mobile App Developer": {
+    "required": [
+      "Swift/Kotlin or Flutter",
+      "REST APIs",
+      "MVVM/Clean Architecture",
+      "Unit Testing",
+      "CI/CD"
+    ],
+    "optional": [
+      "MVI",
+      "Sentry",
+      "Unit & UI Testing",
+      "Jetpack Compose"
+    ],
+    "min_experience": 5
+  },
+  "Software Engineer": {
+    "required": [
+      "System Design",
+      "REST APIs",
+      "Git",
+      "Data Structures & Algorithms",
+      "Docker"
+    ],
+    "optional": [
+      "RabbitMQ",
+      "Event Sourcing",
+      "Kafka",
+      "C#"
+    ],
+    "min_experience": 5
   }
 }

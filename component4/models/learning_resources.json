@@ -1,86 +1,206 @@
 {
   "Python": {
-    "course": "Python for Everybody - Coursera",
-    "url": "https://coursera.org/specializations/python",
+    "course": "Python for Everybody \u2013 Coursera",
+    "url": "https://www.coursera.org/specializations/python",
     "duration": "3 months",
     "level": "Beginner"
   },
+  "Java": {
+    "course": "Java Programming and Software Engineering",
+    "url": "https://www.coursera.org/specializations/java-programming",
+    "duration": "5 months",
+    "level": "Beginner"
+  },
+  "C++": {
+    "course": "C++ for C Programmers \u2013 Coursera",
+    "url": "https://www.coursera.org/learn/c-plus-plus-a",
+    "duration": "2 months",
+    "level": "Intermediate"
+  },
+  "Go": {
+    "course": "Programming with Google Go \u2013 Coursera",
+    "url": "https://www.coursera.org/specializations/google-golang",
+    "duration": "3 months",
+    "level": "Intermediate"
+  },
+  "Rust": {
+    "course": "Rust Programming \u2013 Udemy",
+    "url": "https://www.udemy.com/course/rust-fundamentals/",
+    "duration": "2 months",
+    "level": "Intermediate"
+  },
+  "TypeScript": {
+    "course": "Understanding TypeScript \u2013 Udemy",
+    "url": "https://www.udemy.com/course/understanding-typescript/",
+    "duration": "6 weeks",
+    "level": "Intermediate"
+  },
+  "SQL": {
+    "course": "SQL for Data Science \u2013 Coursera",
+    "url": "https://www.coursera.org/learn/sql-for-data-science",
+    "duration": "1 month",
+    "level": "Beginner"
+  },
+  "PostgreSQL": {
+    "course": "Learn PostgreSQL \u2013 freeCodeCamp (YouTube)",
+    "url": "https://www.youtube.com/watch?v=qw--VYLpxG4",
+    "duration": "4 weeks",
+    "level": "Intermediate"
+  },
+  "MongoDB": {
+    "course": "MongoDB Basics \u2013 MongoDB University",
+    "url": "https://learn.mongodb.com/",
+    "duration": "3 weeks",
+    "level": "Beginner"
+  },
   "Machine Learning": {
-    "course": "Machine Learning Specialization - Andrew Ng",
-    "url": "https://coursera.org/specializations/machine-learning-introduction",
+    "course": "Machine Learning Specialization \u2013 Andrew Ng",
+    "url": "https://www.coursera.org/specializations/machine-learning-introduction",
     "duration": "3 months",
     "level": "Intermediate"
   },
   "Deep Learning": {
-    "course": "Deep Learning Specialization - deeplearning.ai",
-    "url": "https://coursera.org/specializations/deep-learning",
+    "course": "Deep Learning Specialization \u2013 deeplearning.ai",
+    "url": "https://www.coursera.org/specializations/deep-learning",
     "duration": "4 months",
     "level": "Intermediate"
   },
   "TensorFlow": {
-    "course": "TensorFlow Developer Certificate - Google",
-    "url": "https://coursera.org/professional-certificates/tensorflow-in-practice",
-    "duration": "2 months",
+    "course": "TensorFlow Developer Certificate \u2013 Coursera",
+    "url": "https://www.coursera.org/professional-certificates/tensorflow-in-practice",
+    "duration": "4 months",
     "level": "Intermediate"
   },
-  "Pytorch": {
-    "course": "PyTorch for Deep Learning - Udemy",
-    "url": "https://pytorch.org/tutorials",
-    "duration": "2 months",
+  "PyTorch": {
+    "course": "PyTorch for Deep Learning \u2013 fast.ai",
+    "url": "https://www.fast.ai/",
+    "duration": "3 months",
     "level": "Intermediate"
   },
   "NLP": {
-    "course": "NLP Specialization - deeplearning.ai",
-    "url": "https://coursera.org/specializations/natural-language-processing",
-    "duration": "3 months",
+    "course": "Natural Language Processing \u2013 Coursera",
+    "url": "https://www.coursera.org/specializations/natural-language-processing",
+    "duration": "4 months",
     "level": "Advanced"
   },
-  "SQL": {
-    "course": "SQL for Data Science - Coursera",
-    "url": "https://coursera.org/learn/sql-for-data-science",
+  "MLOps": {
+    "course": "MLOps Specialization \u2013 Coursera",
+    "url": "https://www.coursera.org/specializations/machine-learning-engineering-for-production-mlops",
+    "duration": "4 months",
+    "level": "Advanced"
+  },
+  "Feature Engineering": {
+    "course": "Feature Engineering \u2013 Kaggle Learn",
+    "url": "https://www.kaggle.com/learn/feature-engineering",
+    "duration": "2 weeks",
+    "level": "Intermediate"
+  },
+  "Statistics": {
+    "course": "Statistics with Python \u2013 Coursera",
+    "url": "https://www.coursera.org/specializations/statistics-with-python",
+    "duration": "3 months",
+    "level": "Beginner"
+  },
+  "AWS": {
+    "course": "AWS Certified Cloud Practitioner \u2013 A Cloud Guru",
+    "url": "https://acloudguru.com/course/aws-certified-cloud-practitioner",
+    "duration": "3 months",
+    "level": "Beginner"
+  },
+  "Azure": {
+    "course": "Azure Fundamentals (AZ-900) \u2013 Microsoft Learn",
+    "url": "https://learn.microsoft.com/en-us/certifications/azure-fundamentals/",
     "duration": "1 month",
     "level": "Beginner"
   },
-  "Java": {
-    "course": "Java Programming Masterclass - Udemy",
-    "url": "https://udemy.com/course/java-the-complete-java-developer-course",
-    "duration": "2 months",
-    "level": "Beginner"
+  "GCP": {
+    "course": "Google Cloud Professional Data Engineer",
+    "url": "https://cloud.google.com/certification/data-engineer",
+    "duration": "3 months",
+    "level": "Intermediate"
   },
-  "React": {
-    "course": "React - The Complete Guide - Udemy",
-    "url": "https://udemy.com/course/react-the-complete-guide-incl-redux",
+  "Terraform": {
+    "course": "HashiCorp Terraform Associate \u2013 Udemy",
+    "url": "https://www.udemy.com/course/terraform-beginner-to-advanced/",
     "duration": "2 months",
     "level": "Intermediate"
   },
-  "C++": {
-    "course": "C++ Programming Course - freeCodeCamp",
-    "url": "https://freecodecamp.org/news/learn-c-plus-plus-in-31-hours",
+  "Docker": {
+    "course": "Docker & Kubernetes: The Complete Guide \u2013 Udemy",
+    "url": "https://www.udemy.com/course/docker-and-kubernetes-the-complete-guide/",
+    "duration": "3 months",
+    "level": "Intermediate"
+  },
+  "Kubernetes": {
+    "course": "Kubernetes for Developers \u2013 Linux Foundation",
+    "url": "https://training.linuxfoundation.org/training/kubernetes-for-developers/",
     "duration": "2 months",
-    "level": "Beginner"
+    "level": "Advanced"
   },
   "Cybersecurity": {
-    "course": "Google Cybersecurity Professional Certificate",
-    "url": "https://coursera.org/professional-certificates/google-cybersecurity",
+    "course": "Google Cybersecurity Certificate \u2013 Coursera",
+    "url": "https://www.coursera.org/professional-certificates/google-cybersecurity",
     "duration": "6 months",
     "level": "Beginner"
   },
   "Networking": {
-    "course": "CompTIA Network+ Study Course",
-    "url": "https://comptia.org/certifications/network",
+    "course": "CompTIA Network+ \u2013 Professor Messer",
+    "url": "https://www.professormesser.com/network-plus/n10-008/",
     "duration": "3 months",
     "level": "Beginner"
   },
+  "Linux": {
+    "course": "Linux Essentials \u2013 Cisco NetAcad",
+    "url": "https://www.netacad.com/courses/os-it/ndg-linux-essentials",
+    "duration": "2 months",
+    "level": "Beginner"
+  },
   "Ethical Hacking": {
-    "course": "Certified Ethical Hacker (CEH) - EC-Council",
-    "url": "https://eccouncil.org/train-certify/certified-ethical-hacker-ceh",
+    "course": "Certified Ethical Hacker \u2013 EC-Council",
+    "url": "https://www.eccouncil.org/programs/certified-ethical-hacker-ceh/",
     "duration": "4 months",
     "level": "Advanced"
   },
-  "Linux": {
-    "course": "Linux Foundation Certified SysAdmin",
-    "url": "https://training.linuxfoundation.org/certification/lfcs",
+  "React": {
+    "course": "React \u2013 The Complete Guide \u2013 Udemy",
+    "url": "https://www.udemy.com/course/react-the-complete-guide-incl-redux/",
+    "duration": "3 months",
+    "level": "Intermediate"
+  },
+  "REST APIs": {
+    "course": "REST API Design, Development & Management",
+    "url": "https://www.udemy.com/course/rest-api/",
+    "duration": "6 weeks",
+    "level": "Beginner"
+  },
+  "GraphQL": {
+    "course": "GraphQL with React \u2013 Udemy",
+    "url": "https://www.udemy.com/course/graphql-with-react-course/",
+    "duration": "5 weeks",
+    "level": "Intermediate"
+  },
+  "Microservices": {
+    "course": "Microservices with Node JS & React \u2013 Udemy",
+    "url": "https://www.udemy.com/course/microservices-with-node-js-and-react/",
+    "duration": "3 months",
+    "level": "Advanced"
+  },
+  "Apache Spark": {
+    "course": "Apache Spark & Scala \u2013 Udemy",
+    "url": "https://www.udemy.com/course/apache-spark-with-scala-hands-on-with-big-data/",
     "duration": "2 months",
+    "level": "Intermediate"
+  },
+  "Kafka": {
+    "course": "Apache Kafka Series \u2013 Udemy",
+    "url": "https://www.udemy.com/course/apache-kafka/",
+    "duration": "2 months",
+    "level": "Intermediate"
+  },
+  "Airflow": {
+    "course": "The Complete Hands-On Introduction to Apache Airflow",
+    "url": "https://www.udemy.com/course/the-complete-hands-on-course-to-master-apache-airflow/",
+    "duration": "1 month",
     "level": "Intermediate"
   }
 }

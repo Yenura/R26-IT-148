@@ -12,7 +12,7 @@ router = APIRouter()
 async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
     db = request.app.state.db
 
-    # ── Server-side input validation ────────────────────────────────────────
+    # ── Validation ────────────────────────────────────────────────────────────
     if not payload.candidate_id.strip():
         raise HTTPException(status_code=422, detail="candidate_id cannot be empty")
     if not payload.candidate_name.strip():
@@ -27,7 +27,12 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
         ("coding_score",      payload.coding_score),
     ]:
         if val is not None and not (0 <= val <= 100):
-            raise HTTPException(status_code=422, detail=f"{score_field} must be between 0 and 100")
+            raise HTTPException(status_code=422, detail=f"{score_field} must be 0–100")
+
+    # Derive cert_count from field or from certifications string presence
+    cert_count = payload.certifications_count or 0
+    if cert_count == 0 and payload.certifications and payload.certifications != "None":
+        cert_count = len([c.strip() for c in payload.certifications.split("|") if c.strip()])
 
     result = run_skill_gap_analysis(
         candidate_id      = payload.candidate_id.strip(),
@@ -35,8 +40,12 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
         job_role          = payload.job_role,
         skills            = payload.skills,
         experience_years  = payload.experience_years,
-        education         = payload.education,
+        education         = payload.education or "B.Sc. Computer Science",
         certifications    = payload.certifications or "None",
+        cert_count        = cert_count,
+        projects_count    = payload.projects_count or 0,
+        job_level         = payload.job_level or "Mid-Level",
+        work_mode         = payload.work_mode or "Hybrid",
         cv_matching_score = payload.cv_matching_score,
         interview_score   = payload.interview_score,
         mcq_score         = payload.mcq_score,
@@ -46,7 +55,6 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
         failed_mcq_topics = payload.failed_mcq_topics or [],
     )
 
-    # Persist to MongoDB
     doc = {**result, "created_at": datetime.utcnow()}
     await db.skill_gap_reports.insert_one(doc)
 
@@ -68,8 +76,8 @@ async def get_report(candidate_id: str, request: Request):
 
 @router.get("/reports", summary="List all skill gap reports (paginated)")
 async def list_reports(request: Request, skip: int = 0, limit: int = 20):
-    db   = request.app.state.db
-    docs = await db.skill_gap_reports.find(
+    db    = request.app.state.db
+    docs  = await db.skill_gap_reports.find(
         {}, projection={"_id": 0}
     ).sort("created_at", -1).skip(skip).limit(limit).to_list(length=limit)
     total = await db.skill_gap_reports.count_documents({})
@@ -78,6 +86,13 @@ async def list_reports(request: Request, skip: int = 0, limit: int = 20):
 
 @router.delete("/report/{candidate_id}", summary="Delete a candidate's report")
 async def delete_report(candidate_id: str, request: Request):
-    db = request.app.state.db
+    db  = request.app.state.db
     res = await db.skill_gap_reports.delete_many({"candidate_id": candidate_id})
     return {"success": True, "deleted": res.deleted_count}
+
+
+@router.get("/roles", summary="List all supported job roles")
+async def list_roles():
+    from services.ml_engine import JOB_REQ, CAREER_PATHS
+    roles = sorted(JOB_REQ.keys())
+    return {"success": True, "roles": roles, "count": len(roles)}
