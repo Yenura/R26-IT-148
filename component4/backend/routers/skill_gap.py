@@ -27,9 +27,9 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
         ("coding_score",      payload.coding_score),
     ]:
         if val is not None and not (0 <= val <= 100):
-            raise HTTPException(status_code=422, detail=f"{score_field} must be 0–100")
+            raise HTTPException(status_code=422, detail=f"{score_field} must be 0-100")
 
-    # Derive cert_count from field or from certifications string presence
+    # Derive cert_count
     cert_count = payload.certifications_count or 0
     if cert_count == 0 and payload.certifications and payload.certifications != "None":
         cert_count = len([c.strip() for c in payload.certifications.split("|") if c.strip()])
@@ -57,7 +57,6 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
 
     doc = {**result, "created_at": datetime.utcnow()}
     await db.skill_gap_reports.insert_one(doc)
-
     return {"success": True, "data": result}
 
 
@@ -75,7 +74,7 @@ async def get_report(candidate_id: str, request: Request):
 
 
 @router.get("/reports", summary="List all skill gap reports (paginated)")
-async def list_reports(request: Request, skip: int = 0, limit: int = 20):
+async def list_reports(request: Request, skip: int = 0, limit: int = 50):
     db    = request.app.state.db
     docs  = await db.skill_gap_reports.find(
         {}, projection={"_id": 0}
@@ -93,6 +92,5 @@ async def delete_report(candidate_id: str, request: Request):
 
 @router.get("/roles", summary="List all supported job roles")
 async def list_roles():
-    from services.ml_engine import JOB_REQ, CAREER_PATHS
-    roles = sorted(JOB_REQ.keys())
-    return {"success": True, "roles": roles, "count": len(roles)}
+    from services.ml_engine import JOB_REQ
+    return {"success": True, "roles": sorted(JOB_REQ.keys()), "count": len(JOB_REQ)}

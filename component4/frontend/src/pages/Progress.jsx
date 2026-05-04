@@ -1,28 +1,12 @@
 import { useEffect, useState } from 'react'
-import { getProgress, updateProgress, listReports } from '../api'
+import { listReports, getProgress, updateProgress, resetProgress } from '../api'
 import toast from 'react-hot-toast'
-import { TrendingUp, CheckCircle, Clock, Circle } from 'lucide-react'
+import { TrendingUp, RefreshCw } from 'lucide-react'
 
-const STATUS_META = {
-  not_started: { label:'Not Started', color:'var(--text-muted)', icon: Circle,        badge:'badge-info'    },
-  in_progress:  { label:'In Progress', color:'var(--warning)',   icon: Clock,          badge:'badge-warning' },
-  completed:    { label:'Completed',   color:'var(--success)',   icon: CheckCircle,    badge:'badge-success' },
-}
-
-function ProgressRing({ pct }) {
-  const r = 38, circ = 2 * Math.PI * r
-  const offset = circ - (pct / 100) * circ
-  return (
-    <svg width={90} height={90}>
-      <circle cx={45} cy={45} r={r} fill="none" stroke="rgba(108,99,255,.15)" strokeWidth={7}/>
-      <circle cx={45} cy={45} r={r} fill="none" stroke="#6c63ff" strokeWidth={7}
-        strokeDasharray={circ} strokeDashoffset={offset}
-        strokeLinecap="round" transform="rotate(-90 45 45)"
-        style={{transition:'stroke-dashoffset .6s ease'}}/>
-      <text x={45} y={50} textAnchor="middle" fontSize={15} fontWeight={800} fill="#e8eaf6">{pct}%</text>
-    </svg>
-  )
-}
+const STATUS_ORDER  = ['not_started', 'in_progress', 'completed']
+const STATUS_LABEL  = { not_started: 'Not Started', in_progress: 'In Progress', completed: 'Completed' }
+const STATUS_COLOR  = { not_started: '#6b7280', in_progress: '#f59e0b', completed: '#22c55e' }
+const STATUS_BADGE  = { not_started: 'badge-info', in_progress: 'badge-warning', completed: 'badge-success' }
 
 export default function Progress() {
   const [reports,  setReports]  = useState([])
@@ -30,28 +14,47 @@ export default function Progress() {
   const [progress, setProgress] = useState(null)
   const [loading,  setLoading]  = useState(false)
 
-  useEffect(()=>{
-    listReports().then(r=>setReports(r.data.data)).catch(()=>{})
-  },[])
+  useEffect(() => {
+    listReports().then(r => setReports(r.data.data)).catch(() => {})
+  }, [])
 
-  const load = (id) => {
-    if(!id) return
+  const loadProgress = id => {
+    if (!id) return
     setLoading(true)
-    getProgress(id).then(r=>setProgress(r.data)).catch(()=>setProgress(null)).finally(()=>setLoading(false))
+    getProgress(id)
+      .then(r => setProgress(r.data))
+      .catch(() => setProgress(null))
+      .finally(() => setLoading(false))
   }
 
-  useEffect(()=>{ load(selId) },[selId])
+  useEffect(() => { loadProgress(selId) }, [selId])
 
-  const changeStatus = async (skill, status) => {
+  const cycle = async (skill, currentStatus) => {
+    const next = STATUS_ORDER[(STATUS_ORDER.indexOf(currentStatus) + 1) % STATUS_ORDER.length]
     try {
-      await updateProgress({ candidate_id: selId, skill, status, notes:'' })
-      toast.success(`${skill} → ${status}`)
-      load(selId)
-    } catch(e) { toast.error('Update failed') }
+      await updateProgress({ candidate_id: selId, skill, status: next, notes: '' })
+      toast.success(`${skill} → ${STATUS_LABEL[next]}`)
+      loadProgress(selId)
+    } catch {
+      toast.error('Update failed')
+    }
   }
 
-  const stats = progress?.stats || {}
+  const handleReset = async () => {
+    if (!selId) return
+    if (!confirm('Reset all progress for this candidate?')) return
+    try {
+      await resetProgress(selId)
+      toast.success('Progress reset')
+      setProgress(null)
+    } catch {
+      toast.error('Reset failed')
+    }
+  }
+
+  const stats  = progress?.stats || {}
   const skills = progress?.skills || []
+  const pct    = stats.completion_pct || 0
 
   return (
     <div>
@@ -60,106 +63,114 @@ export default function Progress() {
         <p>Track your learning journey skill by skill</p>
       </div>
 
-      <div className="card" style={{marginBottom:24}}>
-        <div className="form-group" style={{margin:0}}>
-          <label>SELECT CANDIDATE</label>
-          <select className="form-control" style={{maxWidth:360}} value={selId}
-            onChange={e=>setSelId(e.target.value)}>
-            <option value="">— Pick a candidate —</option>
-            {reports.map(r=>(
-              <option key={r.candidate_id} value={r.candidate_id}>
-                {r.candidate_name} — {r.job_role}
-              </option>
-            ))}
-          </select>
+      {/* Selector */}
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ flex: 1, minWidth: 240 }}>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+              Select Candidate
+            </label>
+            <select className="form-control"
+              value={selId} onChange={e => setSelId(e.target.value)}>
+              <option value="">— Pick a candidate —</option>
+              {reports.map(r => (
+                <option key={r.candidate_id} value={r.candidate_id}>
+                  {r.candidate_name} ({r.candidate_id}) — {r.job_role}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selId && (
+            <button className="btn btn-ghost" style={{ marginTop: 22 }} onClick={handleReset}>
+              <RefreshCw size={13} /> Reset
+            </button>
+          )}
         </div>
       </div>
 
-      {loading && <div className="loading-wrap"><div className="spinner"/></div>}
-
-      {!loading && selId && !progress && (
-        <div className="alert alert-info">No progress data yet. Run an analysis first.</div>
-      )}
-
-      {!loading && progress && (
+      {!selId ? (
+        <div className="empty-state">
+          <TrendingUp size={48} />
+          <p>Select a candidate to view and update their learning progress</p>
+        </div>
+      ) : loading ? (
+        <div className="loading-wrap"><div className="spinner" /></div>
+      ) : !progress ? (
+        <div className="empty-state"><p>No progress data yet — run an analysis first</p></div>
+      ) : (
         <>
           {/* Stats */}
-          <div className="grid-4" style={{marginBottom:24}}>
-            <div className="stat-tile" style={{alignItems:'center'}}>
-              <ProgressRing pct={stats.completion_pct||0}/>
-              <span className="label">Completion</span>
-            </div>
-            <div className="stat-tile">
-              <span className="label">Total Skills</span>
-              <span className="value">{stats.total||0}</span>
-            </div>
-            <div className="stat-tile">
-              <span className="label">In Progress</span>
-              <span className="value" style={{color:'var(--warning)'}}>{stats.in_progress||0}</span>
-            </div>
-            <div className="stat-tile">
-              <span className="label">Completed</span>
-              <span className="value" style={{color:'var(--success)'}}>{stats.completed||0}</span>
-            </div>
+          <div className="grid-4" style={{ marginBottom: 24 }}>
+            {[
+              { label: 'Total Skills',  value: stats.total       || 0, color: undefined },
+              { label: 'Completed',     value: stats.completed   || 0, color: '#22c55e' },
+              { label: 'In Progress',   value: stats.in_progress || 0, color: '#f59e0b' },
+              { label: 'Not Started',   value: stats.not_started || 0, color: '#6b7280' },
+            ].map(({ label, value, color }) => (
+              <div key={label} className="stat-tile">
+                <span className="label">{label}</span>
+                <span className="value" style={color ? { color } : {}}>{value}</span>
+              </div>
+            ))}
           </div>
 
-          {/* Overall bar */}
-          <div className="card" style={{marginBottom:24}}>
-            <p className="card-title"><TrendingUp size={15}/> Overall Progress</p>
-            <div style={{display:'flex',gap:20,marginBottom:12}}>
-              {Object.entries(STATUS_META).map(([k,{label,color,badge}])=>(
-                <div key={k} style={{display:'flex',alignItems:'center',gap:6}}>
-                  <span className={`badge ${badge}`}>{stats[k]||0}</span>
-                  <span style={{fontSize:12,color:'var(--text-muted)'}}>{label}</span>
-                </div>
-              ))}
+          {/* Completion bar */}
+          <div className="card" style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+              <p className="card-title" style={{ margin: 0 }}>Overall Completion</p>
+              <span style={{ fontWeight: 800, fontSize: 18, color: pct >= 75 ? '#22c55e' : pct >= 40 ? '#f59e0b' : '#ef4444' }}>
+                {pct}%
+              </span>
             </div>
-            <div className="progress-bar-wrap" style={{height:14}}>
-              <div className="progress-bar-fill" style={{width:`${stats.completion_pct||0}%`}}/>
+            <div style={{ background: 'var(--bg-primary)', borderRadius: 999, height: 10, overflow: 'hidden' }}>
+              <div style={{
+                width: `${pct}%`, height: '100%', borderRadius: 999,
+                background: pct >= 75 ? 'linear-gradient(90deg,#22c55e,#16a34a)' :
+                            pct >= 40 ? 'linear-gradient(90deg,#f59e0b,#d97706)' :
+                                        'linear-gradient(90deg,#ef4444,#dc2626)',
+                transition: 'width .5s ease',
+              }} />
             </div>
           </div>
 
           {/* Skill list */}
           <div className="card">
-            <p className="card-title">Skill Progress</p>
-            {skills.length === 0
-              ? <div className="empty-state"><p>No skills tracked yet</p></div>
-              : skills.map((s,i)=>{
-                  const m = STATUS_META[s.status] || STATUS_META.not_started
-                  const Icon = m.icon
-                  return (
-                    <div key={i} style={{
-                      display:'flex',alignItems:'center',gap:16,padding:'12px 0',
-                      borderBottom: i<skills.length-1?'1px solid var(--border)':'none',
-                    }}>
-                      <Icon size={18} style={{color:m.color,flexShrink:0}}/>
-                      <span style={{flex:1,fontSize:13,fontWeight:600}}>{s.skill}</span>
-                      <span style={{fontSize:11,color:'var(--text-muted)',flex:1}}>{s.notes||''}</span>
-                      <select
-                        value={s.status}
-                        onChange={e=>changeStatus(s.skill, e.target.value)}
-                        style={{
-                          background:'var(--bg-secondary)',border:'1px solid var(--border)',
-                          color:'var(--text-primary)',borderRadius:'var(--radius)',
-                          padding:'5px 10px',fontSize:12,cursor:'pointer',
-                        }}>
-                        <option value="not_started">Not Started</option>
-                        <option value="in_progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </div>
-                  )
-                })
-            }
+            <p className="card-title">Skill Progress (click status to cycle)</p>
+            {skills.length ? (
+              <div>
+                {skills.map((sk, i) => (
+                  <div key={sk.skill} style={{
+                    display: 'flex', alignItems: 'center', gap: 14, padding: '12px 0',
+                    borderBottom: i < skills.length - 1 ? '1px solid var(--border)' : 'none',
+                  }}>
+                    {/* Status dot */}
+                    <div style={{
+                      width: 12, height: 12, borderRadius: '50%', flexShrink: 0,
+                      background: STATUS_COLOR[sk.status] || '#6b7280',
+                      boxShadow: `0 0 6px ${STATUS_COLOR[sk.status] || '#6b7280'}66`,
+                    }} />
+                    <span style={{ flex: 1, fontWeight: 600, fontSize: 14 }}>{sk.skill}</span>
+                    {sk.notes && (
+                      <span style={{ fontSize: 11, color: 'var(--text-muted)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {sk.notes}
+                      </span>
+                    )}
+                    {/* Cycle button */}
+                    <button
+                      className={`badge ${STATUS_BADGE[sk.status]}`}
+                      onClick={() => cycle(sk.skill, sk.status)}
+                      style={{ cursor: 'pointer', border: 'none', fontSize: 11, padding: '4px 10px' }}
+                      title="Click to advance status">
+                      {STATUS_LABEL[sk.status]}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state"><p>No skills tracked yet</p></div>
+            )}
           </div>
         </>
-      )}
-
-      {!loading && !selId && (
-        <div className="empty-state">
-          <TrendingUp size={48}/>
-          <p>Select a candidate to view and update their learning progress</p>
-        </div>
       )}
     </div>
   )
