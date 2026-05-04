@@ -13,7 +13,7 @@ class SkillGapRequest(BaseModel):
     job_role: str
     skills: List[str]
     experience_years: int = Field(ge=0)
-    education: str
+    education: Optional[str] = "B.Tech"
     certifications: Optional[str] = "None"
     cv_matching_score: Optional[float] = Field(None, ge=0, le=100)   # from Component 1
     interview_score:   Optional[float] = Field(None, ge=0, le=100)   # from Component 2

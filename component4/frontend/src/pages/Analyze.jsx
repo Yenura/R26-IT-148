@@ -11,17 +11,7 @@ const JOB_ROLES = [
   'Mobile App Developer', 'Network Engineer', 'AI/NLP Engineer',
   'QA/Test Engineer', 'IT Project Manager', 'Embedded Systems Engineer'
 ]
-const EDU_OPTIONS  = [
-  'B.Sc (Computer Science / IT)',
-  'B.Tech / B.E (Computer Science / IT)',
-  'BCA',
-  'M.Sc (Computer Science / IT)',
-  'M.Tech / M.E (Computer Science / IT)',
-  'MCA',
-  'PhD (Computer Science / AI)',
-  'Diploma in IT',
-  'Bootcamp Graduate'
-]
+
 const CERT_OPTIONS = ['None','AWS Certified','Google ML','Deep Learning Specialization']
 const ALL_SKILLS   = ['Python','Java','C++','SQL','React','Linux','TensorFlow','Pytorch',
                       'Machine Learning','Deep Learning','NLP','Cybersecurity','Networking','Ethical Hacking']
@@ -53,7 +43,7 @@ export default function Analyze() {
   const [tab, setTab] = useState('basic')
   const [form, setForm] = useState({
     candidate_id:'', candidate_name:'', job_role:'Software Engineer',
-    experience_years:2, education:'B.Tech / B.E (Computer Science / IT)', certifications:'None',
+    experience_years:2, certifications:'None',
     cv_matching_score:'', interview_score:'', mcq_score:'',
     descriptive_score:'', coding_score:'',
     skills:[], weak_topics:[], failed_mcq_topics:[],
@@ -122,11 +112,7 @@ export default function Analyze() {
                 </select>
               </F>
               <F label="EXPERIENCE (YRS)"><input className="form-control" type="number" min={0} max={30} value={form.experience_years} onChange={e=>set('experience_years',e.target.value)}/></F>
-              <F label="EDUCATION">
-                <select className="form-control" value={form.education} onChange={e=>set('education',e.target.value)}>
-                  {EDU_OPTIONS.map(o=><option key={o}>{o}</option>)}
-                </select>
-              </F>
+
               <F label="CERTIFICATION">
                 <select className="form-control" value={form.certifications} onChange={e=>set('certifications',e.target.value)}>
                   {CERT_OPTIONS.map(o=><option key={o}>{o}</option>)}
