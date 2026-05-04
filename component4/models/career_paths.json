@@ -1,0 +1,127 @@
+{
+  "career_paths": {
+    "Software Engineer": [
+      "Junior Developer",
+      "Software Engineer",
+      "Senior Engineer",
+      "Tech Lead",
+      "Engineering Manager",
+      "VP Engineering"
+    ],
+    "Data Scientist": [
+      "Junior Data Scientist",
+      "Data Scientist",
+      "Senior Data Scientist",
+      "Lead Data Scientist",
+      "Principal Data Scientist",
+      "Chief Data Officer"
+    ],
+    "Machine Learning Engineer": [
+      "ML Engineer (L1)",
+      "ML Engineer",
+      "Senior ML Engineer",
+      "Staff ML Engineer",
+      "Principal ML Engineer",
+      "Director of AI"
+    ],
+    "Frontend Developer": [
+      "Junior Frontend Dev",
+      "Frontend Developer",
+      "Senior Frontend Dev",
+      "Lead Frontend Engineer",
+      "Principal Engineer",
+      "CTO"
+    ],
+    "Backend Developer": [
+      "Junior Backend Dev",
+      "Backend Developer",
+      "Senior Backend Dev",
+      "Lead Backend Engineer",
+      "Principal Engineer",
+      "CTO"
+    ],
+    "DevOps Engineer": [
+      "DevOps Engineer (L1)",
+      "DevOps Engineer",
+      "Senior DevOps",
+      "Lead DevOps",
+      "Platform Engineer",
+      "VP Infrastructure"
+    ],
+    "Cybersecurity Analyst": [
+      "Security Analyst (L1)",
+      "Cybersecurity Analyst",
+      "Senior Security Analyst",
+      "Security Architect",
+      "CISO"
+    ],
+    "Cloud Solutions Architect": [
+      "Cloud Engineer",
+      "Cloud Architect",
+      "Senior Cloud Architect",
+      "Principal Architect",
+      "VP Cloud"
+    ],
+    "Database Administrator": [
+      "Junior DBA",
+      "Database Administrator",
+      "Senior DBA",
+      "Lead DBA",
+      "Data Architect"
+    ],
+    "Mobile App Developer": [
+      "Junior Mobile Dev",
+      "Mobile Developer",
+      "Senior Mobile Dev",
+      "Lead Mobile Dev",
+      "Principal Engineer"
+    ]
+  },
+  "role_transitions": {
+    "Software Engineer": [
+      "Backend Developer",
+      "DevOps Engineer",
+      "Cloud Solutions Architect"
+    ],
+    "Data Scientist": [
+      "Machine Learning Engineer",
+      "Backend Developer",
+      "Database Administrator"
+    ],
+    "Machine Learning Engineer": [
+      "Data Scientist",
+      "Backend Developer",
+      "DevOps Engineer"
+    ],
+    "Frontend Developer": [
+      "Mobile App Developer",
+      "Software Engineer"
+    ],
+    "Backend Developer": [
+      "Software Engineer",
+      "DevOps Engineer",
+      "Cloud Solutions Architect"
+    ],
+    "DevOps Engineer": [
+      "Cloud Solutions Architect",
+      "Backend Developer",
+      "Database Administrator"
+    ],
+    "Cybersecurity Analyst": [
+      "Cloud Solutions Architect",
+      "Database Administrator"
+    ],
+    "Cloud Solutions Architect": [
+      "DevOps Engineer",
+      "Backend Developer"
+    ],
+    "Database Administrator": [
+      "Backend Developer",
+      "Data Scientist"
+    ],
+    "Mobile App Developer": [
+      "Frontend Developer",
+      "Software Engineer"
+    ]
+  }
+}

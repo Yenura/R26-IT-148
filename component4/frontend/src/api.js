@@ -1,29 +1,22 @@
 import axios from 'axios'
 
-const api = axios.create({
-  baseURL: '/api/v1',
-  timeout: 30000,
-  headers: { 'Content-Type': 'application/json' },
-})
+const API = axios.create({ baseURL: 'http://127.0.0.1:8000/api/v1' })
 
-// ── Skill Gap ──────────────────────────────────────────────────────────────
-export const analyzeSkillGap   = (payload)       => api.post('/skill-gap/analyze', payload)
-export const getSkillGapReport = (candidateId)   => api.get(`/skill-gap/report/${candidateId}`)
-export const listReports       = (skip=0,limit=20) => api.get('/skill-gap/reports', { params: { skip, limit } })
-export const deleteReport      = (candidateId)   => api.delete(`/skill-gap/report/${candidateId}`)
+export const analyzeSkillGap    = (data)       => API.post('/skill-gap/analyze', data)
+export const getReport           = (id)         => API.get(`/skill-gap/report/${id}`)
+export const listReports         = (skip=0,limit=50) => API.get(`/skill-gap/reports?skip=${skip}&limit=${limit}`)
+export const deleteReport        = (id)         => API.delete(`/skill-gap/report/${id}`)
+export const getRoles            = ()           => API.get('/skill-gap/roles')
 
-// ── Career ─────────────────────────────────────────────────────────────────
-export const generateCareerPath = (payload)   => api.post('/career/path', payload)
-export const getRoleResources   = (jobRole)   => api.get(`/career/resources/${encodeURIComponent(jobRole)}`)
-export const getCandidateRoadmap = (id)       => api.get(`/career/roadmap/${id}`)
+export const generateCareerPath  = (data)       => API.post('/career/path', data)
+export const getCareerResources  = (role)       => API.get(`/career/resources/${encodeURIComponent(role)}`)
+export const getCareerRoles      = ()           => API.get('/career/roles')
+export const getRoadmap          = (id)         => API.get(`/career/roadmap/${id}`)
 
-// ── Progress ───────────────────────────────────────────────────────────────
-export const updateProgress   = (payload)     => api.post('/progress/update', payload)
-export const getProgress      = (candidateId) => api.get(`/progress/${candidateId}`)
-export const resetProgress    = (candidateId) => api.delete(`/progress/${candidateId}`)
+export const updateProgress      = (data)       => API.post('/progress/update', data)
+export const getProgress         = (id)         => API.get(`/progress/${id}`)
+export const resetProgress       = (id)         => API.delete(`/progress/${id}`)
 
-// ── Analytics ──────────────────────────────────────────────────────────────
-export const getAnalyticsSummary = () => api.get('/analytics/summary')
-export const getLeaderboard      = (limit=10) => api.get('/analytics/leaderboard', { params: { limit } })
-
-export default api
+export const getAnalyticsSummary = ()           => API.get('/analytics/summary')
+export const getLeaderboard      = (limit=10)   => API.get(`/analytics/leaderboard?limit=${limit}`)
+export const getRoleInsights     = (role)       => API.get(`/analytics/role-insights/${encodeURIComponent(role)}`)

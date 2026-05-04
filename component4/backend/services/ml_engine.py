@@ -1,6 +1,6 @@
 """
-ML inference engine for Component 4.
-Loads trained models + knowledge files at startup.
+Component 4 — ML Inference Engine (New 10K Dataset)
+Loads trained artefacts at startup and exposes run_skill_gap_analysis().
 """
 
 import os, json, joblib
@@ -10,53 +10,65 @@ from datetime import datetime
 from typing import List, Dict, Any, Tuple
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-_HERE    = os.path.dirname(os.path.abspath(__file__))
-MODELS   = os.path.join(_HERE, "..", "..", "models")
-REPORTS  = os.path.join(_HERE, "..", "..", "reports")
+_HERE   = os.path.dirname(os.path.abspath(__file__))
+MODELS  = os.path.join(_HERE, "..", "..", "models")
+REPORTS = os.path.join(_HERE, "..", "..", "reports")
 
-# ── Load artefacts ─────────────────────────────────────────────────────────────
-_clf          = joblib.load(os.path.join(MODELS, "skill_gap_classifier.pkl"))
-_feat_cols    = joblib.load(os.path.join(MODELS, "feature_columns.pkl"))
-_role_cols    = joblib.load(os.path.join(MODELS, "role_columns.pkl"))
+# ── Load ML artefacts ──────────────────────────────────────────────────────────
+_clf       = joblib.load(os.path.join(MODELS, "skill_gap_classifier.pkl"))
+_feat_cols = joblib.load(os.path.join(MODELS, "feature_columns.pkl"))
+_role_cols = joblib.load(os.path.join(MODELS, "role_columns.pkl"))
+ALL_SKILLS = joblib.load(os.path.join(MODELS, "all_skills.pkl"))
 
+# ── Load knowledge files ───────────────────────────────────────────────────────
 with open(os.path.join(MODELS, "job_requirements.json"))  as f: JOB_REQ   = json.load(f)
 with open(os.path.join(MODELS, "learning_resources.json")) as f: RESOURCES = json.load(f)
 with open(os.path.join(MODELS, "skill_categories.json"))   as f: SKILL_CAT = json.load(f)
+with open(os.path.join(MODELS, "career_paths.json"))       as f: _CP_DATA  = json.load(f)
 
-# Canonical skill list (must match training order)
-ALL_SKILLS = [
-    "Python", "Java", "C++", "SQL", "React", "Linux",
-    "TensorFlow", "Pytorch", "Machine Learning", "Deep Learning", "NLP",
-    "Cybersecurity", "Networking", "Ethical Hacking"
-]
+CAREER_PATHS     = _CP_DATA["career_paths"]
+ROLE_TRANSITIONS = _CP_DATA["role_transitions"]
 
-EDU_MAP = {"PhD": 5, "M.Tech": 4, "MBA": 3, "B.Tech": 2, "B.Sc": 1}
-
-CAREER_PATHS: Dict[str, List[str]] = {
-    "Data Scientist":       ["Junior Data Scientist", "Data Scientist",
-                             "Senior Data Scientist", "Lead Data Scientist", "Chief Data Officer"],
-    "AI Researcher":        ["ML Engineer", "AI Researcher",
-                             "Senior AI Researcher", "Research Scientist", "AI Director"],
-    "Software Engineer":    ["Junior Developer", "Software Engineer",
-                             "Senior Engineer", "Tech Lead", "Engineering Manager"],
-    "Cybersecurity Analyst":["Security Analyst (L1)", "Cybersecurity Analyst",
-                             "Senior Security Analyst", "Security Architect", "CISO"],
+# ── Education ordinal map ──────────────────────────────────────────────────────
+EDU_RANK = {
+    "Bootcamp + Self-Taught":                1,
+    "Associate Degree in Computer Science":  2,
+    "B.Sc. Computer Science":               3,
+    "B.Sc. Information Technology":         3,
+    "B.Sc. Software Engineering":           3,
+    "B.Sc. Mathematics":                    3,
+    "B.Sc. Statistics":                     3,
+    "B.Sc. Cognitive Science":              3,
+    "B.Sc. Physics (CS minor)":             3,
+    "B.Eng. Electrical Engineering":        3,
+    "B.Eng. Electronics & Communication":   3,
+    "MBA (IT / Analytics)":                 4,
+    "M.Sc. Computer Science":               5,
+    "M.Sc. Data Science":                   5,
+    "M.Sc. Machine Learning":               5,
+    "M.Sc. Cybersecurity":                  5,
+    "M.Sc. Artificial Intelligence":        5,
+    "M.Sc. Information Systems":            5,
+    "Ph.D. Computer Science":               6,
+    "Ph.D. Artificial Intelligence":        6,
+    # Legacy / simplified keys (from old form inputs)
+    "PhD":      6,
+    "M.Tech":   5,
+    "MBA":      4,
+    "B.Tech":   3,
+    "B.Sc":     3,
 }
 
-ROLE_TRANSITIONS: Dict[str, List[str]] = {
-    "Data Scientist":       ["AI Researcher", "ML Engineer", "Data Engineer"],
-    "AI Researcher":        ["Data Scientist", "Research Engineer"],
-    "Software Engineer":    ["Data Scientist", "DevOps Engineer", "Full-Stack Developer"],
-    "Cybersecurity Analyst":["Security Engineer", "Penetration Tester"],
-}
+LEVEL_RANK    = {"Junior": 1, "Mid-Level": 2, "Senior": 3, "Lead": 4, "Principal / Staff": 5}
+WORKMODE_RANK = {"On-Site": 1, "Hybrid": 2, "Remote": 3}
 
 
-# ── Helper: compute skill gap ──────────────────────────────────────────────────
+# ── Helper: normalise skill string ────────────────────────────────────────────
+def _col_key(skill: str) -> str:
+    return f"skill_{skill.lower().replace(' ', '_').replace('/', '_').replace('+', 'plus').replace('-', '_')}"
 
-def _parse_skills(skills: List[str]) -> set:
-    return {s.strip() for s in skills}
 
-
+# ── Compute skill gap ─────────────────────────────────────────────────────────
 def compute_gap(
     skills: List[str],
     job_role: str,
@@ -64,94 +76,98 @@ def compute_gap(
 ) -> Tuple[float, List[str], List[str], float]:
     """
     Returns (gap_score 0-1, missing_required, missing_optional, skill_match_pct)
-    Higher gap_score = better fit.
+    gap_score closer to 1 = better fit.
     """
-    candidate = {s.lower() for s in skills}
+    candidate_lower = {s.strip().lower() for s in skills}
 
     if job_role not in JOB_REQ:
         return 0.5, [], [], 50.0
 
     req      = JOB_REQ[job_role]
-    required = [s.lower() for s in req["required"]]
-    optional = [s.lower() for s in req["optional"]]
+    required = [s.strip() for s in req["required"]]
+    optional = [s.strip() for s in req.get("optional", [])]
 
-    miss_req = [s for s in required if s not in candidate]
-    miss_opt = [s for s in optional if s not in candidate]
+    # Fuzzy match — if any candidate skill is a substring of a required skill or vice-versa
+    def fuzzy_has(skill, cand_set):
+        sl = skill.lower()
+        return any(sl in c or c in sl for c in cand_set)
+
+    miss_req = [s for s in required if not fuzzy_has(s, candidate_lower)]
+    miss_opt = [s for s in optional if not fuzzy_has(s, candidate_lower)]
 
     match_pct = ((len(required) - len(miss_req)) / max(len(required), 1)) * 100
 
     req_score = (len(required) - len(miss_req)) / max(len(required), 1)
-    opt_score = (len(optional) - len(miss_opt)) / max(len(optional), 1)
+    opt_score = (len(optional) - len(miss_opt)) / max(len(optional), 1) if optional else 1.0
     gap_score = 0.7 * req_score + 0.3 * opt_score
 
-    exp_ok    = experience_years >= req.get("min_experience", 1)
-    gap_score = 0.8 * gap_score + 0.2 * float(exp_ok)
+    # Bonus for experience
+    min_exp   = req.get("min_experience", 2)
+    exp_score = min(experience_years / max(min_exp, 1), 1.0)
+    gap_score = 0.8 * gap_score + 0.2 * exp_score
 
-    # Re-capitalise missing lists for display
-    miss_req_display = [s.title() for s in miss_req]
-    miss_opt_display = [s.title() for s in miss_opt]
-
-    return gap_score, miss_req_display, miss_opt_display, match_pct
+    return gap_score, miss_req, miss_opt, match_pct
 
 
 def gap_severity(score: float) -> str:
-    if score >= 0.85: return "Low"
-    if score >= 0.60: return "Medium"
+    if score >= 0.80: return "Low"
+    if score >= 0.55: return "Medium"
     return "High"
 
 
-# ── Build feature vector ───────────────────────────────────────────────────────
-
+# ── Build feature vector ──────────────────────────────────────────────────────
 def build_feature_vector(
     skills: List[str],
     job_role: str,
     experience_years: int,
     education: str,
-    certifications: str,
-    ai_score_norm: float,
-    gap_score: float,
-    skill_match_pct: float,
+    job_level: str,
+    work_mode: str,
+    cert_count: int,
+    projects_count: int,
 ) -> pd.DataFrame:
 
     row: Dict[str, Any] = {
         "Experience (Years)": experience_years,
-        "Education_Enc":      EDU_MAP.get(education, 2),
-        "Has_Cert":           int(certifications != "None"),
-        "Skill_Count":        len(skills),
-        "AI_Score_Norm":      ai_score_norm,
-        "Gap_Score":          gap_score,
-        "Skill_Match_Pct":    skill_match_pct,
+        "Education_Enc":      EDU_RANK.get(education, 3),
+        "JobLevel_Enc":       LEVEL_RANK.get(job_level, 2),
+        "WorkMode_Enc":       WORKMODE_RANK.get(work_mode, 2),
+        "Has_Cert":           int(cert_count > 0),
+        "Cert_Count":         cert_count,
+        "Projects Count":     projects_count,
     }
 
     # One-hot role
     for col in _role_cols:
-        role_label = col.replace("role_", "")
-        row[col] = int(job_role == role_label)
+        role_label = col.replace("role_", "").replace("_", " ")
+        row[col] = int(job_role.replace(" ", "_").replace("/", "_") == col.replace("role_", ""))
 
-    # Skill flags
-    candidate_lower = {s.lower() for s in skills}
+    # Skill flags — match against ALL_SKILLS canonical list
+    candidate_text = " | ".join(skills).lower()
     for skill in ALL_SKILLS:
-        col = f"skill_{skill.lower().replace(' ', '_').replace('+', 'plus')}"
-        row[col] = int(skill.lower() in candidate_lower)
+        col = _col_key(skill)
+        row[col] = int(skill.lower() in candidate_text or any(skill.lower() in s.lower() for s in skills))
 
     df = pd.DataFrame([row])
-    # Align to training columns
     for c in _feat_cols:
         if c not in df.columns:
             df[c] = 0
     return df[_feat_cols]
 
 
-# ── Main inference function ────────────────────────────────────────────────────
-
+# ── Main inference ────────────────────────────────────────────────────────────
 def run_skill_gap_analysis(
-    candidate_id: str,
-    candidate_name: str,
-    job_role: str,
-    skills: List[str],
-    experience_years: int,
-    education: str,
-    certifications: str,
+    candidate_id:      str,
+    candidate_name:    str,
+    job_role:          str,
+    skills:            List[str],
+    experience_years:  int,
+    education:         str,
+    certifications:    str,
+    cert_count:        int,
+    projects_count:    int,
+    job_level:         str,
+    work_mode:         str,
     cv_matching_score: float | None,
     interview_score:   float | None,
     mcq_score:         float | None,
@@ -161,93 +177,101 @@ def run_skill_gap_analysis(
     failed_mcq_topics: List[str],
 ) -> Dict[str, Any]:
 
-    # ── 1. Gap computation ────────────────────────────────────────────────────
+    # ── 1. Skill gap computation ──────────────────────────────────────────────
     gap_score, miss_req, miss_opt, skill_match_pct = compute_gap(
         skills, job_role, experience_years
     )
     severity = gap_severity(gap_score)
 
-    # Derive an AI score proxy from cv + interview scores if available
-    ai_proxy = 0.5
-    if cv_matching_score is not None and interview_score is not None:
-        ai_proxy = (cv_matching_score * 0.5 + interview_score * 0.5) / 100.0
-    elif cv_matching_score is not None:
-        ai_proxy = cv_matching_score / 100.0
-    elif interview_score is not None:
-        ai_proxy = interview_score / 100.0
-
-    # ── 2. ML prediction ─────────────────────────────────────────────────────
-    fv          = build_feature_vector(
+    # ── 2. ML hire probability prediction ────────────────────────────────────
+    fv = build_feature_vector(
         skills, job_role, experience_years, education,
-        certifications, ai_proxy, gap_score, skill_match_pct
+        job_level, work_mode, cert_count, projects_count,
     )
-    hire_prob   = float(_clf.predict_proba(fv)[0][1])
-    predicted   = hire_prob >= 0.5
+    hire_prob = float(_clf.predict_proba(fv)[0][1])
+    predicted = hire_prob >= 0.5
+
+    # Blend with cv/interview score if available
+    score_inputs = [x for x in [cv_matching_score, interview_score] if x is not None]
+    if score_inputs:
+        avg_score_norm = sum(score_inputs) / (len(score_inputs) * 100)
+        hire_prob = 0.6 * hire_prob + 0.4 * avg_score_norm
+
+    hire_prob = max(0.0, min(1.0, hire_prob))
 
     # ── 3. Categorise missing skills ─────────────────────────────────────────
-    all_missing = set(m.lower() for m in miss_req + miss_opt)
-    tech_gaps, ml_gaps, sec_gaps = [], [], []
+    all_missing_lower = {m.lower() for m in miss_req + miss_opt}
+    categorised: Dict[str, List[str]] = {cat: [] for cat in SKILL_CAT}
 
-    for skill in ALL_SKILLS:
-        sl = skill.lower()
-        if sl in all_missing:
-            if skill in SKILL_CAT["Technical"]:
-                tech_gaps.append(skill)
-            elif skill in SKILL_CAT["ML/AI"]:
-                ml_gaps.append(skill)
-            elif skill in SKILL_CAT["Security"]:
-                sec_gaps.append(skill)
+    for skill, cat_skills in SKILL_CAT.items():
+        for s in cat_skills:
+            if s.lower() in all_missing_lower:
+                categorised[skill].append(s)
 
-    # ── 4. Interview-driven knowledge / problem-solving gaps ─────────────────
+    tech_gaps  = categorised.get("Programming", []) + categorised.get("Web", [])
+    ml_gaps    = categorised.get("ML/AI", [])
+    cloud_gaps = categorised.get("Cloud/DevOps", [])
+    sec_gaps   = categorised.get("Security", [])
+    data_gaps  = categorised.get("Data/DB", [])
+
+    # ── 4. Interview-driven gaps ──────────────────────────────────────────────
     knowledge_gaps, problem_solving_gaps = [], []
 
     if interview_score is not None and interview_score < 60:
         knowledge_gaps = weak_topics if weak_topics else [
-            f"Core {job_role} Concepts",
-            "Theoretical Foundations",
+            f"Core {job_role} Concepts", "Theoretical Foundations"
         ]
 
     if descriptive_score is not None and descriptive_score < 60:
         knowledge_gaps = list(set(knowledge_gaps + weak_topics))
 
     if coding_score is not None and coding_score < 60:
-        problem_solving_gaps = [
-            "Algorithm Design", "Data Structures", "Code Optimisation"
-        ]
+        problem_solving_gaps = ["Algorithm Design", "Data Structures", "Code Optimisation"]
 
-    # MCQ-specific gaps from failed topics
     if failed_mcq_topics:
         knowledge_gaps = list(set(knowledge_gaps + failed_mcq_topics))
 
     # ── 5. Resource recommendations ──────────────────────────────────────────
     priority_skills = []
-    for s in miss_req:       priority_skills.append((s, "Critical"))
-    for s in tech_gaps:      priority_skills.append((s, "High"))
-    for s in ml_gaps:        priority_skills.append((s, "High"))
-    for s in sec_gaps:       priority_skills.append((s, "High"))
-    for s in miss_opt:       priority_skills.append((s, "Medium"))
+    for s in miss_req:        priority_skills.append((s, "Critical"))
+    for s in ml_gaps:         priority_skills.append((s, "High"))
+    for s in cloud_gaps:      priority_skills.append((s, "High"))
+    for s in tech_gaps:       priority_skills.append((s, "High"))
+    for s in sec_gaps:        priority_skills.append((s, "Medium"))
+    for s in data_gaps:       priority_skills.append((s, "Medium"))
+    for s in miss_opt:        priority_skills.append((s, "Low"))
 
     seen = set()
     resources = []
     for skill, priority in priority_skills:
-        if skill in seen: continue
-        seen.add(skill)
-        res = RESOURCES.get(skill, {
-            "course": f"{skill} Fundamentals",
-            "url":    "https://coursera.org",
-            "duration": "4 weeks",
-            "level": "Beginner",
-        })
+        sk = skill.strip()
+        if sk in seen:
+            continue
+        seen.add(sk)
+        # Try exact match, then partial match
+        res = RESOURCES.get(sk)
+        if not res:
+            for rk, rv in RESOURCES.items():
+                if rk.lower() in sk.lower() or sk.lower() in rk.lower():
+                    res = rv
+                    break
+        if not res:
+            res = {
+                "course": f"{sk} Fundamentals",
+                "url": "https://www.coursera.org/search?query=" + sk.replace(" ", "+"),
+                "duration": "4 weeks",
+                "level": "Beginner",
+            }
         resources.append({
-            "skill": skill, "priority": priority,
+            "skill": sk, "priority": priority,
             "course": res["course"], "url": res["url"],
             "duration": res["duration"], "level": res["level"],
         })
 
-    # ── 6. Learning plan (monthly phases) ────────────────────────────────────
+    # ── 6. Monthly learning plan ──────────────────────────────────────────────
     phases, month = [], 1
-    for chunk_start in range(0, len(resources), 2):
-        chunk = resources[chunk_start: chunk_start + 2]
+    for i in range(0, len(resources), 2):
+        chunk = resources[i: i + 2]
         phases.append({
             "phase": month,
             "title": f"Month {month}",
@@ -257,96 +281,92 @@ def run_skill_gap_analysis(
         month += 1
     if not phases:
         phases = [{"phase": 1, "title": "Month 1",
-                   "skills": ["Keep practising current skills"],
+                   "skills": ["Maintain and deepen existing skills"],
                    "resources": []}]
 
-    # ── 7. Career path suggestions ────────────────────────────────────────────
-    path = CAREER_PATHS.get(job_role, ["Junior", "Mid-level", "Senior", "Lead"])
+    # ── 7. Career suggestions ─────────────────────────────────────────────────
+    path = CAREER_PATHS.get(job_role, ["Junior", "Mid-Level", "Senior", "Lead", "Principal"])
     transitions = ROLE_TRANSITIONS.get(job_role, [])
+
     career_suggestions = [
-        f"Follow the {job_role} growth track: {' -> '.join(path)}",
+        f"Follow the {job_role} growth track: {' → '.join(path[:5])}",
     ]
     if transitions:
-        career_suggestions.append(
-            f"Potential lateral moves: {', '.join(transitions)}"
-        )
+        career_suggestions.append(f"Potential lateral moves: {', '.join(transitions)}")
     if severity == "High":
-        career_suggestions.append(
-            "Focus on closing critical skill gaps before aiming for senior roles."
-        )
+        career_suggestions.append("Focus on closing critical skill gaps before targeting senior roles.")
+    if severity == "Low" and experience_years >= 5:
+        career_suggestions.append("You are well-positioned — consider pursuing senior/lead certifications.")
 
     # ── 8. Improvement suggestions ────────────────────────────────────────────
     suggestions = []
     if miss_req:
-        suggestions.append(
-            f"Urgently learn required skills: {', '.join(miss_req[:3])}."
-        )
+        suggestions.append(f"Urgently learn required skills: {', '.join(miss_req[:3])}.")
     if interview_score is not None and interview_score < 70:
-        suggestions.append(
-            "Revise theoretical concepts — your interview score indicates knowledge gaps."
-        )
+        suggestions.append("Revise theoretical concepts — your interview score indicates knowledge gaps.")
     if coding_score is not None and coding_score < 60:
-        suggestions.append(
-            "Practice LeetCode / HackerRank daily to improve problem-solving ability."
-        )
+        suggestions.append("Practice LeetCode / HackerRank daily to improve problem-solving ability.")
     if mcq_score is not None and mcq_score < 60:
-        suggestions.append(
-            f"Review these topics from MCQ failures: {', '.join(failed_mcq_topics[:3]) if failed_mcq_topics else 'core domain concepts'}."
-        )
-    if not certifications or certifications == "None":
-        suggestions.append(
-            "Consider earning an industry certification to strengthen your profile."
-        )
-    if experience_years < JOB_REQ.get(job_role, {}).get("min_experience", 1):
-        suggestions.append(
-            f"Gain more hands-on experience; at least "
-            f"{JOB_REQ[job_role]['min_experience']} year(s) preferred for {job_role}."
-        )
+        topics = ', '.join(failed_mcq_topics[:3]) if failed_mcq_topics else "core domain concepts"
+        suggestions.append(f"Review MCQ failure topics: {topics}.")
+    if cert_count == 0:
+        suggestions.append("Earn an industry certification to strengthen your profile.")
+    min_exp = JOB_REQ.get(job_role, {}).get("min_experience", 2)
+    if experience_years < min_exp:
+        suggestions.append(f"Gain more hands-on experience; {min_exp}+ years preferred for {job_role}.")
+    if projects_count < 5:
+        suggestions.append("Build more portfolio projects to demonstrate practical skills.")
 
-    # ── 9. Roadmap graph nodes ────────────────────────────────────────────────
-    candidate_set = {s.lower() for s in skills}
+    # ── 9. Roadmap skill nodes ────────────────────────────────────────────────
+    candidate_lower = {s.lower() for s in skills}
+    req_lower = {m.lower() for m in miss_req}
     nodes = []
-    for skill in ALL_SKILLS:
+    for skill in ALL_SKILLS[:25]:
         sl = skill.lower()
-        if sl in candidate_set:
+        if any(sl in c or c in sl for c in candidate_lower):
             status = "has"
-        elif sl in {m.lower() for m in miss_req}:
+        elif sl in req_lower or any(sl in r or r in sl for r in req_lower):
             status = "missing_required"
         else:
             status = "missing_optional"
 
         cat = "Other"
         for c_name, c_skills in SKILL_CAT.items():
-            if skill in c_skills:
+            if any(skill.lower() in cs.lower() or cs.lower() in skill.lower() for cs in c_skills):
                 cat = c_name
                 break
 
-        nodes.append({"id": skill, "label": skill,
-                      "status": status, "category": cat})
+        nodes.append({"id": skill, "label": skill, "status": status, "category": cat})
 
     return {
-        "candidate_id":           candidate_id,
-        "candidate_name":         candidate_name,
-        "job_role":               job_role,
-        "cv_matching_score":      cv_matching_score,
-        "interview_score":        interview_score,
-        "skill_match_pct":        round(skill_match_pct, 2),
-        "gap_score":              round(gap_score, 4),
-        "gap_severity":           severity,
-        "missing_required":       miss_req,
-        "missing_optional":       miss_opt,
-        "present_skills":         list(skills),
-        "technical_gaps":         tech_gaps,
-        "ml_ai_gaps":             ml_gaps,
-        "security_gaps":          sec_gaps,
-        "knowledge_gaps":         knowledge_gaps,
-        "problem_solving_gaps":   problem_solving_gaps,
-        "resources":              resources,
-        "roadmap_nodes":          nodes,
-        "learning_plan":          phases,
+        "candidate_id":            candidate_id,
+        "candidate_name":          candidate_name,
+        "job_role":                job_role,
+        "job_level":               job_level,
+        "work_mode":               work_mode,
+        "cv_matching_score":       cv_matching_score,
+        "interview_score":         interview_score,
+        "skill_match_pct":         round(skill_match_pct, 2),
+        "gap_score":               round(gap_score, 4),
+        "gap_severity":            severity,
+        "missing_required":        miss_req,
+        "missing_optional":        miss_opt,
+        "present_skills":          list(skills),
+        "technical_gaps":          tech_gaps,
+        "ml_ai_gaps":              ml_gaps,
+        "cloud_devops_gaps":       cloud_gaps,
+        "security_gaps":           sec_gaps,
+        "data_gaps":               data_gaps,
+        "knowledge_gaps":          knowledge_gaps,
+        "problem_solving_gaps":    problem_solving_gaps,
+        "resources":               resources,
+        "roadmap_nodes":           nodes,
+        "learning_plan":           phases,
         "career_path_suggestions": career_suggestions,
         "improvement_suggestions": suggestions,
-        "predicted_hire":         predicted,
-        "hire_probability":       round(hire_prob * 100, 2),
-        "analysis_timestamp":     datetime.utcnow().isoformat(),
+        "predicted_hire":          predicted,
+        "hire_probability":        round(hire_prob * 100, 2),
+        "analysis_timestamp":      datetime.utcnow().isoformat(),
+        "certifications_count":    cert_count,
+        "projects_count":          projects_count,
     }

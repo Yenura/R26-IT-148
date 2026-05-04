@@ -1,174 +1,204 @@
 import { useEffect, useState } from 'react'
-import { listReports, generateCareerPath, getRoleResources } from '../api'
-import { MapPin, ArrowRight, BookOpen, ChevronRight } from 'lucide-react'
+import { listReports, generateCareerPath, getCareerResources } from '../api'
+import { MapPin, ExternalLink, ChevronRight } from 'lucide-react'
 
-const ROLES = ['Data Scientist','AI Researcher','Software Engineer','Cybersecurity Analyst']
+const JOB_ROLES = [
+  'Software Engineer', 'Data Scientist', 'Machine Learning Engineer',
+  'Frontend Developer', 'Backend Developer', 'DevOps Engineer',
+  'Cybersecurity Analyst', 'Cloud Solutions Architect',
+  'Database Administrator', 'Mobile App Developer',
+]
+
+const LEVEL_COLOR = {
+  'Junior': '#6c63ff', 'Mid-Level': '#3b82f6', 'Senior': '#06b6d4',
+  'Lead': '#f59e0b', 'Principal / Staff': '#ef4444',
+}
 
 export default function CareerPath() {
-  const [reports,   setReports]   = useState([])
-  const [selId,     setSelId]     = useState('')
-  const [selRole,   setSelRole]   = useState('Data Scientist')
-  const [pathData,  setPathData]  = useState(null)
-  const [resources, setResources] = useState([])
-  const [loading,   setLoading]   = useState(false)
-  const [resLoading,setResLoading]= useState(false)
+  const [reports,    setReports]    = useState([])
+  const [selId,      setSelId]      = useState('')
+  const [selRole,    setSelRole]    = useState('Data Scientist')
+  const [path,       setPath]       = useState(null)
+  const [resources,  setResources]  = useState([])
+  const [loading,    setLoading]    = useState(false)
+  const [resLoading, setResLoading] = useState(false)
 
-  useEffect(()=>{
-    listReports().then(r=>setReports(r.data.data)).catch(()=>{})
-  },[])
+  useEffect(() => {
+    listReports().then(r => setReports(r.data.data)).catch(() => {})
+    fetchResources('Data Scientist')
+  }, [])
 
-  useEffect(()=>{
+  const fetchResources = role => {
     setResLoading(true)
-    getRoleResources(selRole).then(r=>setResources(r.data.resources)).catch(()=>setResources([])).finally(()=>setResLoading(false))
-  },[selRole])
-
-  const handleGenerate = async () => {
-    if(!selId) return
-    const rep = reports.find(r=>r.candidate_id===selId)
-    if(!rep) return
-    setLoading(true)
-    try {
-      const r = await generateCareerPath({
-        candidate_id: rep.candidate_id,
-        current_role: rep.job_role,
-        skills: rep.present_skills||[],
-        experience_years: 3,
-      })
-      setPathData(r.data.data)
-      setSelRole(rep.job_role)
-    } catch(e) {
-      console.error(e)
-    } finally { setLoading(false) }
+    getCareerResources(role)
+      .then(r => setResources(r.data.resources || []))
+      .catch(() => setResources([]))
+      .finally(() => setResLoading(false))
   }
 
-  const PRI_COLOR = { Required:'var(--accent)', Optional:'var(--warning)' }
+  const handleGenerate = async () => {
+    const cand = reports.find(r => r.candidate_id === selId)
+    if (!cand) return
+    setLoading(true)
+    try {
+      const res = await generateCareerPath({
+        candidate_id:     cand.candidate_id,
+        current_role:     cand.job_role,
+        skills:           cand.present_skills || [],
+        experience_years: cand.experience_years || 3,
+        job_level:        cand.job_level || 'Mid-Level',
+      })
+      setPath(res.data.data)
+    } catch { } finally { setLoading(false) }
+  }
+
+  const handleRoleChange = role => {
+    setSelRole(role)
+    fetchResources(role)
+  }
 
   return (
     <div>
       <div className="page-header">
-        <h1>Career Path & Learning Resources</h1>
+        <h1>Career Path &amp; Learning Resources</h1>
         <p>Visualise your growth track and access curated learning resources per job role</p>
       </div>
 
       {/* Controls */}
-      <div className="card" style={{marginBottom:24}}>
-        <div style={{display:'flex',gap:12,flexWrap:'wrap',alignItems:'flex-end'}}>
-          <div className="form-group" style={{margin:0,flex:1,minWidth:200}}>
-            <label>SELECT CANDIDATE</label>
-            <select className="form-control" value={selId} onChange={e=>setSelId(e.target.value)}>
+      <div className="card" style={{ marginBottom: 24 }}>
+        <div className="grid-2" style={{ gap: 16, alignItems: 'flex-end' }}>
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+              Select Candidate
+            </label>
+            <select className="form-control"
+              value={selId} onChange={e => setSelId(e.target.value)}>
               <option value="">— Pick a candidate —</option>
-              {reports.map(r=>(
+              {reports.map(r => (
                 <option key={r.candidate_id} value={r.candidate_id}>
                   {r.candidate_name} — {r.job_role}
                 </option>
               ))}
             </select>
           </div>
-          <div className="form-group" style={{margin:0,flex:1,minWidth:200}}>
-            <label>JOB ROLE (for resources)</label>
-            <select className="form-control" value={selRole} onChange={e=>setSelRole(e.target.value)}>
-              {ROLES.map(r=><option key={r}>{r}</option>)}
+          <div>
+            <label style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>
+              Job Role (for resources)
+            </label>
+            <select className="form-control"
+              value={selRole} onChange={e => handleRoleChange(e.target.value)}>
+              {JOB_ROLES.map(r => <option key={r}>{r}</option>)}
             </select>
           </div>
-          <button className="btn btn-primary" onClick={handleGenerate} disabled={!selId||loading}>
-            {loading?'Generating…':<><MapPin size={14}/> Generate Path</>}
+        </div>
+        <div style={{ marginTop: 16 }}>
+          <button className="btn btn-primary" disabled={!selId || loading} onClick={handleGenerate}>
+            {loading
+              ? <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid #ffffff55', borderTopColor: '#fff', borderRadius: '50%', animation: 'spin .8s linear infinite' }} /> Generating…</>
+              : <><MapPin size={14} /> Generate Path</>}
           </button>
         </div>
       </div>
 
-      {/* Career milestones */}
-      {pathData && (
-        <div className="card" style={{marginBottom:24}}>
-          <p className="card-title"><MapPin size={15}/> Career Milestone Track — {pathData.current_role}</p>
-          <div style={{display:'flex',alignItems:'center',gap:0,overflowX:'auto',paddingBottom:8}}>
-            {pathData.path_nodes.map((node,i)=>(
-              <div key={i} style={{display:'flex',alignItems:'center',flexShrink:0}}>
+      {/* Career path nodes */}
+      {path && (
+        <div className="card" style={{ marginBottom: 24 }}>
+          <p className="card-title"><MapPin size={15} /> Career Track — {path.current_role}</p>
+          <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 8 }}>
+            {path.path_nodes.map((node, i) => (
+              <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{
-                  display:'flex',flexDirection:'column',alignItems:'center',gap:8,padding:'0 6px',
+                  padding: '10px 18px', borderRadius: 10, minWidth: 120, textAlign: 'center',
+                  background: node.current
+                    ? 'linear-gradient(135deg, rgba(108,99,255,.35), rgba(108,99,255,.15))'
+                    : 'var(--bg-secondary)',
+                  border: `2px solid ${node.current ? '#6c63ff' : 'var(--border)'}`,
+                  color: node.current ? 'var(--accent-light)' : 'var(--text-muted)',
+                  fontWeight: node.current ? 800 : 500,
+                  fontSize: 12,
+                  flexShrink: 0,
                 }}>
-                  <div style={{
-                    width:14,height:14,borderRadius:'50%',flexShrink:0,
-                    background: node.current?'var(--accent)':'var(--border)',
-                    boxShadow: node.current?'0 0 12px var(--accent-glow)':'none',
-                    border: node.current?'3px solid var(--accent-light)':'3px solid var(--bg-card)',
-                  }}/>
-                  <div style={{
-                    padding:'6px 12px',borderRadius:'var(--radius)',fontSize:12,fontWeight:600,
-                    background: node.current?'var(--accent-glow)':'var(--bg-secondary)',
-                    color: node.current?'var(--accent-light)':'var(--text-muted)',
-                    border: `1px solid ${node.current?'var(--accent)':'var(--border)'}`,
-                    whiteSpace:'nowrap',
-                  }}>{node.title}</div>
+                  <div style={{ fontSize: 10, marginBottom: 4, opacity: 0.7 }}>L{node.level}</div>
+                  {node.title}
+                  {node.current && <div style={{ fontSize: 9, marginTop: 4, color: '#22c55e' }}>◀ You are here</div>}
                 </div>
-                {i < pathData.path_nodes.length-1 && (
-                  <ChevronRight size={16} style={{color:'var(--border)',flexShrink:0}}/>
+                {i < path.path_nodes.length - 1 && (
+                  <ChevronRight size={16} style={{ color: 'var(--text-muted)', flexShrink: 0, margin: '0 4px' }} />
                 )}
               </div>
             ))}
           </div>
 
-          <hr className="divider"/>
-          <div className="grid-2">
+          <div className="grid-2" style={{ marginTop: 20, gap: 16 }}>
             <div>
-              <p style={{fontSize:12,fontWeight:700,color:'var(--text-muted)',marginBottom:8}}>CURRENT LEVEL</p>
-              <span className="badge badge-accent" style={{fontSize:14,padding:'6px 16px'}}>{pathData.current_level}</span>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Current Level</p>
+              <span className="badge badge-info" style={{ fontSize: 13 }}>{path.current_level}</span>
             </div>
             <div>
-              <p style={{fontSize:12,fontWeight:700,color:'var(--text-muted)',marginBottom:8}}>LATERAL OPTIONS</p>
-              <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                {pathData.lateral_options.length
-                  ? pathData.lateral_options.map((o,i)=><span key={i} className="badge badge-info">{o}</span>)
-                  : <span style={{color:'var(--text-muted)',fontSize:12}}>None identified</span>}
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Skill Match</p>
+              <span style={{ fontSize: 18, fontWeight: 800, color: '#6c63ff' }}>{path.skill_match_pct}%</span>
+            </div>
+            {path.missing_for_next_level.length > 0 && (
+              <div style={{ gridColumn: '1/-1' }}>
+                <p style={{ fontSize: 12, color: 'var(--warning)', marginBottom: 8 }}>To reach next level, learn:</p>
+                {path.missing_for_next_level.map((s, i) => (
+                  <span key={i} className="skill-chip chip-required">{s}</span>
+                ))}
               </div>
-            </div>
+            )}
+            {path.lateral_options.length > 0 && (
+              <div style={{ gridColumn: '1/-1' }}>
+                <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Lateral career moves:</p>
+                {path.lateral_options.map((s, i) => (
+                  <span key={i} className="skill-chip chip-optional">{s}</span>
+                ))}
+              </div>
+            )}
           </div>
-
-          {pathData.missing_for_next_level.length > 0 && (
-            <div className="alert alert-warning" style={{marginTop:16}}>
-              <strong>Skills needed for next level:</strong> {pathData.missing_for_next_level.join(', ')}
-            </div>
-          )}
         </div>
       )}
 
       {/* Resources */}
       <div className="card">
-        <p className="card-title"><BookOpen size={15}/> Learning Resources — {selRole}</p>
-        {resLoading
-          ? <div className="loading-wrap" style={{minHeight:120}}><div className="spinner"/></div>
-          : resources.length === 0
-            ? <div className="empty-state"><p>No resources found</p></div>
-            : (
-              <div style={{display:'grid',gap:14}}>
-                {resources.map((r,i)=>(
-                  <div key={i} style={{
-                    display:'flex',alignItems:'center',gap:16,padding:'14px 16px',
-                    background:'var(--bg-secondary)',borderRadius:'var(--radius)',
-                    border:'1px solid var(--border)',transition:'border-color .2s',
-                  }}
-                    onMouseEnter={e=>e.currentTarget.style.borderColor='var(--accent)'}
-                    onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}>
-                    <div style={{
-                      width:36,height:36,borderRadius:'var(--radius)',flexShrink:0,
-                      background: r.priority==='Required'?'rgba(108,99,255,.15)':'rgba(245,158,11,.12)',
-                      display:'flex',alignItems:'center',justifyContent:'center',
-                      fontSize:11,fontWeight:800,color:PRI_COLOR[r.priority],
-                    }}>{i+1}</div>
-                    <div style={{flex:1,minWidth:0}}>
-                      <p style={{fontSize:13,fontWeight:700,marginBottom:3}}>{r.skill}</p>
-                      <p style={{fontSize:12,color:'var(--text-muted)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{r.course}</p>
-                      <p style={{fontSize:11,color:'var(--text-muted)',marginTop:2}}>{r.duration} · {r.level}</p>
-                    </div>
-                    <span className={`badge badge-${r.priority==='Required'?'accent':'warning'}`}>{r.priority}</span>
-                    <a href={r.url} target="_blank" rel="noreferrer" className="btn btn-ghost"
-                      style={{fontSize:11,padding:'5px 12px',flexShrink:0}}>
-                      Open <ArrowRight size={11}/>
-                    </a>
-                  </div>
-                ))}
+        <p className="card-title" style={{ marginBottom: 16 }}>
+          📚 Learning Resources — {selRole}
+        </p>
+        {resLoading ? (
+          <div className="loading-wrap" style={{ minHeight: 120 }}>
+            <div className="spinner" />
+          </div>
+        ) : resources.length ? (
+          <div>
+            {resources.map((r, i) => (
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 0',
+                borderBottom: i < resources.length - 1 ? '1px solid var(--border)' : 'none',
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8, flexShrink: 0,
+                  background: 'rgba(108,99,255,.15)', border: '1px solid rgba(108,99,255,.25)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 12, fontWeight: 800, color: 'var(--accent-light)',
+                }}>{i + 1}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 700, fontSize: 13 }}>{r.skill}</p>
+                  <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.course}</p>
+                  <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>{r.duration} · {r.level}</p>
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+                  <span className={`badge ${r.priority === 'Required' ? 'badge-danger' : 'badge-info'}`}>{r.priority}</span>
+                  <a href={r.url} target="_blank" rel="noreferrer"
+                    className="btn btn-ghost" style={{ fontSize: 11, padding: '4px 10px' }}>
+                    Open <ExternalLink size={11} />
+                  </a>
+                </div>
               </div>
-            )
-        }
+            ))}
+          </div>
+        ) : (
+          <div className="empty-state"><p>No resources found for this role</p></div>
+        )}
       </div>
     </div>
   )

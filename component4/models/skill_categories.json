@@ -1,23 +1,67 @@
 {
-  "Technical": [
+  "Programming": [
     "Python",
     "Java",
     "C++",
-    "SQL",
+    "Go",
+    "Rust",
+    "TypeScript",
+    "Kotlin",
+    "Scala"
+  ],
+  "Web": [
     "React",
-    "Linux"
+    "REST APIs",
+    "GraphQL",
+    "HTML5",
+    "CSS3",
+    "Vue.js",
+    "Webpack",
+    "TypeScript"
+  ],
+  "Data/DB": [
+    "SQL",
+    "PostgreSQL",
+    "MongoDB",
+    "Spark",
+    "Airflow",
+    "Kafka",
+    "Power BI",
+    "Tableau"
   ],
   "ML/AI": [
-    "TensorFlow",
-    "Pytorch",
     "Machine Learning",
     "Deep Learning",
-    "NLP"
+    "TensorFlow",
+    "PyTorch",
+    "NLP",
+    "MLOps",
+    "Feature Engineering",
+    "Statistics",
+    "LangChain",
+    "Scikit-learn"
+  ],
+  "Cloud/DevOps": [
+    "AWS",
+    "Azure",
+    "GCP",
+    "Terraform",
+    "Docker",
+    "Kubernetes",
+    "CI/CD",
+    "Microservices"
   ],
   "Security": [
     "Cybersecurity",
     "Networking",
+    "Linux",
     "Ethical Hacking",
-    "Linux"
+    "Penetration Testing"
+  ],
+  "Architecture": [
+    "System Design",
+    "Microservices",
+    "Event-Driven Architecture",
+    "API Gateway"
   ]
 }
