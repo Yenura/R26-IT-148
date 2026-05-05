@@ -1,0 +1,290 @@
+Job Title,Skills,Job Description
+ACCESSIBILITY SPECIALIST,"Web Accessibility Guidelines, HTML, CSS, JavaScript, User Experience Design","Ensures digital products meet accessibility standards, enhancing usability for all users."
+ADMIN BIG DATA,"Big Data Management, Hadoop, Spark, Data Warehousing, SQL","Administers and manages large datasets, ensuring data integrity and accessibility."
+AGILE PROJECT MANAGER,"Agile Methodologies, Scrum, Kanban, Project Management Tools, Leadership","Leads projects using agile frameworks, focusing on iterative development and team collaboration."
+ANDROID DEVELOPER,"Java, Kotlin, Android SDK, Mobile App Development, UI/UX Design","Develops mobile applications for Android devices, integrating features and ensuring user experience."
+ANSIBLE AUTOMATION ENGINEER,"Ansible, Automation Scripts, Linux, Networking, Cloud Computing","Designs and implements automation solutions using Ansible, streamlining IT processes."
+APPLICATION SECURITY ENGINEER,"Security Protocols, Penetration Testing, Secure Coding Practices, Compliance",Develops secure applications by integrating security measures and testing vulnerabilities.
+ARTIFACTORY ADMINISTRATOR,"Artifactory, Repository Management, DevOps Tools, CI/CD Pipelines","Manages artifact repositories, ensuring efficient deployment and version control."
+ARTIFACTORY ENGINEER,"Artifactory, DevOps Practices, Continuous Integration, Software Packaging",Configures and optimizes Artifactory for efficient software deployment and management.
+ARTIFICIAL INTELLIGENCE / MACHINE LEARNING LEADER,"AI/ML Frameworks, Leadership, Strategic Planning, Data Science","Leads AI/ML projects, developing strategies and overseeing teams to integrate AI solutions."
+ARTIFICIAL INTELLIGENCE / MACHINE LEARNING SR.LEADER,"Advanced AI/ML, Leadership, Strategic Vision, Team Management","Leads senior AI/ML projects, sets strategic direction, and manages teams."
+ARTIFICIAL INTELLIGENCE ARCHITECT,"AI/ML Frameworks, System Architecture, Cloud Computing, Data Modeling","Designs and implements AI systems architecture, ensuring scalability and efficiency."
+ARTIFICIAL INTELLIGENCE RESEARCHER,"Research Methodologies, AI/ML Algorithms, Python, Data Analysis","Conducts research to advance AI technologies, develops new algorithms, and publishes findings."
+AWS DEVOPS ENGINEER,"AWS Services, DevOps Practices, CI/CD Pipelines, Automation","Implements DevOps practices on AWS, automating processes and ensuring system reliability."
+AWS SOLUTIONS ARCHITECT,"AWS Services, Cloud Architecture, Solution Design, Cost Optimization","Designs scalable and cost-effective solutions on AWS, ensuring alignment with business needs."
+AZURE DEVOPS ENGINEER,"Azure Services, DevOps Practices, CI/CD Pipelines, Automation","Implements DevOps practices on Azure, automating processes and ensuring system reliability."
+BAMBOO ENGINEER,"Bamboo, CI/CD Pipelines, Build Automation, Software Configuration Management",Configures and manages Bamboo for continuous integration and delivery.
+BIG DATA ARCHITECT,"Big Data Technologies, Hadoop, Spark, Data Warehousing, System Design","Designs and oversees big data solutions, ensuring scalability and performance."
+BIG DATA ENGINEER,"Hadoop, Spark, ETL Processes, Data Processing, Database Management","Develops and maintains big data infrastructure, ensuring data quality and accessibility."
+BIG DATA SPECIALIST,"Big Data Technologies, Data Analysis, SQL, Data Mining",Analyzes and interprets large datasets to provide insights and support decision-making.
+BITBUCKET ENGINEER,"Bitbucket, Git, Version Control, CI/CD Integration",Manages and configures Bitbucket for efficient version control and collaboration.
+BLOCKCHAIN DEVELOPER,"Blockchain Technologies, Solidity, Cryptography, Smart Contracts","Develops blockchain applications and smart contracts, ensuring security and functionality."
+BUILD AND RELEASE ENGINEER,"CI/CD Pipelines, Build Systems, Automation, Configuration Management","Manages build and release processes, ensuring smooth and reliable software deployments."
+BUILD ENGINEER,"Build Systems, Scripting, Automation, Software Configuration Management","Develops and maintains build systems, automating software compilation and testing."
+BUSINESS SYSTEMS ANALYST,"Requirements Gathering, Process Analysis, System Design, Documentation","Analyzes business processes and system requirements, providing solutions to improve efficiency."
+C# DEVELOPER,"C#, .NET Framework, ASP.NET, Software Development, Object-Oriented Programming","Develops applications using C# and the .NET framework, focusing on functionality and performance."
+CHEF INSPEC ENGINEER,"Chef Inspec, Compliance Automation, Infrastructure Testing, Ruby",Automates compliance and infrastructure testing using Chef Inspec.
+CHEF OPERATIONS ENGINEER,"Chef, Automation, Infrastructure Management, Ruby",Manages infrastructure and automates processes using Chef.
+CLOUD ADMINISTRATOR,"Cloud Platforms, System Administration, Virtualization, Networking","Manages and maintains cloud infrastructure, ensuring availability and performance."
+CLOUD ARCHITECT,"Cloud Platforms, System Architecture, Cloud Security, DevOps",Designs and oversees the implementation of cloud computing strategies.
+CLOUD AUTOMATION ENGINEER,"Cloud Automation Tools, Scripting, Configuration Management, DevOps",Automates cloud infrastructure and deployment processes.
+CLOUD NETWORK ENGINEER,"Cloud Networking, Virtual Networks, Network Security, Cloud Platforms",Designs and manages cloud network infrastructure.
+CLOUD SECURITY ENGINEER,"Cloud Security, Security Protocols, Compliance, Cloud Platforms",Implements and manages security measures for cloud environments.
+CNC PROGRAMMER,"CNC Machines, CAD/CAM Software, G-Code, Manufacturing Processes",Develops programs for CNC machines used in manufacturing.
+CODER,"Programming Languages, Scripting, Problem Solving, Software Development",Writes and tests code for software applications.
+COMPUTER GRAPHICS ANIMATOR,"Animation Software, 3D Modeling, Visual Effects, Graphic Design",Creates animations and visual effects for various media.
+COMPUTER HARDWARE ENGINEER,"Hardware Design, Circuit Design, Embedded Systems, Testing",Designs and develops computer hardware components and systems.
+COMPUTER NETWORK ARCHITECT,"Network Design, Network Protocols, Security, System Architecture",Designs and plans computer networks.
+COMPUTER PROGRAMMER,"Programming Languages, Algorithms, Software Development, Debugging",Writes and tests code to create software programs.
+COMPUTER RESEARCH SCIENTIST,"Research Methodologies, Data Analysis, Programming, Scientific Writing",Conducts research in computer science and develops new technologies.
+COMPUTER SYSTEMS ANALYST,"Systems Analysis, Requirements Gathering, Process Improvement, IT Consulting",Analyzes computer systems and recommends improvements.
+CONFLUENCE ENGINEER,"Confluence, Atlassian Suite, Documentation, Collaboration Tools",Manages and configures Confluence for team collaboration.
+CONSUL ENGINEER,"Consul, Service Discovery, Infrastructure Automation, Networking",Manages and deploys Consul for service discovery.
+COVERAGE.PY ENGINEER,"Coverage.py, Python Testing, Test Coverage Analysis, Software Quality",Implements and manages code coverage tools for Python projects.
+DATA ANALYST,"Data Analysis, SQL, Data Visualization, Statistical Analysis",Analyzes data to identify trends and insights.
+DATA ARCHITECT,"Data Modeling, Database Design, ETL Processes, Data Warehousing",Designs and manages data storage and retrieval systems.
+DATA ENGINEER,"ETL Processes, Data Warehousing, Big Data Technologies, Database Management",Develops and maintains data pipelines and infrastructure.
+DATA MODELER,"Data Modeling Techniques, Database Design, Data Governance, Data Analysis",Creates and maintains data models.
+DATA SCIENTIST,"Machine Learning, Statistical Analysis, Data Mining, Programming",Applies machine learning and statistical techniques to analyze data.
+DATABASE ADMINISTRATOR,"Database Management, SQL, Performance Tuning, Backup and Recovery",Manages and maintains databases.
+DATADOG ENGINEER,"Datadog, Monitoring, System Performance, Cloud Infrastructure",Implements and manages Datadog for system monitoring.
+DEVOPS ARCHITECT,"DevOps Practices, Cloud Computing, Automation, System Architecture",Designs and implements DevOps strategies and infrastructure.
+DEVOPS ENGINEER,"Automation, CI/CD, Cloud Computing, Scripting",Automates software development and deployment processes.
+DEVOPS MANAGER,"DevOps Practices, Team Leadership, Project Management, Automation",Manages DevOps teams and projects.
+DEVSECOPS ARCHITECT,"DevSecOps Practices, Security Automation, Cloud Security, System Architecture",Designs and implements DevSecOps strategies and infrastructure.
+DEVSECOPS ENGINEER,"Security Automation, CI/CD, Cloud Security, Scripting",Integrates security practices into DevOps processes.
+DIRECTOR OF ENGINEERING,"Leadership, Software Development, Project Management, Team Management",Leads and manages engineering teams and projects.
+DOCKER ENGINEER,"Docker, Containerization, Orchestration, DevOps",Manages and deploys Docker containers.
+ELK ENGINEER,"ELK Stack, Log Management, Data Analysis, System Monitoring",Manages and configures the ELK stack for log analysis and monitoring.
+EMBEDDED SOFTWARE ENGINEER,"Embedded Systems, C/C++, Firmware Development, Hardware Interfaces",Develops software for embedded systems.
+ENTRY LEVEL DEVELOPER,"Programming Basics, Software Development, Problem Solving, Learning Agility",Entry-level position focused on learning and developing software skills.
+ENTRY LEVEL NETWORK ENGINEER,"Networking Basics, Troubleshooting, System Administration, Learning Agility",Entry-level position focused on learning and assisting with network operations.
+ENTRY LEVEL PROGRAMMER,"Programming Basics, Software Development, Problem Solving, Learning Agility",Entry-level position focused on learning and developing software skills.
+ENTRY LEVEL WEB DEVELOPER,"HTML, CSS, JavaScript, Basic Web Development, Learning Agility",Entry-level position focused on learning and developing web development skills.
+ENVOY ENGINEER,"Envoy Proxy, Service Mesh, Load Balancing, Networking",Configures and manages Envoy proxy for service mesh architectures.
+FALCO ENGINEER,"Falco, Kubernetes Security, Cloud Security, System Monitoring",Implements and manages Falco for runtime security monitoring.
+FLUENTD ENGINEER,"Fluentd, Log Aggregation, Data Collection, System Monitoring",Configures and manages Fluentd for log aggregation and analysis.
+FORTIFY ENGINEER,"Fortify, Static Code Analysis, Application Security, Secure Coding",Implements and manages Fortify for static code analysis and application security.
+FRAMEWORKS SPECIALIST,"Software Frameworks, Programming Languages, Problem Solving, System Design",Specializes in designing and implementing software frameworks.
+FRONT END DEVELOPER,"HTML, CSS, JavaScript, UI/UX Design, Responsive Design",Develops the user interface and front-end components of web applications.
+FULL STACK DEVELOPER,"HTML, CSS, JavaScript, Back-End Technologies, Database Management",Develops both the front-end and back-end components of web applications.
+FULL STACK JAVA DEVELOPER/PROGRAMMER/ENGINEER,"Java, Spring, Hibernate, HTML, CSS, JavaScript",Develops full-stack applications using Java technologies.
+FULL STACK PYTHON DEVELOPER/PROGRAMMER/ENGINEER,"Python, Django, Flask, HTML, CSS, JavaScript",Develops full-stack applications using Python technologies.
+GAME DEVELOPER,"C++, C#, Game Engines, 3D Modeling, Game Design",Develops video games for various platforms.
+GCP DEVOPS ENGINEER,"Google Cloud Platform, DevOps Practices, CI/CD Pipelines, Automation","Implements DevOps practices on Google Cloud Platform, automating processes and ensuring system reliability."
+GERRIT ADMINISTRATOR,"Gerrit, Code Review, Git, Version Control",Administers and manages Gerrit for code review processes.
+GIT ENGINEER,"Git, Version Control, Branching Strategies, Collaboration",Manages and configures Git for efficient version control.
+GITHUB ENGINEER,"GitHub, Git, Collaboration Tools, CI/CD Integration",Manages and configures GitHub for efficient collaboration and CI/CD.
+GITLAB ENGINEER,"GitLab, Git, CI/CD Pipelines, DevOps Practices",Manages and configures GitLab for efficient DevOps workflows.
+GRADLE ENGINEER,"Gradle, Build Automation, Java, Software Configuration Management",Configures and manages Gradle for build automation.
+GRAFANA ENGINEER,"Grafana, Data Visualization, Monitoring, System Performance",Configures and manages Grafana for data visualization and monitoring.
+GROOVY ENGINEER,"Groovy, Scripting, Automation, Software Development",Develops automation scripts and applications using Groovy.
+INFORMATION ARCHITECT,"Information Architecture, User Experience Design, Content Strategy, Taxonomy",Designs information structures to enhance usability and findability.
+INFORMATION SECURITY ANALYST,"Security Protocols, Threat Analysis, Compliance, Incident Response",Protects computer systems and networks from security threats.
+INTERACTION DESIGNER,"Interaction Design, User Research, Prototyping, Usability Testing",Designs interactive user interfaces and experiences.
+IOS DEVELOPER,"Swift, Objective-C, iOS SDK, Mobile App Development, UI/UX Design","Develops mobile applications for iOS devices, integrating features and ensuring user experience."
+ISTIO ENGINEER,"Istio, Service Mesh, Traffic Management, Security",Configures and manages Istio for service mesh architectures.
+IT MANAGER,"IT Management, Team Leadership, Project Management, Budgeting","Manages IT teams and projects, ensuring efficient operations."
+JACOCO ENGINEER,"JaCoCo, Code Coverage, Java Testing, Software Quality",Implements and manages code coverage tools for Java projects.
+JAVA DEVELOPER,"Java, Spring, Hibernate, Software Development, Object-Oriented Programming","Develops applications using Java and related technologies, focusing on functionality and performance."
+JENKINS ENGINEER,"Jenkins, CI/CD Pipelines, Build Automation, DevOps Practices",Configures and manages Jenkins for continuous integration and delivery.
+JIRA ADMINISTRATOR,"Jira, Atlassian Suite, Workflow Configuration, Project Management",Administers and configures Jira for project management and issue tracking.
+JUNIOR FRONT END DEVELOPER,"HTML, CSS, JavaScript, Basic Web Development, Learning Agility",Entry-level position focused on learning and developing front-end web development skills.
+JUNIOR IOS DEVELOPER,"Swift, Objective-C, iOS SDK, Basic Mobile App Development, Learning Agility",Entry-level position focused on learning and developing iOS app development skills.
+JUNIT ENGINEER,"JUnit, Java Testing, Test Automation, Software Quality",Implements and manages JUnit for Java testing and test automation.
+KUBERNETES OPERATIONS ENGINEER,"Kubernetes, Container Orchestration, Cloud Computing, DevOps Practices","Manages and operates Kubernetes clusters, ensuring system reliability and scalability."
+MACHINE LEARNING ARCHITECT,"Machine Learning Algorithms, System Architecture, Cloud Computing, Data Modeling",Designs and implements scalable machine learning infrastructure and solutions.
+MACHINE LEARNING ENGINEER,"Machine Learning Algorithms, Python, Data Analysis, Model Deployment",Develops and deploys machine learning models for various applications.
+MAVEN ENGINEER,"Maven, Build Automation, Java, Software Configuration Management",Configures and manages Maven for build automation in Java projects.
+MOBILE APP DEVELOPER,"Mobile App Development, iOS/Android SDKs, UI/UX Design, Programming Languages",Develops mobile applications for iOS and Android platforms.
+MULESOFT DEVELOPER,"MuleSoft Anypoint Platform, API Integration, Java, Integration Patterns",Develops and integrates applications using the MuleSoft Anypoint Platform.
+NAGIOS ENGINEER,"Nagios, System Monitoring, Linux, Networking",Configures and manages Nagios for system and network monitoring.
+NETWORK AND SYSTEMS ADMINISTRATOR,"Networking, System Administration, Linux/Windows Servers, Troubleshooting",Manages and maintains network and server infrastructure.
+NETWORK ENGINEER,"Networking Protocols, Cisco/Juniper Devices, Network Security, Troubleshooting","Designs, implements, and manages network infrastructure."
+NEW RELIC ENGINEER,"New Relic, Application Performance Monitoring, Troubleshooting, Cloud Computing",Configures and manages New Relic for application performance monitoring.
+NEXUS ENGINEER,"Nexus Repository Manager, Artifact Management, DevOps Practices",Manages and configures Nexus Repository Manager for artifact storage and retrieval.
+NOMAD ENGINEER,"Nomad, Container Orchestration, HashiCorp Tools, Infrastructure Automation",Configures and manages Nomad for container orchestration and infrastructure automation.
+NOTARY ENGINEER,"Notary, Container Security, Docker, Cryptography",Implements and manages Notary for ensuring container image security.
+OCTOPUS DEPLOY ENGINEER,"Octopus Deploy, Deployment Automation, .NET, PowerShell",Configures and manages Octopus Deploy for automating application deployments.
+OPENSHIFT ENGINEER,"OpenShift, Kubernetes, Containerization, DevOps Practices",Manages and configures OpenShift for container orchestration and application deployment.
+OPENSTACK ENGINEER,"OpenStack, Cloud Computing, Virtualization, System Administration",Implements and manages OpenStack cloud infrastructure.
+OPERATIONS ENGINEER,"System Administration, Linux/Windows Servers, Troubleshooting, Scripting","Manages and maintains systems and infrastructure, ensuring reliable operation."
+ORACLE DEVELOPER,"Oracle Database, SQL, PL/SQL, Database Development",Develops database applications using Oracle technologies.
+ORACLE SQL DEVELOPER,"Oracle SQL, PL/SQL, Data Modeling, Database Design",Develops and optimizes SQL queries and database schemas in Oracle environments.
+PACKER ENGINEER,"Packer, Infrastructure as Code, Cloud Computing, Automation",Creates machine images using Packer for consistent infrastructure deployment.
+PHP DEVELOPER,"PHP, MySQL, Web Development, Frameworks (Laravel, Symfony)",Develops web applications using PHP and related technologies.
+POWERSHELL ENGINEER,"PowerShell, Automation, Windows Server Administration, Scripting",Develops automation scripts and tools using PowerShell for Windows environments.
+PRINCIPLE ENGINEER IN ARTIFICIAL INTELLIGENCE,"AI/ML Architecture, Leadership, Strategic Planning, Deep Learning","Leads and designs AI/ML solutions, providing technical guidance and strategic direction."
+PRINCIPLE ENGINEER IN BIG DATA,"Big Data Architecture, Hadoop, Spark, Data Warehousing","Leads and designs big data solutions, providing technical expertise and guidance."
+PRINCIPLE ENGINEER IN DATA ANALYSIS,"Data Analysis, Statistical Modeling, Data Visualization, Leadership","Leads data analysis initiatives, providing expertise and guidance on analytical techniques."
+PRINCIPLE ENGINEER IN MACHINE LEARNING,"Machine Learning Algorithms, Model Development, Deployment, Leadership","Leads machine learning initiatives, providing expertise and guidance on model development and deployment."
+PRODUCT MANAGER,"Product Strategy, Market Analysis, Requirements Gathering, Product Roadmap","Defines and manages product strategy, gathering requirements and prioritizing features."
+PRODUCTION SUPPORT ENGINEER,"Troubleshooting, Incident Management, System Monitoring, Technical Support","Provides technical support for production systems, resolving incidents and ensuring stability."
+PUPPET OPERATIONS ENGINEER,"Puppet, Configuration Management, Automation, Infrastructure as Code",Manages and automates infrastructure configuration using Puppet.
+SENIOR BUILD AND RELEASE ENGINEER,"CI/CD Pipelines, Build Systems, Automation, Configuration Management","Manages build and release processes, ensuring smooth and reliable software deployments."
+SENIOR BUILD ENGINEER,"Build Systems, Scripting, Automation, Software Configuration Management","Develops and maintains build systems, automating software compilation and testing."
+SENIOR DEVOPS ENGINEER,"DevOps Practices, Cloud Computing, Automation, System Architecture","Leads DevOps initiatives, designing and implementing automation solutions."
+SITE RELIABILITY ENGINEER (KUBERNETES Â€ï¿½ DOCKER),"Kubernetes, Docker, System Reliability, Automation, Monitoring",Ensures the reliability and performance of systems running on Kubernetes and Docker.
+SPLUNK ENGINEER,"Splunk, Log Management, Data Analysis, System Monitoring","Configures and manages Splunk for log analysis, monitoring, and security insights."
+XL DEPLOY ENGINEER,"XL Deploy, Deployment Automation, DevOps Practices, Configuration Management",Configures and manages XL Deploy for automating application deployments.
+ZABBIX ENGINEER,"Zabbix, System Monitoring, Network Monitoring, Alerting","Configures and manages Zabbix for monitoring systems, networks, and applications."
+API DEVELOPER,"API Design, RESTful Services, Programming Languages, Security",Develops and implements APIs for integrating systems and applications.
+AUTOMATION SPECIALIST,"Automation Tools, Scripting, Process Improvement, Testing",Designs and implements automation solutions to improve efficiency and reduce manual effort.
+BUSINESS INTELLIGENCE ANALYST,"Data Analysis, SQL, Data Visualization, Business Acumen",Analyzes data to provide insights and support business decision-making.
+CLOUD MIGRATION SPECIALIST,"Cloud Platforms, Migration Tools, System Migration, Project Management","Plans and executes cloud migration projects, ensuring smooth transitions."
+CYBERSECURITY ANALYST,"Security Protocols, Threat Analysis, Compliance, Incident Response",Protects computer systems and networks from cyber threats.
+DATA QUALITY ENGINEER,"Data Quality Tools, Data Profiling, SQL, Data Governance","Ensures data quality by profiling, monitoring, and improving data accuracy and consistency."
+DIGITAL TRANSFORMATION CONSULTANT,"Digital Strategy, Technology Consulting, Business Process Improvement, Change Management","Advises organizations on digital transformation initiatives, driving innovation and efficiency."
+E-COMMERCE DEVELOPER,"E-Commerce Platforms, Web Development, Payment Gateways, Security",Develops and maintains e-commerce websites and applications.
+EMBEDDED SYSTEMS ENGINEER,"Embedded Systems, C/C++, Firmware Development, Hardware Interfaces","Develops software for embedded systems, integrating hardware and software components."
+ERP CONSULTANT,"ERP Systems, Business Process Analysis, Implementation, Training","Consults on ERP system implementation, customization, and support."
+GEOGRAPHIC INFORMATION SYSTEMS (GIS) ANALYST,"GIS Software, Spatial Analysis, Cartography, Data Visualization",Analyzes spatial data using GIS software to create maps and provide insights.
+HELP DESK TECHNICIAN,"Technical Support, Troubleshooting, Customer Service, Hardware/Software","Provides technical support to end-users, resolving hardware and software issues."
+IDENTITY AND ACCESS MANAGEMENT SPECIALIST,"IAM Systems, Security Protocols, Authentication, Authorization","Manages identity and access control systems, ensuring secure access to resources."
+INFRASTRUCTURE ARCHITECT,"System Architecture, Cloud Computing, Networking, Security","Designs and plans IT infrastructure, ensuring scalability, reliability, and security."
+INTERNET OF THINGS (IoT) DEVELOPER,"IoT Platforms, Embedded Systems, Sensor Technology, Programming Languages","Develops applications for IoT devices and platforms, connecting devices and analyzing data."
+IT AUDITOR,"IT Auditing, Compliance, Risk Management, Security",Conducts IT audits to ensure compliance and identify security risks.
+JAVA ARCHITECT,"Java, System Architecture, Design Patterns, Cloud Computing","Designs and leads the development of Java-based systems, ensuring scalability and maintainability."
+LINUX ADMINISTRATOR,"Linux Servers, System Administration, Scripting, Troubleshooting","Manages and maintains Linux servers, ensuring system stability and security."
+MAINFRAME DEVELOPER,"Mainframe Systems, COBOL, JCL, VSAM",Develops and maintains applications on mainframe systems.
+MICROSOFT DYNAMICS DEVELOPER,"Microsoft Dynamics, CRM, .NET, Development",Develops and customizes Microsoft Dynamics CRM solutions.
+MOBILE SECURITY SPECIALIST,"Mobile Security, Penetration Testing, Security Protocols, Risk Management","Ensures the security of mobile devices and applications, conducting assessments and implementing security measures."
+NATURAL LANGUAGE PROCESSING ENGINEER,"NLP Algorithms, Python, Machine Learning, Text Analysis","Develops NLP models for various applications, such as chatbots and text analysis tools."
+NETWORK ARCHITECT,"Network Design, Network Protocols, Security, System Architecture",Designs and plans computer networks.
+PENETRATION TESTER,"Penetration Testing, Security Audits, Ethical Hacking, Vulnerability Assessment",Conducts penetration tests to identify security vulnerabilities in systems and applications.
+PYTHON ARCHITECT,"Python, System Architecture, Design Patterns, Cloud Computing","Designs and leads the development of Python-based systems, ensuring scalability and maintainability."
+QUALITY ASSURANCE MANAGER,"QA Processes, Test Automation, Test Planning, Team Leadership","Manages quality assurance processes, ensuring software quality through testing and automation."
+RELEASE MANAGER,"Release Management, CI/CD Pipelines, Coordination, Communication","Manages software releases, coordinating activities and ensuring smooth deployments."
+SAP CONSULTANT,"SAP Modules, Business Process Analysis, Implementation, Customization","Consults on SAP system implementation, customization, and support."
+UX/UI DESIGNER,"UX/UI Design, User Research, Prototyping, Usability Testing","Designs user interfaces and experiences, ensuring usability and aesthetic appeal."
+WEB DEVELOPER,"HTML, CSS, JavaScript, Web Development, Frameworks","Develops web applications, implementing front-end and back-end components."
+BACK END DEVELOPER,"Server-Side Programming, Databases, API Development, Frameworks",Develops the server-side logic and APIs for web applications.
+WEB DESIGNER,"Web Design, Graphic Design, UI/UX Principles, Wireframing","Creates visual designs and layouts for websites, ensuring aesthetic appeal and usability."
+WEB ENGINEER,"Web Technologies, System Architecture, Performance Optimization, Security","Designs and implements web infrastructure, ensuring scalability and reliability."
+WEB PRODUCER,"Web Content Management, Project Management, Content Strategy, Collaboration","Manages the creation and delivery of web content, coordinating with stakeholders."
+WEB PROJECT MANAGER,"Project Management, Web Development, Communication, Budgeting","Manages web development projects, ensuring they are completed on time and within budget."
+WEB CONTENT MANAGER,"Content Creation, Content Strategy, CMS, SEO","Manages web content, ensuring it is accurate, engaging, and optimized for search engines."
+MULTIMEDIA ARCHITECT,"Multimedia Design, Video Production, Audio Production, Graphic Design",Designs and produces multimedia content for various platforms.
+WEB ANALYTICS DEVELOPER,"Web Analytics Tools, Data Analysis, Reporting, A/B Testing",Implements web analytics tools and analyzes data to improve website performance.
+SEO CONSULTANT,"Search Engine Optimization, Keyword Research, Content Optimization, Link Building","Advises on SEO strategies, improving website visibility and organic traffic."
+SEO MANAGER,"SEO Strategy, Team Leadership, Performance Monitoring, Reporting","Manages SEO initiatives, leading teams and monitoring performance."
+INTERNET ENGINEER,"Networking Protocols, Internet Technologies, System Administration, Security","Designs, implements, and manages internet infrastructure."
+FRONT-END DESIGNER,"HTML, CSS, JavaScript, UI/UX Design, Responsive Design",Designs the visual elements and user interface of web applications.
+MOBILE DEVELOPER,"Mobile App Development, iOS/Android SDKs, UI/UX Design, Programming Languages",Develops mobile applications for iOS and Android platforms.
+PYTHON DEVELOPER,"Python, Web Frameworks (Django, Flask), Data Analysis, Scripting","Develops applications using Python, focusing on back-end development and automation."
+POWER BI DEVELOPER,"Power BI, Data Modeling, DAX, Data Visualization",Develops interactive dashboards and reports using Power BI.
+POWER BI ANALYST,"Power BI, Data Analysis, SQL, Business Intelligence",Analyzes data using Power BI to provide insights and support business decision-making.
+CLOUD COMPUTING SPECIALIST,"Cloud Platforms, Virtualization, System Administration, Security","Manages and maintains cloud infrastructure, ensuring availability and performance."
+CYBERSECURITY SPECIALIST,"Security Protocols, Threat Analysis, Compliance, Incident Response",Protects computer systems and networks from cyber threats.
+DATA SCIENCE SPECIALIST,"Data Analysis, Machine Learning, Statistical Modeling, Data Visualization",Applies data science techniques to analyze data and solve business problems.
+ARTIFICIAL INTELLIGENCE ENGINEER,"AI/ML Algorithms, Python, Deep Learning, Neural Networks","Develops AI models and applications, implementing machine learning algorithms."
+DATABASE ARCHITECT,"Database Design, Data Modeling, SQL, Performance Tuning","Designs and manages database systems, ensuring data integrity and performance."
+SOFTWARE ARCHITECT,"System Architecture, Design Patterns, Programming Languages, Cloud Computing","Designs and leads the development of software systems, ensuring scalability and maintainability."
+CYBERSECURITY ENGINEER,"Security Protocols, Threat Analysis, Risk Management, Incident Response",Implements and manages security measures to protect computer systems and networks.
+INFOSEC ANALYST/CYBERSECURITY ANALYST,"Security Protocols, Threat Analysis, Compliance, Incident Response",Protects computer systems and networks from cyber threats.
+COMPUTER FORENSIC ANALYST,"Digital Forensics, Incident Response, Data Recovery, Legal Compliance","Investigates cybercrimes and security incidents, collecting and analyzing digital evidence."
+IT SECURITY SPECIALIST,"Security Protocols, Threat Analysis, Compliance, Risk Management",Implements and manages security measures to protect computer systems and networks.
+SECURITY MANAGER,"Security Management, Risk Assessment, Compliance, Team Leadership","Manages security teams and initiatives, ensuring the protection of IT assets."
+SECURITY ENGINEER,"Security Protocols, Threat Analysis, Risk Management, Incident Response",Implements and manages security measures to protect computer systems and networks.
+SECURITY CONSULTANT,"Security Consulting, Risk Assessment, Compliance, Security Solutions","Provides security consulting services, assessing risks and recommending security solutions."
+DIRECTOR OF SECURITY,"Security Leadership, Risk Management, Compliance, Incident Response","Leads security teams and initiatives, providing strategic direction and ensuring compliance."
+SECURITY ADMINISTRATOR,"Security Tools, System Administration, User Management, Security Policies","Administers security systems, managing user access and enforcing security policies."
+SECURITY SPECIALIST,"Security Protocols, Threat Analysis, Compliance, Risk Management",Implements and manages security measures to protect computer systems and networks.
+CHIEF INFORMATION OFFICER,"IT Strategy, Leadership, Budgeting, Project Management","Leads IT organizations, defining IT strategy and overseeing IT operations."
+NETWORK SECURITY ENGINEER,"Networking Protocols, Security Protocols, Firewall Management, Intrusion Detection","Implements and manages network security measures, protecting networks from threats."
+MACHINE LEARNING ENGINEER FOR CYBERSECURITY,"Machine Learning Algorithms, Cybersecurity, Data Analysis, Threat Detection","Develops machine learning models for cybersecurity applications, such as threat detection and fraud prevention."
+NETWORK ANALYST,"Network Monitoring, Troubleshooting, Performance Analysis, Reporting","Monitors network performance, troubleshoots issues, and provides performance reports."
+NETWORK OPERATIONS ENGINEER,"Network Operations, Troubleshooting, Monitoring, Incident Response","Manages day-to-day network operations, resolving issues and ensuring network availability."
+NETWORK RELIABILITY ENGINEER,"Network Reliability, Automation, Monitoring, Incident Response","Ensures the reliability and performance of network infrastructure, implementing automation and monitoring solutions."
+NETWORK INFRASTRUCTURE SPECIALIST,"Networking Hardware, Cabling, Network Design, Implementation","Installs, configures, and maintains network infrastructure, including cabling and hardware."
+COMPUTER SUPPORT SPECIALIST,"Technical Support, Troubleshooting, Customer Service, Hardware/Software","Provides technical support to end-users, resolving hardware and software issues."
+INFORMATION TECHNOLOGY ANALYST,"IT Analysis, Requirements Gathering, Process Improvement, IT Consulting","Analyzes IT systems and processes, recommending improvements and providing IT consulting services."
+TECHNOLOGY SALES CONSULTANT,"Sales, Technology Solutions, Customer Relationship Management, Technical Expertise","Sells technology solutions, providing technical expertise and building customer relationships."
+DATABASE DEVELOPER,"Database Development, SQL, PL/SQL, Data Modeling",Develops database applications and schemas.
+DATABASE ANALYST,"Data Analysis, SQL, Data Modeling, Reporting",Analyzes data stored in databases and creates reports.
+DATA WAREHOUSE MANAGER,"Data Warehousing, ETL Processes, Data Modeling, Team Leadership",Manages data warehouse projects and teams.
+DATA WAREHOUSE PROGRAMMING SPECIALIST,"ETL Processes, SQL, Data Modeling, Data Warehousing",Develops and maintains ETL processes for data warehousing.
+INTELLIGENCE SPECIALIST,"Data Analysis, Intelligence Gathering, Reporting, Security",Gathers and analyzes intelligence data to support security and decision-making.
+CLOUD/SOFTWARE ARCHITECT,"Cloud Platforms, System Architecture, Cloud Security, DevOps",Designs and oversees the implementation of cloud computing strategies.
+CLOUD/SOFTWARE DEVELOPER,"Cloud Platforms, Programming Languages, Software Development, Cloud Services",Develops software applications on cloud platforms.
+CLOUD/SOFTWARE APPLICATIONS ENGINEER,"Cloud Platforms, Application Development, Cloud Services, DevOps",Develops and deploys applications on cloud platforms.
+CLOUD SYSTEM ADMINISTRATOR,"Cloud Platforms, System Administration, Virtualization, Networking","Manages and maintains cloud infrastructure, ensuring availability and performance."
+CLOUD SYSTEM ENGINEER,"Cloud Platforms, System Engineering, Automation, Scripting","Engineers cloud infrastructure, implementing automation and ensuring system reliability."
+PLATFORM ENGINEER,"Platform Engineering, Cloud Computing, Automation, DevOps Practices","Develops and maintains platform infrastructure, enabling efficient software development and deployment."
+SOFTWARE QUALITY ASSURANCE ANALYST,"QA Processes, Test Planning, Test Execution, Reporting",Ensures software quality through testing and reporting.
+UI (USER INTERFACE) DESIGNER,"UI Design, User Research, Prototyping, Usability Testing","Designs user interfaces, ensuring usability and aesthetic appeal."
+TECHNICAL ACCOUNT MANAGER,"Customer Relationship Management, Technical Support, Account Management, Sales","Manages customer accounts, providing technical support and building relationships."
+IT SALES EXECUTIVE,"Sales, Technology Solutions, Customer Relationship Management, Sales Strategy","Sells technology solutions, developing sales strategies and building customer relationships."
+IT SALES DIRECTOR,"Sales Leadership, Sales Strategy, Customer Relationship Management, Team Management","Leads IT sales teams, developing sales strategies and managing customer relationships."
+TECHNOLOGY MANAGER,"IT Management, Team Leadership, Project Management, Budgeting","Manages IT teams and projects, ensuring efficient operations."
+TECHNOLOGY ASSISTANT,"Technical Support, Administrative Support, Hardware/Software, Troubleshooting",Provides technical and administrative support to IT teams.
+TECHNOLOGY SPECIALIST,"Technical Expertise, Problem Solving, Troubleshooting, IT Support","Provides technical expertise and support, resolving complex IT issues."
+DIRECTOR ORACLE,"Oracle Database, Team Leadership, Project Management, Budgeting","Manages Oracle database teams and projects, ensuring efficient operations."
+KNOWLEDGE MANAGER,"Knowledge Management, Information Architecture, Collaboration, Documentation","Manages knowledge assets, ensuring information is accessible and organized."
+MANAGER HARDWARE,"Hardware Management, Team Leadership, Budgeting, Inventory Management","Manages hardware resources, leading teams and overseeing hardware operations."
+SHAREPOINT MANAGER,"SharePoint, Team Leadership, Project Management, Collaboration","Manages SharePoint environments, leading teams and ensuring efficient collaboration."
+REQUIREMENTS MANAGER,"Requirements Gathering, Analysis, Documentation, Communication","Manages requirements for IT projects, ensuring they are well-defined and communicated."
+IMPLEMENTATION DIRECTOR,"Implementation Management, Project Management, Team Leadership, Communication","Manages IT project implementations, leading teams and ensuring successful deployments."
+TECHNOLOGY OFFICER,"IT Strategy, Leadership, Innovation, Project Management","Provides technology leadership, defining IT strategy and driving innovation."
+DIRECTOR BUSINESS SYSTEMS,"Business Systems, Team Leadership, Project Management, Process Improvement","Manages business systems, leading teams and improving business processes."
+MANAGER NET,"NET Development, Team Leadership, Project Management, .NET Framework","Manages .NET development teams and projects, ensuring efficient development practices."
+SYSTEMS INTEGRATION MANAGER,"Systems Integration, Project Management, Team Leadership, Communication","Manages systems integration projects, leading teams and ensuring successful integration."
+DIGITAL PROGRAM MANAGER,"Digital Strategy, Program Management, Team Leadership, Communication","Manages digital programs, leading teams and ensuring successful execution."
+INTEGRATION DIRECTOR,"Integration Management, Project Management, Team Leadership, Communication","Manages integration projects, leading teams and ensuring successful integration."
+DIRECTOR HARDWARE,"Hardware Management, Team Leadership, Budgeting, Strategic Planning","Manages hardware resources, leading teams and developing hardware strategies."
+MANAGER LINUX,"Linux Administration, Team Leadership, Project Management, Troubleshooting","Manages Linux systems and teams, ensuring efficient operations and troubleshooting issues."
+MANAGER PHP,"PHP Development, Team Leadership, Project Management, Web Development","Manages PHP development teams and projects, ensuring efficient development practices."
+FIRMWARE MANAGER,"Firmware Development, Team Leadership, Project Management, Embedded Systems","Manages firmware development teams and projects, ensuring efficient development practices."
+IT PROGRAM ENGAGEMENT DIRECTOR,"IT Program Management, Customer Relationship Management, Stakeholder Management, Team Leadership","Manages IT program engagements, building customer relationships and leading teams."
+MANAGER UNIX,"UNIX Administration, Team Leadership, Project Management, Troubleshooting","Manages UNIX systems and teams, ensuring efficient operations and troubleshooting issues."
+TECHNOLOGY ADOPTION MANAGER,"Technology Adoption, Training, Communication, Change Management","Manages technology adoption initiatives, providing training and communication to ensure successful adoption."
+IT SUPPORT SPECIALIST,"Technical Support, Troubleshooting, Customer Service, Hardware/Software","Provides technical support to end-users, resolving hardware and software issues."
+CUSTOMER SERVICE REPRESENTATIVE,"Customer Service, Communication, Problem Solving, Technical Support","Provides customer service, resolving issues and providing technical support."
+TECHNICAL PRODUCT MANAGER,"Product Management, Technical Expertise, Market Analysis, Requirements Gathering","Manages technical products, defining product strategy and gathering requirements."
+PROJECT MANAGER,"Project Management, Planning, Execution, Communication","Manages projects, ensuring they are completed on time and within budget."
+PROGRAM MANAGER,"Program Management, Planning, Execution, Communication","Manages programs, ensuring they are completed on time and within budget."
+PORTFOLIO MANAGER,"Portfolio Management, Investment Management, Risk Management, Financial Analysis","Manages investment portfolios, assessing risk and making investment decisions."
+CHIEF INFORMATION OFFICER (CIO),"IT Strategy, Leadership, Budgeting, Project Management","Leads IT organizations, defining IT strategy and overseeing IT operations."
+CHIEF TECHNOLOGY OFFICER (CTO),"Technology Strategy, Innovation, Research and Development, Team Leadership","Leads technology initiatives, driving innovation and overseeing research and development."
+IT DIRECTOR,"IT Management, Team Leadership, Budgeting, Project Management","Manages IT teams and projects, ensuring efficient operations."
+TECHNICAL OPERATIONS OFFICER,"Technical Operations, Infrastructure Management, System Administration, Incident Response","Manages technical operations, ensuring the stability and performance of IT systems."
+INFORMATION MANAGEMENT SYSTEMS DIRECTOR,"Information Management, Systems Administration, Data Management, Compliance","Manages information management systems, ensuring data is accessible and secure."
+SENIOR IT CONSULTANT,"IT Consulting, Project Management, Technical Expertise, Client Management","Provides IT consulting services, managing projects and providing technical expertise."
+TECHNICAL LEAD,"Technical Leadership, Software Development, Team Leadership, Mentoring","Leads technical teams, providing guidance and mentoring team members."
+IT APPRENTICE,"Technical Support, Troubleshooting, Learning Agility, Customer Service","Provides technical support to end-users, learning IT concepts and developing technical skills."
+IT TECHNICIAN,"Technical Support, Troubleshooting, Hardware/Software, Networking","Provides technical support to end-users, resolving hardware and software issues."
+IT SYSTEMS ADMINISTRATOR,"System Administration, Linux/Windows Servers, Troubleshooting, Scripting","Manages and maintains IT systems, ensuring stability and performance."
+IT ENGINEER,"System Engineering, Networking, Cloud Computing, Security","Engineers IT systems, ensuring scalability, reliability, and security."
+COMPUTER NETWORK SPECIALIST,"Networking, Troubleshooting, System Administration, Security","Manages and maintains computer networks, ensuring stability and security."
+COMPUTER AND INFORMATION RESEARCH SCIENTIST,"Research Methodologies, Data Analysis, Programming, Scientific Writing",Conducts research in computer science and develops new technologies.
+COMPUTER AND INFORMATION RESEARCH MANAGER,"Research Management, Team Leadership, Budgeting, Project Management",Manages computer and information research projects and teams.
+SOFTWARE DEVELOPMENT MANAGER,"Software Development, Team Leadership, Project Management, Software Architecture","Manages software development teams and projects, ensuring efficient development practices."
+SOFTWARE DEVELOPMENT ENGINEER,"Software Development, Programming Languages, Algorithm Design, Problem Solving","Develops software applications, implementing algorithms and solving complex problems."
+APPLICATION DESIGNER,"Application Design, UI/UX Principles, Programming Languages, Software Architecture","Designs software applications, ensuring usability and functionality."
+APPLICATION ENGINEER,"Application Development, Programming Languages, Troubleshooting, System Administration","Develops and maintains software applications, troubleshooting issues and ensuring stability."
+LEAD PROGRAMMER,"Programming Languages, Software Development, Team Leadership, Mentoring","Leads programming teams, providing technical guidance and mentoring team members."
+ITERATION MANAGER,"Agile Methodologies, Scrum, Kanban, Team Facilitation","Facilitates agile development teams, ensuring efficient iteration and collaboration."
+WEBMASTER,"Web Development, Web Design, System Administration, Content Management","Manages websites, ensuring functionality, security, and content quality."
+UX/UI RESEARCHER,"User Research, Usability Testing, Data Analysis, Reporting",Conducts user research and usability testing to inform design decisions.
+UX/UI SPECIALIST,"UX/UI Design, User Research, Prototyping, Usability Testing","Designs user interfaces and experiences, ensuring usability and aesthetic appeal."
+ANIMATOR,"Animation Software, 2D/3D Animation, Storyboarding, Visual Effects","Creates animations for various media, including films, games, and websites."
+MOTION GRAPHICS ARTIST,"Motion Graphics, Animation Software, Visual Effects, Graphic Design",Creates motion graphics and visual effects for various media.
+2D ARTIST/ANIMATOR,"2D Animation, Drawing, Illustration, Animation Software",Creates 2D animations for various media.
+3D ARTIST/ANIMATOR,"3D Animation, Modeling, Texturing, Rigging",Creates 3D animations for various media.
+CHARACTER DESIGNER,"Character Design, Illustration, Drawing, Animation","Designs characters for animation, games, and other media."
+STORYBOARD ARTIST,"Storyboarding, Drawing, Visual Communication, Film/Animation","Creates storyboards for films, animations, and other media."
+VFX ARTIST,"Visual Effects, Compositing, 3D Modeling, Simulation","Creates visual effects for films, television, and other media."
+RIGGING ARTIST,"Rigging, Animation, 3D Modeling, Character Setup",Creates rigs for animating 3D characters.
+TECHNICAL ANIMATOR,"Technical Animation, Scripting, Programming, Animation Software",Develops tools and workflows for animation production.
+ART DIRECTOR,"Art Direction, Visual Design, Team Leadership, Project Management","Leads art teams, providing visual direction and ensuring aesthetic consistency."
+ANIMATION DIRECTOR,"Animation Direction, Storytelling, Team Leadership, Project Management","Directs animation projects, ensuring artistic quality and storytelling effectiveness."
+VISUAL EFFECTS ANIMATOR,"Visual Effects, Animation, Compositing, 3D Modeling","Creates visual effects for films, television, and other media."
+GRAPHIC EFFECTS SUPERVISOR,"Visual Effects Supervision, Team Leadership, Technical Expertise, Project Management","Supervises visual effects projects, ensuring technical and artistic quality."
+FORENSIC ANIMATOR,"Forensic Animation, 3D Modeling, Legal Expertise, Visual Communication","Creates animations for legal presentations, visualizing forensic evidence."
+COMPOSITOR,"Compositing, Visual Effects, Color Correction, Image Manipulation","Combines visual elements to create final images for films, television, and other media."
+EFFECTS TECHNICAL DIRECTOR (FX TD),"Visual Effects, Technical Expertise, Scripting, Problem Solving",Develops technical solutions for visual effects production.
+LAYOUT ARTIST,"Layout, Cinematography, 3D Modeling, Visual Storytelling","Creates layouts for animated scenes, determining camera angles and composition."
+AI RESEARCHER,"AI/ML Algorithms, Python, Research Methodologies, Data Analysis","Conducts research in artificial intelligence and machine learning, developing new algorithms and techniques."
+AI SOFTWARE ARCHITECT,"AI/ML Architecture, Software Design, Cloud Computing, Data Modeling","Designs and implements AI software systems, ensuring scalability and performance."
+BUSINESS INTELLIGENCE DEVELOPER,"Business Intelligence Tools, Data Modeling, SQL, ETL Processes","Develops business intelligence solutions, creating reports and dashboards."
