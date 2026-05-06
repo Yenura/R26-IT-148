@@ -1,0 +1,188 @@
+"""
+Component 2: AI Interview System - FastAPI Application
+Main entry point for the interview backend service
+Port: 8002
+"""
+
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import logging
+from contextlib import asynccontextmanager
+import os
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+# Import routers
+from routers.interview import router as interview_router
+
+# ====================================================================
+# LIFESPAN CONTEXT MANAGER
+# ====================================================================
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Manage application startup and shutdown
+    """
+    # Startup
+    logger.info("=" * 70)
+    logger.info("Component 2: AI Interview System - Starting")
+    logger.info("=" * 70)
+    
+    # Verify models directory exists
+    models_dir = "c:/Users/ASUS/OneDrive/Documents/GitHub/R26-IT-148/component2/models"
+    if not os.path.exists(models_dir):
+        logger.warning(f"⚠ Models directory not found: {models_dir}")
+        logger.info("Please run: python ml/train_pipeline.py to generate models")
+    else:
+        logger.info(f"✓ Models directory found: {models_dir}")
+    
+    logger.info("✓ Interview system ready on http://localhost:8002")
+    logger.info("✓ API Documentation: http://localhost:8002/docs")
+    
+    yield
+    
+    # Shutdown
+    logger.info("Component 2: AI Interview System - Shutting down")
+
+
+# ====================================================================
+# CREATE FASTAPI APP
+# ====================================================================
+
+app = FastAPI(
+    title="AI Interview System",
+    description="Component 2: Interview Generation & Evaluation",
+    version="1.0.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    lifespan=lifespan
+)
+
+# ====================================================================
+# MIDDLEWARE
+# ====================================================================
+
+# CORS Configuration
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+# Request/Response logging middleware
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    """Log all HTTP requests"""
+    logger.info(f"{request.method} {request.url.path}")
+    response = await call_next(request)
+    logger.info(f"Response: {response.status_code}")
+    return response
+
+
+# ====================================================================
+# EXCEPTION HANDLERS
+# ====================================================================
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler"""
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    
+    return JSONResponse(
+        status_code=500,
+        content={
+            "success": False,
+            "message": "Internal server error",
+            "error_code": "INTERNAL_ERROR",
+            "details": str(exc)
+        }
+    )
+
+
+# ====================================================================
+# INCLUDE ROUTERS
+# ====================================================================
+
+app.include_router(interview_router)
+
+
+# ====================================================================
+# ROOT ENDPOINTS
+# ====================================================================
+
+@app.get("/", tags=["root"])
+async def root():
+    """Root endpoint"""
+    return {
+        "service": "Component 2: AI Interview System",
+        "version": "1.0.0",
+        "status": "running",
+        "port": 8002,
+        "documentation": {
+            "swagger": "http://localhost:8002/docs",
+            "redoc": "http://localhost:8002/redoc",
+            "openapi": "http://localhost:8002/openapi.json"
+        }
+    }
+
+
+@app.get("/health", tags=["health"])
+async def health():
+    """Health check endpoint"""
+    return {
+        "status": "healthy",
+        "component": "Component 2: AI Interview System",
+        "version": "1.0.0"
+    }
+
+
+@app.get("/info", tags=["info"])
+async def info():
+    """Get system information"""
+    return {
+        "name": "AI Interview Generation & Evaluation System",
+        "component": "Component 2",
+        "port": 8002,
+        "endpoints": {
+            "start_interview": "POST /api/v1/interview/start",
+            "submit_answers": "POST /api/v1/interview/submit",
+            "get_result": "GET /api/v1/interview/result/{interview_id}",
+            "question_bank": "GET /api/v1/interview/questions/{job_role}",
+            "available_jobs": "GET /api/v1/interview/jobs",
+            "health": "GET /api/v1/interview/health"
+        },
+        "features": {
+            "question_generation": "Generates MCQ, Descriptive, and Coding questions",
+            "semantic_scoring": "SBERT-based semantic similarity for descriptive answers",
+            "automatic_evaluation": "MCQ, Descriptive, and Coding answer evaluation",
+            "interview_scoring": "Combined interview score with grade bands",
+            "weak_area_detection": "Identifies candidate weak areas based on performance"
+        }
+    }
+
+
+# ====================================================================
+# MAIN ENTRY POINT
+# ====================================================================
+
+if __name__ == "__main__":
+    import uvicorn
+    
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8002,
+        reload=True,
+        log_level="info"
+    )
