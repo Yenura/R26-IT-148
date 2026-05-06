@@ -9,7 +9,7 @@ import logging
 import joblib
 import numpy as np
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Tuple, Optional
 
 logger = logging.getLogger(__name__)
@@ -411,7 +411,7 @@ def run_skill_gap_analysis(
         "improvement_suggestions": suggestions,
         "predicted_hire":          predicted,
         "hire_probability":        round(hire_prob * 100, 2),
-        "analysis_timestamp":      datetime.utcnow().isoformat(),
+        "analysis_timestamp":      datetime.now(timezone.utc).isoformat(),
         "certifications_count":    cert_count,
         "projects_count":          projects_count,
     }
