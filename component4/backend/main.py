@@ -1,9 +1,18 @@
 """
 Component 4: Skill Gap Analysis & Career Development
 FastAPI Backend — main.py
+
+Fixes applied (code review):
+  - C2: Restricted CORS to env-configured origins only
+  - C3: MongoDB managed via lifespan context (startup/shutdown + connection pool)
+  - L4: DB indexes created on startup
+  - Structured logging added
 """
 
 import os
+import logging
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
@@ -11,49 +20,104 @@ import motor.motor_asyncio
 
 load_dotenv()
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
+)
+logger = logging.getLogger("component4")
+
+# ── Config ────────────────────────────────────────────────────────────────────
+MONGODB_URI     = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
+DB_NAME         = os.getenv("DB_NAME", "HR")
+ALLOWED_ORIGINS = os.getenv(
+    "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174"
+).split(",")
+
+
+# ── Lifespan: manages DB connection pool + index creation ────────────────────
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan: open DB on startup, close cleanly on shutdown."""
+    logger.info("Starting up — connecting to MongoDB...")
+    client = motor.motor_asyncio.AsyncIOMotorClient(
+        MONGODB_URI,
+        maxPoolSize=10,
+        minPoolSize=2,
+        serverSelectionTimeoutMS=5000,
+    )
+    db = client[DB_NAME]
+    app.state.db = db
+
+    # Verify connection
+    try:
+        await db.command("ping")
+        logger.info("MongoDB connected: %s / %s", MONGODB_URI.split("@")[-1], DB_NAME)
+    except Exception as exc:
+        logger.critical("MongoDB connection failed: %s", exc)
+
+    # Ensure indexes exist (idempotent)
+    await db.skill_gap_reports.create_index([("candidate_id", 1)])
+    await db.skill_gap_reports.create_index([("hire_probability", -1)])
+    await db.skill_gap_reports.create_index([("job_role", 1)])
+    await db.skill_gap_reports.create_index([("created_at", -1)])
+    await db.progress_tracking.create_index(
+        [("candidate_id", 1), ("skill", 1)], unique=True
+    )
+    logger.info("MongoDB indexes verified")
+
+    yield  # ← application runs here
+
+    # Shutdown
+    client.close()
+    logger.info("MongoDB connection closed")
+
+
+# ── App ───────────────────────────────────────────────────────────────────────
 app = FastAPI(
     title="Component 4 – Skill Gap & Career Development API",
-    version="1.0.0",
-    description="AI-driven skill gap analysis and personalised career path generation."
+    version="2.0.0",
+    description=(
+        "AI-driven skill gap analysis and personalised career path generation. "
+        "Trained on 10,000-record dataset (Logistic Regression, AUC 0.9936)."
+    ),
+    lifespan=lifespan,
 )
 
-# ── CORS ──────────────────────────────────────────────────────────────────────
+# ── CORS (C2 fix: explicit origins, not wildcard) ─────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
 )
 
-# ── MongoDB ────────────────────────────────────────────────────────────────────
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME     = os.getenv("DB_NAME", "HR")
-
-client = motor.motor_asyncio.AsyncIOMotorClient(MONGODB_URI)
-db     = client[DB_NAME]
-
-# Attach db to app state so routers can access it
-app.state.db = db
-
 # ── Routers ────────────────────────────────────────────────────────────────────
-from routers import skill_gap, career, progress, analytics
+from routers import skill_gap, career, progress, analytics  # noqa: E402
 
-app.include_router(skill_gap.router,  prefix="/api/v1/skill-gap",   tags=["Skill Gap Analysis"])
-app.include_router(career.router,     prefix="/api/v1/career",      tags=["Career Guidance"])
-app.include_router(progress.router,   prefix="/api/v1/progress",    tags=["Progress Tracking"])
-app.include_router(analytics.router,  prefix="/api/v1/analytics",   tags=["Analytics"])
+app.include_router(skill_gap.router, prefix="/api/v1/skill-gap", tags=["Skill Gap Analysis"])
+app.include_router(career.router,    prefix="/api/v1/career",    tags=["Career Guidance"])
+app.include_router(progress.router,  prefix="/api/v1/progress",  tags=["Progress Tracking"])
+app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
+
 
 # ── Health ─────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
 async def root():
-    return {"status": "ok", "component": 4, "service": "Skill Gap & Career Development"}
+    return {
+        "status": "ok",
+        "component": 4,
+        "service": "Skill Gap & Career Development",
+        "version": "2.0.0",
+    }
+
 
 @app.get("/health", tags=["Health"])
 async def health():
     try:
-        await db.command("ping")
+        await app.state.db.command("ping")
         db_status = "connected"
-    except Exception as e:
-        db_status = f"error: {e}"
+    except Exception as exc:
+        db_status = f"error: {exc}"
+        logger.warning("Health check: DB ping failed — %s", exc)
     return {"status": "ok", "database": db_status}

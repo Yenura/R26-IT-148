@@ -1,30 +1,74 @@
 """
-Component 4 — ML Inference Engine (New 10K Dataset)
+Component 4 — ML Inference Engine (10K Dataset)
 Loads trained artefacts at startup and exposes run_skill_gap_analysis().
 """
 
-import os, json, joblib
+import os
+import json
+import logging
+import joblib
 import numpy as np
 import pandas as pd
-from datetime import datetime
-from typing import List, Dict, Any, Tuple
+from datetime import datetime, timezone
+from typing import List, Dict, Any, Tuple, Optional
+
+logger = logging.getLogger(__name__)
+
+# ── Scoring weight constants (avoids magic numbers) ────────────────────────────
+REQ_WEIGHT          = 0.70   # required-skills portion of gap score
+OPT_WEIGHT          = 0.30   # optional-skills portion of gap score
+SKILL_GAP_WEIGHT    = 0.80   # skill score vs experience score blend
+EXP_WEIGHT          = 0.20
+ML_WEIGHT           = 0.60   # ML probability vs external scores blend
+EXT_SCORE_WEIGHT    = 0.40
+
+GAP_LOW_THRESHOLD    = 0.80
+GAP_MEDIUM_THRESHOLD = 0.55
+
+LOW_INTERVIEW_THRESHOLD = 60
+LOW_SCORE_THRESHOLD     = 60
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 _HERE   = os.path.dirname(os.path.abspath(__file__))
 MODELS  = os.path.join(_HERE, "..", "..", "models")
-REPORTS = os.path.join(_HERE, "..", "..", "reports")
+
+
+# ── Safe artifact loader ───────────────────────────────────────────────────────
+def _load_artifact(filename: str):
+    """Load a joblib artifact from the models directory with clear error reporting."""
+    path = os.path.join(MODELS, filename)
+    if not os.path.exists(path):
+        logger.critical("[STARTUP] Missing model artifact: %s", path)
+        raise FileNotFoundError(
+            f"Required model artifact not found: {path}\n"
+            f"Run: python component4/ml/train_model.py to regenerate."
+        )
+    artifact = joblib.load(path)
+    logger.info("Loaded artifact: %s", filename)
+    return artifact
+
+
+def _load_json(filename: str) -> dict:
+    """Load a JSON knowledge file from the models directory."""
+    path = os.path.join(MODELS, filename)
+    if not os.path.exists(path):
+        logger.critical("[STARTUP] Missing knowledge file: %s", path)
+        raise FileNotFoundError(f"Required knowledge file not found: {path}")
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
 
 # ── Load ML artefacts ──────────────────────────────────────────────────────────
-_clf       = joblib.load(os.path.join(MODELS, "skill_gap_classifier.pkl"))
-_feat_cols = joblib.load(os.path.join(MODELS, "feature_columns.pkl"))
-_role_cols = joblib.load(os.path.join(MODELS, "role_columns.pkl"))
-ALL_SKILLS = joblib.load(os.path.join(MODELS, "all_skills.pkl"))
+_clf       = _load_artifact("skill_gap_classifier.pkl")
+_feat_cols = _load_artifact("feature_columns.pkl")
+_role_cols = _load_artifact("role_columns.pkl")
+ALL_SKILLS = _load_artifact("all_skills.pkl")
 
 # ── Load knowledge files ───────────────────────────────────────────────────────
-with open(os.path.join(MODELS, "job_requirements.json"))  as f: JOB_REQ   = json.load(f)
-with open(os.path.join(MODELS, "learning_resources.json")) as f: RESOURCES = json.load(f)
-with open(os.path.join(MODELS, "skill_categories.json"))   as f: SKILL_CAT = json.load(f)
-with open(os.path.join(MODELS, "career_paths.json"))       as f: _CP_DATA  = json.load(f)
+JOB_REQ   = _load_json("job_requirements.json")
+RESOURCES = _load_json("learning_resources.json")
+SKILL_CAT = _load_json("skill_categories.json")
+_CP_DATA  = _load_json("career_paths.json")
 
 CAREER_PATHS     = _CP_DATA["career_paths"]
 ROLE_TRANSITIONS = _CP_DATA["role_transitions"]
@@ -99,19 +143,20 @@ def compute_gap(
 
     req_score = (len(required) - len(miss_req)) / max(len(required), 1)
     opt_score = (len(optional) - len(miss_opt)) / max(len(optional), 1) if optional else 1.0
-    gap_score = 0.7 * req_score + 0.3 * opt_score
+    gap_score = REQ_WEIGHT * req_score + OPT_WEIGHT * opt_score
 
-    # Bonus for experience
+    # Blend in experience score
     min_exp   = req.get("min_experience", 2)
     exp_score = min(experience_years / max(min_exp, 1), 1.0)
-    gap_score = 0.8 * gap_score + 0.2 * exp_score
+    gap_score = SKILL_GAP_WEIGHT * gap_score + EXP_WEIGHT * exp_score
 
     return gap_score, miss_req, miss_opt, match_pct
 
 
 def gap_severity(score: float) -> str:
-    if score >= 0.80: return "Low"
-    if score >= 0.55: return "Medium"
+    """Map a 0-1 gap score to a human-readable severity label."""
+    if score >= GAP_LOW_THRESHOLD:    return "Low"
+    if score >= GAP_MEDIUM_THRESHOLD: return "Medium"
     return "High"
 
 
@@ -168,11 +213,11 @@ def run_skill_gap_analysis(
     projects_count:    int,
     job_level:         str,
     work_mode:         str,
-    cv_matching_score: float | None,
-    interview_score:   float | None,
-    mcq_score:         float | None,
-    descriptive_score: float | None,
-    coding_score:      float | None,
+    cv_matching_score: Optional[float],
+    interview_score:   Optional[float],
+    mcq_score:         Optional[float],
+    descriptive_score: Optional[float],
+    coding_score:      Optional[float],
     weak_topics:       List[str],
     failed_mcq_topics: List[str],
 ) -> Dict[str, Any]:
@@ -191,11 +236,11 @@ def run_skill_gap_analysis(
     hire_prob = float(_clf.predict_proba(fv)[0][1])
     predicted = hire_prob >= 0.5
 
-    # Blend with cv/interview score if available
+    # Blend ML probability with external CV/interview scores if available
     score_inputs = [x for x in [cv_matching_score, interview_score] if x is not None]
     if score_inputs:
         avg_score_norm = sum(score_inputs) / (len(score_inputs) * 100)
-        hire_prob = 0.6 * hire_prob + 0.4 * avg_score_norm
+        hire_prob = ML_WEIGHT * hire_prob + EXT_SCORE_WEIGHT * avg_score_norm
 
     hire_prob = max(0.0, min(1.0, hire_prob))
 
@@ -217,15 +262,15 @@ def run_skill_gap_analysis(
     # ── 4. Interview-driven gaps ──────────────────────────────────────────────
     knowledge_gaps, problem_solving_gaps = [], []
 
-    if interview_score is not None and interview_score < 60:
+    if interview_score is not None and interview_score < LOW_INTERVIEW_THRESHOLD:
         knowledge_gaps = weak_topics if weak_topics else [
             f"Core {job_role} Concepts", "Theoretical Foundations"
         ]
 
-    if descriptive_score is not None and descriptive_score < 60:
+    if descriptive_score is not None and descriptive_score < LOW_SCORE_THRESHOLD:
         knowledge_gaps = list(set(knowledge_gaps + weak_topics))
 
-    if coding_score is not None and coding_score < 60:
+    if coding_score is not None and coding_score < LOW_SCORE_THRESHOLD:
         problem_solving_gaps = ["Algorithm Design", "Data Structures", "Code Optimisation"]
 
     if failed_mcq_topics:
@@ -366,7 +411,7 @@ def run_skill_gap_analysis(
         "improvement_suggestions": suggestions,
         "predicted_hire":          predicted,
         "hire_probability":        round(hire_prob * 100, 2),
-        "analysis_timestamp":      datetime.utcnow().isoformat(),
+        "analysis_timestamp":      datetime.now(timezone.utc).isoformat(),
         "certifications_count":    cert_count,
         "projects_count":          projects_count,
     }
