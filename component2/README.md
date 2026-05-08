@@ -79,10 +79,12 @@
 ## Installation & Setup
 
 ### Prerequisites
-- Python 3.9+
+- Python 3.10, 3.11, or 3.12 (recommended)
 - Node.js 16+
 - npm or yarn
 - ~3GB free disk space (for SBERT model)
+
+> Note: Python 3.14 is not supported by the current backend dependencies because prebuilt `numpy`/`pandas` wheels are not yet available.
 
 ### Backend Setup
 
@@ -92,12 +94,21 @@ cd component2/backend
 
 # 2. Create virtual environment
 python -m venv venv
-source venv/Scripts/activate  # Windows: venv\Scripts\activate
 
-# 3. Install dependencies
+# 3. Activate the environment
+# macOS/Linux
+source venv/bin/activate
+
+# Windows PowerShell
+.\venv\Scripts\Activate.ps1
+
+# Windows CMD
+venv\Scripts\activate.bat
+
+# 4. Install dependencies
 pip install -r requirements.txt
 
-# 4. Download SBERT model (first run only)
+# 5. Download SBERT model (first run only)
 # This happens automatically when backend starts
 ```
 
