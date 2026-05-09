@@ -30,27 +30,34 @@ class InterviewDataLoader:
             questions = []
             
             for idx, row in df.iterrows():
+                q_text = str(row.get("Questions") or "").strip()
+                a_text = str(row.get("Answers")  or "").strip()
+                lang   = str(row.get("language") or "Java").strip()
+                level  = str(row.get(" level ")  or "Easy").strip()
+
+                if not q_text or not a_text or q_text == "nan" or a_text == "nan":
+                    continue
+
                 question = {
                     "id": f"Q_JAVA_{idx+1:04d}",
-                    "question_text": row.get("Questions", "").strip(),
-                    "answer_text": row.get("Answers", "").strip(),
-                    "language": row.get("language", "Java"),
-                    "difficulty": row.get(" level ", "Easy").strip(),
+                    "question_text": q_text,
+                    "answer_text":   a_text,
+                    "language":      lang,
+                    "difficulty":    level if level in ("Easy", "Medium", "Hard") else "Easy",
                     "question_type": "Descriptive",
-                    "category": row.get("language", "Java"),
-                    "topic": row.get("language", "Java"),
-                    "keywords": self._extract_keywords(row.get("Questions", ""))
+                    "category":      lang,
+                    "topic":         lang,
+                    "keywords":      self._extract_keywords(q_text)
                 }
-                
-                if question["question_text"] and question["answer_text"]:
-                    questions.append(question)
+                questions.append(question)
             
-            print(f"✓ Loaded {len(questions)} Java questions from information.csv")
+            print(f"[OK] Loaded {len(questions)} Java questions from information.csv")
             return questions
             
         except Exception as e:
-            print(f"✗ Error loading Java questions: {e}")
+            print(f"[WARN] Error loading Java questions: {e}")
             return []
+
     
     def load_software_questions(self) -> List[Dict]:
         """Load software engineering Q&A from Software Questions.csv"""
@@ -61,26 +68,33 @@ class InterviewDataLoader:
             questions = []
             
             for idx, row in df.iterrows():
+                q_text = str(row.get("Question")  or "").strip()
+                a_text = str(row.get("Answer")    or "").strip()
+                diff   = str(row.get("Difficulty") or "Medium").strip()
+                cat    = str(row.get("Category")   or "General Programming").strip()
+
+                if not q_text or not a_text or q_text == "nan" or a_text == "nan":
+                    continue
+
                 question = {
-                    "id": f"Q_SW_{idx+1:04d}",
-                    "question_text": row.get("Question", "").strip(),
-                    "answer_text": row.get("Answer", "").strip(),
-                    "difficulty": row.get("Difficulty", "Medium").strip(),
+                    "id":            f"Q_SW_{idx+1:04d}",
+                    "question_text": q_text,
+                    "answer_text":   a_text,
+                    "difficulty":    diff if diff in ("Easy", "Medium", "Hard") else "Medium",
                     "question_type": "Descriptive",
-                    "category": row.get("Category", "General Programming"),
-                    "topic": row.get("Category", "General Programming"),
-                    "keywords": self._extract_keywords(row.get("Question", ""))
+                    "category":      cat,
+                    "topic":         cat,
+                    "keywords":      self._extract_keywords(q_text)
                 }
-                
-                if question["question_text"] and question["answer_text"]:
-                    questions.append(question)
+                questions.append(question)
             
-            print(f"✓ Loaded {len(questions)} software engineering questions")
+            print(f"[OK] Loaded {len(questions)} software engineering questions")
             return questions
             
         except Exception as e:
-            print(f"✗ Error loading software questions: {e}")
+            print(f"[WARN] Error loading software questions: {e}")
             return []
+
     
     def create_mcq_questions(self) -> List[Dict]:
         """Create MCQ questions from loaded descriptive questions"""

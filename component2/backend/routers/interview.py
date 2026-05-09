@@ -23,8 +23,10 @@ logger = logging.getLogger(__name__)
 # ====================================================================
 
 def get_services():
-    """Get services - in production, inject from main app"""
-    models_dir = "c:/Users/ASUS/OneDrive/Documents/GitHub/R26-IT-148/component2/models"
+    """Get services - resolve models directory relative to this file"""
+    import os
+    _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    models_dir   = os.path.join(_backend_dir, "trained_models")
     return {
         "interview_service": get_interview_service(models_dir),
         "evaluation_service": get_evaluation_service(models_dir)

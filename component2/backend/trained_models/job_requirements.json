@@ -1,0 +1,32 @@
+{
+  "AI Researcher": [
+    "TensorFlow",
+    "NLP",
+    "Pytorch",
+    "Deep Learning",
+    "Machine Learning",
+    "Python"
+  ],
+  "Data Scientist": [
+    "Python",
+    "Machine Learning",
+    "SQL",
+    "Deep Learning",
+    "Statistics",
+    "TensorFlow"
+  ],
+  "Cybersecurity Analyst": [
+    "Cybersecurity",
+    "Networking",
+    "Linux",
+    "Ethical Hacking"
+  ],
+  "Software Engineer": [
+    "Java",
+    "SQL",
+    "C++",
+    "React",
+    "Python",
+    "REST APIs"
+  ]
+}
