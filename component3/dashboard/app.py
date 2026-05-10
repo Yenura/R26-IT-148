@@ -49,7 +49,7 @@ st.markdown("""
 .kpi-number { font-size:36px; font-weight:700; color:#1e3a5f; }
 .kpi-label  { font-size:13px; color:#666; margin-top:4px; }
 .section-header {
-  font-size:18px; font-weight:600; color:#1e3a5f;
+  font-size:18px; font-weight:600;
   margin:24px 0 16px 0; padding-bottom:8px;
   border-bottom:2px solid #e0e7ef;
 }
@@ -267,8 +267,8 @@ def tab_shortlist(full_df, role, job, top_n):
 
                 for label, score in score_items:
                     c1,c2,c3 = st.columns([2,4,2])
-                    c1.markdown(f"<div style='font-size:13px;padding-top:6px;color:#444;'>{label}</div>", unsafe_allow_html=True)
-                    # Simple progress bar using st.progress
+                    # Removed hardcoded color #444 to ensure visibility in dark mode
+                    c1.markdown(f"<div style='font-size:13px;padding-top:6px;'>{label}</div>", unsafe_allow_html=True)
                     c2.progress(int(pct(score)))
                     c3.markdown(f"<div style='padding-top:4px;'>{match_badge(score)}</div>", unsafe_allow_html=True)
 
