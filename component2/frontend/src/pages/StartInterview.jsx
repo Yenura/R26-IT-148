@@ -3,10 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { interviewAPI, handleAPIError } from '../api';
 import '../pages/StartInterview.css';
 
+const generateCandidateId = () => {
+  const ts = Date.now().toString().slice(-6);
+  const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `CAND-${ts}-${rand}`;
+};
+
 export default function StartInterview() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    candidateId: '',
+    candidateId: generateCandidateId(),
     jobRole: '',
     numQuestions: 10
   });
@@ -37,7 +43,7 @@ export default function StartInterview() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.candidateId || !formData.jobRole) {
+    if (!formData.jobRole) {
       setError('Please fill in all required fields');
       return;
     }
@@ -71,17 +77,18 @@ export default function StartInterview() {
         <div className="form-card card">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="candidateId">Candidate ID *</label>
+              <label htmlFor="candidateId">Candidate ID (Auto-generated)</label>
               <input
                 type="text"
                 id="candidateId"
                 name="candidateId"
-                placeholder="Enter your candidate ID (e.g., CAND-001)"
+                placeholder="Auto-generated candidate ID"
                 value={formData.candidateId}
-                onChange={handleChange}
-                required
+                readOnly
               />
-              <small>Unique identifier for tracking your interviews</small>
+              <small>
+                Unique identifier generated automatically for this interview session.
+              </small>
             </div>
 
             <div className="form-group">
