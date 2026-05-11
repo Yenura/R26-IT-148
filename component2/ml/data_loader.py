@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import json
 import os
+import re
 from typing import List, Dict, Tuple
 from pathlib import Path
 
@@ -20,76 +21,206 @@ class InterviewDataLoader:
             "Cybersecurity Analyst": ["Cybersecurity", "Networking", "Linux", "Ethical Hacking"],
             "Software Engineer": ["Java", "SQL", "C++", "React", "Python", "REST APIs"]
         }
-        
+
+    def _dataset_questions_dir(self) -> str:
+        """Folder where employer / course CSV question dumps live."""
+        return os.path.join(self.data_dir, "DataSet for questions")
+
+    @staticmethod
+    def _normalize_df_columns(df: pd.DataFrame) -> pd.DataFrame:
+        df = df.copy()
+        df.columns = [str(c).strip() for c in df.columns]
+        return df
+
+    @staticmethod
+    def _safe_str(val) -> str:
+        if val is None or (isinstance(val, float) and np.isnan(val)):
+            return ""
+        return str(val).strip()
+
+    def _file_tag(self, filename: str) -> str:
+        stem = Path(filename).stem
+        stem = re.sub(r"[^A-Za-z0-9]+", "_", stem).strip("_") or "DATA"
+        return stem.upper()[:24]
+
     def load_java_questions(self) -> List[Dict]:
-        """Load Java Q&A from information.csv"""
-        file_path = os.path.join(self.data_dir, "DataSet for questions/information.csv")
-        
-        try:
-            df = pd.read_csv(file_path)
-            questions = []
-            
-            for idx, row in df.iterrows():
-                question_text = row.get("Questions", "")
-                answer_text = row.get("Answers", "")
-                
-                # Handle NaN values by converting to string
-                if isinstance(question_text, float):
-                    question_text = ""
-                if isinstance(answer_text, float):
-                    answer_text = ""
-                    
-                question = {
-                    "id": f"Q_JAVA_{idx+1:04d}",
-                    "question_text": str(question_text).strip(),
-                    "answer_text": str(answer_text).strip(),
-                    "language": row.get("language", "Java"),
-                    "difficulty": str(row.get(" level ", "Easy")).strip(),
-                    "question_type": "Descriptive",
-                    "category": row.get("language", "Java"),
-                    "topic": row.get("language", "Java"),
-                    "keywords": self._extract_keywords(str(question_text))
-                }
-                
-                if question["question_text"] and question["answer_text"]:
-                    questions.append(question)
-            
-            print("✓ Loaded {} Java questions from information.csv".format(len(questions)))
-            return questions
-            
-        except Exception as e:
-            print("✗ Error loading Java questions: {}".format(e))
+        """Backward-compatible: loads information-style Q&A (same as dataset folder scan)."""
+        path = os.path.join(self._dataset_questions_dir(), "information.csv")
+        if not os.path.isfile(path):
             return []
-    
+        return self._load_information_style_csv(path, self._file_tag("information.csv"))
+
     def load_software_questions(self) -> List[Dict]:
-        """Load software engineering Q&A from Software Questions.csv"""
-        file_path = os.path.join(self.data_dir, "DataSet for questions/Software Questions.csv")
-        
+        """Load software engineering Q&A from Software Questions.csv if present."""
+        file_path = os.path.join(self._dataset_questions_dir(), "Software Questions.csv")
+        if not os.path.isfile(file_path):
+            return []
+        return self._load_software_style_csv(file_path, self._file_tag("Software Questions.csv"))
+
+    def _load_information_style_csv(self, file_path: str, tag: str) -> List[Dict]:
+        """Rows with Questions + Answers (+ optional language, level)."""
         try:
-            df = pd.read_csv(file_path)
+            df = self._normalize_df_columns(pd.read_csv(file_path))
             questions = []
-            
+            # tolerate column name variants
+            qcol = "Questions" if "Questions" in df.columns else None
+            acol = "Answers" if "Answers" in df.columns else None
+            if not qcol or not acol:
+                print(f"✗ {file_path}: missing Questions/Answers columns (found: {list(df.columns)})")
+                return []
+
+            lang_col = "language" if "language" in df.columns else None
+            level_col = None
+            for c in df.columns:
+                if c.strip().lower() == "level":
+                    level_col = c
+                    break
+
             for idx, row in df.iterrows():
+                question_text = self._safe_str(row.get(qcol))
+                answer_text = self._safe_str(row.get(acol))
+                lang = self._safe_str(row.get(lang_col)) if lang_col else "General"
+                diff_raw = "Easy"
+                if level_col:
+                    diff_raw = self._safe_str(row.get(level_col)) or "Easy"
+
                 question = {
-                    "id": f"Q_SW_{idx+1:04d}",
-                    "question_text": row.get("Question", "").strip(),
-                    "answer_text": row.get("Answer", "").strip(),
-                    "difficulty": row.get("Difficulty", "Medium").strip(),
+                    "id": f"Q_{tag}_{idx+1:05d}",
+                    "question_text": question_text,
+                    "answer_text": answer_text,
+                    "language": lang or "General",
+                    "difficulty": diff_raw or "Easy",
                     "question_type": "Descriptive",
-                    "category": row.get("Category", "General Programming"),
-                    "topic": row.get("Category", "General Programming"),
-                    "keywords": self._extract_keywords(row.get("Question", ""))
+                    "category": lang or "General",
+                    "topic": lang or "General",
+                    "keywords": self._extract_keywords(question_text),
+                    "source_file": os.path.basename(file_path),
                 }
-                
+
                 if question["question_text"] and question["answer_text"]:
                     questions.append(question)
-            
-            print(f"✓ Loaded {len(questions)} software engineering questions")
+
+            print(f"✓ Loaded {len(questions)} descriptive Q&A from {os.path.basename(file_path)}")
             return questions
-            
         except Exception as e:
-            print(f"✗ Error loading software questions: {e}")
+            print(f"✗ Error loading {file_path}: {e}")
             return []
+
+    def _load_software_style_csv(self, file_path: str, tag: str) -> List[Dict]:
+        """Rows with Question + Answer + optional Category, Difficulty."""
+        try:
+            df = self._normalize_df_columns(pd.read_csv(file_path))
+            if "Question" not in df.columns or "Answer" not in df.columns:
+                print(f"✗ {file_path}: expected Question and Answer columns (found: {list(df.columns)})")
+                return []
+
+            questions = []
+            for idx, row in df.iterrows():
+                qtext = self._safe_str(row.get("Question"))
+                atext = self._safe_str(row.get("Answer"))
+                cat = self._safe_str(row.get("Category")) or "General Programming"
+                diff = self._safe_str(row.get("Difficulty")) or "Medium"
+                question = {
+                    "id": f"Q_{tag}_{idx+1:05d}",
+                    "question_text": qtext,
+                    "answer_text": atext,
+                    "difficulty": diff,
+                    "question_type": "Descriptive",
+                    "category": cat,
+                    "topic": cat,
+                    "keywords": self._extract_keywords(qtext),
+                    "source_file": os.path.basename(file_path),
+                }
+                if question["question_text"] and question["answer_text"]:
+                    questions.append(question)
+
+            print(f"✓ Loaded {len(questions)} descriptive Q&A from {os.path.basename(file_path)}")
+            return questions
+        except Exception as e:
+            print(f"✗ Error loading {file_path}: {e}")
+            return []
+
+    def _load_generic_qa_csv(self, file_path: str, tag: str) -> List[Dict]:
+        """Best-effort: find question/answer-like columns by name."""
+        try:
+            df = self._normalize_df_columns(pd.read_csv(file_path))
+            cols_lower = {c.lower(): c for c in df.columns}
+
+            def pick(*candidates):
+                for cand in candidates:
+                    if cand.lower() in cols_lower:
+                        return cols_lower[cand.lower()]
+                return None
+
+            qcol = pick("question", "questions", "prompt", "stem", "title")
+            acol = pick("answer", "answers", "response", "solution", "explanation")
+            if not qcol or not acol:
+                print(f"✗ {file_path}: could not infer question/answer columns: {list(df.columns)}")
+                return []
+
+            cat_col = pick("category", "topic", "subject", "tag")
+            diff_col = pick("difficulty", "level")
+
+            questions = []
+            for idx, row in df.iterrows():
+                qtext = self._safe_str(row.get(qcol))
+                atext = self._safe_str(row.get(acol))
+                cat = self._safe_str(row.get(cat_col)) if cat_col else "General"
+                diff = self._safe_str(row.get(diff_col)) if diff_col else "Medium"
+                question = {
+                    "id": f"Q_{tag}_{idx+1:05d}",
+                    "question_text": qtext,
+                    "answer_text": atext,
+                    "difficulty": diff or "Medium",
+                    "question_type": "Descriptive",
+                    "category": cat or "General",
+                    "topic": cat or "General",
+                    "keywords": self._extract_keywords(qtext),
+                    "source_file": os.path.basename(file_path),
+                }
+                if question["question_text"] and question["answer_text"]:
+                    questions.append(question)
+
+            print(f"✓ Loaded {len(questions)} descriptive Q&A (generic schema) from {os.path.basename(file_path)}")
+            return questions
+        except Exception as e:
+            print(f"✗ Error loading {file_path}: {e}")
+            return []
+
+    def load_all_dataset_folder_csvs(self) -> List[Dict]:
+        """
+        Load every *.csv under Data_set/.../DataSet for questions into descriptive questions.
+        Known schemas: information.csv (Questions/Answers), Software Questions.csv (Question/Answer).
+        Other CSVs: generic question/answer column detection.
+        """
+        folder = self._dataset_questions_dir()
+        if not os.path.isdir(folder):
+            print(f"✗ Dataset folder not found: {folder}")
+            return []
+
+        paths = sorted(
+            p for p in Path(folder).glob("*.csv") if p.is_file()
+        )
+        if not paths:
+            print(f"✗ No CSV files found in {folder}")
+            return []
+
+        combined: List[Dict] = []
+        for p in paths:
+            name = p.name
+            tag = self._file_tag(name)
+            df_head = self._normalize_df_columns(pd.read_csv(p, nrows=0))
+            cols = set(df_head.columns)
+
+            if "Questions" in cols and "Answers" in cols:
+                combined.extend(self._load_information_style_csv(str(p), tag))
+            elif "Question" in cols and "Answer" in cols:
+                combined.extend(self._load_software_style_csv(str(p), tag))
+            else:
+                combined.extend(self._load_generic_qa_csv(str(p), tag))
+
+        print(f"✓ Dataset folder total descriptive rows loaded: {len(combined)}")
+        return combined
     
     def create_mcq_questions(self) -> List[Dict]:
         """Create MCQ questions from loaded descriptive questions"""
@@ -230,9 +361,8 @@ class InterviewDataLoader:
         """Create complete question bank from all sources"""
         all_questions = []
         
-        # Load from CSV files
-        all_questions.extend(self.load_java_questions())
-        all_questions.extend(self.load_software_questions())
+        # All CSVs under Data_set/.../DataSet for questions (information.csv, Software Questions.csv, etc.)
+        all_questions.extend(self.load_all_dataset_folder_csvs())
         
         # Create MCQ and Coding questions
         all_questions.extend(self.create_mcq_questions())

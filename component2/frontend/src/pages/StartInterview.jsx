@@ -14,6 +14,7 @@ export default function StartInterview() {
   const [formData, setFormData] = useState({
     candidateId: generateCandidateId(),
     jobRole: '',
+    employerSkills: '',
     numQuestions: 10
   });
   const [jobs, setJobs] = useState([]);
@@ -50,10 +51,15 @@ export default function StartInterview() {
 
     try {
       setLoading(true);
+      const skillsList = formData.employerSkills
+        .split(/[,;\n]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       const session = await interviewAPI.startInterview(
         formData.candidateId,
         formData.jobRole,
-        [],
+        skillsList,
         formData.numQuestions
       );
       
@@ -88,6 +94,21 @@ export default function StartInterview() {
               />
               <small>
                 Unique identifier generated automatically for this interview session.
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="employerSkills">Employer job skills (optional)</label>
+              <textarea
+                id="employerSkills"
+                name="employerSkills"
+                rows="3"
+                placeholder="e.g. Python, Django, REST APIs — comma or newline separated"
+                value={formData.employerSkills}
+                onChange={handleChange}
+              />
+              <small>
+                Sent to the backend as <code>required_skills</code> for RAG retrieval and LLM adaptation when enabled.
               </small>
             </div>
 
