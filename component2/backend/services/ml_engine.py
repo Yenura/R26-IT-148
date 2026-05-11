@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+import uuid
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
@@ -402,10 +403,11 @@ class InterviewService:
         # Combine all questions and top up if bank is smaller than requested count.
         all_questions = mcq_questions + desc_questions + code_questions
         if len(all_questions) < num_questions:
-            all_questions = self._top_up_questions(all_questions, num_questions)
+            all_questions = self._top_up_questions(all_questions, num_questions, coding_profile=coding_profile)
         
-        # Create session
-        session_id = f"INT_{datetime.now().strftime('%Y%m%d%H%M%S')}_{candidate_id[:4]}"
+        # Create session with high-entropy ID to avoid collisions.
+        candidate_prefix = re.sub(r"[^A-Za-z0-9]", "", candidate_id or "CAND")[:4].upper() or "CAND"
+        session_id = f"INT_{datetime.now().strftime('%Y%m%d%H%M%S%f')}_{candidate_prefix}_{uuid.uuid4().hex[:6].upper()}"
         
         # Log warning if any question type is missing
         missing_types = []
@@ -440,14 +442,34 @@ class InterviewService:
         
         return session
 
-    def _top_up_questions(self, selected_questions: List[Dict], target_count: int) -> List[Dict]:
-        """Repeat available questions with unique IDs until target_count is reached."""
+    def _top_up_questions(self, selected_questions: List[Dict], target_count: int, coding_profile: str = "full") -> List[Dict]:
+        """Top up with unused unique questions first; only repeat as last resort."""
         if not selected_questions:
             return []
 
         topped_up = list(selected_questions)
+        existing_ids = {q.get("id") for q in topped_up if q.get("id")}
+        existing_texts = {q.get("question_text", "").strip().lower() for q in topped_up if q.get("question_text")}
+
+        # 1) Fill from remaining bank with unseen question text.
+        for candidate in self.question_bank:
+            if len(topped_up) >= target_count:
+                break
+            cid = candidate.get("id")
+            ctext = candidate.get("question_text", "").strip().lower()
+            if not ctext or cid in existing_ids or ctext in existing_texts:
+                continue
+            if candidate.get("question_type") == "Coding" and coding_profile in {"sql", "scripting"}:
+                if not self._filter_coding_questions_by_profile([candidate], coding_profile):
+                    continue
+            topped_up.append(candidate)
+            if cid:
+                existing_ids.add(cid)
+            existing_texts.add(ctext)
+
+        # 2) If still short, repeat selected pool with unique IDs.
         idx = 1
-        while len(topped_up) < target_count:
+        while len(topped_up) < target_count and selected_questions:
             source = selected_questions[(idx - 1) % len(selected_questions)].copy()
             source["id"] = f"{source.get('id', 'Q')}_R{idx}"
             topped_up.append(source)
