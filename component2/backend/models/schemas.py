@@ -115,6 +115,9 @@ class AnswerSubmission(BaseModel):
     mcq_answer: Optional[MCQAnswer] = None
     descriptive_answer: Optional[DescriptiveAnswer] = None
     code_submission: Optional[CodeSubmission] = None
+    answer_text: Optional[str] = None
+    code_text: Optional[str] = None
+    language: Optional[str] = "Python"
     submitted_at: datetime = Field(default_factory=datetime.utcnow)
 
 
