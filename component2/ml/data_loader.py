@@ -30,26 +30,35 @@ class InterviewDataLoader:
             questions = []
             
             for idx, row in df.iterrows():
+                question_text = row.get("Questions", "")
+                answer_text = row.get("Answers", "")
+                
+                # Handle NaN values by converting to string
+                if isinstance(question_text, float):
+                    question_text = ""
+                if isinstance(answer_text, float):
+                    answer_text = ""
+                    
                 question = {
                     "id": f"Q_JAVA_{idx+1:04d}",
-                    "question_text": row.get("Questions", "").strip(),
-                    "answer_text": row.get("Answers", "").strip(),
+                    "question_text": str(question_text).strip(),
+                    "answer_text": str(answer_text).strip(),
                     "language": row.get("language", "Java"),
-                    "difficulty": row.get(" level ", "Easy").strip(),
+                    "difficulty": str(row.get(" level ", "Easy")).strip(),
                     "question_type": "Descriptive",
                     "category": row.get("language", "Java"),
                     "topic": row.get("language", "Java"),
-                    "keywords": self._extract_keywords(row.get("Questions", ""))
+                    "keywords": self._extract_keywords(str(question_text))
                 }
                 
                 if question["question_text"] and question["answer_text"]:
                     questions.append(question)
             
-            print(f"✓ Loaded {len(questions)} Java questions from information.csv")
+            print("✓ Loaded {} Java questions from information.csv".format(len(questions)))
             return questions
             
         except Exception as e:
-            print(f"✗ Error loading Java questions: {e}")
+            print("✗ Error loading Java questions: {}".format(e))
             return []
     
     def load_software_questions(self) -> List[Dict]:

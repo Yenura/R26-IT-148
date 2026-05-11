@@ -365,6 +365,41 @@ Cybersecurity:      mcq=0.40, desc=0.35, code=0.25
 
 ---
 
+## Role Profiles and Coding Profiles
+The interview system derives a role's coding profile from the job role's `required_skills`. It scans the skill list for trigger keywords and maps roles to one of these profiles:
+
+- `full` — full programming/coding profile
+- `sql` — SQL-only coding profile
+- `scripting` — scripting/configuration-based coding profile
+- `none` — no coding questions
+
+### Coding profile trigger keywords
+The system looks for these skill keywords in `job_requirements` to decide whether coding is enabled:
+
+`Python`, `Java`, `JavaScript`, `C++`, `C#`, `SQL`, `Kotlin`, `Swift`, `TypeScript`, `React`, `Vue`, `Node.js`, `Flutter`, `React Native`, `TensorFlow`, `PyTorch`, `HTML`, `CSS`
+
+### Role profile mapping
+| Role | MCQ | Descriptive | Coding | Coding profile | Notes |
+|------|------|-------------|--------|----------------|-------|
+| Software Engineer | 20% | 30% | 50% | `full` | Java/Python/C++/SQL/React |
+| Data Scientist | 25% | 35% | 40% | `full` | Python/SQL/ML |
+| Machine Learning Engineer | 20% | 30% | 50% | `full` | Python/TensorFlow/PyTorch |
+| DevOps Engineer | 40% | 40% | 20% | `scripting` | Shell/YAML/CI-CD | 
+| Cybersecurity Analyst | 45% | 55% | 0% | `none` | No coding questions |
+| Cloud Solutions Architect | 45% | 55% | 0% | `none` | No coding questions |
+| Database Administrator | 30% | 40% | 30% | `sql` | SQL-only coding |
+| Frontend Developer | 20% | 30% | 50% | `full` | JS/TS/React/Vue/CSS |
+| Backend Developer | 20% | 30% | 50% | `full` | Python/Java/Node.js/SQL |
+| Mobile App Developer | 20% | 30% | 50% | `full` | Kotlin/Swift/Flutter |
+
+### Profile behavior
+- `full`: standard coding problems with input/output test-case validation.
+- `sql`: SQL query and schema problems evaluated on result-set correctness.
+- `scripting`: scripting and configuration tasks evaluated on structure and pipeline correctness.
+- `none`: no coding interface is shown, and final score uses only MCQ + Descriptive weights.
+
+---
+
 ## Frontend Pages
 
 ### 1. Dashboard (`/`)

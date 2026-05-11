@@ -11,6 +11,8 @@ import logging
 from contextlib import asynccontextmanager
 import os
 
+from db import get_db
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
@@ -42,6 +44,14 @@ async def lifespan(app: FastAPI):
         logger.info("Please run: python ml/train_pipeline.py to generate models")
     else:
         logger.info(f"✓ Models directory found: {models_dir}")
+
+    # Connect to MongoDB
+    try:
+        mongodb = get_db()
+        logger.info(f"✓ Connected to MongoDB database: {mongodb.name}")
+    except Exception as e:
+        logger.error(f"✗ Unable to connect to MongoDB: {e}")
+        raise
     
     logger.info("✓ Interview system ready on http://localhost:8002")
     logger.info("✓ API Documentation: http://localhost:8002/docs")
