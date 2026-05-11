@@ -51,6 +51,10 @@ class InterviewService:
         else:
             logger.warning(f"⚠ Question bank not found: {qb_path}")
             self.question_bank = []
+
+        if not self.question_bank:
+            self.question_bank = self._default_question_bank()
+            logger.warning("⚠ Using built-in fallback question bank (%d questions)", len(self.question_bank))
         
         # Load job requirements
         jr_path = os.path.join(self.models_dir, "job_requirements.json")
@@ -94,6 +98,177 @@ class InterviewService:
             "Backend Developer": ["Python", "Java", "Node.js", "APIs", "Microservices", "SQL", "Database Design", "Server-side Logic", "Authentication"],
             "Mobile App Developer": ["React Native", "Flutter", "iOS", "Android", "Kotlin", "Swift", "Mobile UI", "Performance Optimization"]
         }
+
+    def _default_question_bank(self) -> List[Dict]:
+        """Return a small but usable fallback question bank for local runs."""
+        return [
+            {
+                "id": "FB_MCQ_001",
+                "question_text": "What is the primary purpose of an index in SQL databases?",
+                "question_type": "MCQ",
+                "difficulty": "Easy",
+                "category": "SQL",
+                "topic": "Database Optimization",
+                "options": [
+                    {"index": 0, "text": "To increase table size"},
+                    {"index": 1, "text": "To speed up query lookups"},
+                    {"index": 2, "text": "To encrypt all records"},
+                    {"index": 3, "text": "To replace primary keys"},
+                ],
+                "correct_option": 1,
+                "keywords": ["sql", "index", "query"],
+            },
+            {
+                "id": "FB_MCQ_002",
+                "question_text": "Which HTTP method is commonly used to partially update a resource?",
+                "question_type": "MCQ",
+                "difficulty": "Easy",
+                "category": "REST APIs",
+                "topic": "HTTP Methods",
+                "options": [
+                    {"index": 0, "text": "GET"},
+                    {"index": 1, "text": "PATCH"},
+                    {"index": 2, "text": "DELETE"},
+                    {"index": 3, "text": "HEAD"},
+                ],
+                "correct_option": 1,
+                "keywords": ["http", "rest", "patch"],
+            },
+            {
+                "id": "FB_MCQ_003",
+                "question_text": "Which React feature is used for component state in function components?",
+                "question_type": "MCQ",
+                "difficulty": "Easy",
+                "category": "React",
+                "topic": "Hooks",
+                "options": [
+                    {"index": 0, "text": "useState"},
+                    {"index": 1, "text": "useMemo"},
+                    {"index": 2, "text": "useRef"},
+                    {"index": 3, "text": "useId"},
+                ],
+                "correct_option": 0,
+                "keywords": ["react", "hooks", "state"],
+            },
+            {
+                "id": "FB_DESC_001",
+                "question_text": "Explain polymorphism in object-oriented programming with an example.",
+                "answer_text": "Polymorphism allows objects of different classes to be treated through a common interface, often via method overriding.",
+                "question_type": "Descriptive",
+                "difficulty": "Medium",
+                "category": "OOP",
+                "topic": "Design Patterns",
+                "keywords": ["polymorphism", "oop", "overriding"],
+            },
+            {
+                "id": "FB_DESC_002",
+                "question_text": "How would you design a scalable REST API for high traffic?",
+                "answer_text": "A scalable REST API typically uses stateless services, caching, pagination, load balancing, and database indexing.",
+                "question_type": "Descriptive",
+                "difficulty": "Hard",
+                "category": "Backend",
+                "topic": "REST APIs",
+                "keywords": ["api", "scaling", "caching", "load balancing"],
+            },
+            {
+                "id": "FB_DESC_003",
+                "question_text": "What is overfitting in machine learning and how can it be reduced?",
+                "answer_text": "Overfitting happens when a model learns training noise; reduce it using regularization, cross-validation, dropout, and more data.",
+                "question_type": "Descriptive",
+                "difficulty": "Medium",
+                "category": "Machine Learning",
+                "topic": "Model Validation",
+                "keywords": ["overfitting", "regularization", "cross-validation"],
+            },
+            {
+                "id": "FB_DESC_004",
+                "question_text": "Why is CI/CD important for DevOps teams?",
+                "answer_text": "CI/CD automates build, test, and release workflows to reduce risk and speed up delivery.",
+                "question_type": "Descriptive",
+                "difficulty": "Easy",
+                "category": "DevOps",
+                "topic": "CI/CD",
+                "keywords": ["devops", "automation", "pipeline"],
+            },
+            {
+                "id": "FB_CODE_001",
+                "question_text": "Write a function that returns the sum of two integers.",
+                "question_type": "Coding",
+                "difficulty": "Easy",
+                "category": "Python",
+                "topic": "Functions",
+                "language": "Python",
+                "time_limit": 600,
+                "test_cases": [
+                    {"input": {"a": 2, "b": 3}, "expected_output": 5},
+                    {"input": {"a": -1, "b": 1}, "expected_output": 0},
+                ],
+                "expected_complexity": "O(1)",
+                "keywords": ["python", "function"],
+            },
+            {
+                "id": "FB_CODE_002",
+                "question_text": "Write a function to reverse a string.",
+                "question_type": "Coding",
+                "difficulty": "Easy",
+                "category": "Python",
+                "topic": "Strings",
+                "language": "Python",
+                "time_limit": 600,
+                "test_cases": [
+                    {"input": {"s": "abc"}, "expected_output": "cba"},
+                    {"input": {"s": "level"}, "expected_output": "level"},
+                ],
+                "expected_complexity": "O(n)",
+                "keywords": ["python", "string"],
+            },
+            {
+                "id": "FB_CODE_003",
+                "question_text": "Write an SQL query to return all employees with salary greater than 50000.",
+                "question_type": "Coding",
+                "difficulty": "Medium",
+                "category": "SQL",
+                "topic": "Query Writing",
+                "language": "SQL",
+                "time_limit": 600,
+                "test_cases": [
+                    {"input": {"table": "employees"}, "expected_output": "select"},
+                ],
+                "expected_complexity": "O(n)",
+                "keywords": ["sql", "query", "select"],
+            },
+            {
+                "id": "FB_CODE_004",
+                "question_text": "Given an array of integers, return indices of two numbers that add up to target.",
+                "question_type": "Coding",
+                "difficulty": "Medium",
+                "category": "Algorithms",
+                "topic": "Array",
+                "language": "Python",
+                "time_limit": 900,
+                "test_cases": [
+                    {"input": {"nums": [2, 7, 11, 15], "target": 9}, "expected_output": [0, 1]},
+                    {"input": {"nums": [3, 2, 4], "target": 6}, "expected_output": [1, 2]},
+                ],
+                "expected_complexity": "O(n)",
+                "keywords": ["array", "hash map"],
+            },
+            {
+                "id": "FB_CODE_005",
+                "question_text": "Write a Dockerfile for a basic Python web app and explain each layer.",
+                "question_type": "Coding",
+                "difficulty": "Medium",
+                "category": "DevOps",
+                "topic": "Docker",
+                "language": "Text",
+                "time_limit": 900,
+                "test_cases": [
+                    {"input": {"artifact": "dockerfile"}, "expected_output": "from"},
+                ],
+                "expected_complexity": "O(1)",
+                "keywords": ["docker", "dockerfile", "devops"],
+            },
+        ]
     
     def _determine_coding_profile(self, job_role: str, required_skills: List[str]) -> str:
         """Determine the coding profile based on job role and skill keywords."""
@@ -224,8 +399,10 @@ class InterviewService:
             coding_profile=coding_profile
         )
         
-        # Combine all questions
+        # Combine all questions and top up if bank is smaller than requested count.
         all_questions = mcq_questions + desc_questions + code_questions
+        if len(all_questions) < num_questions:
+            all_questions = self._top_up_questions(all_questions, num_questions)
         
         # Create session
         session_id = f"INT_{datetime.now().strftime('%Y%m%d%H%M%S')}_{candidate_id[:4]}"
@@ -262,6 +439,20 @@ class InterviewService:
             logger.info(f"Created interview session {session_id} for {candidate_id}")
         
         return session
+
+    def _top_up_questions(self, selected_questions: List[Dict], target_count: int) -> List[Dict]:
+        """Repeat available questions with unique IDs until target_count is reached."""
+        if not selected_questions:
+            return []
+
+        topped_up = list(selected_questions)
+        idx = 1
+        while len(topped_up) < target_count:
+            source = selected_questions[(idx - 1) % len(selected_questions)].copy()
+            source["id"] = f"{source.get('id', 'Q')}_R{idx}"
+            topped_up.append(source)
+            idx += 1
+        return topped_up
     
     def _select_questions_by_type(self, question_type: str, 
                                   count: int, 
@@ -300,22 +491,24 @@ class InterviewService:
                     if q.get("question_type") == "Coding"
                 ]
         
-        # Filter by relevance to skills
+        # Filter by relevance to skills; if none match, fall back to generic typed questions.
         relevant_questions = []
         for q in typed_questions:
             category = q.get("category", "").lower()
             topic = q.get("topic", "").lower()
-            
+            question_text = q.get("question_text", "").lower()
+
             is_relevant = any(
-                skill.lower() in category or skill.lower() in topic
+                skill.lower() in category
+                or skill.lower() in topic
+                or skill.lower() in question_text
                 for skill in relevant_skills
             )
-            
-            if is_relevant or not relevant_questions:  # Always include if none found
+            if is_relevant:
                 relevant_questions.append(q)
-        
-        # Return top 'count' questions
-        return relevant_questions[:count]
+
+        pool = relevant_questions if relevant_questions else typed_questions
+        return pool[:count]
     
     def _filter_coding_questions_by_profile(self, coding_questions: List[Dict], profile: str) -> List[Dict]:
         """Filter coding questions based on SQL, scripting, or full coding profiles."""

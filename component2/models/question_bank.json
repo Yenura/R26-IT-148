@@ -1,0 +1,309 @@
+[
+  {
+    "id": "FB_MCQ_001",
+    "question_text": "What is the primary purpose of an index in SQL databases?",
+    "question_type": "MCQ",
+    "difficulty": "Easy",
+    "category": "SQL",
+    "topic": "Database Optimization",
+    "options": [
+      {
+        "index": 0,
+        "text": "To increase table size"
+      },
+      {
+        "index": 1,
+        "text": "To speed up query lookups"
+      },
+      {
+        "index": 2,
+        "text": "To encrypt all records"
+      },
+      {
+        "index": 3,
+        "text": "To replace primary keys"
+      }
+    ],
+    "correct_option": 1,
+    "keywords": [
+      "sql",
+      "index",
+      "query"
+    ]
+  },
+  {
+    "id": "FB_MCQ_002",
+    "question_text": "Which HTTP method is commonly used to partially update a resource?",
+    "question_type": "MCQ",
+    "difficulty": "Easy",
+    "category": "REST APIs",
+    "topic": "HTTP Methods",
+    "options": [
+      {
+        "index": 0,
+        "text": "GET"
+      },
+      {
+        "index": 1,
+        "text": "PATCH"
+      },
+      {
+        "index": 2,
+        "text": "DELETE"
+      },
+      {
+        "index": 3,
+        "text": "HEAD"
+      }
+    ],
+    "correct_option": 1,
+    "keywords": [
+      "http",
+      "rest",
+      "patch"
+    ]
+  },
+  {
+    "id": "FB_MCQ_003",
+    "question_text": "Which React feature is used for component state in function components?",
+    "question_type": "MCQ",
+    "difficulty": "Easy",
+    "category": "React",
+    "topic": "Hooks",
+    "options": [
+      {
+        "index": 0,
+        "text": "useState"
+      },
+      {
+        "index": 1,
+        "text": "useMemo"
+      },
+      {
+        "index": 2,
+        "text": "useRef"
+      },
+      {
+        "index": 3,
+        "text": "useId"
+      }
+    ],
+    "correct_option": 0,
+    "keywords": [
+      "react",
+      "hooks",
+      "state"
+    ]
+  },
+  {
+    "id": "FB_DESC_001",
+    "question_text": "Explain polymorphism in object-oriented programming with an example.",
+    "answer_text": "Polymorphism allows objects of different classes to be treated through a common interface, often via method overriding.",
+    "question_type": "Descriptive",
+    "difficulty": "Medium",
+    "category": "OOP",
+    "topic": "Design Patterns",
+    "keywords": [
+      "polymorphism",
+      "oop",
+      "overriding"
+    ]
+  },
+  {
+    "id": "FB_DESC_002",
+    "question_text": "How would you design a scalable REST API for high traffic?",
+    "answer_text": "A scalable REST API typically uses stateless services, caching, pagination, load balancing, and database indexing.",
+    "question_type": "Descriptive",
+    "difficulty": "Hard",
+    "category": "Backend",
+    "topic": "REST APIs",
+    "keywords": [
+      "api",
+      "scaling",
+      "caching",
+      "load balancing"
+    ]
+  },
+  {
+    "id": "FB_DESC_003",
+    "question_text": "What is overfitting in machine learning and how can it be reduced?",
+    "answer_text": "Overfitting happens when a model learns training noise; reduce it using regularization, cross-validation, dropout, and more data.",
+    "question_type": "Descriptive",
+    "difficulty": "Medium",
+    "category": "Machine Learning",
+    "topic": "Model Validation",
+    "keywords": [
+      "overfitting",
+      "regularization",
+      "cross-validation"
+    ]
+  },
+  {
+    "id": "FB_DESC_004",
+    "question_text": "Why is CI/CD important for DevOps teams?",
+    "answer_text": "CI/CD automates build, test, and release workflows to reduce risk and speed up delivery.",
+    "question_type": "Descriptive",
+    "difficulty": "Easy",
+    "category": "DevOps",
+    "topic": "CI/CD",
+    "keywords": [
+      "devops",
+      "automation",
+      "pipeline"
+    ]
+  },
+  {
+    "id": "FB_CODE_001",
+    "question_text": "Write a function that returns the sum of two integers.",
+    "question_type": "Coding",
+    "difficulty": "Easy",
+    "category": "Python",
+    "topic": "Functions",
+    "language": "Python",
+    "time_limit": 600,
+    "test_cases": [
+      {
+        "input": {
+          "a": 2,
+          "b": 3
+        },
+        "expected_output": 5
+      },
+      {
+        "input": {
+          "a": -1,
+          "b": 1
+        },
+        "expected_output": 0
+      }
+    ],
+    "expected_complexity": "O(1)",
+    "keywords": [
+      "python",
+      "function"
+    ]
+  },
+  {
+    "id": "FB_CODE_002",
+    "question_text": "Write a function to reverse a string.",
+    "question_type": "Coding",
+    "difficulty": "Easy",
+    "category": "Python",
+    "topic": "Strings",
+    "language": "Python",
+    "time_limit": 600,
+    "test_cases": [
+      {
+        "input": {
+          "s": "abc"
+        },
+        "expected_output": "cba"
+      },
+      {
+        "input": {
+          "s": "level"
+        },
+        "expected_output": "level"
+      }
+    ],
+    "expected_complexity": "O(n)",
+    "keywords": [
+      "python",
+      "string"
+    ]
+  },
+  {
+    "id": "FB_CODE_003",
+    "question_text": "Write an SQL query to return all employees with salary greater than 50000.",
+    "question_type": "Coding",
+    "difficulty": "Medium",
+    "category": "SQL",
+    "topic": "Query Writing",
+    "language": "SQL",
+    "time_limit": 600,
+    "test_cases": [
+      {
+        "input": {
+          "table": "employees"
+        },
+        "expected_output": "select"
+      }
+    ],
+    "expected_complexity": "O(n)",
+    "keywords": [
+      "sql",
+      "query",
+      "select"
+    ]
+  },
+  {
+    "id": "FB_CODE_004",
+    "question_text": "Given an array of integers, return indices of two numbers that add up to target.",
+    "question_type": "Coding",
+    "difficulty": "Medium",
+    "category": "Algorithms",
+    "topic": "Array",
+    "language": "Python",
+    "time_limit": 900,
+    "test_cases": [
+      {
+        "input": {
+          "nums": [
+            2,
+            7,
+            11,
+            15
+          ],
+          "target": 9
+        },
+        "expected_output": [
+          0,
+          1
+        ]
+      },
+      {
+        "input": {
+          "nums": [
+            3,
+            2,
+            4
+          ],
+          "target": 6
+        },
+        "expected_output": [
+          1,
+          2
+        ]
+      }
+    ],
+    "expected_complexity": "O(n)",
+    "keywords": [
+      "array",
+      "hash map"
+    ]
+  },
+  {
+    "id": "FB_CODE_005",
+    "question_text": "Write a Dockerfile for a basic Python web app and explain each layer.",
+    "question_type": "Coding",
+    "difficulty": "Medium",
+    "category": "DevOps",
+    "topic": "Docker",
+    "language": "Text",
+    "time_limit": 900,
+    "test_cases": [
+      {
+        "input": {
+          "artifact": "dockerfile"
+        },
+        "expected_output": "from"
+      }
+    ],
+    "expected_complexity": "O(1)",
+    "keywords": [
+      "docker",
+      "dockerfile",
+      "devops"
+    ]
+  }
+]
