@@ -13,6 +13,8 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
+from services.rag_llm_questions import generate_questions_rag_llm, merge_skill_lists
+
 # Setup logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -365,8 +367,13 @@ class InterviewService:
         """Get required skills for a job role"""
         return self.job_requirements.get(job_role, [])
     
-    def create_interview_session(self, candidate_id: str, job_role: str, 
-                                num_questions: int = 10) -> Dict:
+    def create_interview_session(
+        self,
+        candidate_id: str,
+        job_role: str,
+        num_questions: int = 10,
+        employer_skills: Optional[List[str]] = None,
+    ) -> Dict:
         """
         Create interview session with questions
         
@@ -374,36 +381,54 @@ class InterviewService:
             candidate_id: Candidate ID
             job_role: Target job role
             num_questions: Number of questions to generate
-            
+            employer_skills: Optional skills from employer posting (merged with role defaults)
+
         Returns:
             Interview session dictionary
         """
         if job_role not in self.job_requirements:
             raise ValueError(f"Invalid job role: {job_role}")
         
-        # Get required skills and determine coding profile
-        required_skills = self.job_requirements[job_role]
+        # Merge employer-posted skills with role defaults (employer order preserved)
+        required_skills = merge_skill_lists(self.job_requirements[job_role], employer_skills)
         coding_profile = self._determine_coding_profile(job_role, required_skills)
         num_mcq, num_desc, num_code = self._get_question_distribution(
             job_role, coding_profile, num_questions
         )
-        
-        # Select questions by type
-        mcq_questions = self._select_questions_by_type(
-            "MCQ", num_mcq, required_skills
+
+        llm_questions = generate_questions_rag_llm(
+            job_role=job_role,
+            skills=required_skills,
+            question_bank=self.question_bank or [],
+            num_mcq=num_mcq,
+            num_desc=num_desc,
+            num_code=num_code,
+            coding_profile=coding_profile,
         )
-        desc_questions = self._select_questions_by_type(
-            "Descriptive", num_desc, required_skills
-        )
-        code_questions = self._select_questions_by_type(
-            "Coding", num_code, required_skills,
-            coding_profile=coding_profile
-        )
-        
-        # Combine all questions and top up if bank is smaller than requested count.
-        all_questions = mcq_questions + desc_questions + code_questions
-        if len(all_questions) < num_questions:
-            all_questions = self._top_up_questions(all_questions, num_questions, coding_profile=coding_profile)
+
+        if llm_questions:
+            all_questions = llm_questions
+            mcq_questions = [q for q in all_questions if q.get("question_type") == "MCQ"]
+            desc_questions = [q for q in all_questions if q.get("question_type") == "Descriptive"]
+            code_questions = [q for q in all_questions if q.get("question_type") == "Coding"]
+            logger.info("Interview session using RAG+LLM generated questions (%s items)", len(all_questions))
+        else:
+            # Select questions by type from bank
+            mcq_questions = self._select_questions_by_type(
+                "MCQ", num_mcq, required_skills
+            )
+            desc_questions = self._select_questions_by_type(
+                "Descriptive", num_desc, required_skills
+            )
+            code_questions = self._select_questions_by_type(
+                "Coding", num_code, required_skills,
+                coding_profile=coding_profile
+            )
+
+            # Combine all questions and top up if bank is smaller than requested count.
+            all_questions = mcq_questions + desc_questions + code_questions
+            if len(all_questions) < num_questions:
+                all_questions = self._top_up_questions(all_questions, num_questions, coding_profile=coding_profile)
         
         # Create session with high-entropy ID to avoid collisions.
         candidate_prefix = re.sub(r"[^A-Za-z0-9]", "", candidate_id or "CAND")[:4].upper() or "CAND"
@@ -426,9 +451,9 @@ class InterviewService:
             "coding_profile": coding_profile,
             "questions": all_questions,
             "question_count": {
-                "mcq": len(mcq_questions),
-                "descriptive": len(desc_questions),
-                "coding": len(code_questions)
+                "mcq": sum(1 for q in all_questions if q.get("question_type") == "MCQ"),
+                "descriptive": sum(1 for q in all_questions if q.get("question_type") == "Descriptive"),
+                "coding": sum(1 for q in all_questions if q.get("question_type") == "Coding"),
             },
             "total_questions": len(all_questions),
             "created_at": datetime.utcnow().isoformat(),

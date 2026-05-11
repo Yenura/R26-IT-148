@@ -62,7 +62,8 @@ async def start_interview(request: InterviewRequest, services: Dict = Depends(ge
         session = interview_service.create_interview_session(
             candidate_id=request.candidate_id,
             job_role=request.job_role,
-            num_questions=request.num_questions
+            num_questions=request.num_questions,
+            employer_skills=request.required_skills or None,
         )
         
         # Persist interview session to MongoDB

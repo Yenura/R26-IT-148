@@ -11,6 +11,13 @@ import logging
 from contextlib import asynccontextmanager
 import os
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from db import get_db
 
 # Configure logging
