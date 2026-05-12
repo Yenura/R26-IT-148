@@ -16,10 +16,21 @@ export default function InterviewInterface() {
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
 
   useEffect(() => {
-    if (!session && sessionId) {
-      // In production, fetch session from backend
-      setError('Session not found');
-    }
+    const fetchSession = async () => {
+      if (!session && sessionId) {
+        try {
+          setLoading(true);
+          const data = await interviewAPI.getSession(sessionId);
+          setSession(data.session);
+        } catch (err) {
+          setError(handleAPIError(err));
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchSession();
   }, [sessionId, session]);
 
   useEffect(() => {
@@ -30,7 +41,19 @@ export default function InterviewInterface() {
   }, []);
 
   if (!session) {
-    return <main><div className="alert alert-error">{error}</div></main>;
+    return <main>
+      <div className="alert alert-error">
+        {loading ? 'Loading interview session...' : (error || 'Session not found')}
+      </div>
+    </main>;
+  }
+
+  if (!session.questions || session.questions.length === 0) {
+    return <main>
+      <div className="alert alert-error">
+        No questions found for this session. Please restart the interview.
+      </div>
+    </main>;
   }
 
   const currentQuestion = session.questions[currentQIndex];
@@ -58,15 +81,47 @@ export default function InterviewInterface() {
   const handleSubmit = async () => {
     try {
       setLoading(true);
-      
+
+      const payloadAnswers = session.questions.map((question) => {
+        const answer = answers[question.id];
+        const baseAnswer = {
+          question_id: question.id,
+          question_type: question.question_type,
+        };
+
+        if (question.question_type === 'MCQ') {
+          return {
+            ...baseAnswer,
+            selected_option: typeof answer === 'number' ? answer : parseInt(answer, 10),
+          };
+        }
+
+        if (question.question_type === 'Descriptive') {
+          return {
+            ...baseAnswer,
+            answer_text: answer || '',
+          };
+        }
+
+        if (question.question_type === 'Coding') {
+          return {
+            ...baseAnswer,
+            code_text: answer || '',
+            language: 'Python',
+          };
+        }
+
+        return {
+          ...baseAnswer,
+          answer_text: answer || '',
+        };
+      });
+
       const result = await interviewAPI.submitAnswers({
         candidate_id: session.candidate_id,
         session_id: session.session_id,
         job_role: session.job_role,
-        answers: Object.entries(answers).map(([qId, answer]) => ({
-          question_id: qId,
-          answer: answer
-        }))
+        answers: payloadAnswers
       });
 
       navigate(`/results/${result.interview_id}`, { state: { result } });

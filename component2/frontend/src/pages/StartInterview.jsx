@@ -3,11 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { interviewAPI, handleAPIError } from '../api';
 import '../pages/StartInterview.css';
 
+const generateCandidateId = () => {
+  const ts = Date.now().toString().slice(-6);
+  const rand = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  return `CAND-${ts}-${rand}`;
+};
+
 export default function StartInterview() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    candidateId: '',
+    candidateId: generateCandidateId(),
     jobRole: '',
+    employerSkills: '',
     numQuestions: 10
   });
   const [jobs, setJobs] = useState([]);
@@ -37,17 +44,22 @@ export default function StartInterview() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.candidateId || !formData.jobRole) {
+    if (!formData.jobRole) {
       setError('Please fill in all required fields');
       return;
     }
 
     try {
       setLoading(true);
+      const skillsList = formData.employerSkills
+        .split(/[,;\n]+/)
+        .map((s) => s.trim())
+        .filter(Boolean);
+
       const session = await interviewAPI.startInterview(
         formData.candidateId,
         formData.jobRole,
-        [],
+        skillsList,
         formData.numQuestions
       );
       
@@ -71,17 +83,33 @@ export default function StartInterview() {
         <div className="form-card card">
           <form onSubmit={handleSubmit}>
             <div className="form-group">
-              <label htmlFor="candidateId">Candidate ID *</label>
+              <label htmlFor="candidateId">Candidate ID (Auto-generated)</label>
               <input
                 type="text"
                 id="candidateId"
                 name="candidateId"
-                placeholder="Enter your candidate ID (e.g., CAND-001)"
+                placeholder="Auto-generated candidate ID"
                 value={formData.candidateId}
-                onChange={handleChange}
-                required
+                readOnly
               />
-              <small>Unique identifier for tracking your interviews</small>
+              <small>
+                Unique identifier generated automatically for this interview session.
+              </small>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="employerSkills">Employer job skills (optional)</label>
+              <textarea
+                id="employerSkills"
+                name="employerSkills"
+                rows="3"
+                placeholder="e.g. Python, Django, REST APIs — comma or newline separated"
+                value={formData.employerSkills}
+                onChange={handleChange}
+              />
+              <small>
+                Sent to the backend as <code>required_skills</code> for RAG retrieval and LLM adaptation when enabled.
+              </small>
             </div>
 
             <div className="form-group">

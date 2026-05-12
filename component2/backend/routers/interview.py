@@ -13,6 +13,7 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
+from db import save_session, get_session, save_result, get_result, update_session_status
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -63,8 +64,12 @@ async def start_interview(request: InterviewRequest, services: Dict = Depends(ge
         session = interview_service.create_interview_session(
             candidate_id=request.candidate_id,
             job_role=request.job_role,
-            num_questions=request.num_questions
+            num_questions=request.num_questions,
+            employer_skills=request.required_skills or None,
         )
+        
+        # Persist interview session to MongoDB
+        save_session(session)
         
         # Convert to response model
         questions = [
@@ -76,6 +81,8 @@ async def start_interview(request: InterviewRequest, services: Dict = Depends(ge
                 difficulty=DifficultyEnum(q.get("difficulty", "Easy")),
                 category=q.get("category", ""),
                 topic=q.get("topic", ""),
+                options=q.get("options"),
+                test_cases=q.get("test_cases"),
                 time_limit_seconds=q.get("time_limit", 900)
             )
             for q in session.get("questions", [])
@@ -114,11 +121,88 @@ async def submit_answers(submission: Dict, services: Dict = Depends(get_services
     try:
         interview_service = services["interview_service"]
         
-        # Evaluate interview
+        session_id = submission.get("session_id")
+        session = get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Interview session not found")
+        
+        # Enrich answer payload with question_type and correctness
+        question_map = {
+            q["id"]: q for q in session.get("questions", [])
+            if q.get("id")
+        }
+        processed_answers = []
+
+        for answer in submission.get("answers", []):
+            question_id = answer.get("question_id")
+            question = question_map.get(question_id)
+            if not question:
+                continue
+
+            question_type = question.get("question_type")
+            processed_answer = {
+                "question_id": question_id,
+                "question_type": question_type,
+                "topic": question.get("topic", "Unknown")
+            }
+
+            if question_type == "MCQ":
+                candidate_choice = answer.get("selected_option")
+                if candidate_choice is None:
+                    candidate_choice = answer.get("answer")
+                correct_choice = question.get("correct_option")
+                processed_answer["selected_option"] = candidate_choice
+                processed_answer["correct_option"] = correct_choice
+                processed_answer["is_correct"] = candidate_choice == correct_choice
+                processed_answer["score"] = 100 if processed_answer["is_correct"] else 0
+
+            elif question_type == "Descriptive":
+                answer_text = answer.get("answer_text") or answer.get("answer") or ""
+                reference_text = question.get("answer_text") or question.get("expected_answer") or ""
+                evaluation_result = services["evaluation_service"].evaluate_descriptive(
+                    reference=reference_text,
+                    candidate=answer_text
+                )
+                processed_answer.update({
+                    "answer_text": answer_text,
+                    "final_score": evaluation_result.get("final_score", 0),
+                    "similarity": evaluation_result.get("similarity", 0),
+                    "keyword_coverage": evaluation_result.get("keyword_coverage", 0)
+                })
+
+            elif question_type == "Coding":
+                code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
+                evaluation_result = services["evaluation_service"].evaluate_coding(
+                    code_text=code_text,
+                    test_cases=question.get("test_cases", []) or []
+                )
+                processed_answer.update({
+                    "code_text": code_text,
+                    "language": answer.get("language", "Python"),
+                    "code_score": evaluation_result.get("code_score", 0),
+                    "syntax_valid": evaluation_result.get("syntax_valid", False),
+                    "test_pass_rate": evaluation_result.get("test_pass_rate", 0),
+                    "tests_passed": evaluation_result.get("tests_passed", 0),
+                    "total_tests": evaluation_result.get("total_tests", len(question.get("test_cases", []) or [])),
+                    "quality_score": evaluation_result.get("quality_score", 0)
+                })
+
+            processed_answers.append(processed_answer)
+
+        evaluation_payload = {
+            "candidate_id": submission.get("candidate_id"),
+            "session_id": session_id,
+            "job_role": submission.get("job_role"),
+            "answers": processed_answers
+        }
+        
         result = interview_service.evaluate_interview(
-            session_id=submission.get("session_id"),
-            interview_data=submission
+            session_id=session_id,
+            interview_data=evaluation_payload
         )
+
+        save_result(result)
+        update_session_status(session_id, "completed")
         
         return InterviewScoreResult(
             interview_id=result["interview_id"],
@@ -138,13 +222,15 @@ async def submit_answers(submission: Dict, services: Dict = Depends(get_services
             created_at=result["created_at"]
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error submitting answers: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/result/{interview_id}", response_model=EvaluationResponse)
-async def get_result(interview_id: str, services: Dict = Depends(get_services)):
+async def fetch_interview_result(interview_id: str, services: Dict = Depends(get_services)):
     """
     Get evaluation result for an interview
     
@@ -155,28 +241,45 @@ async def get_result(interview_id: str, services: Dict = Depends(get_services)):
         Evaluation response with score details
     """
     try:
-        # In production, fetch from database
-        # For now, return mock data
-        
+        result = get_result(interview_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Interview result not found")
+
         return EvaluationResponse(
             success=True,
             message="Interview result retrieved",
-            data={
-                "interview_id": interview_id,
-                "candidate_id": "CAND-001",
-                "session_id": "INT-001",
-                "job_role": "Software Engineer",
-                "interview_score": 78.5,
-                "grade": "Good",
-                "mcq_score": 80,
-                "descriptive_score": 75,
-                "coding_score": 80,
-                "weak_topics": ["Algorithms", "System Design"]
-            }
+            data=result
         )
         
     except Exception as e:
         logger.error(f"Error retrieving result: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/session/{session_id}", response_model=Dict)
+async def fetch_interview_session(session_id: str):
+    """
+    Get interview session by ID
+    
+    Args:
+        session_id: Interview session ID
+
+    Returns:
+        Interview session payload
+    """
+    try:
+        session = get_session(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Interview session not found")
+
+        return {
+            "success": True,
+            "session": session
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving interview session: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 

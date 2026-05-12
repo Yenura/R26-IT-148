@@ -1,0 +1,104 @@
+{
+  "Software Engineer": [
+    "Java",
+    "Python",
+    "C++",
+    "SQL",
+    "React",
+    "REST APIs",
+    "OOP",
+    "Design Patterns"
+  ],
+  "Data Scientist": [
+    "Python",
+    "Machine Learning",
+    "SQL",
+    "Statistics",
+    "Deep Learning",
+    "Data Analysis",
+    "Pandas",
+    "NumPy"
+  ],
+  "Machine Learning Engineer": [
+    "Python",
+    "TensorFlow",
+    "PyTorch",
+    "MLOps",
+    "Model Training",
+    "Data Pipeline",
+    "Scikit-learn"
+  ],
+  "DevOps Engineer": [
+    "Docker",
+    "Kubernetes",
+    "CI/CD",
+    "AWS",
+    "Linux",
+    "Git",
+    "Infrastructure as Code",
+    "Monitoring"
+  ],
+  "Cybersecurity Analyst": [
+    "Cybersecurity",
+    "Networking",
+    "Linux",
+    "Ethical Hacking",
+    "SIEM",
+    "Threat Detection",
+    "Encryption",
+    "Vulnerability Assessment"
+  ],
+  "Cloud Solutions Architect": [
+    "AWS",
+    "GCP",
+    "Azure",
+    "Cloud Architecture",
+    "Scalability",
+    "Security",
+    "Microservices",
+    "Load Balancing"
+  ],
+  "Database Administrator": [
+    "SQL",
+    "NoSQL",
+    "Database Optimization",
+    "Backup and Recovery",
+    "Indexing",
+    "Replication",
+    "MongoDB",
+    "PostgreSQL"
+  ],
+  "Frontend Developer": [
+    "React",
+    "JavaScript",
+    "CSS",
+    "HTML",
+    "Vue",
+    "TypeScript",
+    "UI/UX",
+    "Accessibility",
+    "DOM",
+    "Responsive Design"
+  ],
+  "Backend Developer": [
+    "Python",
+    "Java",
+    "Node.js",
+    "APIs",
+    "Microservices",
+    "SQL",
+    "Database Design",
+    "Server-side Logic",
+    "Authentication"
+  ],
+  "Mobile App Developer": [
+    "React Native",
+    "Flutter",
+    "iOS",
+    "Android",
+    "Kotlin",
+    "Swift",
+    "Mobile UI",
+    "Performance Optimization"
+  ]
+}

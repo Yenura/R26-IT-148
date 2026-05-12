@@ -21,6 +21,9 @@ const api = axios.create({
 export const interviewAPI = {
   /**
    * Start a new interview session
+   *
+   * Response includes session metadata and assigned coding profile:
+   * - coding_profile: full | sql | scripting | none
    */
   startInterview: async (candidateId, jobRole, requiredSkills, numQuestions = 10) => {
     const response = await api.post('/interview/start', {
@@ -45,6 +48,11 @@ export const interviewAPI = {
    */
   getResult: async (interviewId) => {
     const response = await api.get(`/interview/result/${interviewId}`);
+    return response.data;
+  },
+
+  getSession: async (sessionId) => {
+    const response = await api.get(`/interview/session/${sessionId}`);
     return response.data;
   },
 

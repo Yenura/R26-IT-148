@@ -122,10 +122,17 @@ def main():
         test_sessions[job_role] = session
         
         print(f"\n  {job_role}:")
+<<<<<<< HEAD
         print(f'    - Total: {session["total_questions"]} questions')
         print(f'    - MCQ: {session["question_count"]["mcq"]}')
         print(f'    - Descriptive: {session["question_count"]["descriptive"]}')
         print(f'    - Coding: {session["question_count"]["coding"]}')
+=======
+        print(f"    - Total: {session['total_questions']} questions")
+        print(f"    - MCQ: {session['question_count']['mcq']}")
+        print(f"    - Descriptive: {session['question_count']['descriptive']}")
+        print(f"    - Coding: {session['question_count']['coding']}")
+>>>>>>> 89262470df6a5ccaf42b2e5b1cdae708ecc31de6
     
     # Save sample sessions
     sample_sessions_path = os.path.join(output_dir, "sample_interview_sessions.json")
@@ -159,8 +166,13 @@ def main():
     mcq_result = mcq_evaluator.evaluate_batch_mcq(correct, candidate)
     print(f"    Correct: {correct}")
     print(f"    Candidate: {candidate}")
+<<<<<<< HEAD
     print(f'    → Score: {mcq_result["mcq_score"]}/100')
     print(f'    → Accuracy: {mcq_result["accuracy"]}%')
+=======
+    print(f"    → Score: {mcq_result['mcq_score']}/100")
+    print(f"    → Accuracy: {mcq_result['accuracy']}%")
+>>>>>>> 89262470df6a5ccaf42b2e5b1cdae708ecc31de6
     
     # Test Coding Evaluator
     print("\n  Testing Coding Evaluator:")
@@ -174,7 +186,11 @@ def main():
     )
     print(f"    Test Cases: {code_result['tests_passed']}/{code_result['total_tests']}")
     print(f"    Syntax Valid: {code_result['syntax_valid']}")
+<<<<<<< HEAD
     print(f'    → Score: {code_result["code_score"]}/100')
+=======
+    print(f"    → Score: {code_result['code_score']}/100")
+>>>>>>> 89262470df6a5ccaf42b2e5b1cdae708ecc31de6
     
     # Save evaluation configs
     eval_config_path = os.path.join(output_dir, "evaluation_config.json")
