@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import '../pages/Results.css';
 
 export default function Results() {
-  const { interviewId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const [result, setResult] = useState(location.state?.result || null);
+  const [result] = useState(location.state?.result || null);
 
   if (!result) {
     return (

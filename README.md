@@ -142,20 +142,35 @@ Process job descriptions and candidate CVs to compute a **CV Matching Score**.
 ## Component 2 — AI Interview Generation & Evaluation
 
 ### Goal
-Generate AI-based interview questions and automatically score candidate answers.
+Generate AI-based interview questions using a custom-trained QG model and automatically score candidate answers.
+
+### Question Generation
+- **Custom TinyQGModel** — Seq2Seq Transformer trained from scratch on question bank + LeetCode dataset
+- **3 question types:** MCQ, Descriptive, Coding
+- **Static bank fallback** — Pre-built questions when model is unavailable
 
 ### Question Types
 | Type | Generation | Evaluation |
 |------|-----------|------------|
-| MCQ | Based on job role requirements | Correct/Incorrect → MCQ Score |
-| Descriptive | From job description keywords | SBERT semantic similarity |
-| Coding | Role-specific problems | Test case execution / scoring rules |
+| MCQ | QG model or static bank | Correct/Incorrect → MCQ Score |
+| Descriptive | QG model or static bank | SBERT semantic similarity |
+| Coding | QG model or static bank (LeetCode) | Test case execution / scoring rules |
 
 ### ML Tasks
-- Question generation from job role knowledge base
+- Custom Transformer training (128d, 4h, 2L, 512ff)
+- Dataset: 2,414 examples (1,845 coding, 536 descriptive, 33 MCQ)
 - SBERT model for descriptive answer similarity
 - Scoring engine for all 3 question types
 - Output: `interview_score`, `mcq_score`, `descriptive_score`, `coding_score`
+
+### Key Files
+| File | Purpose |
+|------|---------|
+| `ml/train_qg_model.py` | Train improved QG Transformer |
+| `ml/build_qg_dataset.py` | Merge data into qg_dataset.json |
+| `ml/data_loader.py` | Load CSVs + LeetCode dataset |
+| `ml/question_generator.py` | QG model inference |
+| `backend/services/qg_engine.py` | Backend wrapper for QG model |
 
 ### API Endpoints (port 8002)
 | Method | Endpoint | Description |
@@ -345,7 +360,19 @@ AI-Driven-Recruitment-Ecosystem/
 │
 ├── component2/                        # AI Interview
 │   ├── ml/
+│   │   ├── train_qg_model.py          # Train QG Transformer
+│   │   ├── build_qg_dataset.py        # Build training dataset
+│   │   ├── data_loader.py             # Load CSVs + LeetCode
+│   │   └── question_generator.py      # QG model inference
+│   ├── models/
+│   │   ├── qg_model/                  # Trained model + tokenizer
+│   │   ├── qg_dataset.json            # Training data (2,414 examples)
+│   │   └── question_bank.json         # Static fallback bank
 │   ├── backend/                       # FastAPI — port 8002
+│   │   ├── services/
+│   │   │   ├── qg_engine.py           # QG model wrapper
+│   │   │   └── ml_engine.py           # Interview service
+│   │   └── ...
 │   └── frontend/
 │
 ├── component3/                        # Candidate Ranking
@@ -392,13 +419,14 @@ AI-Driven-Recruitment-Ecosystem/
 
 | Layer | Technology |
 |-------|-----------|
-| ML / NLP | Python, scikit-learn, pandas, numpy, joblib, SBERT, spaCy |
+| ML / NLP | Python, scikit-learn, pandas, numpy, joblib, SBERT, spaCy, PyTorch |
 | Backend | FastAPI, Uvicorn, Motor (async MongoDB), Pydantic |
 | Frontend | React 18, Vite, React Router v6, Recharts, Axios, Lucide Icons |
 | Database | MongoDB Atlas |
 | Styling | Vanilla CSS — dark glassmorphism theme |
 | Ranking | LightGBM / LambdaMART (Component 3) |
 | Explainability | SHAP (Component 3) |
+| QG Model | Custom Seq2Seq Transformer (128d, 4h, 2L) |
 
 ---
 
@@ -458,7 +486,16 @@ AI-Driven-Recruitment-Ecosystem/
 - Node.js 18+
 - MongoDB Atlas (URI below)
 
-### 1 — Train Component 4 ML Model
+### 1 — Train ML Models
+
+**Component 2 QG Model** (question generation):
+```powershell
+cd component2\ml
+python build_qg_dataset.py
+python train_qg_model.py
+```
+
+**Component 4 Skill Gap Model**:
 ```powershell
 python component4\ml\train_skill_gap_model.py
 ```

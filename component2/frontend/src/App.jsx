@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import './App.css';
 import './index.css';
 
@@ -10,8 +10,6 @@ import InterviewInterface from './pages/InterviewInterface';
 import Results from './pages/Results';
 
 function App() {
-  const [currentPage, setCurrentPage] = useState('dashboard');
-
   return (
     <Router>
       <div className="app-container">
@@ -21,8 +19,8 @@ function App() {
             <p>Component 2: AI Interview Generation & Evaluation</p>
           </div>
           <ul className="nav-links">
-            <li><a href="/" onClick={() => setCurrentPage('dashboard')}>Dashboard</a></li>
-            <li><a href="/start" onClick={() => setCurrentPage('start')}>Start Interview</a></li>
+            <li><a href="/">Dashboard</a></li>
+            <li><a href="/start">Start Interview</a></li>
           </ul>
         </nav>
 

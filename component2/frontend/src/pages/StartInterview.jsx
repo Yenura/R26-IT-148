@@ -108,7 +108,7 @@ export default function StartInterview() {
                 onChange={handleChange}
               />
               <small>
-                Sent to the backend as <code>required_skills</code> for RAG retrieval and LLM adaptation when enabled.
+                Sent to the backend as <code>required_skills</code> for question generation.
               </small>
             </div>
 
