@@ -278,6 +278,30 @@ MCQ_TEMPLATES = [
     "Which option correctly explains a common pitfall related to {topic}?",
     "What is the main benefit of using {topic} in a {role} context?",
     "Which of the following is NOT typically associated with {topic}?",
+    "A {role} needs to make a decision involving {topic}. Which option reflects the correct reasoning?",
+    "Which of the following would a senior {role} flag as a risk when {topic} is handled incorrectly?",
+    "What distinguishes a correct implementation of {topic} from a flawed one?",
+    "Which factor most influences the effectiveness of {topic} in practice?",
+]
+
+# Correct-answer phrasing (uses the question's own topic)
+MCQ_CORRECT_TEMPLATES = [
+    "Correctly applying {topic} according to established best practices for a {role}.",
+    "An accurate, practical description of how {topic} functions in real {role} work.",
+    "Addressing the core purpose of {topic} while accounting for known edge cases.",
+    "A structured approach that directly satisfies the intent behind {topic}.",
+]
+
+# Distractor phrasing: mixes in another topic from the SAME role's topic pool
+# so wrong answers are plausible/confusable rather than generic placeholders.
+MCQ_DISTRACTOR_TEMPLATES = [
+    "Confusing {topic} with {other}, which actually serves a different purpose.",
+    "Treating {topic} as equivalent to {other} — a common but incorrect assumption.",
+    "Focusing on {other} while overlooking the actual requirements of {topic}.",
+    "Applying the principles of {other} in a situation that calls for {topic} instead.",
+    "An outdated approach to {topic} that ignores current best practices.",
+    "A superficial application of {topic} that overlooks important edge cases.",
+    "Prioritizing {other} at the expense of properly addressing {topic}.",
 ]
 
 DESCRIPTIVE_TEMPLATES = [
@@ -293,6 +317,14 @@ DESCRIPTIVE_TEMPLATES = [
     "Describe how you would explain {topic} to a non-technical stakeholder.",
     "What metrics or signals would you use to evaluate {topic}?",
     "How would your approach to {topic} differ across team sizes or project scales?",
+    "What questions would you ask before starting work involving {topic}, {level_phrase}?",
+    "Describe a time {topic} could go wrong and how you'd prevent it, {level_phrase}.",
+    "How would you prioritize {topic} against competing deadlines, {level_phrase}?",
+    "What tools or techniques support effective work with {topic}?",
+    "How would you onboard a new team member on {topic}, {level_phrase}?",
+    "What tradeoffs exist between speed and quality when handling {topic}?",
+    "How would you justify a decision about {topic} to a skeptical stakeholder?",
+    "What does 'good' look like when {topic} is done well, {level_phrase}?",
 ]
 
 CODING_TEMPLATES = [
@@ -302,6 +334,10 @@ CODING_TEMPLATES = [
     "Write a script that automates a task related to {topic}.",
     "Debug and fix a piece of code with a common issue related to {topic}.",
     "Implement a test suite validating correct behavior for {topic}.",
+    "Refactor a naive implementation involving {topic} to be more efficient or maintainable.",
+    "Write code that handles failure/error cases correctly for {topic}.",
+    "Given performance constraints, optimize an implementation related to {topic}.",
+    "Write a small CLI or utility that exercises {topic} end-to-end.",
 ]
 
 
@@ -325,13 +361,37 @@ def build_rows():
                 text = tmpl.format(topic=topic, role=role)
                 if i >= len(mcq_pool):
                     text += f" (variant {i // len(mcq_pool) + 1})"
-                options = [
-                    {"index": 0, "text": f"Correct application of {topic}"},
-                    {"index": 1, "text": f"A common misconception about {topic}"},
-                    {"index": 2, "text": f"An unrelated concept to {topic}"},
-                    {"index": 3, "text": f"A partially correct but incomplete view of {topic}"},
+
+                # Build correct answer
+                correct_tmpl = random.choice(MCQ_CORRECT_TEMPLATES)
+                correct_text = correct_tmpl.format(topic=topic, role=role)
+
+                # Build 3 distractors using OTHER topics from same role's pool
+                other_topics = [t for t in topics if t != topic]
+                sample_size = min(3, len(other_topics))
+                others = random.sample(other_topics, sample_size)
+                distractor_templates = random.sample(MCQ_DISTRACTOR_TEMPLATES, sample_size)
+                distractor_texts = [
+                    dt.format(topic=topic, other=ot)
+                    for dt, ot in zip(distractor_templates, others)
                 ]
-                rows.append([qid, role, level, "mcq", text, json.dumps(options), 0, topic])
+                # pad if topic pool too small for 3 distractors
+                while len(distractor_texts) < 3:
+                    distractor_texts.append(
+                        f"A superficial application of {topic} that overlooks important edge cases."
+                    )
+
+                option_texts = [correct_text] + distractor_texts
+                indices = list(range(4))
+                random.shuffle(indices)
+                shuffled_options = [None] * 4
+                correct_answer_index = None
+                for pos, orig_idx in enumerate(indices):
+                    shuffled_options[pos] = {"index": pos, "text": option_texts[orig_idx]}
+                    if orig_idx == 0:
+                        correct_answer_index = pos
+
+                rows.append([qid, role, level, "mcq", text, json.dumps(shuffled_options), correct_answer_index, topic])
                 qid += 1
 
             # Descriptive

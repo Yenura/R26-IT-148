@@ -192,8 +192,12 @@ def build_dataset():
     all_examples = []
 
     # 1. Load existing QG dataset (if present)
+    #    Set SKIP_EXISTING=1 to rebuild from sources only (e.g. after a
+    #    regeneration that changes the RAIGS CSV, which would otherwise be
+    #    duplicated via the incremental load).
+    skip_existing = os.environ.get("SKIP_EXISTING", "0") == "1"
     existing_path = MODELS_DIR / "qg_dataset.json"
-    if existing_path.exists():
+    if existing_path.exists() and not skip_existing:
         try:
             with open(existing_path, encoding="utf-8") as f:
                 existing = json.load(f)
