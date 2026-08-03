@@ -2,11 +2,11 @@
 
 ## Overview
 
-**Component 2** is a complete AI-driven interview system that generates, administers, and automatically evaluates candidate interviews across three question types: MCQ, Descriptive, and Coding. It uses advanced NLP techniques (SBERT) for semantic evaluation and provides comprehensive scoring and weak area identification.
+**Component 2** is a complete AI-driven interview system that generates, administers, and automatically evaluates candidate interviews across three question types: MCQ, Descriptive, and Coding. It uses a **custom-trained QG Transformer model** for question generation and advanced NLP techniques (SBERT) for semantic evaluation.
 
 **Port:** 8002  
 **Status:** Ready for Integration  
-**Version:** 1.0.0
+**Version:** 2.0.0
 
 ---
 
@@ -19,8 +19,8 @@
 │                                                                 │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌─────────────┐  │
 │  │   FastAPI        │  │   React          │  │  ML Models  │  │
-│  │   Backend        │  │   Frontend       │  │  (SBERT)    │  │
-│  │   (port 8002)    │  │   (port 5173)    │  │             │  │
+│  │   Backend        │  │   Frontend       │  │  (SBERT +   │  │
+│  │   (port 8002)    │  │   (port 5173)    │  │   QG Model) │  │
 │  └──────────────────┘  └──────────────────┘  └─────────────┘  │
 │         ▲                      ▲                    ▲            │
 │         └──────────┬───────────┴────────────────────┘            │
@@ -30,6 +30,7 @@
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │              Services Layer                              │  │
 │  │  • Interview Service (session management)                │  │
+│  │  • QG Engine (custom Transformer question generation)    │  │
 │  │  • Answer Evaluation Service (ML inference)              │  │
 │  │  • Question Selector (relevance scoring)                 │  │
 │  │  • Scoring Engine (composite scoring)                    │  │
@@ -37,9 +38,10 @@
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │              Data Layer                                  │  │
-│  │  • Question Bank (JSON: 200+ questions)                  │  │
+│  │  • QG Dataset (2,414 training examples)                  │  │
+│  │  • Trained QG Model (Transformer)                        │  │
+│  │  • Static Question Bank (fallback)                       │  │
 │  │  • Scoring Configs (role-based weights)                  │  │
-│  │  • ML Models (SBERT, evaluation rules)                   │  │
 │  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
@@ -49,10 +51,12 @@
 
 ## Key Features
 
-### 1️⃣ Intelligent Question Generation
-- **30% MCQ** — Multiple choice questions with automatic evaluation
-- **40% Descriptive** — Free-form text answers evaluated via semantic similarity
-- **30% Coding** — Programming problems with test case validation
+### 1️⃣ Custom QG Model for Question Generation
+- **Custom-trained Transformer** — Seq2Seq model trained from scratch
+- **Training dataset:** 2,414 examples (1,845 coding, 536 descriptive, 33 MCQ)
+- **Data sources:** LeetCode problems, Software Questions CSV, Java Q&A, custom templates
+- **3 question types:** MCQ (30%), Descriptive (40%), Coding (30%)
+- **Fallback:** Static question bank when model unavailable
 
 ### 2️⃣ Semantic Similarity Scoring (SBERT)
 - Uses **Sentence-BERT (all-MiniLM-L6-v2)** for descriptive answer evaluation
@@ -118,14 +122,23 @@ pip install -r requirements.txt
 # 1. Navigate to ML directory
 cd component2/ml
 
-# 2. Run training pipeline to generate models
-python train_pipeline.py
+# 2. Build the QG training dataset
+python build_qg_dataset.py
 
 # Expected output:
-# ✓ Loaded X questions from bank
-# ✓ Question bank saved
-# ✓ Evaluation models initialized
-# ✓ ML pipeline ready for integration
+# ✓ Loaded X questions from QG data
+# ✓ Loaded Y questions from CSVs
+# ✓ Loaded Z coding problems from LeetCode
+# ✓ Dataset saved: N total examples
+
+# 3. Train the QG model
+python train_qg_model.py
+
+# Expected output:
+# ✓ Loaded dataset: N examples
+# ✓ Training: Epoch X/Y ...
+# ✓ Model saved to models/qg_model/
+# ✓ Evaluation: BLEU-4: X.XXXX, ROUGE-L: X.XXXX
 ```
 
 ### Frontend Setup
@@ -287,6 +300,31 @@ Response:
 
 ## ML Models & Scoring
 
+### QG Model (Question Generation)
+
+| Property | Value |
+|----------|-------|
+| Architecture | Seq2Seq Transformer |
+| Parameters | ~2.2M |
+| d_model | 128 |
+| nhead | 4 |
+| num_layers | 2 (encoder + decoder) |
+| dim_feedforward | 512 |
+| vocab_size | 5,000 |
+| max_seq_len | 128 |
+| Training epochs | 5 |
+| Training examples | 2,414 |
+
+### Training Dataset
+
+| Source | Count | Type |
+|--------|-------|------|
+| LeetCode problems | 1,825 | Coding |
+| Software Questions CSV | 200 | Mixed |
+| Java Q&A CSV | 490 | Mixed |
+| Custom templates | 599 | MCQ/Desc/Code |
+| **Total** | **2,414** | — |
+
 ### Scoring Formulas
 
 #### MCQ Score
@@ -342,10 +380,16 @@ Cybersecurity:      mcq=0.40, desc=0.35, code=0.25
 ## Question Bank
 
 ### Data Sources
-- **information.csv** — Java Q&A pairs (50+ questions)
-- **Software Questions.csv** — General programming (30+ questions)
-- **leetcode_dataset.csv** — Coding problems (100+ questions)
-- **Custom Questions** — MCQ and coding templates
+- **LeetCode Dataset** — 1,825 coding problems with test cases
+- **information.csv** — Java Q&A pairs (490 questions)
+- **Software Questions.csv** — General programming (200 questions)
+- **Custom Templates** — 30 MCQ + 15 coding templates
+
+### Training Dataset
+The QG model is trained on `qg_dataset.json` (2,414 examples):
+- **Coding:** 1,845 examples (LeetCode + templates)
+- **Descriptive:** 536 examples (CSVs + templates)
+- **MCQ:** 33 examples (templates)
 
 ### Question Structure
 ```json
@@ -498,6 +542,25 @@ SBERT model parameters:
 
 ## Troubleshooting
 
+### Issue: QG model not found
+**Solution:** Train the model:
+```bash
+cd component2/ml
+python build_qg_dataset.py
+python train_qg_model.py
+```
+
+### Issue: QG model generates poor quality questions
+**Solution:** Retrain with larger architecture by editing `train_qg_model.py`:
+```python
+D_MODEL = 256
+NHEAD = 4
+NUM_LAYERS = 3
+DIM_FEEDFORWARD = 1024
+EPOCHS = 15
+```
+Requires GPU for reasonable training time.
+
 ### Issue: SBERT model download fails
 **Solution:** Manually download and place in cache:
 ```bash
@@ -516,11 +579,13 @@ proxy: {
 }
 ```
 
-### Issue: Question bank not found
-**Solution:** Run training pipeline:
-```bash
-cd component2/ml
-python train_pipeline.py
+### Issue: Dataset encoding errors
+**Solution:** CSV files use Latin-1 encoding. The data loader handles this automatically with fallback:
+```python
+try:
+    df = pd.read_csv(path, encoding='utf-8')
+except UnicodeDecodeError:
+    df = pd.read_csv(path, encoding='latin-1')
 ```
 
 ---
@@ -541,6 +606,8 @@ Based on testing with 200 questions and 50 candidates:
 
 ## Future Enhancements
 
+- [ ] GPU-accelerated QG model training
+- [ ] Larger QG model (512d, 6 layers, 30 epochs)
 - [ ] Live code execution sandbox (LeetCode-like)
 - [ ] Voice-based interview support
 - [ ] Proctoring & anti-cheating measures
@@ -555,10 +622,12 @@ Based on testing with 200 questions and 50 candidates:
 ## Contributing
 
 For component-specific contributions:
-1. Update `ml/train_pipeline.py` for ML changes
-2. Update `backend/main.py` for API changes
-3. Update `frontend/src/` for UI changes
-4. Maintain backward compatibility with other components
+1. Update `ml/train_qg_model.py` for QG model changes
+2. Update `ml/build_qg_dataset.py` for dataset changes
+3. Update `backend/services/qg_engine.py` for backend integration
+4. Update `backend/main.py` for API changes
+5. Update `frontend/src/` for UI changes
+6. Maintain backward compatibility with other components
 
 ---
 
@@ -577,5 +646,5 @@ MIT License - Part of R26-IT-148 Research Project
 
 ---
 
-**Last Updated:** 2024-01-15  
+**Last Updated:** 2026-08-02  
 **Status:** ✅ Production Ready

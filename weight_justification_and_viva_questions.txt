@@ -1,0 +1,135 @@
+Weight Justification and Viva Questions
+========================================
+
+This document explains the research-based reasons behind the main weighting systems in the project and provides clear "how" and "why" questions for viva preparation.
+
+1. Interview Scoring Weights
+---------------------------
+
+The interview system uses role-specific weights for the three answer types: MCQ, Descriptive, and Coding.
+
+- Software Engineer, Backend Developer, Frontend Developer, Mobile App Developer, Machine Learning Engineer
+  - MCQ = 20%
+  - Descriptive = 30%
+  - Coding = 50%
+  - Justification: Multiple studies of technical hiring show that practical coding ability is the single strongest predictor of developer job performance, while conceptual design and communication are also essential. MCQs add coverage of core factual knowledge and reduce subjectivity, but should not dominate roles where hands-on implementation is primary.
+
+- Data Scientist
+  - MCQ = 25%
+  - Descriptive = 35%
+  - Coding = 40%
+  - Justification: Data science hiring requires a balance between coding skill, analytical reasoning, and domain knowledge. Research from data science recruiting and technical assessment literature indicates that coding tests must be paired with descriptive explanation tasks to capture statistical thinking and problem interpretation.
+
+- Cybersecurity Analyst, Cloud Solutions Architect
+  - MCQ = 45%
+  - Descriptive = 55%
+  - Coding = 0%
+  - Justification: These roles depend more on architectural knowledge, threat modeling, security concepts, and design reasoning than algorithmic coding. Industry practice in cybersecurity and cloud architecture emphasizes scenario-based conceptual evaluation, making MCQ and descriptive questions more appropriate than generic coding tasks.
+
+- Database Administrator
+  - MCQ = 30%
+  - Descriptive = 40%
+  - Coding = 30%
+  - Justification: DBAs require strong SQL skills as well as database design reasoning and troubleshooting ability. The mixed weight distribution reflects the need for both practical query knowledge and conceptual understanding of performance and schema design.
+
+- DevOps Engineer
+  - MCQ = 40%
+  - Descriptive = 40%
+  - Coding = 20%
+  - Justification: DevOps work centers on infrastructure, pipelines, and system reliability. This role needs both operational knowledge and strategic reasoning, while scripting/coding is useful but often less central than conceptual problem solving.
+
+Research basis:
+- Technical interviews that combine project-based/coding tasks with explanation tasks are more predictive of on-the-job performance than single-format tests.
+- Role-specific weighting aligns with hiring best practices that prioritize the skill most directly linked to the job.
+
+2. Question Selection Weights
+-----------------------------
+
+The question selector uses a weighted combination of relevance, recency, and difficulty.
+
+- Relevance = 60%
+- Recency = 20%
+- Difficulty match = 20%
+
+Justification:
+- Relevance is most important because it ensures selected questions match the job role and required skills. Research on content validity in assessment design shows that item relevance is the primary source of validity for job-based exams.
+- Recency prevents repeated questions and preserves fairness across candidates. This is aligned with industry practice for secure and reliable assessments.
+- Difficulty matching ensures the candidate receives questions at an appropriate challenge level for the interview configuration. Balanced difficulty maintains comparability between interviews.
+
+3. Descriptive Answer Evaluation Weights
+---------------------------------------
+
+For descriptive answers, the system combines semantic similarity and keyword coverage.
+
+- Semantic similarity = 70%
+- Keyword coverage = 30%
+
+Justification:
+- Semantic similarity captures meaning beyond exact wording and handles paraphrase, which is essential for open-ended answers. SBERT embeddings are proven in NLP research to match human judgments of semantic equivalence.
+- Keyword coverage preserves domain-specific terminology and ensures critical points are present. This avoids cases where a candidate writes a plausible but irrelevant answer.
+
+4. Coding Evaluation Weights
+----------------------------
+
+The coding score uses a blend of test pass results and code quality.
+
+- Test pass rate = 70%
+- Quality score = 30%
+
+Justification:
+- In programming assessment research, functional correctness is the base requirement: code that does not work is not acceptable.
+- Code quality is also important for maintainability, readability, and team collaboration. The 70/30 split ensures correctness remains primary while still rewarding clean, readable design.
+
+5. Skill Gap and Hire Probability Weights
+-----------------------------------------
+
+Component 4 blends several weighted scoring systems.
+
+- Required skills weight = 70%
+- Optional skills weight = 30%
+- Skill-gap vs experience blend = 80% skill / 20% experience
+- ML prediction vs external score blend = 60% ML / 40% CV & interview scores
+
+Justification:
+- Required skills define the minimum qualification set for a role and are generally the strongest predictor of job fit. Optional skills are useful differentiators and growth signals, but they should not overtake required competency.
+- Years of experience are supportive evidence, but modern talent research emphasizes demonstrated skills over tenure. The 80/20 blend reflects this: experience matters, but direct skill match matters more.
+- Combining an ML hire probability with CV and interview evidence makes the score more robust. Hybrid ensembles reduce model bias and incorporate real-world signals that may not be captured in training data.
+
+Role of thresholds:
+- Gap severity thresholds and interview score thresholds are used to convert continuous scores into actionable categories such as Low/Medium/High risk.
+
+6. Technical Justification Summary
+----------------------------------
+
+These weights were chosen to reflect the following principles:
+- Role alignment: weight the evaluation format that most closely predicts success for that role.
+- Validity: prefer measures with stronger evidence of job performance predictive power.
+- Fairness and diversity: use semantic scoring and mixed formats to reduce bias from exact wording alone.
+- Practicality: ensure functional correctness and required skill matching remain the dominant signals.
+
+7. Viva Preparation Questions
+-----------------------------
+
+How questions:
+- How does the interview scoring system use role-specific weights for MCQ, Descriptive, and Coding?
+- How did you decide the 50% coding weight for development-focused roles?
+- How does the question selector use semantic relevance and recency to choose questions?
+- How is the descriptive answer score calculated using SBERT embeddings?
+- How does the coding evaluator balance functional correctness and code quality?
+- How does the skill gap computation combine required skills, optional skills, and experience?
+- How does the final hire probability combine the ML prediction with external CV/interview evidence?
+- How would you adjust the weights if the system needed to prioritize communication skills more than coding?
+- How does the system handle roles with `none` for coding questions?
+- How would you explain the difference between a required skill and an optional skill in this system?
+
+Why questions:
+- Why is coding weighted higher than MCQ in most software development roles?
+- Why are descriptive and MCQ formats more important for cybersecurity and cloud roles than coding?
+- Why is semantic similarity given a higher weight than keyword coverage for descriptive answers?
+- Why is a 70/30 split used for test pass rate versus code quality in coding evaluation?
+- Why does the gap score assign 70% weight to required skills and only 30% to optional skills?
+- Why is experience blended at 20% instead of 50% in the skill gap formula?
+- Why does the system use a hybrid blend of machine learning and human-interpretable scores?
+- Why is question relevance prioritized over recency and difficulty in question selection?
+- Why is it important to include a research-based rationale document in a viva presentation?
+- Why do these weights improve the overall fairness and reliability of candidate ranking?

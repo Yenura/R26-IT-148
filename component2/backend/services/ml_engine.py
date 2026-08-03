@@ -13,7 +13,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 
-from services.rag_llm_questions import generate_questions_rag_llm, merge_skill_lists
+from services.qg_engine import generate_questions_qg, merge_skill_lists
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -396,22 +396,21 @@ class InterviewService:
             job_role, coding_profile, num_questions
         )
 
-        llm_questions = generate_questions_rag_llm(
+        qg_questions = generate_questions_qg(
             job_role=job_role,
             skills=required_skills,
-            question_bank=self.question_bank or [],
             num_mcq=num_mcq,
             num_desc=num_desc,
             num_code=num_code,
             coding_profile=coding_profile,
         )
 
-        if llm_questions:
-            all_questions = llm_questions
+        if qg_questions:
+            all_questions = qg_questions
             mcq_questions = [q for q in all_questions if q.get("question_type") == "MCQ"]
             desc_questions = [q for q in all_questions if q.get("question_type") == "Descriptive"]
             code_questions = [q for q in all_questions if q.get("question_type") == "Coding"]
-            logger.info("Interview session using RAG+LLM generated questions (%s items)", len(all_questions))
+            logger.info("Interview session using QG model generated questions (%s items)", len(all_questions))
         else:
             # Select questions by type from bank
             mcq_questions = self._select_questions_by_type(

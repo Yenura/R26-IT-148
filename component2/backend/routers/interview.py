@@ -103,7 +103,7 @@ async def start_interview(request: InterviewRequest, services: Dict = Depends(ge
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error starting interview: {e}")
+        logger.error(f"Error starting interview: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
