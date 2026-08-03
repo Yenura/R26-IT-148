@@ -1,0 +1,43 @@
+{
+  "component": "Component 2: AI Interview Generation & Evaluation",
+  "version": "1.0.0",
+  "created_at": "2024",
+  "models": {
+    "question_bank": {
+      "path": "C:\\Users\\thari\\Desktop\\My Project\\AI-Driven-Recruitment-Ecosystem-for-Intelligent-Job-Matching-and-Predictive-Career-Development\\component2\\backend\\trained_models\\question_bank.json",
+      "description": "Complete question bank with MCQ, Descriptive, and Coding questions",
+      "total_questions": 498,
+      "breakdown": {
+        "mcq": 5,
+        "descriptive": 490,
+        "coding": 3
+      }
+    },
+    "sbert_model": {
+      "path": "C:\\Users\\thari\\Desktop\\My Project\\AI-Driven-Recruitment-Ecosystem-for-Intelligent-Job-Matching-and-Predictive-Career-Development\\component2\\backend\\trained_models\\sbert_config.json",
+      "description": "Sentence-BERT for semantic similarity",
+      "model_name": "all-MiniLM-L6-v2"
+    },
+    "evaluators": {
+      "mcq": {
+        "path": "C:\\Users\\thari\\Desktop\\My Project\\AI-Driven-Recruitment-Ecosystem-for-Intelligent-Job-Matching-and-Predictive-Career-Development\\component2\\backend\\trained_models\\mcq_config.json"
+      },
+      "descriptive": {
+        "path": "C:\\Users\\thari\\Desktop\\My Project\\AI-Driven-Recruitment-Ecosystem-for-Intelligent-Job-Matching-and-Predictive-Career-Development\\component2\\backend\\trained_models\\sbert_config.json"
+      },
+      "coding": {
+        "path": "C:\\Users\\thari\\Desktop\\My Project\\AI-Driven-Recruitment-Ecosystem-for-Intelligent-Job-Matching-and-Predictive-Career-Development\\component2\\backend\\trained_models\\coding_config.json"
+      }
+    },
+    "selector": {
+      "path": "C:\\Users\\thari\\Desktop\\My Project\\AI-Driven-Recruitment-Ecosystem-for-Intelligent-Job-Matching-and-Predictive-Career-Development\\component2\\backend\\trained_models\\selector_config.json",
+      "description": "Question selection algorithm based on relevance and recency"
+    }
+  },
+  "api_endpoints": {
+    "start_interview": "POST /api/v1/interview/start",
+    "submit_answers": "POST /api/v1/interview/submit",
+    "get_results": "GET /api/v1/interview/result/{id}",
+    "question_bank": "GET /api/v1/interview/questions/{role}"
+  }
+}

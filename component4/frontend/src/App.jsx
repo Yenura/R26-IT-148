@@ -2,18 +2,21 @@ import { Routes, Route, NavLink, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, Search, MapPin, TrendingUp, Brain
 } from 'lucide-react'
-import Dashboard  from './pages/Dashboard'
-import Analyze    from './pages/Analyze'
-import Report     from './pages/Report'
-import CareerPath from './pages/CareerPath'
-import Progress   from './pages/Progress'
+import Dashboard   from './pages/Dashboard'
+import Analyze     from './pages/Analyze'
+import Report      from './pages/Report'
+import CareerPath  from './pages/CareerPath'
+import Progress    from './pages/Progress'
+import Leaderboard from './pages/Leaderboard'
+
 
 const NAV = [
-  { to: '/',         icon: LayoutDashboard, label: 'Dashboard'  },
-  { to: '/analyze',  icon: Search,          label: 'Analyze CV' },
-  { to: '/report',   icon: Brain,           label: 'Gap Report' },
-  { to: '/career',   icon: MapPin,          label: 'Career Path'},
-  { to: '/progress', icon: TrendingUp,      label: 'My Progress'},
+  { to: '/',           icon: LayoutDashboard, label: 'Dashboard'   },
+  { to: '/analyze',    icon: Search,          label: 'Analyze CV'  },
+  { to: '/report',     icon: Brain,           label: 'Gap Report'  },
+  { to: '/career',     icon: MapPin,          label: 'Career Path' },
+  { to: '/progress',   icon: TrendingUp,      label: 'My Progress' },
+  { to: '/leaderboard',icon: LayoutDashboard, label: 'Leaderboard' },
 ]
 
 export default function App() {
@@ -68,6 +71,8 @@ export default function App() {
           <Route path="/report/:id" element={<Report     />} />
           <Route path="/career"     element={<CareerPath />} />
           <Route path="/progress"   element={<Progress   />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+
         </Routes>
       </main>
     </div>

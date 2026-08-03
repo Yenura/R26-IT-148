@@ -1,4 +1,4 @@
-﻿"""
+"""
 Component 2: Interview System - Data Loader & Preprocessor
 Loads questions from multiple datasets and creates a unified question bank
 """

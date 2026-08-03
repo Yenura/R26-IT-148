@@ -1,0 +1,6 @@
+{
+  "alpha": 0.6,
+  "beta": 0.2,
+  "gamma": 0.2,
+  "description": "Question selection weights: relevance, recency, difficulty"
+}

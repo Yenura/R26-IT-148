@@ -70,4 +70,15 @@ export const getLeaderboard      = (limit = 10)     => API.get(`/analytics/leade
 /** Get analytics breakdown for a specific job role */
 export const getRoleInsights     = (role)           => API.get(`/analytics/role-insights/${encodeURIComponent(role)}`)
 
+// ── Aliases (used by page components) ─────────────────────────────────────────
+/** Alias: analyzeCandidate — used by Analyze.jsx */
+export const analyzeSkillGap     = analyzeCandidate
+
+/** Alias: getCareerPath — used by CareerPath.jsx */
+export const generateCareerPath  = getCareerPath
+
+/** Alias: getResources — used by CareerPath.jsx */
+export const getCareerResources  = getResources
+
 export default API
+
