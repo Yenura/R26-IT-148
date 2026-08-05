@@ -1,0 +1,38 @@
+Priya Nair
+Data Scientist | priya.nair@email.com | GitHub: github.com/priyanair
+
+PROFESSIONAL SUMMARY
+Data Scientist with 4 years of experience in machine learning, statistical analysis, and
+feature engineering. Proficient in Python, pandas, scikit-learn, and SQL. Passionate about
+turning raw data into actionable business insights and predictive models.
+
+TECHNICAL SKILLS
+Python, R, Statistics, Machine Learning, Pandas, NumPy, Matplotlib, SQL, Jupyter,
+Scikit-learn, TensorFlow, Data Cleaning, Feature Engineering, A/B Testing, Hypothesis Testing,
+Data Visualisation, Seaborn, Plotly, SQL, PostgreSQL
+
+WORK EXPERIENCE
+
+Data Scientist — Analytics Hub (Feb 2020 – Present)
+  • Built and deployed predictive models (regression, classification) for customer churn
+    with 87% accuracy, reducing churn by 22%.
+  • Conducted A/B testing experiments and hypothesis testing for product feature rollouts.
+  • Developed feature engineering pipelines using pandas and NumPy for 10M+ records.
+  • Created interactive dashboards in Plotly/Dash consumed by C-level stakeholders.
+  • Wrote SQL queries and stored procedures for ad-hoc analysis on PostgreSQL warehouses.
+
+Junior Data Analyst — DataBridge (Jun 2018 – Jan 2020)
+  • Performed exploratory data analysis (EDA) and data cleaning on raw datasets.
+  • Built cohort analysis and reporting pipelines in Python and Excel.
+  • Supported senior data scientists in model evaluation and validation.
+
+EDUCATION
+M.Sc. in Data Science — University of Edinburgh (2018)
+
+CERTIFICATIONS
+  • Google Professional Data Engineer (2021)
+  • Coursera Deep Learning Specialisation (2022)
+
+PROJECTS
+  • Customer Lifetime Value Predictor — Python, XGBoost, scikit-learn
+  • Real-Time Sales Dashboard — Python, Plotly Dash, PostgreSQL
