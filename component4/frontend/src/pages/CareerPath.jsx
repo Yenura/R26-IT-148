@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { listReports, generateCareerPath, getCareerResources } from '../api'
+import { listReports, getCareerPath, getResources } from '../api'
 import { MapPin, ExternalLink, ChevronRight } from 'lucide-react'
 
 const JOB_ROLES = [
@@ -30,7 +30,7 @@ export default function CareerPath() {
 
   const fetchResources = role => {
     setResLoading(true)
-    getCareerResources(role)
+    getResources(role)
       .then(r => setResources(r.data.resources || []))
       .catch(() => setResources([]))
       .finally(() => setResLoading(false))
@@ -41,7 +41,7 @@ export default function CareerPath() {
     if (!cand) return
     setLoading(true)
     try {
-      const res = await generateCareerPath({
+      const res = await getCareerPath({
         candidate_id:     cand.candidate_id,
         current_role:     cand.job_role,
         skills:           cand.present_skills || [],

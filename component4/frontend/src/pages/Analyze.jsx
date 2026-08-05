@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { analyzeSkillGap } from '../api'
+import { analyzeCandidate } from '../api'
 import toast from 'react-hot-toast'
 import { Brain, Plus, X, ChevronRight, Zap } from 'lucide-react'
 
@@ -114,7 +114,7 @@ export default function Analyze() {
     }
     setLoading(true)
     try {
-      await analyzeSkillGap(payload)
+      await analyzeCandidate(payload)
       toast.success('Analysis complete!')
       navigate(`/report/${form.candidate_id.trim()}`)
     } catch (err) {
