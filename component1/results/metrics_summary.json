@@ -1,0 +1,6 @@
+{
+  "tf-idf_plus_logreg": {
+    "accuracy": 1.0,
+    "macro_f1": 1.0
+  }
+}

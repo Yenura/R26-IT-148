@@ -182,7 +182,7 @@ def generate(n_per_role: int = N_PER_ROLE):
     # Write full dataset
     full_path = OUT_DIR / "synthetic_resumes.csv"
     _write_csv(full_path, records)
-    print(f"[generate_data] Total records: {len(records)} → {full_path}")
+    print(f"[generate_data] Total records: {len(records)} -> {full_path}")
 
     # Split per role to maintain class balance
     train_rows, val_rows, test_rows = [], [], []

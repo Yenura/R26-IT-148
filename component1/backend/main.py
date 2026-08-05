@@ -8,8 +8,14 @@ Run with:
 
 import logging
 import os
+import sys
 from contextlib import asynccontextmanager
 from pathlib import Path
+
+# Ensure component1/ root is on sys.path regardless of launch directory
+_COMP1_ROOT = Path(__file__).parent.parent
+if str(_COMP1_ROOT) not in sys.path:
+    sys.path.insert(0, str(_COMP1_ROOT))
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
