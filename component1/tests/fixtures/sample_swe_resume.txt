@@ -1,0 +1,36 @@
+John Smith
+Software Engineer | john.smith@email.com | LinkedIn: linkedin.com/in/johnsmith
+
+PROFESSIONAL SUMMARY
+Experienced Software Engineer with 5 years of hands-on expertise in Python and Java.
+Passionate about delivering high-quality, scalable solutions in fast-paced Agile environments.
+Strong background in OOP, REST API design, and cloud-native software architecture.
+
+TECHNICAL SKILLS
+Python, Java, C++, Data Structures, Algorithms, REST APIs, Git, OOP, SQL, Unit Testing,
+Docker, CI/CD, Linux, Design Patterns, Clean Code, SOLID Principles, Microservices
+
+WORK EXPERIENCE
+
+Software Engineer — TechCorp Pvt Ltd (Jan 2019 – Present)
+  • Developed and maintained RESTful APIs serving 500K daily requests using Python/FastAPI.
+  • Designed and implemented scalable microservices architecture using Docker and Kubernetes.
+  • Improved database query performance by 40% through SQL indexing and query optimisation.
+  • Led code reviews and mentored 3 junior engineers in OOP best practices.
+  • Implemented CI/CD pipelines using GitHub Actions reducing deployment time by 60%.
+
+Junior Software Engineer — DataBridge Systems (Mar 2017 – Dec 2018)
+  • Built backend services in Java (Spring Boot) for e-commerce platforms.
+  • Wrote unit and integration tests achieving 85% code coverage using JUnit and pytest.
+  • Collaborated in Agile sprints delivering features on schedule.
+
+EDUCATION
+B.Sc. in Computer Science — University of Colombo (2017)
+
+CERTIFICATIONS
+  • AWS Certified Developer – Associate (2021)
+  • Oracle Java SE 11 Developer Certified Professional (2020)
+
+PROJECTS
+  • Resume Parser API — Python, FastAPI, NLP, Docker
+  • E-Commerce Platform — Java, Spring Boot, PostgreSQL, Redis

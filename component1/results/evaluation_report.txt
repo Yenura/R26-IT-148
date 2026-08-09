@@ -1,0 +1,38 @@
+======================================================================
+COMPONENT 1 — ROLE CLASSIFIER EVALUATION REPORT
+IT22094872 | Dulnith K.D. | R26-IT-148
+======================================================================
+Test set size: 760 samples across 20 roles
+
+──────────────────────────────────────────────────────────────────────
+Model: TF-IDF + LogReg
+  Accuracy : 1.0000
+  Macro-F1 : 1.0000
+
+Per-role classification report:
+                                 precision    recall  f1-score   support
+
+              Software Engineer       1.00      1.00      1.00        38
+                 Data Scientist       1.00      1.00      1.00        38
+      Machine Learning Engineer       1.00      1.00      1.00        38
+                DevOps Engineer       1.00      1.00      1.00        38
+      Cloud Solutions Architect       1.00      1.00      1.00        38
+         Database Administrator       1.00      1.00      1.00        38
+             Frontend Developer       1.00      1.00      1.00        38
+              Backend Developer       1.00      1.00      1.00        38
+           Mobile App Developer       1.00      1.00      1.00        38
+          Cybersecurity Analyst       1.00      1.00      1.00        38
+           Full Stack Developer       1.00      1.00      1.00        38
+    QA/Test Automation Engineer       1.00      1.00      1.00        38
+                  Data Engineer       1.00      1.00      1.00        38
+Site Reliability Engineer (SRE)       1.00      1.00      1.00        38
+                 UI/UX Designer       1.00      1.00      1.00        38
+               Network Engineer       1.00      1.00      1.00        38
+       Business/Systems Analyst       1.00      1.00      1.00        38
+                AI/NLP Engineer       1.00      1.00      1.00        38
+           Blockchain Developer       1.00      1.00      1.00        38
+      Embedded Systems Engineer       1.00      1.00      1.00        38
+
+                       accuracy                           1.00       760
+                      macro avg       1.00      1.00      1.00       760
+                   weighted avg       1.00      1.00      1.00       760
