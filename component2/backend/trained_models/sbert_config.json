@@ -1,6 +1,0 @@
-{
-  "model_name": "all-MiniLM-L6-v2",
-  "alpha": 0.7,
-  "beta": 0.3,
-  "description": "Semantic similarity scoring for descriptive answers"
-}
