@@ -24,7 +24,7 @@ OUTPUT_PATH = MODELS_DIR / "qg_dataset.json"
 ROLES = {
     "Software Engineer": ["Java", "Python", "C++", "SQL", "React", "REST APIs"],
     "Data Scientist": ["Python", "Machine Learning", "SQL", "Deep Learning", "Statistics"],
-    "AI Researcher": ["TensorFlow", "NLP", "Pytorch", "Deep Learning", "Python"],
+    "Machine Learning Engineer": ["TensorFlow", "PyTorch", "NLP", "Deep Learning", "Python"],
     "Cybersecurity Analyst": ["Cybersecurity", "Networking", "Linux", "Ethical Hacking"],
     "Frontend Developer": ["React", "JavaScript", "CSS", "HTML", "TypeScript"],
     "Backend Developer": ["Python", "Java", "Node.js", "APIs", "SQL"],
@@ -32,6 +32,16 @@ ROLES = {
     "Database Administrator": ["SQL", "NoSQL", "MongoDB", "PostgreSQL", "Indexing"],
     "Cloud Solutions Architect": ["AWS", "GCP", "Azure", "Cloud Architecture"],
     "Mobile App Developer": ["React Native", "Flutter", "Kotlin", "Swift"],
+    "Full Stack Developer": ["React", "Node.js", "Python", "SQL", "Docker"],
+    "QA/Test Automation Engineer": ["Selenium", "Pytest", "Jest", "API Testing", "CI/CD"],
+    "Data Engineer": ["Python", "SQL", "Spark", "Kafka", "Airflow"],
+    "Site Reliability Engineer (SRE)": ["Linux", "Kubernetes", "Prometheus", "Terraform", "Go"],
+    "UI/UX Designer": ["Figma", "Sketch", "CSS", "Prototyping", "User Research"],
+    "Network Engineer": ["TCP/IP", "Cisco", "Routing", "Firewalls", "VPN"],
+    "Business/Systems Analyst": ["SQL", "UML", "BPMN", "Agile", "JIRA"],
+    "AI/NLP Engineer": ["TensorFlow", "NLP", "Transformers", "spaCy", "Python"],
+    "Blockchain Developer": ["Solidity", "Ethereum", "Web3.js", "Smart Contracts", "Rust"],
+    "Embedded Systems Engineer": ["C", "C++", "RTOS", "Microcontrollers", "ARM"],
 }
 
 DIFFICULTIES = ["Easy", "Medium", "Hard"]

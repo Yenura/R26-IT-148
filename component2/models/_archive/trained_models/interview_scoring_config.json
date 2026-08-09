@@ -1,0 +1,51 @@
+{
+  "interview_weights": {
+    "Software Engineer": {
+      "mcq": 0.2,
+      "descriptive": 0.3,
+      "coding": 0.5
+    },
+    "Data Scientist": {
+      "mcq": 0.25,
+      "descriptive": 0.45,
+      "coding": 0.3
+    },
+    "AI Researcher": {
+      "mcq": 0.2,
+      "descriptive": 0.4,
+      "coding": 0.4
+    },
+    "Cybersecurity Analyst": {
+      "mcq": 0.4,
+      "descriptive": 0.35,
+      "coding": 0.25
+    }
+  },
+  "grade_bands": {
+    "Excellent": {
+      "min": 85,
+      "description": "Outstanding performance"
+    },
+    "Good": {
+      "min": 70,
+      "description": "Strong performance"
+    },
+    "Average": {
+      "min": 55,
+      "description": "Acceptable performance"
+    },
+    "Below Average": {
+      "min": 40,
+      "description": "Needs improvement"
+    },
+    "Poor": {
+      "min": 0,
+      "description": "Insufficient performance"
+    }
+  },
+  "time_penalty": {
+    "enabled": true,
+    "lambda": 0.1,
+    "description": "Penalty for exceeding time limit"
+  }
+}

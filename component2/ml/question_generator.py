@@ -18,7 +18,30 @@ logger = logging.getLogger(__name__)
 
 
 def _load_model_and_tokenizer(model_dir: str):
-    """Load the trained TinyQGModel and its tokenizer."""
+    """Load the trained QG model and its tokenizer.
+
+    Tries the retrained v2 artifacts (model_v2.pt / tokenizer_v2.json /
+    config.json) first, then falls back to the v1 (model.pt / tokenizer.json).
+    Returns (model, tokenizer) or (None, None).
+    """
+    ml_dir = os.path.join(os.path.dirname(model_dir), "..", "ml")
+    ml_dir = os.path.abspath(ml_dir)
+    if ml_dir not in sys.path:
+        sys.path.insert(0, ml_dir)
+
+    model_v2_path = os.path.join(model_dir, "model_v2.pt")
+    tokenizer_v2_path = os.path.join(model_dir, "tokenizer_v2.json")
+    config_path = os.path.join(model_dir, "config.json")
+    if os.path.isfile(model_v2_path) and os.path.isfile(tokenizer_v2_path) and os.path.isfile(config_path):
+        try:
+            from train_qg_model_v2 import load_trained_model
+            model, tokenizer = load_trained_model(model_dir, device="cpu")
+            logger.info("QG v2 model loaded from %s (%s params)",
+                        model_dir, sum(p.numel() for p in model.parameters()))
+            return model, tokenizer
+        except Exception as e:
+            logger.warning("Failed to load QG v2 model: %s", e)
+
     model_path = os.path.join(model_dir, "model.pt")
     tokenizer_path = os.path.join(model_dir, "tokenizer.json")
     if not os.path.isfile(model_path) or not os.path.isfile(tokenizer_path):
@@ -26,12 +49,6 @@ def _load_model_and_tokenizer(model_dir: str):
         return None, None
 
     try:
-        # Import from the ml module directly
-        ml_dir = os.path.join(os.path.dirname(model_dir), "..", "ml")
-        ml_dir = os.path.abspath(ml_dir)
-        if ml_dir not in sys.path:
-            sys.path.insert(0, ml_dir)
-
         from train_qg_model import TinyQGModel, CharTokenizer
 
         tokenizer = CharTokenizer.load(tokenizer_path)
@@ -135,35 +152,35 @@ class QuestionGenerator:
         return self._tokenizer.decode(output_ids[0].tolist())
 
     def _make_mcq_from_qa(self, qtext: str, answer: str, diff: str, skills: List[str]) -> Dict:
-        """Convert Q&A into MCQ by generating distractors based on keywords."""
         import random
-        # Try to get distractors from fallback bank
         distractors = []
+        topic = skills[0] if skills else "General"
         for q in self.fallback_bank:
-            if q.get("question_type") == "MCQ":
+            if q.get("question_type") == "MCQ" and q.get("topic") == topic:
                 for o in q.get("options", []):
                     t = o.get("text", "")
                     if t and t != answer and t not in distractors:
                         distractors.append(t)
-        # Add generic distractors if not enough
-        generic = ["None of the above", "All of the above", "It depends on the context"]
-        for g in generic:
-            if g not in distractors and g != answer:
-                distractors.append(g)
-        random.shuffle(distractors)
+        if len(distractors) < 3:
+            generic = ["None of the above", "All of the above", "Cannot be determined from the given information", "Not applicable in this context"]
+            for g in generic:
+                if g not in distractors and g != answer:
+                    distractors.append(g)
         distractors = distractors[:3]
-        options = [{"index": 0, "text": answer}, {"index": 1, "text": distractors[0]},
-                   {"index": 2, "text": distractors[1] if len(distractors) > 1 else "None of the above"},
-                   {"index": 3, "text": distractors[2] if len(distractors) > 2 else "All of the above"}]
+        options = [{"index": 0, "text": answer}] + [{"index": i + 1, "text": d} for i, d in enumerate(distractors)]
+        random.shuffle(options)
+        correct_idx = next(i for i, o in enumerate(options) if o["text"] == answer)
+        for i, o in enumerate(options):
+            o["index"] = i
         return {
-            "id": f"QG_MCQ_{random.randint(100,999):03d}",
+            "id": f"QG_MCQ_{hash(qtext) % 100000}",
             "question_type": "MCQ",
             "difficulty": diff,
-            "category": skills[0] if skills else "General",
-            "topic": skills[1] if len(skills) > 1 else diff,
+            "category": topic,
+            "topic": topic,
             "question_text": qtext,
             "options": options,
-            "correct_option": 0,
+            "correct_option": correct_idx,
             "keywords": skills[:3],
         }
 
@@ -196,14 +213,7 @@ class QuestionGenerator:
                 # Model generated Q&A format - convert to MCQ with distractors
                 questions.append(self._make_mcq_from_qa(qtext, answer, diff, skills))
 
-        if not questions:
-            fallback = [q for q in self.fallback_bank if q.get("question_type") == "MCQ"][:count]
-            # Ensure options are in correct format: [{"index": 0, "text": "..."}]
-            for q in fallback:
-                if q.get("options") and isinstance(q["options"][0], str):
-                    q["options"] = [{"index": i, "text": t} for i, t in enumerate(q["options"])]
-            return fallback
-        return questions[:count]
+        return self._top_up(questions, "MCQ", count, skills, fix_options=True)
 
     def generate_descriptive(self, job_role: str, skills: List[str], count: int = 3) -> List[Dict]:
         questions = []
@@ -229,24 +239,30 @@ class QuestionGenerator:
                     "keywords": keywords,
                 })
 
-        if not questions:
-            return [q for q in self.fallback_bank if q.get("question_type") == "Descriptive"][:count]
-        return questions[:count]
+        return self._top_up(questions, "Descriptive", count, skills)
 
     def _make_coding_from_qa(self, qtext: str, answer: str, diff: str, skills: List[str]) -> Dict:
-        """Convert Q&A into a coding problem stub."""
         import random
         lang = "Python" if not skills or "Python" in str(skills).lower() else skills[0]
+        test_cases = []
+        answer_lower = answer.lower().strip()
+        if any(kw in answer_lower for kw in ["return ", "output:", "result:", "prints"]):
+            expected = answer.split(":")[-1].strip() if ":" in answer else answer.strip()
+            expected = expected.replace("return ", "").strip()
+            test_cases = [{"input": "sample_input", "expected_output": expected}]
+        else:
+            test_cases = [{"input": "sample_input", "expected_output": None}]
+        topic = skills[0] if skills else "General"
         return {
-            "id": f"QG_CODE_{random.randint(100,999):03d}",
+            "id": f"QG_CODE_{hash(qtext) % 100000}",
             "question_type": "Coding",
             "difficulty": diff,
             "category": lang,
-            "topic": skills[1] if len(skills) > 1 else "General",
+            "topic": topic,
             "question_text": f"Write a function to: {qtext.lower()}\n{answer}",
             "language": lang,
             "time_limit": 600,
-            "test_cases": [{"input": {}, "expected_output": "See answer"}],
+            "test_cases": test_cases,
             "expected_complexity": "O(n)",
             "keywords": skills[:3],
         }
@@ -283,9 +299,7 @@ class QuestionGenerator:
                 # Model generated Q&A - convert to coding problem
                 questions.append(self._make_coding_from_qa(qtext, answer, diff, skills))
 
-        if not questions:
-            return [q for q in self.fallback_bank if q.get("question_type") == "Coding"][:count]
-        return questions[:count]
+        return self._top_up(questions, "Coding", count, skills)
 
     def generate_for_session(
         self, job_role: str, skills: List[str], num_mcq: int, num_desc: int, num_code: int
@@ -297,4 +311,85 @@ class QuestionGenerator:
             qs.extend(self.generate_descriptive(job_role, skills, num_desc))
         if num_code > 0:
             qs.extend(self.generate_coding(job_role, skills, num_code))
+
+        # Post-generation relevance filter: remove questions whose category/topic
+        # has zero overlap with the role's required skills.
+        if skills:
+            skill_lower = {s.lower() for s in skills}
+            filtered = []
+            for q in qs:
+                cat = q.get("category", "").lower()
+                topic = q.get("topic", "").lower()
+                text = q.get("question_text", "").lower()
+                relevant = any(
+                    sk in cat or sk in topic or sk in text
+                    for sk in skill_lower
+                )
+                if relevant:
+                    filtered.append(q)
+            # Only use filtered set if it didn't strip everything
+            if filtered:
+                qs = filtered
+
         return qs
+
+    def _filter_fallback(self, questions: List[Dict], skills: List[str]) -> List[Dict]:
+        """Filter fallback questions to only include those relevant to the given skills."""
+        if not skills:
+            return questions
+        skill_lower = {s.lower() for s in skills}
+        filtered = []
+        for q in questions:
+            cat = q.get("category", "").lower()
+            topic = q.get("topic", "").lower()
+            text = q.get("question_text", "").lower()
+            if any(sk in cat or sk in topic or sk in text for sk in skill_lower):
+                filtered.append(q)
+        return filtered
+
+    def _get_relevant_from_bank(self, question_type: str, count: int, skills: List[str]) -> List[Dict]:
+        """Pull questions from the fallback bank filtered by skill relevance."""
+        if not skills:
+            return [q for q in self.fallback_bank if q.get("question_type") == question_type][:count]
+        skill_lower = {s.lower() for s in skills}
+        relevant = []
+        for q in self.fallback_bank:
+            if q.get("question_type") != question_type:
+                continue
+            cat = q.get("category", "").lower()
+            topic = q.get("topic", "").lower()
+            text = q.get("question_text", "").lower()
+            if any(sk in cat or sk in topic or sk in text for sk in skill_lower):
+                relevant.append(q)
+                if len(relevant) >= count:
+                    break
+        # If not enough relevant, top up from any typed questions
+        if len(relevant) < count:
+            for q in self.fallback_bank:
+                if q.get("question_type") == question_type and q not in relevant:
+                    relevant.append(q)
+                    if len(relevant) >= count:
+                        break
+        return relevant[:count]
+
+    def _top_up(self, questions: List[Dict], question_type: str, count: int,
+                skills: List[str], fix_options: bool = False) -> List[Dict]:
+        if len(questions) >= count:
+            return questions[:count]
+        needed = count - len(questions)
+        extra = self._get_relevant_from_bank(question_type, needed, skills)
+        seen_ids = {q.get("id") for q in questions}
+        seen_texts = {q.get("question_text", "")[:80] for q in questions}
+        for q in extra:
+            if len(questions) >= count:
+                break
+            qid = q.get("id")
+            qtext = q.get("question_text", "")[:80]
+            if qid in seen_ids or qtext in seen_texts:
+                continue
+            if fix_options and q.get("options") and isinstance(q["options"][0], str):
+                q["options"] = [{"index": i, "text": t} for i, t in enumerate(q["options"])]
+            questions.append(q)
+            seen_ids.add(qid)
+            seen_texts.add(qtext)
+        return questions[:count]
