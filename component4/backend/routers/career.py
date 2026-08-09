@@ -6,14 +6,6 @@ from services.ml_engine import JOB_REQ, RESOURCES, CAREER_PATHS, ROLE_TRANSITION
 
 router = APIRouter()
 
-LEVEL_THRESHOLDS = {
-    "Junior":            (0, 2),
-    "Mid-Level":         (2, 5),
-    "Senior":            (5, 9),
-    "Lead":              (9, 13),
-    "Principal / Staff": (13, 99),
-}
-
 
 def _exp_to_level(exp: int) -> int:
     if exp < 2:  return 0
@@ -32,25 +24,52 @@ async def generate_career_path(payload: CareerPathRequest, request: Request):
 
     level_idx     = _exp_to_level(payload.experience_years)
     current_level = path[min(level_idx, len(path) - 1)]
-    next_levels   = path[min(level_idx + 1, len(path) - 1):]
 
+    # Vertical progression: next levels within current role
+    vertical_nodes = [
+        {"level": i + 1, "title": t, "status": "current" if i == level_idx else "done" if i < level_idx else "upcoming"}
+        for i, t in enumerate(path)
+    ]
+
+    # Horizontal transitions: lateral moves to other roles with skill analysis
+    transition_options = []
+    user_skills = set(s.lower() for s in payload.skills)
+    for target_role in transitions:
+        target_req = JOB_REQ.get(target_role, {})
+        target_required = set(s.lower() for s in target_req.get("required", []))
+        target_optional = set(s.lower() for s in target_req.get("optional", []))
+        all_target = target_required | target_optional
+
+        matching = user_skills & all_target
+        missing_required = [s for s in target_req.get("required", []) if s.lower() not in user_skills]
+        missing_optional = [s for s in target_req.get("optional", []) if s.lower() not in user_skills]
+
+        readiness = (len(matching) / len(all_target) * 100) if all_target else 0
+        transition_options.append({
+            "target_role": target_role,
+            "readiness_pct": round(readiness, 1),
+            "matching_skills": sorted(matching),
+            "missing_required": missing_required[:8],
+            "missing_optional": missing_optional[:5],
+            "difficulty": "Easy" if readiness >= 60 else "Medium" if readiness >= 35 else "Hard",
+        })
+
+    transition_options.sort(key=lambda t: t["readiness_pct"], reverse=True)
+
+    # Gap analysis for current role
     gap_score, miss_req, miss_opt, match_pct = compute_gap(
         payload.skills, role, payload.experience_years
     )
 
     result = {
-        "candidate_id":          payload.candidate_id,
-        "current_role":          role,
-        "target_role":           payload.target_role,
-        "current_level":         current_level,
-        "next_milestones":       next_levels,
-        "lateral_options":       transitions,
-        "skill_match_pct":       round(match_pct, 2),
-        "missing_for_next_level": miss_req[:5],
-        "path_nodes": [
-            {"level": i + 1, "title": t, "current": t == current_level}
-            for i, t in enumerate(path)
-        ],
+        "candidate_id":     payload.candidate_id,
+        "current_role":     role,
+        "target_role":      payload.target_role,
+        "current_level":    current_level,
+        "vertical_path":    vertical_nodes,
+        "transitions":      transition_options,
+        "skill_match_pct":  round(match_pct, 2),
+        "missing_for_current": miss_req[:5],
     }
 
     await db.career_paths.replace_one(
@@ -71,7 +90,6 @@ async def get_resources(job_role: str):
     for skill in req.get("required", []) + req.get("optional", []):
         res = RESOURCES.get(skill)
         if not res:
-            # try partial match
             for rk, rv in RESOURCES.items():
                 if rk.lower() in skill.lower() or skill.lower() in rk.lower():
                     res = rv

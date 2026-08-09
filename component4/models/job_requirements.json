@@ -1,162 +1,102 @@
 {
-  "Backend Developer": {
-    "required": [
-      "Python/Go/Java",
-      "PostgreSQL",
-      "REST APIs",
-      "Microservices",
-      "Docker"
-    ],
-    "optional": [
-      "Go",
-      "Event Sourcing",
-      "NATS",
-      "Rate Limiting"
-    ],
-    "min_experience": 5
-  },
-  "Cloud Solutions Architect": {
-    "required": [
-      "AWS/Azure/GCP",
-      "Terraform",
-      "Cloud Security",
-      "Architecture Design",
-      "Networking"
-    ],
-    "optional": [
-      "Pulumi",
-      "Disaster Recovery",
-      "Cost Optimization",
-      "SD-WAN"
-    ],
-    "min_experience": 5
-  },
-  "Cybersecurity Analyst": {
-    "required": [
-      "SIEM",
-      "Penetration Testing",
-      "Incident Response",
-      "Python",
-      "MITRE ATT&CK"
-    ],
-    "optional": [
-      "CrowdStrike",
-      "AWS Security",
-      "Zero Trust",
-      "Microsoft Sentinel"
-    ],
+  "Software Engineer": {
+    "required": ["System Design", "REST APIs", "Git", "Data Structures & Algorithms", "Docker"],
+    "optional": ["RabbitMQ", "Event Sourcing", "Kafka", "C#"],
     "min_experience": 5
   },
   "Data Scientist": {
-    "required": [
-      "Python",
-      "SQL",
-      "Machine Learning",
-      "Statistics",
-      "Feature Engineering"
-    ],
-    "optional": [
-      "BigQuery",
-      "Databricks",
-      "Looker",
-      "PyTorch"
-    ],
-    "min_experience": 5
-  },
-  "Database Administrator": {
-    "required": [
-      "PostgreSQL/Oracle",
-      "Query Optimization",
-      "Backup & Recovery",
-      "High Availability",
-      "SQL"
-    ],
-    "optional": [
-      "Oracle DB",
-      "TimescaleDB",
-      "Flyway",
-      "SQL Server"
-    ],
-    "min_experience": 5
-  },
-  "DevOps Engineer": {
-    "required": [
-      "Docker",
-      "Kubernetes",
-      "Terraform",
-      "CI/CD",
-      "Linux"
-    ],
-    "optional": [
-      "Nginx",
-      "Azure",
-      "Grafana",
-      "Jenkins"
-    ],
-    "min_experience": 5
-  },
-  "Frontend Developer": {
-    "required": [
-      "React",
-      "TypeScript",
-      "HTML/CSS",
-      "Web Performance",
-      "Accessibility"
-    ],
-    "optional": [
-      "Edge Runtime",
-      "WebSockets",
-      "WebGL",
-      "Cypress"
-    ],
+    "required": ["Python", "SQL", "Machine Learning", "Statistics", "Feature Engineering"],
+    "optional": ["BigQuery", "Databricks", "Looker", "PyTorch"],
     "min_experience": 5
   },
   "Machine Learning Engineer": {
-    "required": [
-      "Python",
-      "PyTorch/TensorFlow",
-      "MLOps",
-      "Model Deployment",
-      "Feature Engineering"
-    ],
-    "optional": [
-      "Model Quantization",
-      "Git",
-      "MLflow",
-      "Docker"
-    ],
+    "required": ["Python", "PyTorch/TensorFlow", "MLOps", "Model Deployment", "Feature Engineering"],
+    "optional": ["Model Quantization", "Git", "MLflow", "Docker"],
+    "min_experience": 5
+  },
+  "DevOps Engineer": {
+    "required": ["Docker", "Kubernetes", "Terraform", "CI/CD", "Linux"],
+    "optional": ["Nginx", "Azure", "Grafana", "Jenkins"],
+    "min_experience": 5
+  },
+  "Cybersecurity Analyst": {
+    "required": ["SIEM", "Penetration Testing", "Incident Response", "Python", "MITRE ATT&CK"],
+    "optional": ["CrowdStrike", "AWS Security", "Zero Trust", "Microsoft Sentinel"],
+    "min_experience": 5
+  },
+  "Cloud Solutions Architect": {
+    "required": ["AWS/Azure/GCP", "Terraform", "Cloud Security", "Architecture Design", "Networking"],
+    "optional": ["Pulumi", "Disaster Recovery", "Cost Optimization", "SD-WAN"],
+    "min_experience": 5
+  },
+  "Database Administrator": {
+    "required": ["PostgreSQL/Oracle", "Query Optimization", "Backup & Recovery", "High Availability", "SQL"],
+    "optional": ["Oracle DB", "TimescaleDB", "Flyway", "SQL Server"],
+    "min_experience": 5
+  },
+  "Frontend Developer": {
+    "required": ["React", "TypeScript", "HTML/CSS", "Web Performance", "Accessibility"],
+    "optional": ["Edge Runtime", "WebSockets", "WebGL", "Cypress"],
+    "min_experience": 5
+  },
+  "Backend Developer": {
+    "required": ["Python/Go/Java", "PostgreSQL", "REST APIs", "Microservices", "Docker"],
+    "optional": ["Go", "Event Sourcing", "NATS", "Rate Limiting"],
     "min_experience": 5
   },
   "Mobile App Developer": {
-    "required": [
-      "Swift/Kotlin or Flutter",
-      "REST APIs",
-      "MVVM/Clean Architecture",
-      "Unit Testing",
-      "CI/CD"
-    ],
-    "optional": [
-      "MVI",
-      "Sentry",
-      "Unit & UI Testing",
-      "Jetpack Compose"
-    ],
+    "required": ["Swift/Kotlin or Flutter", "REST APIs", "MVVM/Clean Architecture", "Unit Testing", "CI/CD"],
+    "optional": ["MVI", "Sentry", "Unit & UI Testing", "Jetpack Compose"],
     "min_experience": 5
   },
-  "Software Engineer": {
-    "required": [
-      "System Design",
-      "REST APIs",
-      "Git",
-      "Data Structures & Algorithms",
-      "Docker"
-    ],
-    "optional": [
-      "RabbitMQ",
-      "Event Sourcing",
-      "Kafka",
-      "C#"
-    ],
+  "Full Stack Developer": {
+    "required": ["React", "Node.js", "Python", "SQL", "Docker"],
+    "optional": ["TypeScript", "GraphQL", "Redis", "Microservices"],
+    "min_experience": 4
+  },
+  "QA/Test Automation Engineer": {
+    "required": ["Selenium", "Pytest", "Jest", "API Testing", "CI/CD"],
+    "optional": ["Cypress", "Postman", "Test Strategy", "Performance Testing"],
+    "min_experience": 4
+  },
+  "Data Engineer": {
+    "required": ["Python", "SQL", "Spark", "Kafka", "Airflow"],
+    "optional": ["ETL", "Data Modeling", "Hadoop", "dbt"],
+    "min_experience": 5
+  },
+  "Site Reliability Engineer (SRE)": {
+    "required": ["Linux", "Kubernetes", "Prometheus", "Terraform", "Python"],
+    "optional": ["Go", "Grafana", "Incident Response", "SLI/SLO"],
+    "min_experience": 5
+  },
+  "UI/UX Designer": {
+    "required": ["Figma", "Sketch", "Prototyping", "User Research", "Wireframing"],
+    "optional": ["Adobe XD", "CSS", "Accessibility", "Design Systems"],
+    "min_experience": 3
+  },
+  "Network Engineer": {
+    "required": ["TCP/IP", "Cisco", "Routing", "Firewalls", "VPN"],
+    "optional": ["DNS", "Linux", "Python", "Network Automation"],
+    "min_experience": 5
+  },
+  "Business/Systems Analyst": {
+    "required": ["SQL", "Requirements Gathering", "UML", "Agile", "JIRA"],
+    "optional": ["BPMN", "Stakeholder Management", "Data Analysis", "Process Modeling"],
+    "min_experience": 4
+  },
+  "AI/NLP Engineer": {
+    "required": ["Python", "TensorFlow", "PyTorch", "NLP", "Transformers"],
+    "optional": ["Hugging Face", "spaCy", "Deep Learning", "BERT/GPT"],
+    "min_experience": 5
+  },
+  "Blockchain Developer": {
+    "required": ["Solidity", "Ethereum", "Web3.js", "Smart Contracts", "Cryptography"],
+    "optional": ["Rust", "DApps", "DeFi", "IPFS"],
+    "min_experience": 3
+  },
+  "Embedded Systems Engineer": {
+    "required": ["C", "C++", "RTOS", "Microcontrollers", "ARM"],
+    "optional": ["Rust", "Linux Kernel", "Communication Protocols", "FPGA"],
     "min_experience": 5
   }
 }

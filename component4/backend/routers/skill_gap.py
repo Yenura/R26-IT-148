@@ -1,15 +1,20 @@
 """Router: Skill Gap Analysis endpoints"""
 
 from fastapi import APIRouter, Request, HTTPException
-from datetime import datetime
+from datetime import datetime, timezone
+from starlette.concurrency import run_in_threadpool
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 from models.schemas import SkillGapRequest
 from services.ml_engine import run_skill_gap_analysis
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.post("/analyze", summary="Run full skill gap analysis for a candidate")
-async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
+@limiter.limit("10/minute")
+async def analyze_skill_gap(request: Request, payload: SkillGapRequest):
     db = request.app.state.db
 
     # ── Validation ────────────────────────────────────────────────────────────
@@ -34,7 +39,8 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
     if cert_count == 0 and payload.certifications and payload.certifications != "None":
         cert_count = len([c.strip() for c in payload.certifications.split("|") if c.strip()])
 
-    result = run_skill_gap_analysis(
+    result = await run_in_threadpool(
+        run_skill_gap_analysis,
         candidate_id      = payload.candidate_id.strip(),
         candidate_name    = payload.candidate_name.strip(),
         job_role          = payload.job_role,
@@ -55,7 +61,7 @@ async def analyze_skill_gap(payload: SkillGapRequest, request: Request):
         failed_mcq_topics = payload.failed_mcq_topics or [],
     )
 
-    doc = {**result, "created_at": datetime.utcnow()}
+    doc = {**result, "created_at": datetime.now(timezone.utc)}
     await db.skill_gap_reports.insert_one(doc)
     return {"success": True, "data": result}
 

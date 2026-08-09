@@ -105,7 +105,7 @@ export default function CareerPath() {
         <div className="card" style={{ marginBottom: 24 }}>
           <p className="card-title"><MapPin size={15} /> Career Track — {path.current_role}</p>
           <div style={{ display: 'flex', gap: 0, overflowX: 'auto', paddingBottom: 8 }}>
-            {path.path_nodes.map((node, i) => (
+            {path.vertical_path.map((node, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center' }}>
                 <div style={{
                   padding: '10px 18px', borderRadius: 10, minWidth: 120, textAlign: 'center',
@@ -122,7 +122,7 @@ export default function CareerPath() {
                   {node.title}
                   {node.current && <div style={{ fontSize: 9, marginTop: 4, color: '#22c55e' }}>◀ You are here</div>}
                 </div>
-                {i < path.path_nodes.length - 1 && (
+                {i < path.vertical_path.length - 1 && (
                   <ChevronRight size={16} style={{ color: 'var(--text-muted)', flexShrink: 0, margin: '0 4px' }} />
                 )}
               </div>
@@ -138,18 +138,18 @@ export default function CareerPath() {
               <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Skill Match</p>
               <span style={{ fontSize: 18, fontWeight: 800, color: '#6c63ff' }}>{path.skill_match_pct}%</span>
             </div>
-            {path.missing_for_next_level.length > 0 && (
+            {path.missing_for_current?.length > 0 && (
               <div style={{ gridColumn: '1/-1' }}>
                 <p style={{ fontSize: 12, color: 'var(--warning)', marginBottom: 8 }}>To reach next level, learn:</p>
-                {path.missing_for_next_level.map((s, i) => (
+                {path.missing_for_current.map((s, i) => (
                   <span key={i} className="skill-chip chip-required">{s}</span>
                 ))}
               </div>
             )}
-            {path.lateral_options.length > 0 && (
+            {path.transitions?.length > 0 && (
               <div style={{ gridColumn: '1/-1' }}>
                 <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Lateral career moves:</p>
-                {path.lateral_options.map((s, i) => (
+                {path.transitions.map((s, i) => (
                   <span key={i} className="skill-chip chip-optional">{s}</span>
                 ))}
               </div>

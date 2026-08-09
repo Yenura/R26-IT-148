@@ -11,6 +11,11 @@ VALID_JOB_ROLES = {
     "Frontend Developer", "Backend Developer", "DevOps Engineer",
     "Cybersecurity Analyst", "Cloud Solutions Architect",
     "Database Administrator", "Mobile App Developer",
+    "Full Stack Developer", "QA/Test Automation Engineer",
+    "Data Engineer", "Site Reliability Engineer (SRE)",
+    "UI/UX Designer", "Network Engineer",
+    "Business/Systems Analyst", "AI/NLP Engineer",
+    "Blockchain Developer", "Embedded Systems Engineer",
 }
 VALID_JOB_LEVELS = {"Junior", "Mid-Level", "Senior", "Lead", "Principal / Staff"}
 VALID_WORK_MODES = {"On-Site", "Hybrid", "Remote"}

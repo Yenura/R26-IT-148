@@ -191,7 +191,7 @@ if __name__ == "__main__":
     # CSS baseline
     te["CSS_pred"] = 0.40*te["S_cv"] + 0.60*te["S_int"]
     m = evaluate(te, "CSS_pred")
-    print_metrics(m, "CSS Weighted Average — All 10 Roles")
+    print_metrics(m, "CSS Weighted Average — All 20 Roles")
 
     # Ablation
     print("\nRunning ablation study...")
