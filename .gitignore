@@ -3,6 +3,27 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# Large model/data files
+component2/models/qg_model_t5/
+component2/models/qg_model_v2/
+component2/models/qg_model_v2_old/
+component2/models/_archive/
+component2/models/qg_dataset_raigs.json
+component2/models/qg_dataset_v2.json
+component2/models/qg_evaluation_results_t5.json
+component2/models/qg_evaluation_results_v2.json
+
+# Server logs
+server_logs/
+
+# Node
+node_modules/
+package-lock.json
+
+# Environment
+.env
+uploads/
+
 # C extensions
 *.so
 
@@ -374,3 +395,19 @@ AGENTS.md
 opencode.json
 Viva_Document.md
 *.md
+hooks/claude-codex-hooks.json
+hooks/copilot-hooks.json
+hooks/ponytail-activate.js
+hooks/ponytail-config.js
+hooks/ponytail-instructions.js
+hooks/ponytail-mode-tracker.js
+hooks/ponytail-runtime.js
+hooks/ponytail-statusline.ps1
+hooks/ponytail-statusline.sh
+hooks/ponytail-subagent.js
+hooks/qoder-hooks.json
+scripts/run_integration.py
+scripts/run_user_test.py
+scripts/start_backends.py
+scripts/user_ability_test.py
+scripts/integration_test.py
