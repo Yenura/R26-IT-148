@@ -39,10 +39,11 @@ echo ""
 
 # ML Training
 echo -e "${YELLOW}First Time Setup:${NC}"
-echo "Run this once to generate models:"
+echo "Run this once to build the QG dataset and train the model:"
 echo ""
 echo "cd component2/ml"
-echo "python train_pipeline.py"
+echo "python build_qg_dataset.py"
+echo "python train_qg_model.py"
 echo ""
 
 echo -e "${GREEN}After starting both services:${NC}"

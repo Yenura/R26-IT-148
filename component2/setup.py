@@ -49,7 +49,8 @@ def install_dependencies():
 def run_training():
     """Run ML training pipeline"""
     print("\nRunning ML training pipeline...")
-    os.system(f"{sys.executable} ml/train_pipeline.py")
+    os.system(f"{sys.executable} ml/build_qg_dataset.py")
+    os.system(f"{sys.executable} ml/train_qg_model.py")
 
 def show_instructions():
     """Show running instructions"""

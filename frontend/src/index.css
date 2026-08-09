@@ -1,0 +1,8 @@
+/*
+ * RecruitAI — Main stylesheet
+ * Imports design tokens and component styles.
+ * Do NOT add token definitions here — use design-tokens.css.
+ * Do NOT add component styles here — use components.css.
+ */
+@import './design-tokens.css';
+@import './components.css';

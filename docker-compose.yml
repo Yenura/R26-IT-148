@@ -1,0 +1,97 @@
+version: "3.9"
+
+services:
+  mongodb:
+    image: mongo:7
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    environment:
+      MONGO_INITDB_DATABASE: recruit_ai
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      MONGODB_URI: "mongodb://mongodb:27017"
+      DB_NAME: "recruit_ai"
+      JWT_SECRET: "change-this-in-production"
+      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:5174,http://localhost:3000"
+    depends_on:
+      - mongodb
+
+  frontend:
+    image: nginx:alpine
+    ports:
+      - "3000:80"
+    volumes:
+      - ./frontend/dist:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+
+  c1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    environment:
+      MONGODB_URI: "mongodb://mongodb:27017"
+      DB_NAME: "CV_MATCHING"
+      PORT: "8001"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
+    working_dir: /app/component1/backend
+    depends_on:
+      - mongodb
+
+  c2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8002:8002"
+    environment:
+      MONGODB_URI: "mongodb://mongodb:27017"
+      DB_NAME: "component2_interview"
+      PORT: "8002"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
+    working_dir: /app/component2/backend
+    depends_on:
+      - mongodb
+
+  c3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8003:8003"
+    environment:
+      MONGODB_URI: "mongodb://mongodb:27017"
+      DB_NAME: "RANKING"
+      PORT: "8003"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
+    working_dir: /app/component3/backend
+    depends_on:
+      - mongodb
+
+  c4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8004:8004"
+    environment:
+      MONGODB_URI: "mongodb://mongodb:27017"
+      DB_NAME: "HR"
+      PORT: "8004"
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8004"]
+    working_dir: /app/component4/backend
+    depends_on:
+      - mongodb
+
+volumes:
+  mongo_data:
