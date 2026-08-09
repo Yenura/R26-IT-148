@@ -7,6 +7,9 @@ Port: 8002
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import logging
 from contextlib import asynccontextmanager
 import os
@@ -27,6 +30,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+limiter = Limiter(key_func=get_remote_address)
+
 # Import routers
 from routers.interview import router as interview_router
 
@@ -45,10 +50,10 @@ async def lifespan(app: FastAPI):
     logger.info("=" * 70)
     
     # Verify models directory exists
-    models_dir = "c:/Users/ASUS/OneDrive/Documents/GitHub/R26-IT-148/component2/models"
+    models_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "models")
     if not os.path.exists(models_dir):
         logger.warning(f"⚠ Models directory not found: {models_dir}")
-        logger.info("Please run: python ml/train_pipeline.py to generate models")
+        logger.info("Please run: python ml/build_qg_dataset.py && python ml/train_qg_model.py")
     else:
         logger.info(f"✓ Models directory found: {models_dir}")
 
@@ -82,6 +87,15 @@ app = FastAPI(
     openapi_url="/openapi.json",
     lifespan=lifespan
 )
+app.state.limiter = limiter
+
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Please try again later."},
+    )
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # ====================================================================
 # MIDDLEWARE

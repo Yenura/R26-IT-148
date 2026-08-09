@@ -1,127 +1,46 @@
 {
   "career_paths": {
-    "Software Engineer": [
-      "Junior Developer",
-      "Software Engineer",
-      "Senior Engineer",
-      "Tech Lead",
-      "Engineering Manager",
-      "VP Engineering"
-    ],
-    "Data Scientist": [
-      "Junior Data Scientist",
-      "Data Scientist",
-      "Senior Data Scientist",
-      "Lead Data Scientist",
-      "Principal Data Scientist",
-      "Chief Data Officer"
-    ],
-    "Machine Learning Engineer": [
-      "ML Engineer (L1)",
-      "ML Engineer",
-      "Senior ML Engineer",
-      "Staff ML Engineer",
-      "Principal ML Engineer",
-      "Director of AI"
-    ],
-    "Frontend Developer": [
-      "Junior Frontend Dev",
-      "Frontend Developer",
-      "Senior Frontend Dev",
-      "Lead Frontend Engineer",
-      "Principal Engineer",
-      "CTO"
-    ],
-    "Backend Developer": [
-      "Junior Backend Dev",
-      "Backend Developer",
-      "Senior Backend Dev",
-      "Lead Backend Engineer",
-      "Principal Engineer",
-      "CTO"
-    ],
-    "DevOps Engineer": [
-      "DevOps Engineer (L1)",
-      "DevOps Engineer",
-      "Senior DevOps",
-      "Lead DevOps",
-      "Platform Engineer",
-      "VP Infrastructure"
-    ],
-    "Cybersecurity Analyst": [
-      "Security Analyst (L1)",
-      "Cybersecurity Analyst",
-      "Senior Security Analyst",
-      "Security Architect",
-      "CISO"
-    ],
-    "Cloud Solutions Architect": [
-      "Cloud Engineer",
-      "Cloud Architect",
-      "Senior Cloud Architect",
-      "Principal Architect",
-      "VP Cloud"
-    ],
-    "Database Administrator": [
-      "Junior DBA",
-      "Database Administrator",
-      "Senior DBA",
-      "Lead DBA",
-      "Data Architect"
-    ],
-    "Mobile App Developer": [
-      "Junior Mobile Dev",
-      "Mobile Developer",
-      "Senior Mobile Dev",
-      "Lead Mobile Dev",
-      "Principal Engineer"
-    ]
+    "Software Engineer": ["Junior Developer", "Software Engineer", "Senior Engineer", "Tech Lead", "Engineering Manager", "VP Engineering"],
+    "Data Scientist": ["Junior Data Scientist", "Data Scientist", "Senior Data Scientist", "Lead Data Scientist", "Principal Data Scientist", "Chief Data Officer"],
+    "Machine Learning Engineer": ["ML Engineer (L1)", "ML Engineer", "Senior ML Engineer", "Staff ML Engineer", "Principal ML Engineer", "Director of AI"],
+    "Frontend Developer": ["Junior Frontend Dev", "Frontend Developer", "Senior Frontend Dev", "Lead Frontend Engineer", "Principal Engineer", "CTO"],
+    "Backend Developer": ["Junior Backend Dev", "Backend Developer", "Senior Backend Dev", "Lead Backend Engineer", "Principal Engineer", "CTO"],
+    "DevOps Engineer": ["DevOps Engineer (L1)", "DevOps Engineer", "Senior DevOps", "Lead DevOps", "Platform Engineer", "VP Infrastructure"],
+    "Cybersecurity Analyst": ["Security Analyst (L1)", "Cybersecurity Analyst", "Senior Security Analyst", "Security Architect", "CISO"],
+    "Cloud Solutions Architect": ["Cloud Engineer", "Cloud Architect", "Senior Cloud Architect", "Principal Architect", "VP Cloud"],
+    "Database Administrator": ["Junior DBA", "Database Administrator", "Senior DBA", "Lead DBA", "Data Architect"],
+    "Mobile App Developer": ["Junior Mobile Dev", "Mobile Developer", "Senior Mobile Dev", "Lead Mobile Dev", "Principal Engineer"],
+    "Full Stack Developer": ["Junior Full Stack Dev", "Full Stack Developer", "Senior Full Stack Dev", "Lead Full Stack Engineer", "Principal Engineer", "CTO"],
+    "QA/Test Automation Engineer": ["Junior QA Engineer", "QA Engineer", "Senior QA Engineer", "Lead QA Engineer", "QA Architect", "VP Quality"],
+    "Data Engineer": ["Junior Data Engineer", "Data Engineer", "Senior Data Engineer", "Lead Data Engineer", "Data Architect", "VP Data"],
+    "Site Reliability Engineer (SRE)": ["Junior SRE", "SRE", "Senior SRE", "Lead SRE", "Staff SRE", "VP Infrastructure"],
+    "UI/UX Designer": ["Junior UX Designer", "UX Designer", "Senior UX Designer", "Lead UX Designer", "Principal Designer", "VP Design"],
+    "Network Engineer": ["Junior Network Engineer", "Network Engineer", "Senior Network Engineer", "Network Architect", "VP Network Infrastructure"],
+    "Business/Systems Analyst": ["Junior Analyst", "Business Analyst", "Senior Business Analyst", "Lead Analyst", "Director of Business Analysis"],
+    "AI/NLP Engineer": ["Junior AI Engineer", "AI Engineer", "Senior AI Engineer", "Lead AI Engineer", "Principal AI Engineer", "VP AI"],
+    "Blockchain Developer": ["Junior Blockchain Dev", "Blockchain Developer", "Senior Blockchain Dev", "Lead Blockchain Engineer", "Blockchain Architect"],
+    "Embedded Systems Engineer": ["Junior Embedded Engineer", "Embedded Engineer", "Senior Embedded Engineer", "Lead Embedded Engineer", "Embedded Architect"]
   },
   "role_transitions": {
-    "Software Engineer": [
-      "Backend Developer",
-      "DevOps Engineer",
-      "Cloud Solutions Architect"
-    ],
-    "Data Scientist": [
-      "Machine Learning Engineer",
-      "Backend Developer",
-      "Database Administrator"
-    ],
-    "Machine Learning Engineer": [
-      "Data Scientist",
-      "Backend Developer",
-      "DevOps Engineer"
-    ],
-    "Frontend Developer": [
-      "Mobile App Developer",
-      "Software Engineer"
-    ],
-    "Backend Developer": [
-      "Software Engineer",
-      "DevOps Engineer",
-      "Cloud Solutions Architect"
-    ],
-    "DevOps Engineer": [
-      "Cloud Solutions Architect",
-      "Backend Developer",
-      "Database Administrator"
-    ],
-    "Cybersecurity Analyst": [
-      "Cloud Solutions Architect",
-      "Database Administrator"
-    ],
-    "Cloud Solutions Architect": [
-      "DevOps Engineer",
-      "Backend Developer"
-    ],
-    "Database Administrator": [
-      "Backend Developer",
-      "Data Scientist"
-    ],
-    "Mobile App Developer": [
-      "Frontend Developer",
-      "Software Engineer"
-    ]
+    "Software Engineer": ["Backend Developer", "DevOps Engineer", "Cloud Solutions Architect", "Full Stack Developer"],
+    "Data Scientist": ["Machine Learning Engineer", "Backend Developer", "Database Administrator", "Data Engineer"],
+    "Machine Learning Engineer": ["Data Scientist", "Backend Developer", "DevOps Engineer", "AI/NLP Engineer"],
+    "Frontend Developer": ["Mobile App Developer", "Software Engineer", "Full Stack Developer", "UI/UX Designer"],
+    "Backend Developer": ["Software Engineer", "DevOps Engineer", "Cloud Solutions Architect", "Data Engineer"],
+    "DevOps Engineer": ["Cloud Solutions Architect", "Backend Developer", "Database Administrator", "Site Reliability Engineer (SRE)"],
+    "Cybersecurity Analyst": ["Cloud Solutions Architect", "Database Administrator", "Network Engineer"],
+    "Cloud Solutions Architect": ["DevOps Engineer", "Backend Developer", "Site Reliability Engineer (SRE)"],
+    "Database Administrator": ["Backend Developer", "Data Scientist", "Data Engineer"],
+    "Mobile App Developer": ["Frontend Developer", "Software Engineer", "Full Stack Developer"],
+    "Full Stack Developer": ["Software Engineer", "Backend Developer", "Frontend Developer", "DevOps Engineer"],
+    "QA/Test Automation Engineer": ["Backend Developer", "DevOps Engineer", "Software Engineer"],
+    "Data Engineer": ["Data Scientist", "Backend Developer", "Machine Learning Engineer"],
+    "Site Reliability Engineer (SRE)": ["DevOps Engineer", "Cloud Solutions Architect", "Backend Developer"],
+    "UI/UX Designer": ["Frontend Developer", "Business/Systems Analyst"],
+    "Network Engineer": ["Cybersecurity Analyst", "Cloud Solutions Architect", "DevOps Engineer"],
+    "Business/Systems Analyst": ["Project Manager", "Product Manager", "Data Analyst"],
+    "AI/NLP Engineer": ["Machine Learning Engineer", "Data Scientist", "Software Engineer"],
+    "Blockchain Developer": ["Backend Developer", "Software Engineer", "Embedded Systems Engineer"],
+    "Embedded Systems Engineer": ["Software Engineer", "Backend Developer", "Network Engineer"]
   }
 }

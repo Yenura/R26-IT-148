@@ -131,10 +131,16 @@ def compute_gap(
     required = [s.strip() for s in req["required"]]
     optional = [s.strip() for s in req.get("optional", [])]
 
-    # Fuzzy match — if any candidate skill is a substring of a required skill or vice-versa
+    # Fuzzy match — exact match or substring with minimum length guard
     def fuzzy_has(skill, cand_set):
         sl = skill.lower()
-        return any(sl in c or c in sl for c in cand_set)
+        for c in cand_set:
+            if sl == c:
+                return True
+            # Substring only if both are 4+ chars to avoid false positives
+            if len(sl) >= 4 and len(c) >= 4 and (sl in c or c in sl):
+                return True
+        return False
 
     miss_req = [s for s in required if not fuzzy_has(s, candidate_lower)]
     miss_opt = [s for s in optional if not fuzzy_has(s, candidate_lower)]
@@ -389,6 +395,7 @@ def run_skill_gap_analysis(
         "job_role":                job_role,
         "job_level":               job_level,
         "work_mode":               work_mode,
+        "experience_years":        experience_years,
         "cv_matching_score":       cv_matching_score,
         "interview_score":         interview_score,
         "skill_match_pct":         round(skill_match_pct, 2),

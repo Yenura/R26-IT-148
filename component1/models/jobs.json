@@ -1,0 +1,170 @@
+{
+  "Software_Engineer": {
+    "required_skills": [
+      "Python",
+      "Java",
+      "C++",
+      "Data Structures",
+      "Algorithms",
+      "REST APIs",
+      "Git",
+      "OOP",
+      "SQL"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.3,
+    "w_skill": 0.5
+  },
+  "Data_Scientist": {
+    "required_skills": [
+      "Python",
+      "R",
+      "Statistics",
+      "Machine Learning",
+      "Pandas",
+      "NumPy",
+      "Matplotlib",
+      "SQL",
+      "Jupyter"
+    ],
+    "required_years": 2.5,
+    "min_edu": 3,
+    "w_edu": 0.3,
+    "w_exp": 0.3,
+    "w_skill": 0.4
+  },
+  "Machine_Learning_Engineer": {
+    "required_skills": [
+      "Python",
+      "TensorFlow",
+      "PyTorch",
+      "Scikit-learn",
+      "Deep Learning",
+      "MLOps",
+      "Docker",
+      "SQL"
+    ],
+    "required_years": 3.0,
+    "min_edu": 3,
+    "w_edu": 0.25,
+    "w_exp": 0.3,
+    "w_skill": 0.45
+  },
+  "DevOps_Engineer": {
+    "required_skills": [
+      "Linux",
+      "Docker",
+      "Kubernetes",
+      "CI/CD",
+      "Jenkins",
+      "Terraform",
+      "AWS/Azure",
+      "Bash",
+      "Ansible"
+    ],
+    "required_years": 4.0,
+    "min_edu": 2,
+    "w_edu": 0.15,
+    "w_exp": 0.4,
+    "w_skill": 0.45
+  },
+  "Cybersecurity_Analyst": {
+    "required_skills": [
+      "Network Security",
+      "SIEM",
+      "Penetration Testing",
+      "Firewalls",
+      "IDS/IPS",
+      "Python",
+      "OWASP"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.35,
+    "w_skill": 0.45
+  },
+  "Cloud_Solutions_Architect": {
+    "required_skills": [
+      "AWS/Azure/GCP",
+      "Terraform",
+      "Kubernetes",
+      "Microservices",
+      "Networking",
+      "Security",
+      "Cost Optimization"
+    ],
+    "required_years": 5.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.4,
+    "w_skill": 0.4
+  },
+  "Database_Administrator": {
+    "required_skills": [
+      "SQL",
+      "PostgreSQL",
+      "MySQL",
+      "MongoDB",
+      "Query Optimization",
+      "Backup & Recovery",
+      "Replication"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.4,
+    "w_skill": 0.4
+  },
+  "Frontend_Developer": {
+    "required_skills": [
+      "HTML",
+      "CSS",
+      "JavaScript",
+      "React",
+      "TypeScript",
+      "Responsive Design",
+      "REST APIs",
+      "Git"
+    ],
+    "required_years": 2.0,
+    "min_edu": 2,
+    "w_edu": 0.15,
+    "w_exp": 0.3,
+    "w_skill": 0.55
+  },
+  "Backend_Developer": {
+    "required_skills": [
+      "Python/Java/Node.js",
+      "REST APIs",
+      "SQL",
+      "Microservices",
+      "Docker",
+      "Redis",
+      "Git"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.3,
+    "w_skill": 0.5
+  },
+  "Mobile_App_Developer": {
+    "required_skills": [
+      "iOS/Android",
+      "Flutter",
+      "React Native",
+      "Dart",
+      "Swift/Kotlin",
+      "Firebase",
+      "REST APIs"
+    ],
+    "required_years": 2.5,
+    "min_edu": 2,
+    "w_edu": 0.15,
+    "w_exp": 0.3,
+    "w_skill": 0.55
+  }
+}

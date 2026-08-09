@@ -110,7 +110,7 @@ if __name__ == "__main__":
 
     df = pd.read_csv(f"{BASE}/fairness_test_set.csv")
     print("=" * 65)
-    print("  FAIRNESS AUDIT — 10 IT Roles | Component 3")
+    print("  FAIRNESS AUDIT — All 20 Roles | Component 3")
     print("=" * 65)
     print(f"  Total: {len(df)} | Gender: {df['gender'].value_counts().to_dict()}")
     print(f"\n  {'Role':<32} {'DP':>8} {'EOD':>8}  Status")

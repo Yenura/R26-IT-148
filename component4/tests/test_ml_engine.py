@@ -266,6 +266,11 @@ class TestRunSkillGapAnalysis:
         "Frontend Developer", "Backend Developer", "DevOps Engineer",
         "Cybersecurity Analyst", "Cloud Solutions Architect",
         "Database Administrator", "Mobile App Developer",
+        "Full Stack Developer", "QA/Test Automation Engineer",
+        "Data Engineer", "Site Reliability Engineer (SRE)",
+        "UI/UX Designer", "Network Engineer",
+        "Business/Systems Analyst", "AI/NLP Engineer",
+        "Blockchain Developer", "Embedded Systems Engineer",
     ])
     def test_all_roles_return_valid_result(self, role):
         """Every supported role should complete without raising an exception."""

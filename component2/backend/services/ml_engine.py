@@ -553,8 +553,18 @@ class InterviewService:
             if is_relevant:
                 relevant_questions.append(q)
 
-        pool = relevant_questions if relevant_questions else typed_questions
-        return pool[:count]
+        if relevant_questions:
+            return relevant_questions[:count]
+
+        # No relevant questions found; fall back to typed pool but skip
+        # obviously-off-topic categories (e.g. Java for Data Scientist).
+        off_topic_cats = {"java", "javascript", "typescript", "ruby", "php", "swift", "kotlin", "go", "rust", "c++", "c#", "scala"}
+        safe = [q for q in typed_questions if q.get("category", "").lower() not in off_topic_cats]
+        logger.warning("FALLBACK: typed=%d, relevant=%d, safe=%d (off_topic_cats=%s, skill_cats=%s, categories=%s)",
+                       len(typed_questions), len(relevant_questions), len(safe), off_topic_cats,
+                       [s.lower() for s in relevant_skills],
+                       [q.get("category", "") for q in typed_questions[:5]])
+        return (safe if safe else typed_questions)[:count]
     
     def _filter_coding_questions_by_profile(self, coding_questions: List[Dict], profile: str) -> List[Dict]:
         """Filter coding questions based on SQL, scripting, or full coding profiles."""
@@ -668,17 +678,12 @@ class InterviewService:
         return result
     
     def _evaluate_mcq_answers(self, answers: List[Dict]) -> float:
-        """Evaluate MCQ answers"""
         if not answers:
             return 0
-        
-        correct_count = sum(
-            1 for a in answers 
-            if a.get("is_correct", False)
-        )
-        
-        score = (correct_count / len(answers)) * 100
-        return float(score)
+        correct_count = sum(1 for a in answers if a.get("is_correct", False))
+        wrong_count = len(answers) - correct_count
+        raw_sum = correct_count * 1.0 + wrong_count * (-0.25)
+        return max(0.0, raw_sum) / len(answers) * 100
     
     def _evaluate_descriptive_answers(self, answers: List[Dict]) -> float:
         """Evaluate descriptive answers"""
@@ -718,29 +723,10 @@ class InterviewService:
     def _normalize_weights(self, original_weights: Dict[str, float],
                            has_mcq: bool, has_descriptive: bool,
                            has_coding: bool) -> Tuple[Dict[str, float], bool]:
-        """
-        Normalize weights based on available question types.
-        If a question type is missing, redistribute its weight proportionally
-        to the available types.
-        
-        Args:
-            original_weights: Original weights from config
-            has_mcq: Whether MCQ answers are present
-            has_descriptive: Whether Descriptive answers are present
-            has_coding: Whether Coding answers are present
-            
-        Returns:
-            Tuple of (normalized_weights, was_adjustment_applied)
-        """
-        # If all types present, return original weights
         if has_mcq and has_descriptive and has_coding:
             return original_weights, False
-        
-        # Start with original weights
         weights = original_weights.copy()
         adjustment_applied = False
-        
-        # Identify missing types and calculate redistribution
         missing_weight = 0
         if not has_mcq:
             missing_weight += weights.get("mcq", 0.25)
@@ -754,32 +740,15 @@ class InterviewService:
             missing_weight += weights.get("coding", 0.40)
             weights["coding"] = 0
             adjustment_applied = True
-        
-        # If weight adjustment is needed, redistribute to available types
         if adjustment_applied and missing_weight > 0:
-            # Identify available types
-            available_count = sum([has_mcq, has_descriptive, has_coding])
-            
-            if available_count > 0:
-                # Distribute missing weight proportionally among available types
-                weight_per_available = missing_weight / available_count
-                
-                if has_mcq:
-                    weights["mcq"] += weight_per_available
-                if has_descriptive:
-                    weights["descriptive"] += weight_per_available
-                if has_coding:
-                    weights["coding"] += weight_per_available
-        
-        # Normalize to ensure sum equals 1
+            available = {k: v for k, v in weights.items() if v > 0}
+            total_available = sum(available.values())
+            if total_available > 0:
+                for k in available:
+                    weights[k] += missing_weight * (weights[k] / total_available)
         total_weight = sum(weights.values())
         if total_weight > 0:
             weights = {k: v / total_weight for k, v in weights.items()}
-        
-        logger.info(f"Weight normalization: MCQ={has_mcq}, Descriptive={has_descriptive}, Coding={has_coding} -> Redistributed={adjustment_applied}")
-        logger.info(f"Original weights: {original_weights}")
-        logger.info(f"Normalized weights: {weights}")
-        
         return weights, adjustment_applied
     
     def _identify_weak_topics(self, mcq_answers: List, 
@@ -788,31 +757,33 @@ class InterviewService:
                              mcq_score: float,
                              desc_score: float,
                              code_score: float) -> List[str]:
-        """Identify weak topics based on performance"""
         weak_topics = []
-        
-        # If MCQ score is low, identify wrong topics
         if mcq_score < 70:
-            wrong_mcqs = [
-                a.get("topic", "Unknown") for a in mcq_answers
-                if not a.get("is_correct", True)
-            ]
-            weak_topics.extend(wrong_mcqs)
-        
-        # If descriptive score is low, identify weak areas
+            for a in mcq_answers:
+                if not a.get("is_correct", False):
+                    topic = a.get("topic", "")
+                    if topic:
+                        weak_topics.append(topic)
         if desc_score < 70:
-            weak_desc = [
-                a.get("topic", "Unknown") for a in desc_answers
-                if a.get("final_score", 100) < 60
-            ]
-            weak_topics.extend(weak_desc)
-        
-        # If coding score is low, identify complexity issues
+            for a in desc_answers:
+                if a.get("final_score", 100) < 60:
+                    topic = a.get("topic", "")
+                    if topic:
+                        weak_topics.append(topic)
         if code_score < 70:
-            weak_topics.extend(["Algorithm Design", "Code Optimization"])
-        
-        # Remove duplicates and return unique topics
-        return list(set(weak_topics))
+            for a in code_answers:
+                topic = a.get("topic", "")
+                if topic:
+                    weak_topics.append(topic)
+                else:
+                    weak_topics.append("Coding")
+        seen = set()
+        unique = []
+        for t in weak_topics:
+            if t not in seen:
+                seen.add(t)
+                unique.append(t)
+        return unique[:5]
 
 
 class AnswerEvaluationService:

@@ -1,6 +1,6 @@
 """
 Component 4 — Full End-to-End Test (New 10K Dataset)
-Tests all 10 job roles and new fields: job_level, work_mode, projects_count, certifications_count
+Tests all 20 job roles and new fields: job_level, work_mode, projects_count, certifications_count
 """
 import requests, json, sys
 
@@ -35,8 +35,8 @@ res = chk("GET /skill-gap/roles", r)
 if res:
     print(f"         {res['count']} roles: {res['roles']}")
 
-# ── 3. Add 10 candidates (one per role) ───────────────────────────────────────
-print("\n=== ADDING TEST CANDIDATES (10 roles) ===")
+# ── 3. Add 20 candidates (one per role) ───────────────────────────────────────
+print("\n=== ADDING TEST CANDIDATES (20 roles) ===")
 
 CANDIDATES = [
     {
@@ -142,6 +142,106 @@ CANDIDATES = [
         "mcq_score": 82.0, "descriptive_score": 74.0, "coding_score": 70.0,
         "weak_topics": [], "failed_mcq_topics": [],
     },
+    {
+        "candidate_id": "T-011", "candidate_name": "Kavindu Ratnayake",
+        "job_role": "Full Stack Developer", "job_level": "Mid-Level", "work_mode": "Remote",
+        "skills": ["React", "Node.js", "Python", "SQL", "Docker"],
+        "experience_years": 4, "education": "B.Sc. Computer Science",
+        "certifications": "None", "certifications_count": 0, "projects_count": 10,
+        "cv_matching_score": 65.0, "interview_score": 62.0,
+        "mcq_score": 68.0, "descriptive_score": 58.0, "coding_score": 55.0,
+        "weak_topics": ["Microservices"], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-012", "candidate_name": "Nipun Samarawickrama",
+        "job_role": "QA/Test Automation Engineer", "job_level": "Senior", "work_mode": "Hybrid",
+        "skills": ["Selenium", "Pytest", "Jest", "CI/CD", "API Testing"],
+        "experience_years": 5, "education": "B.Sc. Software Engineering",
+        "certifications": "ISTQB Certified", "certifications_count": 1, "projects_count": 11,
+        "cv_matching_score": 75.0, "interview_score": 72.0,
+        "mcq_score": 78.0, "descriptive_score": 70.0, "coding_score": 65.0,
+        "weak_topics": [], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-013", "candidate_name": "Hashini Fernando",
+        "job_role": "Data Engineer", "job_level": "Mid-Level", "work_mode": "Remote",
+        "skills": ["Python", "SQL", "Spark", "Kafka", "Airflow"],
+        "experience_years": 4, "education": "B.Sc. Computer Science",
+        "certifications": "AWS Certified Data Engineer", "certifications_count": 1, "projects_count": 8,
+        "cv_matching_score": 70.0, "interview_score": 68.0,
+        "mcq_score": 72.0, "descriptive_score": 65.0, "coding_score": 60.0,
+        "weak_topics": ["Data Modeling"], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-014", "candidate_name": "Dishan Jayawardena",
+        "job_role": "Site Reliability Engineer (SRE)", "job_level": "Senior", "work_mode": "On-Site",
+        "skills": ["Linux", "Kubernetes", "Prometheus", "Grafana", "Terraform", "Python"],
+        "experience_years": 7, "education": "B.Sc. Information Technology",
+        "certifications": "CKA | AWS Solutions Architect", "certifications_count": 2, "projects_count": 16,
+        "cv_matching_score": 88.0, "interview_score": 85.0,
+        "mcq_score": 90.0, "descriptive_score": 82.0, "coding_score": 78.0,
+        "weak_topics": [], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-015", "candidate_name": "Amasha Senanayake",
+        "job_role": "UI/UX Designer", "job_level": "Mid-Level", "work_mode": "Hybrid",
+        "skills": ["Figma", "Sketch", "CSS", "Prototyping", "User Research"],
+        "experience_years": 3, "education": "B.Sc. Design",
+        "certifications": "Google UX Design Certificate", "certifications_count": 1, "projects_count": 9,
+        "cv_matching_score": 72.0, "interview_score": 70.0,
+        "mcq_score": 65.0, "descriptive_score": 75.0, "coding_score": 40.0,
+        "weak_topics": ["Accessibility"], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-016", "candidate_name": "Thisura Herath",
+        "job_role": "Network Engineer", "job_level": "Senior", "work_mode": "On-Site",
+        "skills": ["TCP/IP", "Cisco", "Routing", "Firewalls", "VPN", "Linux"],
+        "experience_years": 6, "education": "B.Sc. Computer Networks",
+        "certifications": "CCNP | CompTIA Security+", "certifications_count": 2, "projects_count": 12,
+        "cv_matching_score": 82.0, "interview_score": 80.0,
+        "mcq_score": 85.0, "descriptive_score": 78.0, "coding_score": 55.0,
+        "weak_topics": [], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-017", "candidate_name": "Madushi Liyanaarachchi",
+        "job_role": "Business/Systems Analyst", "job_level": "Mid-Level", "work_mode": "Hybrid",
+        "skills": ["SQL", "UML", "BPMN", "Agile", "JIRA", "Data Analysis"],
+        "experience_years": 4, "education": "B.Sc. Information Systems",
+        "certifications": "CBAP", "certifications_count": 1, "projects_count": 10,
+        "cv_matching_score": 70.0, "interview_score": 68.0,
+        "mcq_score": 72.0, "descriptive_score": 75.0, "coding_score": 35.0,
+        "weak_topics": [], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-018", "candidate_name": "Binura Gunasekara",
+        "job_role": "AI/NLP Engineer", "job_level": "Senior", "work_mode": "Remote",
+        "skills": ["Python", "TensorFlow", "PyTorch", "NLP", "Transformers", "spaCy"],
+        "experience_years": 6, "education": "M.Sc. Artificial Intelligence",
+        "certifications": "Deep Learning Specialization", "certifications_count": 1, "projects_count": 15,
+        "cv_matching_score": 90.0, "interview_score": 88.0,
+        "mcq_score": 92.0, "descriptive_score": 85.0, "coding_score": 82.0,
+        "weak_topics": [], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-019", "candidate_name": "Sachithra Tennakoon",
+        "job_role": "Blockchain Developer", "job_level": "Mid-Level", "work_mode": "Remote",
+        "skills": ["Solidity", "Ethereum", "Web3.js", "Smart Contracts", "Rust"],
+        "experience_years": 3, "education": "B.Sc. Computer Science",
+        "certifications": "Certified Blockchain Developer", "certifications_count": 1, "projects_count": 7,
+        "cv_matching_score": 68.0, "interview_score": 65.0,
+        "mcq_score": 70.0, "descriptive_score": 62.0, "coding_score": 58.0,
+        "weak_topics": ["Cryptography"], "failed_mcq_topics": [],
+    },
+    {
+        "candidate_id": "T-020", "candidate_name": "Lakshitha Jayasuriya",
+        "job_role": "Embedded Systems Engineer", "job_level": "Senior", "work_mode": "On-Site",
+        "skills": ["C", "C++", "RTOS", "Microcontrollers", "ARM", "Linux Kernel"],
+        "experience_years": 8, "education": "B.Sc. Electronic Engineering",
+        "certifications": "ARM Accredited Engineer", "certifications_count": 1, "projects_count": 20,
+        "cv_matching_score": 85.0, "interview_score": 82.0,
+        "mcq_score": 88.0, "descriptive_score": 80.0, "coding_score": 76.0,
+        "weak_topics": [], "failed_mcq_topics": [],
+    },
 ]
 
 candidate_ids = []
@@ -183,12 +283,17 @@ for cand in CANDIDATES[:4]:
         print(f"         Level: {d['current_level']} | Next: {d['next_milestones'][0] if d['next_milestones'] else 'Top'}")
 
 # ── 6. Resources for all 10 roles ─────────────────────────────────────────────
-print("\n=== RESOURCES (all 10 roles) ===")
+print("\n=== RESOURCES (all 20 roles) ===")
 roles = [
     "Software Engineer", "Data Scientist", "Machine Learning Engineer",
     "Frontend Developer", "Backend Developer", "DevOps Engineer",
     "Cybersecurity Analyst", "Cloud Solutions Architect",
     "Database Administrator", "Mobile App Developer",
+    "Full Stack Developer", "QA/Test Automation Engineer",
+    "Data Engineer", "Site Reliability Engineer (SRE)",
+    "UI/UX Designer", "Network Engineer",
+    "Business/Systems Analyst", "AI/NLP Engineer",
+    "Blockchain Developer", "Embedded Systems Engineer",
 ]
 for role in roles:
     r = requests.get(f"{BASE}/career/resources/{requests.utils.quote(role)}")

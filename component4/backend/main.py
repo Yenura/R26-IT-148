@@ -13,8 +13,12 @@ import os
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
 import motor.motor_asyncio
 
@@ -25,6 +29,8 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(name)s — %(message)s",
 )
 logger = logging.getLogger("component4")
+
+limiter = Limiter(key_func=get_remote_address)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 MONGODB_URI     = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
@@ -82,6 +88,15 @@ app = FastAPI(
     ),
     lifespan=lifespan,
 )
+app.state.limiter = limiter
+
+def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Rate limit exceeded. Please try again later."},
+    )
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # ── CORS (C2 fix: explicit origins, not wildcard) ─────────────────────────────
 app.add_middleware(

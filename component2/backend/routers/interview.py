@@ -3,9 +3,18 @@ Component 2: Interview System - FastAPI Router
 Handles HTTP endpoints for interview management
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from typing import List, Dict, Optional
+from starlette.concurrency import run_in_threadpool
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 import logging
+import sys
+import json
+import textwrap
+import subprocess
+import tempfile
+import os
 
 from models.schemas import (
     InterviewRequest, InterviewSession, InterviewQuestion,
@@ -17,6 +26,7 @@ from db import save_session, get_session, save_result, get_result, update_sessio
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
+limiter = Limiter(key_func=get_remote_address)
 
 
 # ====================================================================
@@ -27,7 +37,7 @@ def get_services():
     """Get services - resolve models directory relative to this file"""
     import os
     _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    models_dir   = os.path.join(_backend_dir, "trained_models")
+    models_dir   = os.path.join(_backend_dir, "..", "models")
     return {
         "interview_service": get_interview_service(models_dir),
         "evaluation_service": get_evaluation_service(models_dir)
@@ -39,7 +49,8 @@ def get_services():
 # ====================================================================
 
 @router.post("/start", response_model=InterviewSession)
-async def start_interview(request: InterviewRequest, services: Dict = Depends(get_services)):
+@limiter.limit("10/minute")
+async def start_interview(request: Request, interview_request: InterviewRequest, services: Dict = Depends(get_services)):
     """
     Create and start a new interview session
     
@@ -60,8 +71,9 @@ async def start_interview(request: InterviewRequest, services: Dict = Depends(ge
                 detail=f"Invalid job role. Available: {', '.join(available_jobs)}"
             )
         
-        # Create session
-        session = interview_service.create_interview_session(
+        # Create session (CPU-bound: question generation + filtering)
+        session = await run_in_threadpool(
+            interview_service.create_interview_session,
             candidate_id=request.candidate_id,
             job_role=request.job_role,
             num_questions=request.num_questions,
@@ -69,7 +81,7 @@ async def start_interview(request: InterviewRequest, services: Dict = Depends(ge
         )
         
         # Persist interview session to MongoDB
-        save_session(session)
+        await save_session(session)
         
         # Convert to response model
         questions = [
@@ -108,7 +120,8 @@ async def start_interview(request: InterviewRequest, services: Dict = Depends(ge
 
 
 @router.post("/submit", response_model=InterviewScoreResult)
-async def submit_answers(submission: Dict, services: Dict = Depends(get_services)):
+@limiter.limit("5/minute")
+async def submit_answers(request: Request, submission: Dict, services: Dict = Depends(get_services)):
     """
     Submit answers and get evaluation results
     
@@ -122,7 +135,7 @@ async def submit_answers(submission: Dict, services: Dict = Depends(get_services
         interview_service = services["interview_service"]
         
         session_id = submission.get("session_id")
-        session = get_session(session_id)
+        session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
         
@@ -150,18 +163,22 @@ async def submit_answers(submission: Dict, services: Dict = Depends(get_services
                 candidate_choice = answer.get("selected_option")
                 if candidate_choice is None:
                     candidate_choice = answer.get("answer")
-                correct_choice = question.get("correct_option")
+                try:
+                    candidate_choice = int(candidate_choice)
+                except (TypeError, ValueError):
+                    candidate_choice = -1
+                correct_choice = question.get("correct_option") or question.get("correct_answer_index", 0)
                 processed_answer["selected_option"] = candidate_choice
                 processed_answer["correct_option"] = correct_choice
                 processed_answer["is_correct"] = candidate_choice == correct_choice
-                processed_answer["score"] = 100 if processed_answer["is_correct"] else 0
 
             elif question_type == "Descriptive":
                 answer_text = answer.get("answer_text") or answer.get("answer") or ""
                 reference_text = question.get("answer_text") or question.get("expected_answer") or ""
-                evaluation_result = services["evaluation_service"].evaluate_descriptive(
+                evaluation_result = await run_in_threadpool(
+                    services["evaluation_service"].evaluate_descriptive,
                     reference=reference_text,
-                    candidate=answer_text
+                    candidate=answer_text,
                 )
                 processed_answer.update({
                     "answer_text": answer_text,
@@ -172,19 +189,72 @@ async def submit_answers(submission: Dict, services: Dict = Depends(get_services
 
             elif question_type == "Coding":
                 code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
-                evaluation_result = services["evaluation_service"].evaluate_coding(
-                    code_text=code_text,
-                    test_cases=question.get("test_cases", []) or []
-                )
+                test_cases = question.get("test_cases", []) or []
+                syntax_valid = True
+                try:
+                    compile(code_text, "<string>", "exec")
+                except SyntaxError:
+                    syntax_valid = False
+                valid_tests = [tc for tc in test_cases if tc.get("expected_output") and str(tc["expected_output"]).strip() and tc["expected_output"] != "See answer"]
+                tests_passed = 0
+                if valid_tests and syntax_valid:
+                    for tc in valid_tests:
+                        expected = str(tc.get("expected_output", "")).strip()
+                        sandbox_wrapper = (
+                            "import sys as _sys\n"
+                            "from io import StringIO\n"
+                            "_blocked = {'os','subprocess','shutil','socket','pathlib','ctypes','multiprocessing','threading','signal','inspect','importlib'}\n"
+                            "_real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__\n"
+                            "def _safe_import(name, *a, **kw):\n"
+                            "    if name in _blocked: raise ImportError(f'Blocked: {name}')\n"
+                            "    return _real_import(name, *a, **kw)\n"
+                            "__builtins__.__import__ = _safe_import\n"
+                            "_stdout = _sys.stdout\n"
+                            "_sys.stdout = StringIO()\n"
+                            "try:\n"
+                            + textwrap.indent(code_text, "    ") + "\n"
+                            "    _output = _sys.stdout.getvalue().strip()\n"
+                            "except Exception:\n"
+                            "    _output = ''\n"
+                            "finally:\n"
+                            "    _sys.stdout = _stdout\n"
+                            "print(_output)\n"
+                        )
+                        tmp = None
+                        try:
+                            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+                                f.write(sandbox_wrapper)
+                                tmp = f.name
+                            result = subprocess.run(
+                                [sys.executable, tmp], capture_output=True, text=True, timeout=5
+                            )
+                            output = result.stdout.strip()
+                            if output == expected:
+                                tests_passed += 1
+                        except Exception:
+                            pass
+                        finally:
+                            if tmp:
+                                try:
+                                    os.unlink(tmp)
+                                except Exception:
+                                    pass
+                total_tests = len(valid_tests) if valid_tests else 1
+                test_pass_rate = tests_passed / total_tests
+                lines = code_text.strip().split('\n')
+                code_lines = len([l for l in lines if l.strip() and not l.strip().startswith('#')])
+                has_return = any(kw in code_text for kw in ['def ', 'class ', 'return'])
+                quality_score = 0.5 * float(syntax_valid) + 0.3 * float(0 < code_lines < 200) + 0.2 * float(has_return)
+                code_score = round(min(100.0, test_pass_rate * 70 + quality_score * 30), 2)
                 processed_answer.update({
                     "code_text": code_text,
                     "language": answer.get("language", "Python"),
-                    "code_score": evaluation_result.get("code_score", 0),
-                    "syntax_valid": evaluation_result.get("syntax_valid", False),
-                    "test_pass_rate": evaluation_result.get("test_pass_rate", 0),
-                    "tests_passed": evaluation_result.get("tests_passed", 0),
-                    "total_tests": evaluation_result.get("total_tests", len(question.get("test_cases", []) or [])),
-                    "quality_score": evaluation_result.get("quality_score", 0)
+                    "code_score": code_score,
+                    "syntax_valid": syntax_valid,
+                    "test_pass_rate": round(test_pass_rate, 4),
+                    "tests_passed": tests_passed,
+                    "total_tests": len(valid_tests),
+                    "quality_score": round(quality_score * 100, 2)
                 })
 
             processed_answers.append(processed_answer)
@@ -196,14 +266,40 @@ async def submit_answers(submission: Dict, services: Dict = Depends(get_services
             "answers": processed_answers
         }
         
-        result = interview_service.evaluate_interview(
+        result = await run_in_threadpool(
+            interview_service.evaluate_interview,
             session_id=session_id,
-            interview_data=evaluation_payload
+            interview_data=evaluation_payload,
         )
 
-        save_result(result)
-        update_session_status(session_id, "completed")
+        await save_result(result)
+        await update_session_status(session_id, "completed")
         
+        # Send scores to C0 unified backend for ranking pipeline
+        try:
+            import urllib.request
+            c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
+            payload = json.dumps({
+                "candidate_id": result["candidate_id"],
+                "job_id": submission.get("job_id", ""),
+                "session_id": session_id,
+                "job_role": result["job_role"],
+                "mcq_score": result["mcq_score"],
+                "descriptive_score": result["descriptive_score"],
+                "coding_score": result["coding_score"],
+                "interview_score": result["interview_score"],
+                "grade": result["grade"],
+            }).encode()
+            req = urllib.request.Request(
+                f"{c0_url}/api/v1/resume/interview-scores",
+                data=payload,
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as e:
+            logger.warning(f"Failed to send scores to C0: {e}")
+
         return InterviewScoreResult(
             interview_id=result["interview_id"],
             candidate_id=result["candidate_id"],
@@ -241,7 +337,7 @@ async def fetch_interview_result(interview_id: str, services: Dict = Depends(get
         Evaluation response with score details
     """
     try:
-        result = get_result(interview_id)
+        result = await get_result(interview_id)
         if not result:
             raise HTTPException(status_code=404, detail="Interview result not found")
 
@@ -268,7 +364,7 @@ async def fetch_interview_session(session_id: str):
         Interview session payload
     """
     try:
-        session = get_session(session_id)
+        session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
 

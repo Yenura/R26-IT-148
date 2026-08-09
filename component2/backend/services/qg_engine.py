@@ -27,7 +27,10 @@ def _get_qg_generator():
         "MODELS_DIR",
         str(Path(__file__).parent.parent.parent / "models"),
     )
-    model_path = os.path.join(models_dir, "qg_model")
+    # Prefer the retrained v2 model (canonical dataset); fall back to v1.
+    v2_path = os.path.join(models_dir, "qg_model_v2")
+    v1_path = os.path.join(models_dir, "qg_model")
+    model_path = v2_path if os.path.isdir(v2_path) else v1_path
 
     if not os.path.isdir(model_path):
         logger.warning("QG model directory not found: %s", model_path)
@@ -123,11 +126,12 @@ def generate_questions_qg(
         if combined and len(combined) == total:
             logger.info("QG model generated %d questions", len(combined))
             return combined[:total]
-        if combined:
-            logger.warning(
-                "QG model returned %d/%d questions; falling through",
+        if combined and len(combined) > 0:
+            logger.info(
+                "QG model generated %d/%d questions; using partial results",
                 len(combined), total,
             )
+            return combined[:total]
         else:
             logger.info("QG model returned no questions; falling through")
         return None

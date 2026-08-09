@@ -25,6 +25,35 @@ async def update_progress(payload: ProgressUpdateRequest, request: Request):
     return {"success": True, "message": "Progress updated", "data": doc}
 
 
+@router.post("/populate", summary="Auto-populate progress from latest skill gap report")
+async def populate_progress(request: Request):
+    db = request.app.state.db
+    report = await db.skill_gap_reports.find_one(
+        sort=[("created_at", -1)],
+    )
+    if not report:
+        raise HTTPException(404, "No skill gap reports found. Run a skill gap analysis first.")
+    candidate_id = report.get("candidate_id", "web-user")
+    skills = report.get("missing_required", []) + report.get("missing_optional", [])
+    existing = {
+        doc["skill"] async for doc in db.progress_tracking.find(
+            {"candidate_id": candidate_id}, projection={"skill": 1, "_id": 0}
+        )
+    }
+    inserted = 0
+    for skill in skills:
+        if skill not in existing:
+            await db.progress_tracking.insert_one({
+                "candidate_id": candidate_id,
+                "skill": skill,
+                "status": "not_started",
+                "notes": "",
+                "updated_at": datetime.utcnow(),
+            })
+            inserted += 1
+    return {"success": True, "populated": inserted, "candidate_id": candidate_id}
+
+
 @router.get("/{candidate_id}", summary="Get full progress for a candidate")
 async def get_progress(candidate_id: str, request: Request):
     db   = request.app.state.db

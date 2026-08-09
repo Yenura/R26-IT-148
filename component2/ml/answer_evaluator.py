@@ -5,6 +5,7 @@ Trains and evaluates semantic similarity for descriptive answers
 
 import pickle
 import json
+import re
 import numpy as np
 from typing import List, Dict, Tuple
 from sentence_transformers import SentenceTransformer, util
@@ -70,56 +71,38 @@ class DescriptiveAnswerEvaluator:
         return float(np.clip(similarity, 0, 1))
     
     def extract_keywords(self, text: str) -> set:
-        """
-        Extract keywords from text (simple approach: split and filter)
-        
-        Args:
-            text: Input text
-            
-        Returns:
-            Set of keywords
-        """
         if not isinstance(text, str):
             return set()
-        
-        # Remove common words and split
         stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'is', 'are', 'was', 'were',
-            'is', 'it', 'to', 'of', 'for', 'in', 'by', 'with', 'from',
-            'as', 'be', 'that', 'this', 'which', 'what', 'when', 'where',
-            'how', 'why', 'all', 'each', 'both', 'any', 'some', 'such'
+            'the', 'a', 'an', 'and', 'or', 'is', 'are', 'was', 'were', 'be',
+            'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+            'would', 'could', 'should', 'may', 'might', 'shall', 'can', 'need',
+            'dare', 'ought', 'used', 'to', 'of', 'in', 'for', 'on', 'with',
+            'at', 'by', 'from', 'as', 'into', 'through', 'during', 'before',
+            'after', 'above', 'below', 'between', 'out', 'off', 'over', 'under',
+            'again', 'further', 'then', 'once', 'it', 'its', 'this', 'that',
+            'these', 'those', 'what', 'which', 'who', 'whom', 'when', 'where',
+            'why', 'how', 'all', 'each', 'every', 'both', 'few', 'more', 'most',
+            'other', 'some', 'such', 'no', 'nor', 'not', 'only', 'own', 'same',
+            'so', 'than', 'too', 'very', 'just', 'also', 'now', 'here', 'there',
+            'if', 'because', 'until', 'while', 'about', 'against', 'up', 'down',
+            'and', 'but', 'however', 'although', 'though', 'since', 'unless',
+            'yet', 'still', 'much', 'many', 'well', 'back', 'even', 'still',
+            'new', 'like', 'one', 'two', 'first', 'last', 'get', 'make', 'go',
+            'see', 'come', 'think', 'know', 'take', 'want', 'give', 'use', 'find',
+            'tell', 'ask', 'work', 'seem', 'feel', 'try', 'leave', 'call',
         }
-        
-        words = text.lower().split()
-        keywords = {w.strip('.,!?;:') for w in words 
-                   if w.lower() not in stop_words and len(w) > 2}
-        
+        words = re.findall(r'[a-z]+', text.lower())
+        keywords = {w for w in words if w not in stop_words and len(w) > 2}
         return keywords
     
-    def calculate_keyword_bonus(self, reference_text: str, 
-                               candidate_text: str) -> float:
-        """
-        Calculate keyword coverage bonus
-        
-        Formula: KeywordBonus = |{k ∈ Keywords(ref) : k in candidate}| / |Keywords(ref)|
-        
-        Args:
-            reference_text: Reference answer
-            candidate_text: Candidate's answer
-            
-        Returns:
-            Bonus score in [0, 1]
-        """
+    def calculate_keyword_bonus(self, reference_text: str, candidate_text: str) -> float:
         ref_keywords = self.extract_keywords(reference_text)
-        cand_text_lower = candidate_text.lower()
-        
         if not ref_keywords:
-            return 0.5
-        
-        matches = sum(1 for kw in ref_keywords if kw in cand_text_lower)
-        bonus = matches / len(ref_keywords)
-        
-        return float(bonus)
+            return 0.0
+        cand_text_lower = candidate_text.lower()
+        matches = sum(1 for kw in ref_keywords if re.search(r'\b' + re.escape(kw) + r'\b', cand_text_lower))
+        return float(matches / len(ref_keywords))
     
     def evaluate_descriptive_answer(self, reference_answer: str, 
                                    candidate_answer: str) -> Dict:

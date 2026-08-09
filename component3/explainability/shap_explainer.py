@@ -132,7 +132,7 @@ if __name__ == "__main__":
 
     test_df = pd.read_csv(f"{BASE}/test_set.csv")
     print("=" * 60)
-    print("  SHAP EXPLAINABILITY — All 10 Roles")
+    print("  SHAP EXPLAINABILITY — All 20 Roles")
     print("=" * 60)
 
     for role in test_df["job_role"].unique():

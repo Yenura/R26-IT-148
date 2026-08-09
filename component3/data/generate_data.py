@@ -2,11 +2,11 @@
 Synthetic Dataset Generator - Component 3
 IT22027610 | Perera K.G.S.N | R26-IT-148
 
-Generates realistic synthetic data for 10 specific IT job roles.
+Generates realistic synthetic data for 20 specific IT job roles.
 Each candidate has role-relevant features with realistic correlations.
 
-Total: 600 candidates per role × 10 roles = 6,000 records
-Split: Train(3600) / Val(900) / Test(1500) / Fairness(500)
+Total: 600 candidates per role × 20 roles = 12,000 records
+Split: Train(7200) / Val(1800) / Test(3000) / Fairness(1000)
 """
 
 import numpy as np
@@ -26,7 +26,7 @@ from data.role_configs import (
 np.random.seed(42)
 random.seed(42)
 
-RECORDS_PER_ROLE = 600   # 600 × 10 = 6,000 total
+RECORDS_PER_ROLE = 600   # 600 × 20 = 12,000 total
 
 
 # ─────────────────────────────────────────────
@@ -59,6 +59,16 @@ def gen_edu_relevance(role, edu_level):
         "Frontend_Developer":        0.58,
         "Backend_Developer":         0.62,
         "Mobile_App_Developer":      0.58,
+        "Full_Stack_Developer":      0.60,
+        "QA_Test_Automation_Engineer": 0.55,
+        "Data_Engineer":             0.62,
+        "Site_Reliability_Engineer": 0.55,
+        "UI_UX_Designer":            0.70,
+        "Network_Engineer":          0.58,
+        "Business_Systems_Analyst":  0.68,
+        "AI_NLP_Engineer":           0.75,
+        "Blockchain_Developer":      0.60,
+        "Embedded_Systems_Engineer": 0.62,
     }
     base = base_by_role[role] + (EDU_LEVEL_SCORES[edu_level] - 0.6) * 0.15
     return float(np.clip(base + np.random.normal(0, 0.14), 0.10, 1.0))
@@ -80,6 +90,16 @@ def gen_skill_score(role, edu_level, experience):
         "Frontend_Developer":        0.48,
         "Backend_Developer":         0.46,
         "Mobile_App_Developer":      0.46,
+        "Full_Stack_Developer":      0.46,
+        "QA_Test_Automation_Engineer": 0.42,
+        "Data_Engineer":             0.44,
+        "Site_Reliability_Engineer": 0.44,
+        "UI_UX_Designer":            0.40,
+        "Network_Engineer":          0.42,
+        "Business_Systems_Analyst":  0.40,
+        "AI_NLP_Engineer":           0.43,
+        "Blockchain_Developer":      0.45,
+        "Embedded_Systems_Engineer": 0.44,
     }
     base = (role_base[role] +
             EDU_LEVEL_SCORES[edu_level] * 0.18 +
@@ -100,6 +120,16 @@ def gen_mcq_score(role, skill, edu_level):
         "Frontend_Developer":        0.40,
         "Backend_Developer":         0.40,
         "Mobile_App_Developer":      0.40,
+        "Full_Stack_Developer":      0.40,
+        "QA_Test_Automation_Engineer": 0.42,
+        "Data_Engineer":             0.40,
+        "Site_Reliability_Engineer": 0.38,
+        "UI_UX_Designer":            0.38,
+        "Network_Engineer":          0.40,
+        "Business_Systems_Analyst":  0.42,
+        "AI_NLP_Engineer":           0.42,
+        "Blockchain_Developer":      0.40,
+        "Embedded_Systems_Engineer": 0.40,
     }
     base = role_base[role] + skill * 0.30 + EDU_LEVEL_SCORES[edu_level] * 0.12
     return float(np.clip(base + np.random.normal(0, 0.10), 0.0, 1.0))
@@ -118,6 +148,16 @@ def gen_desc_score(role, skill, experience):
         "Frontend_Developer":        0.36,
         "Backend_Developer":         0.38,
         "Mobile_App_Developer":      0.37,
+        "Full_Stack_Developer":      0.38,
+        "QA_Test_Automation_Engineer": 0.38,
+        "Data_Engineer":             0.38,
+        "Site_Reliability_Engineer": 0.36,
+        "UI_UX_Designer":            0.42,
+        "Network_Engineer":          0.38,
+        "Business_Systems_Analyst":  0.44,
+        "AI_NLP_Engineer":           0.40,
+        "Blockchain_Developer":      0.38,
+        "Embedded_Systems_Engineer": 0.38,
     }
     base = role_base[role] + skill * 0.28 + min(experience / 8.0, 1.0) * 0.18
     return float(np.clip(base + np.random.normal(0, 0.12), 0.0, 1.0))
@@ -140,6 +180,16 @@ def gen_code_score(role, skill, experience, edu_level):
         "Frontend_Developer":        0.40,
         "Backend_Developer":         0.40,
         "Mobile_App_Developer":      0.40,
+        "Full_Stack_Developer":      0.40,
+        "QA_Test_Automation_Engineer": 0.35,
+        "Data_Engineer":             0.35,
+        "Site_Reliability_Engineer": 0.35,
+        "UI_UX_Designer":            0.20,
+        "Network_Engineer":          0.30,
+        "Business_Systems_Analyst":  0.20,
+        "AI_NLP_Engineer":           0.36,
+        "Blockchain_Developer":      0.40,
+        "Embedded_Systems_Engineer": 0.38,
     }
     base = (role_base[role] +
             skill * 0.32 +
@@ -282,6 +332,16 @@ def generate_candidates(role, n=RECORDS_PER_ROLE):
         "Frontend_Developer":        "FE",
         "Backend_Developer":         "BE",
         "Mobile_App_Developer":      "MA",
+        "Full_Stack_Developer":      "FS",
+        "QA_Test_Automation_Engineer": "QA",
+        "Data_Engineer":             "DE",
+        "Site_Reliability_Engineer": "SR",
+        "UI_UX_Designer":            "UX",
+        "Network_Engineer":          "NE",
+        "Business_Systems_Analyst":  "BA",
+        "AI_NLP_Engineer":           "AI",
+        "Blockchain_Developer":      "BC",
+        "Embedded_Systems_Engineer": "EM",
     }
     pfx = prefix_map[role]
 
@@ -364,7 +424,7 @@ def generate_candidates(role, n=RECORDS_PER_ROLE):
 def generate_fairness_dataset(n_per_group=250):
     """
     Demographically balanced dataset for fairness testing.
-    250 male + 250 female per role = 500 × 10 = 5,000 total.
+    250 male + 250 female per role = 500 × 20 = 10,000 total.
     Tests each role separately.
     """
     all_records = []
@@ -422,7 +482,7 @@ def generate_fairness_dataset(n_per_group=250):
 
 
 def generate_job_requirements():
-    """Job requirement profiles for all 10 roles."""
+    """Job requirement profiles for all 20 roles."""
     from data.role_configs import (ROLE_REQUIRED_SKILLS, ROLE_REQUIREMENTS,
                                     REQUIRED_YEARS, ROLE_CV_WEIGHTS,
                                     ROLE_INTERVIEW_WEIGHTS, EDU_LEVEL_NAMES)
@@ -463,7 +523,7 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
 
     print("=" * 65)
-    print("  GENERATING DATASETS — 10 IT Roles | Component 3")
+    print("  GENERATING DATASETS — 20 IT Roles | Component 3")
     print("  IT22027610 | Perera K.G.S.N | R26-IT-148")
     print("=" * 65)
 
