@@ -92,6 +92,7 @@ class JobUpdate(BaseModel):
 class JobOut(BaseModel):
     id: str
     company_id: str
+    company_name: str = ""
     title: str
     department: str = ""
     employment_type: str = ""

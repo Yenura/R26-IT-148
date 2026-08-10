@@ -85,7 +85,7 @@ export default function CVMatch() {
             <label>Target Job (optional)</label>
             <select value={selectedJob} onChange={(e) => setSelectedJob(e.target.value)} style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14 }}>
               <option value="">Any job...</option>
-              {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}</option>)}
+              {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}{j.company_name ? ` — ${j.company_name}` : ''}</option>)}
             </select>
           </div>
         </div>
