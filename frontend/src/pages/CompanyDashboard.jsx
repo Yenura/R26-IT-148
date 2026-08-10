@@ -2,10 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight, MessageSquare } from 'lucide-react'
-import axios from 'axios'
-
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+import { C0 } from '../api'
 
 const emptyForm = { title: '', description: '', department: '', location: '', employment_type: 'Full-time', required_skills: '', experience_required: 0, interview_required: false, interview_question_count: 10 }
 
@@ -25,18 +22,20 @@ export default function CompanyDashboard() {
 
   const loadJobs = async () => {
     try {
-      const r = await axios.get(`${API}/api/v1/jobs/`, authHeader())
+      const r = await C0.get('/jobs/')
       setJobs(r.data)
       const counts = {}
       for (const job of r.data) {
         try {
-          const ar = await axios.get(`${API}/api/v1/jobs/${job.id}/applicants`, authHeader())
+          const ar = await C0.get(`/jobs/${job.id}/applicants`)
           const apps = Array.isArray(ar.data) ? ar.data : ar.data.applicants || []
           counts[job.id] = apps.length
         } catch { counts[job.id] = 0 }
       }
       setApplicantCounts(counts)
-    } catch {}
+    } catch {
+      toast.error('Failed to load jobs')
+    }
   }
 
   const createJob = async (e) => {
@@ -44,7 +43,7 @@ export default function CompanyDashboard() {
     if (!form.title) return toast.error('Title required')
     try {
       const payload = { ...form, required_skills: form.required_skills.split(',').map((s) => s.trim()).filter(Boolean) }
-      await axios.post(`${API}/api/v1/jobs/`, payload, authHeader())
+      await C0.post('/jobs/', payload)
       toast.success('Job posted!')
       setShowForm(false)
       setForm(emptyForm)
@@ -55,8 +54,9 @@ export default function CompanyDashboard() {
   }
 
   const deleteJob = async (id) => {
+    if (!confirm('Delete this job? This cannot be undone.')) return
     try {
-      await axios.delete(`${API}/api/v1/jobs/${id}`, authHeader())
+      await C0.delete(`/jobs/${id}`)
       toast.success('Deleted')
       loadJobs()
     } catch (err) {

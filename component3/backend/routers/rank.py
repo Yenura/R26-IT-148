@@ -234,114 +234,118 @@ async def list_roles():
 @router.get("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
 @limiter.limit("10/minute")
 async def rank_pipeline(request: Request, job_id: str):
-    """Fetch real applicants from C0, build candidate inputs, and rank them."""
-    import urllib.request
-    c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
+    """Fetch real applicants from C0 MongoDB, build candidate inputs, and rank them."""
+    import motor.motor_asyncio
+    from models.schemas import CandidateInput
     
-    # 1. Fetch job details from C0
+    # Connect to same MongoDB as C0
+    c0_mongo_uri = os.environ.get("C0_MONGODB_URI", os.environ.get("MONGODB_URI", "mongodb://localhost:27017"))
+    c0_db_name = os.environ.get("C0_DB_NAME", "recruit_ai")
+    client = motor.motor_asyncio.AsyncIOMotorClient(c0_mongo_uri)
+    db = client[c0_db_name]
+    
     try:
-        req = urllib.request.Request(f"{c0_url}/api/v1/jobs/all")
-        resp = urllib.request.urlopen(req, timeout=10)
-        jobs = json.loads(resp.read())
-        job = next((j for j in jobs if j.get("id") == job_id), None)
+        # 1. Fetch job details
+        from bson import ObjectId
+        try:
+            job = await db.jobs.find_one({"_id": ObjectId(job_id)})
+        except Exception:
+            raise HTTPException(status_code=404, detail="Job not found")
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch job: {e}")
-    
-    job_role = job.get("title", "").replace(" ", "_")
-    required_skills = job.get("required_skills", [])
-    experience_required = job.get("experience_required", 0)
-    
-    # 2. Fetch applications for this job from C0
-    try:
-        req = urllib.request.Request(f"{c0_url}/api/v1/jobs/{job_id}/applicants")
-        resp = urllib.request.urlopen(req, timeout=10)
-        applicants = json.loads(resp.read())
-    except Exception as e:
-        raise HTTPException(status_code=502, detail=f"Failed to fetch applicants: {e}")
-    
-    if not applicants:
-        return {"success": True, "job_id": job_id, "data": [], "message": "No applicants"}
-    
-    # 3. Build candidate inputs from applicant data
-    from schemas import CandidateInput
-    candidates = []
-    for app in applicants:
-        candidate_id = app.get("candidate_id", "")
-        candidate_name = app.get("candidate_name", "")
         
-        # Fetch resume data
-        resume_skills = []
-        experience_years = 0
-        edu_level = 2
-        try:
-            req = urllib.request.Request(f"{c0_url}/api/v1/resume/match?job_id={job_id}")
-            # Can't use auth here, so fetch raw resume data differently
-        except Exception:
-            pass
+        job_role = job.get("title", "").replace(" ", "_")
+        required_skills = job.get("required_skills", [])
         
-        # Fetch interview scores
-        mcq_score = 0
-        descriptive_score = 0
-        coding_score = 0
-        try:
-            req = urllib.request.Request(f"{c0_url}/api/v1/resume/interview-scores/{candidate_id}")
-            resp = urllib.request.urlopen(req, timeout=5)
-            scores = json.loads(resp.read())
+        # 2. Fetch applications for this job
+        cursor = db.applications.find({"job_id": ObjectId(job_id)})
+        applicants = await cursor.to_list(length=200)
+        
+        if not applicants:
+            return {"success": True, "job_id": job_id, "data": [], "message": "No applicants"}
+        
+        # 3. Build candidate inputs from applicant + resume + interview data
+        candidates = []
+        for app in applicants:
+            candidate_id = app.get("candidate_id", "")
+            candidate_name = app.get("candidate_name", "")
+            
+            # Fetch resume data
+            resume_skills = []
+            experience_years = 0
+            edu_level = 2
+            resume = await db.resumes.find_one({"candidate_id": candidate_id})
+            if resume:
+                resume_skills = resume.get("skills", [])
+                experience_years = resume.get("experience_years", 0)
+                edu_str = resume.get("education", "").lower()
+                if "phd" in edu_str or "doctorate" in edu_str:
+                    edu_level = 5
+                elif "master" in edu_str or "m.sc" in edu_str or "mba" in edu_str:
+                    edu_level = 4
+                elif "bachelor" in edu_str or "b.sc" in edu_str or "b.tech" in edu_str:
+                    edu_level = 3
+                elif "diploma" in edu_str:
+                    edu_level = 2
+                else:
+                    edu_level = 1
+            
+            # Fetch interview scores
+            mcq_score = 0
+            descriptive_score = 0
+            coding_score = 0
+            scores = await db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1).to_list(length=1)
             if scores:
                 latest = scores[0]
                 mcq_score = latest.get("mcq_score", 0) / 100
                 descriptive_score = latest.get("descriptive_score", 0) / 100
                 coding_score = latest.get("coding_score", 0) / 100
-        except Exception:
-            pass
+            
+            # Calculate skill match
+            matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() for rs in resume_skills)) if resume_skills else 0
+            skill_score_raw = matched / max(len(required_skills), 1)
+            
+            candidates.append(CandidateInput(
+                candidate_id=candidate_id,
+                candidate_name=candidate_name,
+                job_role=job_role,
+                years_experience=experience_years,
+                edu_level=edu_level,
+                skill_score_raw=skill_score_raw,
+                P_mcq=mcq_score,
+                P_desc=descriptive_score,
+                P_code=coding_score,
+                skills=resume_skills,
+            ))
         
-        # Calculate skill match
-        matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() for rs in resume_skills)) if resume_skills else 0
-        skill_score_raw = matched / max(len(required_skills), 1)
+        if not candidates:
+            return {"success": True, "job_id": job_id, "data": [], "message": "No valid candidates"}
         
-        candidates.append(CandidateInput(
-            candidate_id=candidate_id,
-            candidate_name=candidate_name,
-            job_role=job_role,
-            years_experience=experience_years,
-            edu_level=edu_level,
-            skill_score_raw=skill_score_raw,
-            P_mcq=mcq_score,
-            P_desc=descriptive_score,
-            P_code=coding_score,
-            skills=resume_skills,
-        ))
-    
-    if not candidates:
-        return {"success": True, "job_id": job_id, "data": [], "message": "No valid candidates"}
-    
-    # 4. Rank candidates
-    service = get_service()
-    try:
-        job_obj, ranked = service.rank(
-            job_role, candidates,
-            w_cv=0.4, w_int=0.6, use_ltr=True)
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc))
-    
-    out = []
-    for r in ranked:
-        out.append({
-            "rank": r["rank"],
-            "candidate_id": r["candidate_id"],
-            "candidate_name": r["candidate_name"],
-            "CSS": round(r["CSS"], 4),
-            "S_cv": round(r["S_cv"], 4),
-            "S_int": round(r["S_int"], 4),
-            "P_mcq": r["P_mcq"],
-            "P_desc": r["P_desc"],
-            "P_code": r["P_code"],
-            "ltr_score": r.get("ltr_score"),
-            "passed_hard_filter": r["passed_hard_filter"],
-        })
-    
-    return {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
+        # 4. Rank candidates
+        service = get_service()
+        try:
+            job_obj, ranked = service.rank(
+                job_role, candidates,
+                w_cv=0.4, w_int=0.6, use_ltr=True)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+        
+        out = []
+        for r in ranked:
+            out.append({
+                "rank": r["rank"],
+                "candidate_id": r["candidate_id"],
+                "candidate_name": r["candidate_name"],
+                "CSS": round(r["CSS"], 4),
+                "S_cv": round(r["S_cv"], 4),
+                "S_int": round(r["S_int"], 4),
+                "P_mcq": r["P_mcq"],
+                "P_desc": r["P_desc"],
+                "P_code": r["P_code"],
+                "ltr_score": r.get("ltr_score"),
+                "passed_hard_filter": r["passed_hard_filter"],
+            })
+        
+        return {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
+    finally:
+        client.close()

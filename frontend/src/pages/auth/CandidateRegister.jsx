@@ -2,9 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, User, ArrowLeft } from 'lucide-react'
-import axios from 'axios'
-
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
+import { C0 } from '../../api'
 
 export default function CandidateRegister() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '' })
@@ -17,14 +15,12 @@ export default function CandidateRegister() {
     if (form.password.length < 6) return toast.error('Password must be 6+ characters')
     setBusy(true)
     try {
-      const r = await axios.post(`${API}/api/v1/auth/register/candidate`, form)
+      const r = await C0.post('/auth/register/candidate', form)
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'candidate')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
       try {
-        const me = await axios.get(`${API}/api/v1/auth/me`, {
-          headers: { Authorization: `Bearer ${r.data.access_token}` }
-        })
+        const me = await C0.get('/auth/me')
         localStorage.setItem('recruitai.name', me.data.name || '')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}

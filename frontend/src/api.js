@@ -1,23 +1,37 @@
 import axios from 'axios'
 
-const mk = (url) =>
-  axios.create({
+const mk = (url) => {
+  const instance = axios.create({
     baseURL: `${url}/api/v1`,
     timeout: 120_000,
     headers: { 'Content-Type': 'application/json' },
   })
+  // Attach JWT token from localStorage if present
+  instance.interceptors.request.use((cfg) => {
+    const token = localStorage.getItem('recruitai.token')
+    if (token) cfg.headers.Authorization = `Bearer ${token}`
+    return cfg
+  })
+  return instance
+}
 
 const mkHealth = (url) => `${url}/health`
 
 // ── Unified backend (auth, resume, jobs, export) ──────────────
 const _C0 = mk(import.meta.env.VITE_C0_URL || 'http://127.0.0.1:8000')
 
-// Attach JWT token from localStorage if present
-_C0.interceptors.request.use((cfg) => {
-  const token = localStorage.getItem('recruitai.token')
-  if (token) cfg.headers.Authorization = `Bearer ${token}`
-  return cfg
-})
+// Response interceptor: redirect to login on 401
+_C0.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
+      localStorage.removeItem('recruitai.token')
+      localStorage.removeItem('recruitai.role')
+      window.location.href = '/'
+    }
+    return Promise.reject(err)
+  }
+)
 
 export const C0 = _C0
 

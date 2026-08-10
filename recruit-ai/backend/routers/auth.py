@@ -63,7 +63,8 @@ async def require_candidate(request: Request) -> dict:
 @limiter.limit("5/minute")
 async def register_company(request: Request, payload: CompanyRegister):
     db = request.app.state.db
-    existing = await db.users.find_one({"email": payload.email})
+    email = payload.email.lower().strip()
+    existing = await db.users.find_one({"email": email})
     if existing:
         raise HTTPException(status_code=409, detail="Email already registered")
     now = datetime.now(timezone.utc)
@@ -71,7 +72,7 @@ async def register_company(request: Request, payload: CompanyRegister):
         "role": "company",
         "company_name": payload.company_name.strip(),
         "full_name": payload.company_name.strip(),
-        "email": payload.email,
+        "email": email,
         "password": hash_password(payload.password),
         "industry": payload.industry,
         "website": payload.website,
@@ -86,7 +87,8 @@ async def register_company(request: Request, payload: CompanyRegister):
 @limiter.limit("10/minute")
 async def login_company(request: Request, payload: LoginRequest):
     db = request.app.state.db
-    doc = await db.users.find_one({"email": payload.email, "role": "company"})
+    email = payload.email.lower().strip()
+    doc = await db.users.find_one({"email": email, "role": "company"})
     if not doc or not verify_password(payload.password, doc["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     token = create_access_token(str(doc["_id"]), role="company")
@@ -98,14 +100,15 @@ async def login_company(request: Request, payload: LoginRequest):
 @limiter.limit("5/minute")
 async def register_candidate(request: Request, payload: CandidateRegister):
     db = request.app.state.db
-    existing = await db.users.find_one({"email": payload.email})
+    email = payload.email.lower().strip()
+    existing = await db.users.find_one({"email": email})
     if existing:
         raise HTTPException(status_code=409, detail="Email already registered")
     now = datetime.now(timezone.utc)
     doc = {
         "role": "candidate",
         "full_name": payload.full_name.strip(),
-        "email": payload.email,
+        "email": email,
         "password": hash_password(payload.password),
         "created_at": now,
     }
@@ -118,7 +121,8 @@ async def register_candidate(request: Request, payload: CandidateRegister):
 @limiter.limit("10/minute")
 async def login_candidate(request: Request, payload: LoginRequest):
     db = request.app.state.db
-    doc = await db.users.find_one({"email": payload.email, "role": "candidate"})
+    email = payload.email.lower().strip()
+    doc = await db.users.find_one({"email": email, "role": "candidate"})
     if not doc or not verify_password(payload.password, doc["password"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     token = create_access_token(str(doc["_id"]), role="candidate")

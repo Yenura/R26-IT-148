@@ -4,7 +4,7 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from schemas import JobCreate, JobUpdate, JobOut, ApplicationCreate, ApplicationOut
-from routers.auth import require_company, get_current_user
+from routers.auth import require_company, require_candidate, get_current_user
 
 router = APIRouter()
 
@@ -133,8 +133,11 @@ async def delete_job(job_id: str, request: Request, company: dict = Depends(requ
 
 
 @router.post("/{job_id}/apply", response_model=ApplicationOut, status_code=201)
-async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request):
+async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request, user: dict = Depends(require_candidate)):
     db = request.app.state.db
+    # Enforce that the candidate_id matches the authenticated user
+    if payload.candidate_id != str(user["_id"]):
+        raise HTTPException(status_code=403, detail="Cannot apply on behalf of another user")
     try:
         oid = ObjectId(job_id)
     except Exception:
