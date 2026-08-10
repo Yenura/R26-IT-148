@@ -15,55 +15,7 @@
   --p-white: #ffffff;
   --p-black: #000000;
 
-  /* Purple / Indigo (primary) */
-  --p-purple-50:  #f5f3ff;
-  --p-purple-100: #ede9fe;
-  --p-purple-200: #ddd6fe;
-  --p-purple-300: #c4b5fd;
-  --p-purple-400: #a78bfa;
-  --p-purple-500: #7c6cff;
-  --p-purple-600: #6c5ce7;
-  --p-purple-700: #5a4bd6;
-  --p-purple-800: #4c3db8;
-  --p-purple-900: #3b2d8a;
-
-  /* Teal / Emerald (accent-2, success) */
-  --p-teal-50:  #f0fdf9;
-  --p-teal-100: #ccfbef;
-  --p-teal-200: #99f6df;
-  --p-teal-300: #5eead4;
-  --p-teal-400: #00e4b8;
-  --p-teal-500: #00b894;
-  --p-teal-600: #0d9488;
-  --p-teal-700: #0f766e;
-  --p-teal-800: #115e59;
-  --p-teal-900: #134e4a;
-
-  /* Amber / Orange (warning) */
-  --p-amber-50:  #fffbeb;
-  --p-amber-100: #fef3c7;
-  --p-amber-200: #fde68a;
-  --p-amber-300: #fcd34d;
-  --p-amber-400: #fbbf24;
-  --p-amber-500: #ffb347;
-  --p-amber-600: #d97706;
-  --p-amber-700: #b45309;
-  --p-amber-800: #92400e;
-  --p-amber-900: #78350f;
-
-  /* Rose / Red (danger) */
-  --p-rose-50:  #fff1f2;
-  --p-rose-100: #ffe4e6;
-  --p-rose-200: #fecdd3;
-  --p-rose-300: #fda4af;
-  --p-rose-400: #fb7185;
-  --p-rose-500: #ff5c7a;
-  --p-rose-600: #e11d48;
-  --p-rose-700: #be123c;
-  --p-rose-800: #9f1239;
-  --p-rose-900: #881337;
-
-  /* Blue (info) */
+  /* Blue (primary — trust, dependability) */
   --p-blue-50:  #eff6ff;
   --p-blue-100: #dbeafe;
   --p-blue-200: #bfdbfe;
@@ -75,18 +27,54 @@
   --p-blue-800: #1e40af;
   --p-blue-900: #1e3a8a;
 
-  /* Neutral slate (grays) */
-  --p-slate-50:  #f8fafc;
-  --p-slate-100: #f1f5f9;
-  --p-slate-200: #e2e8f0;
-  --p-slate-300: #cbd5e1;
-  --p-slate-400: #94a3b8;
-  --p-slate-500: #64748b;
-  --p-slate-600: #475569;
-  --p-slate-700: #334155;
-  --p-slate-800: #1e293b;
-  --p-slate-900: #0f172a;
-  --p-slate-950: #020617;
+  /* Emerald (accent — growth, opportunity) */
+  --p-emerald-50:  #ecfdf5;
+  --p-emerald-100: #d1fae5;
+  --p-emerald-200: #a7f3d0;
+  --p-emerald-300: #6ee7b7;
+  --p-emerald-400: #34d399;
+  --p-emerald-500: #10b981;
+  --p-emerald-600: #059669;
+  --p-emerald-700: #047857;
+  --p-emerald-800: #065f46;
+  --p-emerald-900: #064e3b;
+
+  /* Amber (warning) */
+  --p-amber-50:  #fffbeb;
+  --p-amber-100: #fef3c7;
+  --p-amber-200: #fde68a;
+  --p-amber-300: #fcd34d;
+  --p-amber-400: #fbbf24;
+  --p-amber-500: #f59e0b;
+  --p-amber-600: #d97706;
+  --p-amber-700: #b45309;
+  --p-amber-800: #92400e;
+  --p-amber-900: #78350f;
+
+  /* Rose (danger) */
+  --p-rose-50:  #fff1f2;
+  --p-rose-100: #ffe4e6;
+  --p-rose-200: #fecdd3;
+  --p-rose-300: #fda4af;
+  --p-rose-400: #fb7185;
+  --p-rose-500: #f43f5e;
+  --p-rose-600: #e11d48;
+  --p-rose-700: #be123c;
+  --p-rose-800: #9f1239;
+  --p-rose-900: #881337;
+
+  /* Zinc (neutrals — tinted, modern) */
+  --p-zinc-50:  #fafafa;
+  --p-zinc-100: #f4f4f5;
+  --p-zinc-200: #e4e4e7;
+  --p-zinc-300: #d4d4d8;
+  --p-zinc-400: #a1a1aa;
+  --p-zinc-500: #71717a;
+  --p-zinc-600: #52525b;
+  --p-zinc-700: #3f3f46;
+  --p-zinc-800: #27272a;
+  --p-zinc-900: #18181b;
+  --p-zinc-950: #09090b;
 
   /* ── Spacing scale (4px base) ──────────────────────────────────── */
   --p-space-0: 0;
@@ -107,7 +95,7 @@
   /* ── Typography scale ──────────────────────────────────────────── */
   --p-text-xs:   11px;
   --p-text-sm:   12px;
-  --p-text-base: 13px;
+  --p-text-base: 14px;
   --p-text-md:   14px;
   --p-text-lg:   15px;
   --p-text-xl:   16px;
@@ -137,11 +125,11 @@
   --p-radius-full: 9999px;
 
   /* ── Shadows ───────────────────────────────────────────────────── */
-  --p-shadow-xs:  0 1px 2px rgba(0,0,0,0.2);
-  --p-shadow-sm:  0 2px 8px rgba(0,0,0,0.3);
-  --p-shadow-md:  0 4px 16px rgba(0,0,0,0.35);
-  --p-shadow-lg:  0 4px 20px rgba(0,0,0,0.4);
-  --p-shadow-xl:  0 8px 40px rgba(0,0,0,0.5);
+  --p-shadow-xs:  0 1px 2px rgba(0,0,0,0.15);
+  --p-shadow-sm:  0 2px 8px rgba(0,0,0,0.2);
+  --p-shadow-md:  0 4px 16px rgba(0,0,0,0.25);
+  --p-shadow-lg:  0 4px 20px rgba(0,0,0,0.3);
+  --p-shadow-xl:  0 8px 40px rgba(0,0,0,0.35);
 
   /* ── Timing ────────────────────────────────────────────────────── */
   --p-duration-fast: 100ms;
@@ -160,7 +148,7 @@
   --p-z-toast: 500;
 
   /* ── Focus ring ────────────────────────────────────────────────── */
-  --p-focus-ring: 0 0 0 3px rgba(124, 108, 255, 0.35);
+  --p-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.35);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -172,46 +160,46 @@
   color-scheme: dark;
 
   /* Backgrounds */
-  --color-bg:             var(--p-slate-950);
-  --color-bg-soft:        var(--p-slate-900);
-  --color-bg-elevated:    var(--p-slate-800);
-  --color-surface:        var(--p-slate-900);
-  --color-surface-hover:  var(--p-slate-800);
+  --color-bg:             var(--p-zinc-950);
+  --color-bg-soft:        var(--p-zinc-900);
+  --color-bg-elevated:    var(--p-zinc-800);
+  --color-surface:        var(--p-zinc-900);
+  --color-surface-hover:  var(--p-zinc-800);
 
   /* Foregrounds */
-  --color-fg:             var(--p-purple-100);
-  --color-fg-secondary:   var(--p-slate-400);
-  --color-fg-muted:       var(--p-slate-500);
+  --color-fg:             #fafafa;
+  --color-fg-secondary:   var(--p-zinc-400);
+  --color-fg-muted:       var(--p-zinc-500);
 
   /* Borders */
-  --color-border:         var(--p-slate-800);
-  --color-border-subtle:  var(--p-slate-700);
-  --color-border-strong:  var(--p-slate-600);
+  --color-border:         var(--p-zinc-700);
+  --color-border-subtle:  var(--p-zinc-800);
+  --color-border-strong:  var(--p-zinc-600);
 
-  /* Primary (purple) */
-  --color-primary:        var(--p-purple-500);
-  --color-primary-hover:  var(--p-purple-400);
-  --color-primary-active: var(--p-purple-600);
-  --color-primary-fg:     var(--p-white);
-  --color-primary-muted:  rgba(124, 108, 255, 0.15);
+  /* Primary (blue — trust) */
+  --color-primary:        var(--p-blue-400);
+  --color-primary-hover:  var(--p-blue-300);
+  --color-primary-active: var(--p-blue-500);
+  --color-primary-fg:     var(--p-zinc-950);
+  --color-primary-muted:  rgba(59, 130, 246, 0.12);
 
-  /* Accent / success (teal) */
-  --color-success:        var(--p-teal-400);
-  --color-success-hover:  var(--p-teal-300);
-  --color-success-fg:     var(--p-slate-950);
-  --color-success-muted:  rgba(0, 228, 184, 0.12);
+  /* Accent / success (emerald — growth) */
+  --color-success:        var(--p-emerald-400);
+  --color-success-hover:  var(--p-emerald-300);
+  --color-success-fg:     var(--p-zinc-950);
+  --color-success-muted:  rgba(16, 185, 129, 0.12);
 
   /* Warning (amber) */
-  --color-warning:        var(--p-amber-500);
-  --color-warning-hover:  var(--p-amber-400);
-  --color-warning-fg:     var(--p-slate-950);
-  --color-warning-muted:  rgba(255, 179, 71, 0.12);
+  --color-warning:        var(--p-amber-400);
+  --color-warning-hover:  var(--p-amber-300);
+  --color-warning-fg:     var(--p-zinc-950);
+  --color-warning-muted:  rgba(251, 191, 36, 0.12);
 
   /* Danger (rose) */
-  --color-danger:         var(--p-rose-500);
-  --color-danger-hover:   var(--p-rose-400);
-  --color-danger-fg:      var(--p-white);
-  --color-danger-muted:   rgba(255, 92, 122, 0.12);
+  --color-danger:         var(--p-rose-400);
+  --color-danger-hover:   var(--p-rose-300);
+  --color-danger-fg:      var(--p-zinc-950);
+  --color-danger-muted:   rgba(251, 113, 133, 0.12);
 
   /* Info (blue) */
   --color-info:           var(--p-blue-400);
@@ -241,62 +229,62 @@
   --ease:            var(--p-ease-default);
 
   /* Chart tokens */
-  --chart-tooltip-bg:     var(--p-slate-900);
-  --chart-tooltip-border: var(--p-slate-800);
-  --chart-axis:           var(--p-slate-500);
-  --chart-grid:           var(--p-slate-800);
+  --chart-tooltip-bg:     var(--p-zinc-900);
+  --chart-tooltip-border: var(--p-zinc-700);
+  --chart-axis:           var(--p-zinc-500);
+  --chart-grid:           var(--p-zinc-800);
 
   /* Scrollbar */
-  --scrollbar-track: var(--p-slate-900);
-  --scrollbar-thumb: var(--p-slate-700);
+  --scrollbar-track: var(--p-zinc-900);
+  --scrollbar-thumb: var(--p-zinc-700);
 
   /* Input */
-  --input-bg: var(--p-slate-900);
+  --input-bg: var(--p-zinc-900);
 }
 
 /* ── Light theme ─────────────────────────────────────────────────── */
 [data-theme="light"] {
   color-scheme: light;
 
-  --color-bg:             var(--p-slate-50);
-  --color-bg-soft:        var(--p-slate-100);
+  --color-bg:             var(--p-zinc-50);
+  --color-bg-soft:        var(--p-zinc-100);
   --color-bg-elevated:    var(--p-white);
   --color-surface:        var(--p-white);
-  --color-surface-hover:  var(--p-slate-50);
+  --color-surface-hover:  var(--p-zinc-50);
 
-  --color-fg:             var(--p-slate-900);
-  --color-fg-secondary:   var(--p-slate-600);
-  --color-fg-muted:       var(--p-slate-400);
+  --color-fg:             var(--p-zinc-900);
+  --color-fg-secondary:   var(--p-zinc-600);
+  --color-fg-muted:       var(--p-zinc-400);
 
-  --color-border:         var(--p-slate-200);
-  --color-border-subtle:  var(--p-slate-100);
-  --color-border-strong:  var(--p-slate-300);
+  --color-border:         var(--p-zinc-200);
+  --color-border-subtle:  var(--p-zinc-100);
+  --color-border-strong:  var(--p-zinc-300);
 
-  --color-primary:        var(--p-purple-600);
-  --color-primary-hover:  var(--p-purple-700);
-  --color-primary-active: var(--p-purple-800);
+  --color-primary:        var(--p-blue-600);
+  --color-primary-hover:  var(--p-blue-700);
+  --color-primary-active: var(--p-blue-800);
   --color-primary-fg:     var(--p-white);
-  --color-primary-muted:  rgba(108, 92, 231, 0.10);
+  --color-primary-muted:  rgba(37, 99, 235, 0.08);
 
-  --color-success:        var(--p-teal-500);
-  --color-success-hover:  var(--p-teal-600);
+  --color-success:        var(--p-emerald-500);
+  --color-success-hover:  var(--p-emerald-600);
   --color-success-fg:     var(--p-white);
-  --color-success-muted:  rgba(0, 184, 148, 0.10);
+  --color-success-muted:  rgba(16, 185, 129, 0.08);
 
-  --color-warning:        var(--p-amber-600);
-  --color-warning-hover:  var(--p-amber-700);
+  --color-warning:        var(--p-amber-500);
+  --color-warning-hover:  var(--p-amber-600);
   --color-warning-fg:     var(--p-white);
-  --color-warning-muted:  rgba(217, 119, 6, 0.10);
+  --color-warning-muted:  rgba(245, 158, 11, 0.08);
 
-  --color-danger:         var(--p-rose-600);
-  --color-danger-hover:   var(--p-rose-700);
+  --color-danger:         var(--p-rose-500);
+  --color-danger-hover:   var(--p-rose-600);
   --color-danger-fg:      var(--p-white);
-  --color-danger-muted:   rgba(225, 29, 72, 0.10);
+  --color-danger-muted:   rgba(244, 63, 94, 0.08);
 
   --color-info:           var(--p-blue-500);
-  --color-info-muted:     rgba(59, 130, 246, 0.10);
+  --color-info-muted:     rgba(59, 130, 246, 0.08);
 
-  --color-focus-ring:     0 0 0 3px rgba(108, 92, 231, 0.25);
+  --color-focus-ring:     0 0 0 3px rgba(37, 99, 235, 0.25);
 
   --shadow-xs:   0 1px 2px rgba(0,0,0,0.04);
   --shadow-sm:   0 2px 8px rgba(0,0,0,0.06);
@@ -305,12 +293,12 @@
   --shadow-xl:   0 8px 40px rgba(0,0,0,0.12);
 
   --chart-tooltip-bg:     var(--p-white);
-  --chart-tooltip-border: var(--p-slate-200);
-  --chart-axis:           var(--p-slate-400);
-  --chart-grid:           var(--p-slate-100);
+  --chart-tooltip-border: var(--p-zinc-200);
+  --chart-axis:           var(--p-zinc-400);
+  --chart-grid:           var(--p-zinc-100);
 
-  --scrollbar-track: var(--p-slate-100);
-  --scrollbar-thumb: var(--p-slate-300);
+  --scrollbar-track: var(--p-zinc-100);
+  --scrollbar-thumb: var(--p-zinc-300);
 
   --input-bg: var(--p-white);
 }
@@ -386,7 +374,7 @@
   --badge-danger-fg:     var(--color-danger);
   --badge-primary-bg:    var(--color-primary-muted);
   --badge-primary-fg:    var(--color-primary);
-  --badge-neutral-bg:    rgba(100, 116, 139, 0.12);
+  --badge-neutral-bg:    rgba(113, 113, 122, 0.12);
   --badge-neutral-fg:    var(--color-fg-muted);
 
   /* ── Table ─────────────────────────────────────────────────────── */
@@ -445,7 +433,7 @@
   --sidebar-item-radius: var(--radius-sm);
   --sidebar-item-fg:     var(--color-fg-secondary);
   --sidebar-item-active-bg: var(--color-primary-muted);
-  --sidebar-item-active-fg: var(--p-white);
+  --sidebar-item-active-fg: var(--color-primary);
   --sidebar-item-active-bar: var(--color-primary);
 
   /* ── Status dot ────────────────────────────────────────────────── */

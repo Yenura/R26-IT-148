@@ -7,10 +7,10 @@ import {
 import { HEALTH } from '../api'
 
 const PIPELINE_STAGES = [
-  { to: '/cv-match',  icon: FileSearch,    title: 'CV Match',       desc: 'Upload CVs and match to roles', comp: 'Component 1', color: '#7c6cff' },
-  { to: '/interview', icon: MessagesSquare, title: 'AI Interview',  desc: 'QG-powered interview questions', comp: 'Component 2', color: '#00b4d8' },
-  { to: '/ranking',   icon: Trophy,         title: 'Ranking',        desc: 'CSS + LambdaMART candidate ranking', comp: 'Component 3', color: '#ffb347' },
-  { to: '/skill-gap', icon: Search,         title: 'Hire Decision',  desc: 'Skill gap, hire probability & learning plan', comp: 'Component 4', color: '#00e4b8' },
+  { to: '/cv-match',  icon: FileSearch,    title: 'CV Match',       desc: 'Upload CVs and match to roles', comp: 'Component 1', color: '#3b82f6' },
+  { to: '/interview', icon: MessagesSquare, title: 'AI Interview',  desc: 'QG-powered interview questions', comp: 'Component 2', color: '#60a5fa' },
+  { to: '/ranking',   icon: Trophy,         title: 'Ranking',        desc: 'CSS + LambdaMART candidate ranking', comp: 'Component 3', color: '#f59e0b' },
+  { to: '/skill-gap', icon: Search,         title: 'Hire Decision',  desc: 'Skill gap, hire probability & learning plan', comp: 'Component 4', color: '#10b981' },
 ]
 
 const COMP_DEFS = [
