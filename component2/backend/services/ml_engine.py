@@ -45,7 +45,7 @@ class InterviewService:
         qb_path = os.path.join(self.models_dir, "question_bank.json")
         if os.path.exists(qb_path):
             try:
-                with open(qb_path, 'r') as f:
+                with open(qb_path, 'r', encoding="utf-8") as f:
                     self.question_bank = json.load(f)
                 logger.info(f"✓ Loaded {len(self.question_bank)} questions")
             except Exception as e:
@@ -63,7 +63,7 @@ class InterviewService:
         jr_path = os.path.join(self.models_dir, "job_requirements.json")
         if os.path.exists(jr_path):
             try:
-                with open(jr_path, 'r') as f:
+                with open(jr_path, 'r', encoding="utf-8") as f:
                     self.job_requirements = json.load(f)
                 logger.info(f"✓ Loaded job requirements for {len(self.job_requirements)} roles")
             except Exception as e:
@@ -77,7 +77,7 @@ class InterviewService:
         sc_path = os.path.join(self.models_dir, "interview_scoring_config.json")
         if os.path.exists(sc_path):
             try:
-                with open(sc_path, 'r') as f:
+                with open(sc_path, 'r', encoding="utf-8") as f:
                     self.interview_configs = json.load(f)
                 logger.info("✓ Loaded interview scoring configuration")
             except Exception as e:
@@ -681,9 +681,7 @@ class InterviewService:
         if not answers:
             return 0
         correct_count = sum(1 for a in answers if a.get("is_correct", False))
-        wrong_count = len(answers) - correct_count
-        raw_sum = correct_count * 1.0 + wrong_count * (-0.25)
-        return max(0.0, raw_sum) / len(answers) * 100
+        return round(correct_count / len(answers) * 100, 2)
     
     def _evaluate_descriptive_answers(self, answers: List[Dict]) -> float:
         """Evaluate descriptive answers"""
@@ -803,7 +801,7 @@ class AnswerEvaluationService:
         # Import ML evaluators
         try:
             # Add ML directory to path
-            ml_dir = os.path.join(models_dir, "..", "..", "ml")
+            ml_dir = os.path.join(models_dir, "..", "ml")
             if os.path.exists(ml_dir):
                 sys.path.insert(0, ml_dir)
             

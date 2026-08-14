@@ -38,7 +38,7 @@
 │                                                                 │
 │  ┌──────────────────────────────────────────────────────────┐  │
 │  │              Data Layer                                  │  │
-│  │  • QG Dataset (2,414 training examples)                  │  │
+│  │  • QG Datasets (v1: 20,161 / v2: 4,996 train)           │  │
 │  │  • Trained QG Model (Transformer)                        │  │
 │  │  • Static Question Bank (fallback)                       │  │
 │  │  • Scoring Configs (role-based weights)                  │  │
@@ -53,13 +53,13 @@
 
 ### 1️⃣ Custom QG Model for Question Generation
 - **Custom-trained Transformer** — Seq2Seq model trained from scratch
-- **Training dataset:** 2,414 examples (1,845 coding, 536 descriptive, 33 MCQ)
-- **Data sources:** LeetCode problems, Software Questions CSV, Java Q&A, custom templates
+- **Training datasets:** v1 20,161 train / 2,241 val; v2 4,996 train / 556 val
+- **Data sources:** `raigs/RAIGS_generated_questions.csv` (AI-generated questions)
 - **3 question types:** MCQ (30%), Descriptive (40%), Coding (30%)
-- **Fallback:** Static question bank when model unavailable
+- **Fallback:** Static question bank when model unavailable (18,757 questions)
 
 ### 2️⃣ Semantic Similarity Scoring (SBERT)
-- Uses **Sentence-BERT (all-MiniLM-L6-v2)** for descriptive answer evaluation
+- Uses **Sentence-BERT (all-mpnet-base-v2)** for descriptive answer evaluation
 - **Cosine similarity** between reference and candidate answers
 - **Keyword coverage bonus** to reward use of technical terms
 
@@ -114,6 +114,10 @@ pip install -r requirements.txt
 
 # 5. Download SBERT model (first run only)
 # This happens automatically when backend starts
+
+# 6. Point at the shared Atlas database
+# Copy .env.example to .env and set MONGODB_URI to the shared cluster
+# (DB recruit_ai is used by all components; sessions/results are persisted there).
 ```
 
 ### ML Pipeline Initialization
@@ -122,24 +126,12 @@ pip install -r requirements.txt
 # 1. Navigate to ML directory
 cd component2/ml
 
-# 2. Build the QG training dataset
+# 2. Build the QG training datasets (v1 + v2)
 python build_qg_dataset.py
 
-# Expected output:
-# ✓ Loaded X questions from QG data
-# ✓ Loaded Y questions from CSVs
-# ✓ Loaded Z coding problems from LeetCode
-# ✓ Dataset saved: N total examples
-
-# 3. Train the QG model
-python train_qg_model.py
-
-# Expected output:
-# ✓ Loaded dataset: N examples
-# ✓ Training: Epoch X/Y ...
-# ✓ Model saved to models/qg_model/
-# ✓ Evaluation: BLEU-4: X.XXXX, ROUGE-L: X.XXXX
-```
+# 3. Train the QG models (optional — pretrained checkpoints ship in models/)
+python train_qg_model.py        # v1  (models/qg_model/)
+python train_qg_model_v2.py     # v2  (models/qg_model_v2/, preferred at runtime)
 
 ### Frontend Setup
 
@@ -302,38 +294,36 @@ Response:
 
 ### QG Model (Question Generation)
 
-| Property | Value |
-|----------|-------|
-| Architecture | Seq2Seq Transformer |
-| Parameters | ~2.2M |
-| d_model | 128 |
-| nhead | 4 |
-| num_layers | 2 (encoder + decoder) |
-| dim_feedforward | 512 |
-| vocab_size | 5,000 |
-| max_seq_len | 128 |
-| Training epochs | 5 |
-| Training examples | 2,414 |
+Two trained checkpoints ship; runtime prefers v2 (see `question_generator._load_model_and_tokenizer`).
+
+| Property | v1 (`train_qg_model.py`) | v2 (`train_qg_model_v2.py`) |
+|----------|--------------------------|-----------------------------|
+| Architecture | Seq2Seq Transformer | Seq2Seq Transformer |
+| d_model | 128 | 192 |
+| nhead | 4 | 6 |
+| num_layers | 2 enc + 2 dec | 3 enc + 3 dec |
+| dim_feedforward | 512 | 768 |
+| vocab_size | 5,000 | 8,000 |
+| src_max_len / tgt_max_len | — | 24 / 160 |
+| Epochs | 5 | 20 |
+| Dropout | — | 0.1 |
 
 ### Training Dataset
 
-| Source | Count | Type |
-|--------|-------|------|
-| LeetCode problems | 1,825 | Coding |
-| Software Questions CSV | 200 | Mixed |
-| Java Q&A CSV | 490 | Mixed |
-| Custom templates | 599 | MCQ/Desc/Code |
-| **Total** | **2,414** | — |
+| Dataset | Train | Val |
+|---------|-------|-----|
+| `qg_dataset.json` (v1) | 20,161 | 2,241 |
+| `qg_dataset_v2.json` (v2) | 4,996 | 556 |
 
 ### Scoring Formulas
 
 #### MCQ Score
 ```
-Score_MCQ(i) = 1   if correct
+Score_MCQ(i) = +1   if correct
                -0.25 if wrong
-               0   if skipped
+                0   if skipped
 
-MCQ_Score = (Σ Score_MCQ(i) / N_mcq) × 100
+MCQ_Score = max(0, Σ Score_MCQ(i)) / N_mcq × 100
 ```
 
 #### Descriptive Score
@@ -341,10 +331,12 @@ MCQ_Score = (Σ Score_MCQ(i) / N_mcq) × 100
 CosineSim = (e_ref · e_candidate) / (‖e_ref‖ · ‖e_candidate‖)
 Raw_Score = CosineSim × 100
 KeywordBonus = matched_keywords / total_keywords
+Blended = 0.85 × Raw_Score + 0.15 × KeywordBonus × 100
 
-Desc_Score(i) = min(100, 0.7 × Raw_Score + 0.3 × KeywordBonus × 100)
+Desc_Score(i) = min(100, max(Raw_Score, Blended))
 Descriptive_Score = Σ Desc_Score(i) / N_desc
 ```
+Keyword bonus can only raise a score, never lower it, so correctly-rephrased answers aren't penalized.
 
 #### Coding Score
 ```
@@ -358,12 +350,13 @@ Coding_Score = Σ Code_Score(i) / N_code
 #### Interview Score
 ```
 IS = w_mcq × MCQ_Score + w_desc × Descriptive_Score + w_code × Coding_Score
-
-where weights by role:
-Software Engineer:  mcq=0.20, desc=0.30, code=0.50
-Data Scientist:     mcq=0.25, desc=0.45, code=0.30
-AI Researcher:      mcq=0.20, desc=0.40, code=0.40
-Cybersecurity:      mcq=0.40, desc=0.35, code=0.25
+```
+Weights come from `interview_scoring_config.json` (10 roles). When a question type is missing, weights are re-normalized across the available types. Sample:
+```
+Software Engineer:   mcq=0.20, desc=0.30, code=0.50
+Data Scientist:      mcq=0.25, desc=0.35, code=0.40
+DevOps Engineer:     mcq=0.40, desc=0.40, code=0.20
+Cybersecurity:       mcq=0.45, desc=0.55, code=0.00
 ```
 
 ### Grade Bands
@@ -380,16 +373,13 @@ Cybersecurity:      mcq=0.40, desc=0.35, code=0.25
 ## Question Bank
 
 ### Data Sources
-- **LeetCode Dataset** — 1,825 coding problems with test cases
-- **information.csv** — Java Q&A pairs (490 questions)
-- **Software Questions.csv** — General programming (200 questions)
-- **Custom Templates** — 30 MCQ + 15 coding templates
+- **`raigs/RAIGS_generated_questions.csv`** — AI-generated MCQs (18,757 questions in `models/question_bank.json`, by role/level/topic)
+- **`raigs/generate.py`** — offline question-generation pipeline that produced the CSV
+- **Custom templates** — fallback bank used when the QG model is unavailable
 
-### Training Dataset
-The QG model is trained on `qg_dataset.json` (2,414 examples):
-- **Coding:** 1,845 examples (LeetCode + templates)
-- **Descriptive:** 536 examples (CSVs + templates)
-- **MCQ:** 33 examples (templates)
+### Training Datasets
+- **`models/qg_dataset.json` (v1)** — 20,161 train / 2,241 val examples from the RAIGS CSV
+- **`models/qg_dataset_v2.json` (v2)** — 4,996 train / 556 val examples
 
 ### Question Structure
 ```json
@@ -528,14 +518,12 @@ Role-based scoring weights:
 }
 ```
 
-### sbert_config.json
-SBERT model parameters:
-```json
-{
-  "model_name": "all-MiniLM-L6-v2",
-  "alpha": 0.7,
-  "beta": 0.3
-}
+### SBERT parameters
+Hardcoded in `ml/answer_evaluator.py` (`DescriptiveAnswerEvaluator`):
+```python
+model_name = "all-mpnet-base-v2"
+alpha = 0.85   # weight for semantic similarity
+beta  = 0.15   # weight for keyword coverage
 ```
 
 ---
@@ -565,7 +553,7 @@ Requires GPU for reasonable training time.
 **Solution:** Manually download and place in cache:
 ```bash
 pip install sentence-transformers
-python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
+python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-mpnet-base-v2')"
 ```
 
 ### Issue: Frontend cannot reach backend
@@ -607,7 +595,6 @@ Based on testing with 200 questions and 50 candidates:
 ## Future Enhancements
 
 - [ ] GPU-accelerated QG model training
-- [ ] Larger QG model (512d, 6 layers, 30 epochs)
 - [ ] Live code execution sandbox (LeetCode-like)
 - [ ] Voice-based interview support
 - [ ] Proctoring & anti-cheating measures

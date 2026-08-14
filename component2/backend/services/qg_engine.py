@@ -17,6 +17,43 @@ _qg_generator = None
 _question_bank = None
 
 
+def _is_good_question(q: Dict) -> bool:
+    """True if a generated question is usable.
+
+    The tiny QG model can emit fragment/noise questions (``<unk>`` tokens,
+    placeholder test cases, missing answer keys). Broken questions make
+    scoring garbage no matter how good the scorer is.
+    """
+    text = json.dumps(q, ensure_ascii=False)
+    if "<unk>" in text or "<pad>" in text:
+        return False
+    qtext = q.get("question_text") or ""
+    if len(qtext) < 20:
+        return False
+    t = q.get("question_type")
+    if t == "MCQ":
+        opts = q.get("options") or []
+        return (
+            isinstance(opts, list) and len(opts) >= 2
+            and all(isinstance(o, dict) and o.get("text") for o in opts)
+            and (q.get("correct_answer_index") is not None or q.get("correct_option") is not None)
+        )
+    if t == "Descriptive":
+        return bool((q.get("answer_text") or "").strip().lower()) \
+            and not q.get("answer_text", "").startswith("This question covers")
+    if t == "Coding":
+        qtext_lower = qtext.lower()
+        for tc in q.get("test_cases") or []:
+            expected = str(tc.get("expected_output", "")).strip().lower()
+            if not expected or expected in ("see answer", "result"):
+                continue
+            inp = tc.get("input") or {}
+            if isinstance(inp, dict) and inp:
+                return True
+        return False
+    return False
+
+
 def _get_qg_generator():
     """Lazy-load the QG model."""
     global _qg_generator
@@ -124,14 +161,28 @@ def generate_questions_qg(
         )
         total = num_mcq + num_desc + num_code
         if combined and len(combined) == total:
-            logger.info("QG model generated %d questions", len(combined))
-            return combined[:total]
-        if combined and len(combined) > 0:
-            logger.info(
-                "QG model generated %d/%d questions; using partial results",
-                len(combined), total,
+            good = [q for q in combined if _is_good_question(q)]
+            if len(good) == total:
+                logger.info("QG model generated %d valid questions", len(good))
+                return good
+            logger.warning(
+                "QG model: %d/%d questions failed quality gate; falling back to static bank",
+                total - len(good), total,
             )
-            return combined[:total]
+            return None
+        if combined and len(combined) > 0:
+            good = [q for q in combined if _is_good_question(q)]
+            if good and len(good) >= len(combined) // 2:
+                logger.info(
+                    "QG model generated %d/%d valid questions; using partial results",
+                    len(good), total,
+                )
+                return good[:total]
+            logger.warning(
+                "QG model: only %d/%d questions passed quality gate; falling back to static bank",
+                len(good), total,
+            )
+            return None
         else:
             logger.info("QG model returned no questions; falling through")
         return None

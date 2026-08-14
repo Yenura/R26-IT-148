@@ -1,17 +1,37 @@
-import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
+import { interviewAPI, handleAPIError } from '../api';
 import '../pages/Results.css';
 
 export default function Results() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [result] = useState(location.state?.result || null);
+  const { interviewId } = useParams();
+  const [result, setResult] = useState(location.state?.result || null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    if (result || !interviewId) return;
+    const fetchResult = async () => {
+      try {
+        setLoading(true);
+        const data = await interviewAPI.getResult(interviewId);
+        setResult(data.data || null);
+      } catch (err) {
+        setError(handleAPIError(err));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchResult();
+  }, [interviewId, result]);
 
   if (!result) {
     return (
       <main>
         <div className="alert alert-error">
-          Results not found. Please take an interview first.
+          {loading ? 'Loading results...' : (error || 'Results not found. Please take an interview first.')}
         </div>
       </main>
     );

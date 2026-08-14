@@ -18,11 +18,14 @@ class DescriptiveAnswerEvaluator:
     Evaluates descriptive answers using SBERT (Sentence-BERT) semantic similarity
     
     Scoring formula:
-    Desc_Score(i) = min(100, α × Raw_Desc_Score(i) + β × KeywordBonus(i) × 100)
-    where α = 0.7, β = 0.3
+    Desc_Score(i) = min(100, max(Raw_Desc_Score(i), α × Raw_Desc_Score(i) + β × KeywordBonus(i) × 100))
+    where α = 0.85, β = 0.15
+    
+    Semantic cosine is ground truth for a correct answer; the keyword bonus can only
+    raise the score, never lower it, so rephrased-but-correct answers aren't penalized.
     """
     
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = "all-mpnet-base-v2"):
         """
         Initialize SBERT model
         
@@ -30,8 +33,8 @@ class DescriptiveAnswerEvaluator:
             model_name: Pre-trained SBERT model name
         """
         self.model = SentenceTransformer(model_name)
-        self.alpha = 0.7  # Weight for semantic similarity
-        self.beta = 0.3   # Weight for keyword coverage
+        self.alpha = 0.85  # Weight for semantic similarity
+        self.beta = 0.15   # Weight for keyword coverage
         print(f"✓ Loaded SBERT model: {model_name}")
     
     def encode_text(self, text: str) -> np.ndarray:
@@ -128,7 +131,10 @@ class DescriptiveAnswerEvaluator:
         keyword_bonus = self.calculate_keyword_bonus(reference_answer, candidate_answer)
         
         # Step 4: Combine with formula
-        final_score = min(100, self.alpha * raw_score + self.beta * keyword_bonus * 100)
+        # Semantic cosine is the primary signal; keyword bonus can only boost,
+        # never drag a correct-but-rephrased answer down.
+        blended = self.alpha * raw_score + self.beta * keyword_bonus * 100
+        final_score = min(100, max(raw_score, blended))
         
         return {
             "cosine_similarity": round(cosine_sim, 4),

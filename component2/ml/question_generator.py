@@ -98,7 +98,12 @@ def _parse_t(text: str) -> List[Dict]:
     m = re.search(r"[Tt]:\s*(\[.*?\])", text, re.DOTALL)
     if m:
         try:
-            return json.loads(m.group(1))
+            parsed = json.loads(m.group(1))
+            if isinstance(parsed, list):
+                # LLM output is a trust boundary: keep only well-formed test
+                # cases, or the Pydantic response model 500s the whole session.
+                return [t for t in parsed if isinstance(t, dict)]
+            return []
         except (json.JSONDecodeError, ValueError):
             pass
     return []
