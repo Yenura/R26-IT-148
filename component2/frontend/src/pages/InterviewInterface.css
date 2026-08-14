@@ -128,6 +128,53 @@
   border-color: #667eea;
 }
 
+.code-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.run-output {
+  background: #f9f9f9;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.run-output h4 {
+  margin-bottom: 0.75rem;
+  color: #333;
+}
+
+.run-case {
+  background: white;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  border-left: 3px solid #333;
+  border-radius: 3px;
+}
+
+.run-case.pass {
+  border-left-color: #27ae60;
+}
+
+.run-case.fail {
+  border-left-color: #e74c3c;
+}
+
+.run-case p {
+  margin-bottom: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.run-case strong {
+  color: #333;
+}
+
 .test-cases {
   background: #f9f9f9;
   border: 1px solid #e0e0e0;

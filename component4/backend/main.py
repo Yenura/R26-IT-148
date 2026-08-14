@@ -34,7 +34,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 # ── Config ────────────────────────────────────────────────────────────────────
 MONGODB_URI     = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME         = os.getenv("DB_NAME", "HR")
+DB_NAME         = os.getenv("DB_NAME", "recruit_ai")
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174"
 ).split(",")

@@ -4,15 +4,16 @@ from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from schemas import JobCreate, JobUpdate, JobOut, ApplicationCreate, ApplicationOut
-from routers.auth import require_company, get_current_user
+from routers.auth import require_company, require_candidate, get_current_user
 
 router = APIRouter()
 
 
-def _job_out(doc: dict) -> JobOut:
+def _job_out(doc: dict, company_name: str = "") -> JobOut:
     return JobOut(
         id=str(doc["_id"]),
         company_id=str(doc.get("company_id", "")),
+        company_name=company_name,
         title=doc.get("title", ""),
         department=doc.get("department", ""),
         employment_type=doc.get("employment_type", ""),
@@ -90,8 +91,18 @@ async def list_jobs(request: Request, company: dict = Depends(require_company)):
 
 @router.get("/all", response_model=list[JobOut])
 async def list_all_jobs(request: Request):
-    cursor = request.app.state.db.jobs.find({"status": "open"}).sort("created_at", -1)
-    return [_job_out(doc) async for doc in cursor]
+    db = request.app.state.db
+    cursor = db.jobs.find({"status": "open"}).sort("created_at", -1)
+    docs = [doc async for doc in cursor]
+    if not docs:
+        return []
+    # Batch-fetch company names
+    company_ids = list({doc.get("company_id") for doc in docs if doc.get("company_id")})
+    company_names = {}
+    if company_ids:
+        users = await db.users.find({"_id": {"$in": company_ids}}).to_list(length=200)
+        company_names = {str(u["_id"]): u.get("name", u.get("company_name", "")) for u in users}
+    return [_job_out(doc, company_names.get(str(doc.get("company_id", "")), "")) for doc in docs]
 
 
 @router.get("/public/{job_id}", response_model=JobOut)
@@ -133,8 +144,11 @@ async def delete_job(job_id: str, request: Request, company: dict = Depends(requ
 
 
 @router.post("/{job_id}/apply", response_model=ApplicationOut, status_code=201)
-async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request):
+async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request, user: dict = Depends(require_candidate)):
     db = request.app.state.db
+    # Enforce that the candidate_id matches the authenticated user
+    if payload.candidate_id != str(user["_id"]):
+        raise HTTPException(status_code=403, detail="Cannot apply on behalf of another user")
     try:
         oid = ObjectId(job_id)
     except Exception:

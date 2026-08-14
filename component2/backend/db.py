@@ -37,7 +37,7 @@ def _get_mongo_db() -> Optional[Database]:
         return _mongo_db
 
     mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-    db_name = os.getenv("MONGODB_DB", "component2_interview")
+    db_name = os.getenv("MONGODB_DB", os.getenv("DB_NAME", "recruit_ai"))
 
     try:
         client = MongoClient(mongo_uri, serverSelectionTimeoutMS=2000)

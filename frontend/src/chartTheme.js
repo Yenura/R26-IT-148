@@ -44,12 +44,12 @@ export function getChartTheme() {
 
 // Fixed semantic colors (don't change with theme)
 export const CHART_COLORS = {
-  accent:  '#7c6cff',
-  accent2: '#00e4b8',
-  warn:    '#ffb347',
-  danger:  '#ff5c7a',
-  info:    '#00b4d8',
-  purple:  '#a78bfa',
+  accent:  '#3b82f6',
+  accent2: '#10b981',
+  warn:    '#f59e0b',
+  danger:  '#f43f5e',
+  info:    '#60a5fa',
+  purple:  '#8b5cf6',
   pink:    '#f472b6',
   gold:    '#FFD700',
   silver:  '#C0C0C0',

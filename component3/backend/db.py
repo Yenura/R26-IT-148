@@ -11,7 +11,7 @@ load_dotenv()
 logger = logging.getLogger("component3")
 
 MONGODB_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME = os.getenv("DB_NAME", "RANKING")
+DB_NAME = os.getenv("DB_NAME", "recruit_ai")
 
 
 class MemoryStore:

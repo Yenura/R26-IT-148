@@ -34,8 +34,8 @@ EDUCATION_PATTERNS = [
 ]
 
 YEARS_PATTERNS = [
-    r"(\d+(?:\.\d+)?)\s*\+?\s*(?:years|year|yrs|yr)\b",
-    r"(\d+(?:\.\d+)?)\s*\+?\s*(?:years|yrs)\s*(?:of|of relevant|) experience",
+    r"(\d+(?:\.\d+)?)[ \t]*\+?[ \t]*(?:years|year|yrs|yr)\b",
+    r"(\d+(?:\.\d+)?)[ \t]*\+?[ \t]*(?:years|yrs)[ \t]*(?:of|of relevant|) experience",
 ]
 
 

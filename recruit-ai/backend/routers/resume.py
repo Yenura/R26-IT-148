@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 
 from schemas import ResumeOut, ResumeUpdate, PredictionOut
-from routers.auth import get_current_user
+from routers.auth import get_current_user, require_company
 from services.resume_parser import parse_resume_file, extract_entities
 from services.semantic_matcher import SemanticMatcher
 from services.role_classifier import RoleClassifier
@@ -279,7 +279,11 @@ async def match_resume(
 
 @router.get("/{resume_id}", response_model=ResumeOut)
 async def get_resume(resume_id: str, request: Request, user: dict = Depends(get_current_user)):
-    doc = await request.app.state.db.resumes.find_one({"_id": __import__("bson").ObjectId(resume_id)})
+    from bson import ObjectId
+    try:
+        doc = await request.app.state.db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
+    except Exception:
+        raise HTTPException(status_code=404, detail="Resume not found")
     if not doc:
         raise HTTPException(status_code=404, detail="Resume not found")
     return _resume_out(doc)
@@ -339,7 +343,7 @@ async def parse_resume_text(
 
 
 @router.post("/interview-scores")
-async def save_interview_scores(payload: dict, request: Request):
+async def save_interview_scores(payload: dict, request: Request, user: dict = Depends(require_company)):
     db = request.app.state.db
     candidate_id = payload.get("candidate_id", "")
     if not candidate_id:
@@ -361,7 +365,7 @@ async def save_interview_scores(payload: dict, request: Request):
 
 
 @router.get("/interview-scores/{candidate_id}")
-async def get_interview_scores(candidate_id: str, request: Request):
+async def get_interview_scores(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
     cursor = db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1)
     scores = []

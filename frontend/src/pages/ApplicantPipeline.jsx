@@ -2,11 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Users, Trophy, ArrowLeft, Mail, Briefcase, Star, Loader } from 'lucide-react'
-import axios from 'axios'
-
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const C3 = import.meta.env.VITE_C3_URL || 'http://127.0.0.1:8003'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+import { C0, C3 } from '../api'
 
 export default function ApplicantPipeline() {
   const navigate = useNavigate()
@@ -28,8 +24,8 @@ export default function ApplicantPipeline() {
     setBusy(true)
     try {
       const [jobRes, appsRes] = await Promise.all([
-        axios.get(`${API}/api/v1/jobs/all`, authHeader()),
-        axios.get(`${API}/api/v1/jobs/${jobId}/applicants`, authHeader())
+        C0.get('/jobs/all'),
+        C0.get(`/jobs/${jobId}/applicants`)
       ])
       const j = jobRes.data.find(j => j.id === jobId)
       setJob(j)
@@ -45,7 +41,7 @@ export default function ApplicantPipeline() {
   const runRanking = async () => {
     setRanking(true)
     try {
-      const r = await axios.get(`${C3}/api/v1/rank/pipeline/${jobId}`, authHeader())
+      const r = await C3.get(`/rank/pipeline/${jobId}`)
       setRankings(r.data.data || [])
       toast.success(`Ranked ${r.data.data?.length || 0} applicants`)
     } catch (err) {
@@ -64,7 +60,7 @@ export default function ApplicantPipeline() {
 
   return (
     <div className="fade-in" style={{ maxWidth: 900, margin: '0 auto' }}>
-      <button className="btn btn-ghost" onClick={() => navigate('/company')} style={{ marginBottom: 16 }}>
+      <button className="btn btn-ghost" onClick={() => navigate('/company/dashboard')} style={{ marginBottom: 16 }}>
         <ArrowLeft size={16} /> Back to Dashboard
       </button>
 

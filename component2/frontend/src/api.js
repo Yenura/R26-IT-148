@@ -44,6 +44,14 @@ export const interviewAPI = {
   },
 
   /**
+   * Run candidate code against test cases (no scoring)
+   */
+  runCode: async (code_text, test_cases) => {
+    const response = await api.post('/interview/code/run', { code_text, test_cases });
+    return response.data;
+  },
+
+  /**
    * Get interview result
    */
   getResult: async (interviewId) => {

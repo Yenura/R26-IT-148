@@ -15,6 +15,7 @@ import textwrap
 import subprocess
 import tempfile
 import os
+import ast
 
 from models.schemas import (
     InterviewRequest, InterviewSession, InterviewQuestion,
@@ -27,6 +28,74 @@ from db import save_session, get_session, save_result, get_result, update_sessio
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
+
+
+def _is_py_literal(value) -> bool:
+    """True if the value is a safe Python literal (safe to inject as code)."""
+    if not isinstance(value, str) or not value.strip():
+        return False
+    try:
+        ast.literal_eval(value)
+        return True
+    except (ValueError, SyntaxError):
+        return False
+
+
+def _output_matches(output: str, expected: str) -> bool:
+    """Compare sandbox stdout to expected. Space-insensitive for collection types."""
+    if output == expected:
+        return True
+    if expected[:1] in "[{(":
+        return output.replace(" ", "") == expected.replace(" ", "")
+    return False
+
+
+def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
+    """Execute candidate code with injected inputs in a subprocess sandbox.
+
+    Returns the stripped stdout of the run ("" on syntax/fatal errors).
+    Injection mirrors scoring: inputs become variables the code reads,
+    candidates print() the result.
+    """
+    inject = "".join(f"{k} = {v}\n" for k, v in inp.items())
+    sandbox_wrapper = (
+        "import sys as _sys\n"
+        "from io import StringIO\n"
+        "_blocked = {'os','subprocess','shutil','socket','pathlib','ctypes','multiprocessing','threading','signal','inspect','importlib'}\n"
+        "_real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__\n"
+        "def _safe_import(name, *a, **kw):\n"
+        "    if name in _blocked: raise ImportError(f'Blocked: {name}')\n"
+        "    return _real_import(name, *a, **kw)\n"
+        "__builtins__.__import__ = _safe_import\n"
+        "_stdout = _sys.stdout\n"
+        "_sys.stdout = StringIO()\n"
+        "try:\n"
+        + textwrap.indent(inject, "    ")
+        + textwrap.indent(code_text, "    ") + "\n"
+        "    _output = _sys.stdout.getvalue().strip()\n"
+        "except Exception:\n"
+        "    _output = ''\n"
+        "finally:\n"
+        "    _sys.stdout = _stdout\n"
+        "print(_output)\n"
+    )
+    tmp = None
+    try:
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+            f.write(sandbox_wrapper)
+            tmp = f.name
+        result = subprocess.run(
+            [sys.executable, tmp], capture_output=True, text=True, timeout=5
+        )
+        return result.stdout.strip()
+    except Exception:
+        return ""
+    finally:
+        if tmp:
+            try:
+                os.unlink(tmp)
+            except Exception:
+                pass
 
 
 # ====================================================================
@@ -65,7 +134,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
         
         # Validate job role
         available_jobs = interview_service.get_available_jobs()
-        if request.job_role not in available_jobs:
+        if interview_request.job_role not in available_jobs:
             raise HTTPException(
                 status_code=400,
                 detail=f"Invalid job role. Available: {', '.join(available_jobs)}"
@@ -74,10 +143,10 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
         # Create session (CPU-bound: question generation + filtering)
         session = await run_in_threadpool(
             interview_service.create_interview_session,
-            candidate_id=request.candidate_id,
-            job_role=request.job_role,
-            num_questions=request.num_questions,
-            employer_skills=request.required_skills or None,
+            candidate_id=interview_request.candidate_id,
+            job_role=interview_request.job_role,
+            num_questions=interview_request.num_questions,
+            employer_skills=interview_request.required_skills or None,
         )
         
         # Persist interview session to MongoDB
@@ -195,65 +264,52 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                     compile(code_text, "<string>", "exec")
                 except SyntaxError:
                     syntax_valid = False
-                valid_tests = [tc for tc in test_cases if tc.get("expected_output") and str(tc["expected_output"]).strip() and tc["expected_output"] != "See answer"]
+                # Only test cases with a real expected output AND Python-literal input
+                # are verifiable. Placeholders ("result", "See answer", etc.) must not
+                # silently fail correct code.
+                verifiable_tests = []
+                for tc in test_cases:
+                    expected = str(tc.get("expected_output", "")).strip()
+                    if not expected or expected.lower() in ("see answer", "result"):
+                        continue
+                    inp = tc.get("input") or {}
+                    if isinstance(inp, dict) and inp and all(_is_py_literal(v) for v in inp.values()):
+                        verifiable_tests.append((tc, inp))
                 tests_passed = 0
-                if valid_tests and syntax_valid:
-                    for tc in valid_tests:
+                if verifiable_tests and syntax_valid:
+                    for tc, inp in verifiable_tests:
                         expected = str(tc.get("expected_output", "")).strip()
-                        sandbox_wrapper = (
-                            "import sys as _sys\n"
-                            "from io import StringIO\n"
-                            "_blocked = {'os','subprocess','shutil','socket','pathlib','ctypes','multiprocessing','threading','signal','inspect','importlib'}\n"
-                            "_real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__\n"
-                            "def _safe_import(name, *a, **kw):\n"
-                            "    if name in _blocked: raise ImportError(f'Blocked: {name}')\n"
-                            "    return _real_import(name, *a, **kw)\n"
-                            "__builtins__.__import__ = _safe_import\n"
-                            "_stdout = _sys.stdout\n"
-                            "_sys.stdout = StringIO()\n"
-                            "try:\n"
-                            + textwrap.indent(code_text, "    ") + "\n"
-                            "    _output = _sys.stdout.getvalue().strip()\n"
-                            "except Exception:\n"
-                            "    _output = ''\n"
-                            "finally:\n"
-                            "    _sys.stdout = _stdout\n"
-                            "print(_output)\n"
-                        )
-                        tmp = None
-                        try:
-                            with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-                                f.write(sandbox_wrapper)
-                                tmp = f.name
-                            result = subprocess.run(
-                                [sys.executable, tmp], capture_output=True, text=True, timeout=5
-                            )
-                            output = result.stdout.strip()
-                            if output == expected:
-                                tests_passed += 1
-                        except Exception:
-                            pass
-                        finally:
-                            if tmp:
-                                try:
-                                    os.unlink(tmp)
-                                except Exception:
-                                    pass
-                total_tests = len(valid_tests) if valid_tests else 1
-                test_pass_rate = tests_passed / total_tests
+                        output = _run_code_in_sandbox(code_text, inp)
+                        if _output_matches(output, expected):
+                            tests_passed += 1
+                total_tests = len(verifiable_tests)
+                if total_tests:
+                    test_pass_rate = tests_passed / total_tests
+                else:
+                    test_pass_rate = None  # untestable question: never silently score 0
                 lines = code_text.strip().split('\n')
                 code_lines = len([l for l in lines if l.strip() and not l.strip().startswith('#')])
                 has_return = any(kw in code_text for kw in ['def ', 'class ', 'return'])
                 quality_score = 0.5 * float(syntax_valid) + 0.3 * float(0 < code_lines < 200) + 0.2 * float(has_return)
-                code_score = round(min(100.0, test_pass_rate * 70 + quality_score * 30), 2)
+                if test_pass_rate is None:
+                    # No verifiable test case exists (placeholder/legacy data).
+                    # Grade on structure alone; don't punish correct code.
+                    # ponytail: ceiling is structural-only grading (syntax+shape), so a
+                    # well-structured wrong answer can score high; upgrade = ensure the
+                    # question bank never ships questions without executable test cases.
+                    code_score = round(quality_score * 100, 2)
+                else:
+                    # Passing tests is ground truth for correctness: all pass = 100.
+                    # Quality heuristics only break ties when no tests can run.
+                    code_score = round(test_pass_rate * 100, 2)
                 processed_answer.update({
                     "code_text": code_text,
                     "language": answer.get("language", "Python"),
                     "code_score": code_score,
                     "syntax_valid": syntax_valid,
-                    "test_pass_rate": round(test_pass_rate, 4),
+                    "test_pass_rate": round(test_pass_rate, 4) if test_pass_rate is not None else None,
                     "tests_passed": tests_passed,
-                    "total_tests": len(valid_tests),
+                    "total_tests": total_tests,
                     "quality_score": round(quality_score * 100, 2)
                 })
 
@@ -311,8 +367,10 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
             interview_score=result["interview_score"],
             grade=result["grade"],
             mcq_total=result["mcq_total"],
+            mcq_correct=result["mcq_correct"],
             descriptive_total=result["descriptive_total"],
             coding_total=result["coding_total"],
+            coding_tests_passed=result.get("coding_tests_passed", 0),
             weak_topics=result.get("weak_topics", []),
             weights_used=result["weights_used"],
             created_at=result["created_at"]
@@ -323,6 +381,44 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
     except Exception as e:
         logger.error(f"Error submitting answers: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/code/run")
+@limiter.limit("10/minute")
+async def run_candidate_code(request: Request, payload: Dict):
+    """
+    Run candidate code against the question's test cases without scoring.
+    Uses the exact same sandbox as submit, so what the candidate sees in
+    testing is what the scorer checks. Returns outputs, never answers.
+    """
+    code_text = payload.get("code_text") or ""
+    test_cases = payload.get("test_cases") or []
+    syntax_valid = True
+    try:
+        compile(code_text, "<string>", "exec")
+    except SyntaxError:
+        syntax_valid = False
+
+    results = []
+    for tc in test_cases:
+        expected = str(tc.get("expected_output", "")).strip()
+        if not expected or expected.lower() in ("see answer", "result"):
+            continue
+        inp = tc.get("input") or {}
+        if not (isinstance(inp, dict) and inp and all(_is_py_literal(v) for v in inp.values())):
+            continue
+        output = _run_code_in_sandbox(code_text, inp) if syntax_valid else ""
+        results.append({
+            "input": inp,
+            "expected": expected,
+            "output": output,
+            "passed": _output_matches(output, expected) if output else False,
+        })
+
+    return {
+        "syntax_valid": syntax_valid,
+        "results": results,
+    }
 
 
 @router.get("/result/{interview_id}", response_model=EvaluationResponse)

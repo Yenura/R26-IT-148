@@ -14,6 +14,8 @@ export default function InterviewInterface() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [timeLeft, setTimeLeft] = useState(600); // 10 minutes
+  const [running, setRunning] = useState(false);
+  const [runResult, setRunResult] = useState(null);
 
   useEffect(() => {
     const fetchSession = async () => {
@@ -64,6 +66,22 @@ export default function InterviewInterface() {
       ...prev,
       [currentQuestion.id]: answer
     }));
+  };
+
+  const handleRun = async () => {
+    try {
+      setRunning(true);
+      setError(null);
+      const data = await interviewAPI.runCode(
+        answers[currentQuestion.id] || '',
+        currentQuestion.test_cases || []
+      );
+      setRunResult(data);
+    } catch (err) {
+      setError(handleAPIError(err));
+    } finally {
+      setRunning(false);
+    }
   };
 
   const handleNext = () => {
@@ -218,6 +236,29 @@ export default function InterviewInterface() {
                   onChange={(e) => handleAnswerChange(e.target.value)}
                   rows="10"
                 />
+                <div className="code-toolbar">
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleRun}
+                    disabled={running || !answers[currentQuestion.id]}
+                  >
+                    {running ? 'Running...' : 'Run Code'}
+                  </button>
+                </div>
+                {runResult && (
+                  <div className="run-output">
+                    <h4>Output:</h4>
+                    {runResult.results.length === 0 && <p>No runnable test cases.</p>}
+                    {runResult.results.map((tc, idx) => (
+                      <div key={idx} className={`run-case ${tc.passed ? 'pass' : 'fail'}`}>
+                        <p><strong>Test {idx + 1}:</strong> {JSON.stringify(tc.input)}</p>
+                        <p><strong>Expected:</strong> {tc.expected}</p>
+                        <p><strong>Output:</strong> {tc.output || '(no output / error)'}</p>
+                        <p><strong>{tc.passed ? '✅ Passed' : '❌ Failed'}</strong></p>
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <div className="test-cases">
                   <h4>Test Cases:</h4>
                   {currentQuestion.test_cases?.slice(0, 2).map((tc, idx) => (

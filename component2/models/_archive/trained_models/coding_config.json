@@ -1,5 +1,0 @@
-{
-  "test_pass_weight": 0.7,
-  "quality_weight": 0.30000000000000004,
-  "description": "Coding answer evaluation based on test cases and quality"
-}
