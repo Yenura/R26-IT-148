@@ -32,7 +32,7 @@ logger = logging.getLogger("component1")
 
 # ── Config ────────────────────────────────────────────────────────────────────
 MONGODB_URI     = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME         = os.getenv("DB_NAME", "resumes")
+DB_NAME         = os.getenv("DB_NAME", "recruit_ai")
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://localhost:5173,http://localhost:5174",

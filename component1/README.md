@@ -50,7 +50,7 @@ Two ML models are proposed and compared:
 │   Scorer: S_edu | S_exp | S_skill | jd_similarity_score                 │
 │       ↓                                                                  │
 │   CV Feature Vector (JSON) ─────────────────────────────────────────────┤
-│   stored in MongoDB (resumes.cv_analyses)                               │
+│   stored in MongoDB (recruit_ai.cv_analyses — shared global DB)        │
 └──────────────────────────────────────────────┬──────────────────────────┘
                                                │
                                     Resume Matching Results
@@ -131,7 +131,7 @@ pip install -r requirements.txt
 pip install sentence-transformers
 ```
 
-Copy `.env.example` to `.env` and set `MONGODB_URI` if needed.
+Copy `.env.example` to `.env` and set `MONGODB_URI` (shared Atlas DB `recruit_ai` by default) if needed.
 
 ---
 
