@@ -545,7 +545,7 @@ Open: **http://localhost:5174**
 Each backend has a `.env` file:
 
 ```env
-MONGODB_URI=mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR
+MONGODB_URI=mongodb+srv://
 DB_NAME=HR
 ```
 
