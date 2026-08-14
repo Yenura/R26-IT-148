@@ -1,4 +1,5 @@
 """Resume file parsing and NLP entity extraction."""
+import io
 import re
 from datetime import datetime
 from typing import Any
@@ -18,6 +19,13 @@ def parse_resume_file(content: bytes, filename: str) -> str:
 
 def _parse_pdf(content: bytes) -> str:
     try:
+        import pdfplumber
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
+            pages = [page.extract_text() or "" for page in pdf.pages]
+        return "\n".join(pages).strip()
+    except ImportError:
+        pass
+    try:
         import fitz  # PyMuPDF
         doc = fitz.open(stream=content, filetype="pdf")
         text = ""
@@ -29,7 +37,6 @@ def _parse_pdf(content: bytes) -> str:
         pass
     try:
         from pdfminer.high_level import extract_text
-        import io
         return extract_text(io.BytesIO(content))
     except ImportError:
         return ""
@@ -93,7 +100,7 @@ PHONE_RE = re.compile(r"[\+]?[\d\s\-\(\)]{7,15}")
 LINKEDIN_RE = re.compile(r"linkedin\.com/in/[\w\-]+", re.I)
 GITHUB_RE = re.compile(r"github\.com/[\w\-]+", re.I)
 YEARS_RE = re.compile(r"(\d+(?:\.\d+)?)\s*\+?\s*(?:years?\s+(?:of\s+)?(?:experience|work|professional))|(?:experience|worked)\s*:?\s*(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)", re.I)
-EDU_RE = re.compile(r"(ph\.?d|doctorate|m\.?s\.?c?|master|b\.?s\.?c?|bachelor|b\.?tech|diploma|m\.?tech|mba)", re.I)
+EDU_RE = re.compile(r"\b(ph\.?d|doctorate|m\.?s\.?c?|master|b\.?s\.?c?|bachelor|b\.?tech|diploma|m\.?tech|mba)\b", re.I)
 CERT_RE = re.compile(r"(?:certification|certificate|certified)[\s:]+([^\n]+)", re.I)
 LANG_RE = re.compile(r"(?:language|fluent|proficient)[\s:]+([^\n]+)", re.I)
 
@@ -136,6 +143,16 @@ PERSONAL_KEYWORDS = {
     "portfolio", "github", "contributed", "maintained",
 }
 
+# Lines that are education, NOT projects — skip these entirely
+EDUCATION_LINE_RE = re.compile(
+    r"(?:university|college|school|institute|academy|g\.?c\.?e|"
+    r"\bo/?l\b|\ba/?l\b|"
+    r"bachelor|master|phd|diploma|degree|passed\s+finalist|"
+    r"education|certification|certificate|qualified|"
+    r"\bb\.?sc\b|\bb\.?tech\b|\bm\.?sc\b|\bm\.?tech\b|\bph\.?d\b|\bb\.?e\b|\bm\.?ba\b)",
+    re.I
+)
+
 
 def _parse_date(date_str: str) -> datetime | None:
     """Parse a date string like 'January 2023', 'Jan 2023', or just '2023'."""
@@ -166,6 +183,74 @@ def _calc_duration_months(start: datetime, end: datetime) -> float:
     return max(months, 0.5)  # minimum 0.5 months (2 weeks)
 
 
+# ── Section map ────────────────────────────────────────────────
+_SECTION_RE = re.compile(
+    r"^(?P<h>"
+    r"academic\s+projects?|personal\s+projects?|side\s+projects?|open[\s-]?source\s+projects?|"
+    r"research\s+projects?|projects?|capstone|thesis|dissertation|coursework|portfolio|"
+    r"(?:work\s+|professional\s+|job\s+)?experience|employment|internship|"
+    r"education|academic\s+background|qualifications?|"
+    r"skills?|technical\s+skills?|core\s+competencies|"
+    r"certifications?|licenses?|languages?|"
+    r"awards?|honou?rs?|achievements?|"
+    r"interests?|hobbies?|references?|"
+    r"activities?|leadership|extra[- ]curricular|volunteering|"
+    r"publications?|profile|summary|objective|about(\s+me)?"
+    r")\s*:?\s*$",
+    re.I
+)
+
+
+def _section_kind(header: str) -> str:
+    """Normalize a section header to a canonical kind."""
+    h = header.lower().strip().rstrip(":")
+    if re.search(r"project|thesis|dissertation|capstone|coursework|portfolio", h):
+        return "projects"
+    if re.search(r"experience|employment|internship", h):
+        return "experience"
+    if re.search(r"education|background|qualification", h):
+        return "education"
+    if re.search(r"skill|competenc", h):
+        return "skills"
+    if re.search(r"certif|licens", h):
+        return "certifications"
+    if re.search(r"language", h):
+        return "languages"
+    if re.search(r"award|honou?r|achievement", h):
+        return "awards"
+    if re.search(r"interest|hobb", h):
+        return "interests"
+    if re.search(r"reference", h):
+        return "references"
+    if re.search(r"activit|leadership|extra|volunteer", h):
+        return "activities"
+    return "other"
+
+
+def _segment_sections(text: str) -> list[tuple[str, list[str]]]:
+    """Split resume text into (kind, lines) segments by section header."""
+    segments: list[tuple[str, list[str]]] = []
+    current_kind = "other"
+    current_lines: list[str] = []
+    for line in text.split("\n"):
+        m = _SECTION_RE.match(line.strip())
+        if m:
+            if current_lines:
+                segments.append((current_kind, current_lines))
+            current_kind = _section_kind(m.group("h"))
+            current_lines = [line]
+        else:
+            current_lines.append(line)
+    if current_lines:
+        segments.append((current_kind, current_lines))
+    return segments
+
+
+def _segment_text(segments: list[tuple[str, list[str]]], kind: str) -> str:
+    """Join all lines belonging to a given section kind."""
+    return "\n".join(line for k, lines in segments if k == kind for line in lines)
+
+
 def _extract_projects_with_dates(text: str) -> tuple[list[dict], list[dict]]:
     """Extract academic and personal projects with date ranges.
     
@@ -180,18 +265,59 @@ def _extract_projects_with_dates(text: str) -> tuple[list[dict], list[dict]]:
     
     # Section header patterns to skip
     SECTION_HEADER_RE = re.compile(
-        r"^(?:academic\s+)?projects?\s*:?\s*$|"
-        r"^(?:personal|side|open[\s-]?source)\s+projects?\s*:?\s*$",
+        r"^(?:academic\s+|personal\s+|side\s+|open[\s-]?source\s+)?projects?\s*:?\s*$",
         re.I
     )
+    SECTION_KIND_RE = re.compile(
+        r"^(academic|personal|side|open[\s-]?source)\s+projects?\s*:?\s*$",
+        re.I
+    )
+    # Non-project section headers that stop project extraction
+    NON_PROJECT_HEADER_RE = re.compile(
+        r"^(experience|education|skills?|certifications?|languages?|awards?|"
+        r"interests?|references?|activities?|leadership)\s*:?\s*$",
+        re.I
+    )
+
+    current_section = None  # "academic" | "personal" | None
+    in_projects = False
+    saw_header = False
 
     for i, line in enumerate(lines):
         line_stripped = line.strip()
         if not line_stripped:
             continue
-        
-        # Skip section headers
+
+        # Track which project section we're inside
+        sk = SECTION_KIND_RE.match(line_stripped)
+        if sk:
+            sec = sk.group(1).lower()
+            current_section = "academic" if "academic" in sec else "personal"
+            in_projects = True
+            saw_header = True
+            continue
         if SECTION_HEADER_RE.match(line_stripped):
+            in_projects = True
+            saw_header = True
+            continue
+        if NON_PROJECT_HEADER_RE.match(line_stripped):
+            in_projects = False
+            current_section = None
+            saw_header = True
+            continue
+
+        # Skip education entries (universities, schools, certificates)
+        if EDUCATION_LINE_RE.search(line_stripped):
+            continue
+
+        # Skip club memberships and extra-curricular activities
+        CLUB_RE = re.compile(r'\b(club|member|society|association|committee|volunteer|organization)\b', re.I)
+        if CLUB_RE.search(line_stripped) and (DATE_RANGE_RE.search(line_stripped) or YEAR_RANGE_RE.search(line_stripped)):
+            continue
+
+        # Only treat as a project if we're inside a projects section
+        # (fall back to whole-text when no headers were detected at all)
+        if saw_header and not in_projects:
             continue
 
         # Look for date ranges on this line
@@ -211,7 +337,14 @@ def _extract_projects_with_dates(text: str) -> tuple[list[dict], list[dict]]:
             if single_date_match:
                 single_date = single_date_match.group(1)
 
+        # Check for single year at end of line (e.g., "Project Name 2025")
+        single_year = None
         if not date_match and not single_date:
+            year_match = re.search(r'\b(19|20)\d{2}\s*$', line_stripped)
+            if year_match:
+                single_year = year_match.group(0).strip()
+
+        if not date_match and not single_date and not single_year:
             continue
 
         # Extract the project name (the line with the date, or the line before)
@@ -219,6 +352,8 @@ def _extract_projects_with_dates(text: str) -> tuple[list[dict], list[dict]]:
         # Remove date range from the name
         name_line = DATE_RANGE_RE.sub("", name_line).strip()
         name_line = YEAR_RANGE_RE.sub("", name_line).strip()
+        # Remove single year at end of line
+        name_line = re.sub(r'\b(19|20)\d{2}\s*$', '', name_line).strip()
         name_line = re.sub(r"^[-–—•\*\s]+", "", name_line).strip()
         name_line = re.sub(r"[-–—•\*\s]+$", "", name_line).strip()
         
@@ -251,6 +386,10 @@ def _extract_projects_with_dates(text: str) -> tuple[list[dict], list[dict]]:
             start_date = _parse_date(single_date)
             duration = 0
             date_display = single_date if start_date else ""
+        elif single_year:
+            # Single year at end of line
+            duration = 0
+            date_display = single_year
         else:
             duration = 0
             date_display = ""
@@ -261,28 +400,24 @@ def _extract_projects_with_dates(text: str) -> tuple[list[dict], list[dict]]:
             "dates": date_display,
         }
 
-        # Classify as academic or personal
+        # Classify as academic or personal (name keywords override section)
         name_lower = name_line.lower()
         is_academic = any(kw in name_lower for kw in ACADEMIC_KEYWORDS)
         is_personal = any(kw in name_lower for kw in PERSONAL_KEYWORDS)
 
-        # If neither detected, check section header
+        # Check the line right after the project name for "Personal Project" / "Coursework"
         if not is_academic and not is_personal:
-            for j in range(i - 1, max(i - 5, -1), -1):
-                header = lines[j].strip().lower()
-                if "academic" in header or "thesis" in header or "capstone" in header:
-                    is_academic = True
-                    break
-                elif "personal" in header or "side" in header or "open source" in header:
-                    is_personal = True
-                    break
+            next_line = lines[i + 1].lower() if i + 1 < len(lines) else ""
+            is_personal = "personal project" in next_line
+            is_academic = any(k in next_line for k in ("coursework", "module", "year 1", "year 2", "year 3", "year 4"))
 
         if is_academic:
             academic_projects.append(project)
         elif is_personal:
             personal_projects.append(project)
         else:
-            personal_projects.append(project)
+            # Fall back to the section we're inside
+            (academic_projects if current_section == "academic" else personal_projects).append(project)
 
     return academic_projects, personal_projects
 
@@ -321,6 +456,8 @@ def extract_entities(text: str) -> dict[str, Any]:
     if github:
         entities["github"] = "https://" + github[0]
 
+    segments = _segment_sections(text)
+
     text_lower = text.lower()
     text_normalized = re.sub(r"\s+", " ", text_lower)
     found_skills = []
@@ -329,11 +466,15 @@ def extract_entities(text: str) -> dict[str, Any]:
             found_skills.append(skill.title())
     entities["skills"] = list(dict.fromkeys(found_skills))
 
-    edu_match = EDU_RE.search(text)
+    # Education: only look inside the EDUCATION section
+    edu_text = _segment_text(segments, "education") or text
+    edu_match = EDU_RE.search(edu_text)
     if edu_match:
         entities["education"] = edu_match.group(0).title()
 
-    years_matches = YEARS_RE.findall(text)
+    # Experience: only look inside the EXPERIENCE section
+    exp_text = _segment_text(segments, "experience") or text
+    years_matches = YEARS_RE.findall(exp_text)
     years_values = []
     for g1, g2 in years_matches:
         if g1:
@@ -344,8 +485,9 @@ def extract_entities(text: str) -> dict[str, Any]:
         raw_years = max(years_values)
         entities["experience_years"] = min(raw_years, 40)
 
-    # Extract projects with dates and classify
-    academic_projects, personal_projects = _extract_projects_with_dates(text)
+    # Projects: only look inside the PROJECTS section
+    proj_text = _segment_text(segments, "projects") or text
+    academic_projects, personal_projects = _extract_projects_with_dates(proj_text)
     entities["academic_projects"] = academic_projects
     entities["personal_projects"] = personal_projects
 
