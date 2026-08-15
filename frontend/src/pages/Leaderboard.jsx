@@ -30,7 +30,15 @@ export default function Leaderboard() {
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {data.map((c, i) => (
-            <div key={c.candidate_id || i} className="card" style={{ padding: 16, background: bg(i), display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div
+              key={c.candidate_id || i}
+              className="card"
+              onClick={() => c.candidate_id && navigate(`/profile/${c.candidate_id}`)}
+              style={{
+                padding: 16, background: bg(i), display: 'flex', alignItems: 'center', gap: 12,
+                cursor: c.candidate_id ? 'pointer' : 'default', transition: 'transform 0.15s ease'
+              }}
+            >
               {medal(i)}
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{c.candidate_name}</div>

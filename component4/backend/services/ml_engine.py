@@ -212,21 +212,23 @@ def run_skill_gap_analysis(
     candidate_name:    str,
     job_role:          str,
     skills:            List[str],
-    experience_years:  int,
-    education:         str,
-    certifications:    str,
-    cert_count:        int,
-    projects_count:    int,
-    job_level:         str,
-    work_mode:         str,
-    cv_matching_score: Optional[float],
-    interview_score:   Optional[float],
-    mcq_score:         Optional[float],
-    descriptive_score: Optional[float],
-    coding_score:      Optional[float],
-    weak_topics:       List[str],
-    failed_mcq_topics: List[str],
+    experience_years:  int = 0,
+    education:         str = "B.Sc. Computer Science",
+    certifications:    str = "None",
+    cert_count:        int = 0,
+    projects_count:    int = 0,
+    job_level:         str = "Mid-Level",
+    work_mode:         str = "Hybrid",
+    cv_matching_score: Optional[float] = None,
+    interview_score:   Optional[float] = None,
+    mcq_score:         Optional[float] = None,
+    descriptive_score: Optional[float] = None,
+    coding_score:      Optional[float] = None,
+    weak_topics:       Optional[List[str]] = None,
+    failed_mcq_topics: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
+    weak_topics = weak_topics or []
+    failed_mcq_topics = failed_mcq_topics or []
 
     # ── 1. Skill gap computation ──────────────────────────────────────────────
     gap_score, miss_req, miss_opt, skill_match_pct = compute_gap(

@@ -115,22 +115,58 @@ export default function Ranking() {
 
       {result && (
         <div className="card" style={{ padding: 24 }}>
-          <h3 style={{ marginBottom: 16 }}><Trophy size={16} style={{ color: 'var(--accent)' }} /> Results {result.job_role && `— ${result.job_role.replace(/_/g, ' ')}`}</h3>
-          {(result.data || []).filter(c => c.rank > 0).map((c, i) => (
-            <div key={c.candidate_id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 0', borderBottom: '1px solid var(--border)' }}>
-              <div style={{ width: 32, height: 32, borderRadius: 8, background: i === 0 ? 'var(--accent)' : i === 1 ? 'var(--accent-2)' : 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, color: i < 2 ? '#fff' : 'var(--text)' }}>{i + 1}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{c.candidate_name}</div>
-                <div className="muted" style={{ fontSize: 12 }}>CSS: {((c.CSS || 0) * 100).toFixed(1)} | CV: {((c.S_cv || 0) * 100).toFixed(1)} | INT: {((c.S_int || 0) * 100).toFixed(1)}{c.ltr_score ? ` | LTR: ${(c.ltr_score * 100).toFixed(1)}` : ''}</div>
+          <h3 style={{ marginBottom: 16 }}>
+            <Trophy size={16} style={{ color: 'var(--accent)' }} /> Results {result.job_role && `— ${result.job_role.replace(/_/g, ' ')}`}
+          </h3>
+          {(result.data || []).map((c, i) => (
+            <div key={c.candidate_id || i} style={{
+              padding: '16px 0', borderBottom: '1px solid var(--border)',
+              opacity: c.passed_hard_filter ? 1 : 0.65
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  background: !c.passed_hard_filter ? 'var(--border)' : i === 0 ? 'var(--accent)' : i === 1 ? 'var(--accent-2)' : 'var(--border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 800, fontSize: 14, color: c.passed_hard_filter && i < 2 ? '#fff' : 'var(--text)'
+                }}>{c.passed_hard_filter ? c.rank : '✗'}</div>
+                
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 600, fontSize: 14 }}>{c.candidate_name}</span>
+                    {c.passed_hard_filter ? (
+                      <span className="chip" style={{ fontSize: 10, background: '#2ecc7120', color: '#2ecc71', borderColor: '#2ecc7150' }}>Qualified</span>
+                    ) : (
+                      <span className="chip" style={{ fontSize: 10, background: '#e74c3c20', color: '#e74c3c', borderColor: '#e74c3c50' }}>
+                        {c.filter_fail_reason || 'Disqualified'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="muted" style={{ fontSize: 12 }}>
+                    ID: {c.candidate_id} · CSS: {((c.CSS || 0) * 100).toFixed(1)}% · CV: {((c.S_cv || 0) * 100).toFixed(1)}% · INT: {((c.S_int || 0) * 100).toFixed(1)}%
+                    {c.ltr_score ? ` · LTR: ${(c.ltr_score * 100).toFixed(1)}%` : ''}
+                  </div>
+                </div>
+
+                <div style={{ fontSize: 20, fontWeight: 800, color: c.passed_hard_filter ? 'var(--accent)' : 'var(--text-muted)' }}>
+                  {((c.CSS || 0) * 100).toFixed(0)}%
+                </div>
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)' }}>{((c.CSS || 0) * 100).toFixed(0)}%</div>
+
+              {/* 6 Marks Breakdown */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))',
+                gap: 8, marginTop: 10, padding: '8px 10px', background: 'var(--bg)', borderRadius: 8, fontSize: 11
+              }}>
+                <div><span className="muted" style={{ display: 'block', fontSize: 9 }}>C1: EDUCATION</span><strong>{((c.S_edu || 0) * 100).toFixed(0)}%</strong></div>
+                <div><span className="muted" style={{ display: 'block', fontSize: 9 }}>C1: EXPERIENCE</span><strong>{((c.S_exp || 0) * 100).toFixed(0)}%</strong></div>
+                <div><span className="muted" style={{ display: 'block', fontSize: 9 }}>C1: SKILL MATCH</span><strong>{((c.S_skill || 0) * 100).toFixed(0)}%</strong></div>
+                <div><span className="muted" style={{ display: 'block', fontSize: 9 }}>C2: MCQ</span><strong>{((c.P_mcq || 0) * 100).toFixed(0)}%</strong></div>
+                <div><span className="muted" style={{ display: 'block', fontSize: 9 }}>C2: DESCRIPTIVE</span><strong>{((c.P_desc || 0) * 100).toFixed(0)}%</strong></div>
+                <div><span className="muted" style={{ display: 'block', fontSize: 9 }}>C2: CODING</span><strong>{((c.P_code || 0) * 100).toFixed(0)}%</strong></div>
+              </div>
             </div>
           ))}
-          {(result.data || []).filter(c => c.rank === 0).length > 0 && (
-            <div style={{ marginTop: 12, padding: 12, background: 'var(--bg)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
-              {(result.data || []).filter(c => c.rank === 0).length} candidate(s) did not meet minimum requirements
-            </div>
-          )}
           {(!result.data || result.data.length === 0) && (
             <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, fontSize: 13, color: 'var(--text-muted)' }}>
               {result.message || 'No candidates found'}

@@ -99,27 +99,75 @@ export default function ApplicantPipeline() {
       {/* Rankings Table */}
       {rankings.length > 0 && (
         <div className="card" style={{ marginBottom: 20 }}>
-          <h3 style={{ marginBottom: 16 }}><Trophy size={16} style={{ color: 'var(--accent)' }} /> Candidate Rankings</h3>
-          {rankings.filter(r => r.rank > 0).map((r, i) => (
-            <div key={r.candidate_id} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '12px 0', borderBottom: '1px solid var(--border)'
+          <h3 style={{ marginBottom: 16 }}><Trophy size={16} style={{ color: 'var(--accent)' }} /> Candidate Rankings & Score Distribution</h3>
+          {rankings.map((r, i) => (
+            <div key={r.candidate_id || i} style={{
+              padding: '16px 0', borderBottom: '1px solid var(--border)',
+              opacity: r.passed_hard_filter ? 1 : 0.65
             }}>
-              <div style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: i === 0 ? 'var(--accent)' : i === 1 ? 'var(--accent-2)' : 'var(--border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 800, fontSize: 14, color: i < 2 ? '#fff' : 'var(--text)'
-              }}>{i + 1}</div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{r.candidate_name}</div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  CSS: {((r.CSS || 0) * 100).toFixed(1)}% · CV: {((r.S_cv || 0) * 100).toFixed(1)}% · INT: {((r.S_int || 0) * 100).toFixed(1)}%
-                  {r.ltr_score ? ` · LTR: ${(r.ltr_score * 100).toFixed(1)}%` : ''}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  background: !r.passed_hard_filter ? 'var(--border)' : i === 0 ? 'var(--accent)' : i === 1 ? 'var(--accent-2)' : 'var(--border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontWeight: 800, fontSize: 14, color: r.passed_hard_filter && i < 2 ? '#fff' : 'var(--text)'
+                }}>{r.passed_hard_filter ? r.rank : '✗'}</div>
+                
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontWeight: 600, fontSize: 15 }}>{r.candidate_name}</span>
+                    {r.passed_hard_filter ? (
+                      <span className="chip" style={{ fontSize: 10, background: '#2ecc7120', color: '#2ecc71', borderColor: '#2ecc7150' }}>Qualified</span>
+                    ) : (
+                      <span className="chip" style={{ fontSize: 10, background: '#e74c3c20', color: '#e74c3c', borderColor: '#e74c3c50' }}>
+                        {r.filter_fail_reason || 'Disqualified'}
+                      </span>
+                    )}
+                  </div>
+                  <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                    Candidate ID: {r.candidate_id}
+                  </div>
+                </div>
+
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: r.passed_hard_filter ? 'var(--accent)' : 'var(--text-muted)' }}>
+                    {((r.CSS || 0) * 100).toFixed(1)}%
+                  </div>
+                  <div className="muted" style={{ fontSize: 11 }}>
+                    CSS Score {r.ltr_score != null && `· LTR: ${(r.ltr_score * 100).toFixed(1)}%`}
+                  </div>
                 </div>
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)' }}>
-                {((r.CSS || 0) * 100).toFixed(0)}%
+
+              {/* 6 Marks Distribution (C1 & C2) */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                gap: 8, marginTop: 12, padding: '10px 12px', background: 'var(--bg)', borderRadius: 8, fontSize: 12
+              }}>
+                <div>
+                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C1: EDUCATION</span>
+                  <strong>{((r.S_edu || 0) * 100).toFixed(0)}%</strong>
+                </div>
+                <div>
+                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C1: EXPERIENCE</span>
+                  <strong>{((r.S_exp || 0) * 100).toFixed(0)}%</strong>
+                </div>
+                <div>
+                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C1: SKILL MATCH</span>
+                  <strong>{((r.S_skill || 0) * 100).toFixed(0)}%</strong>
+                </div>
+                <div>
+                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C2: MCQ SCORE</span>
+                  <strong>{((r.P_mcq || 0) * 100).toFixed(0)}%</strong>
+                </div>
+                <div>
+                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C2: DESCRIPTIVE</span>
+                  <strong>{((r.P_desc || 0) * 100).toFixed(0)}%</strong>
+                </div>
+                <div>
+                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C2: CODING</span>
+                  <strong>{((r.P_code || 0) * 100).toFixed(0)}%</strong>
+                </div>
               </div>
             </div>
           ))}
