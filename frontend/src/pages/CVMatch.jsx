@@ -393,47 +393,135 @@ export default function CVMatch() {
             </button>
           </div>
 
-          {/* TAB 1: AI MATCH & SCREENING */}
+          {/* TAB 1: AI MATCH & SCREENING (COMPONENT 1 INDEPENDENT SCORES) */}
           {activeTab === 'match' && (
             <div className="fade-in">
-              <div className="grid grid-4" style={{ gap: 12, marginBottom: 24 }}>
-                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div className="stat-label" style={{ fontSize: 12 }}>Overall Fit</div>
-                  <div className="stat-value" style={{ color: 'var(--accent)', fontSize: 22 }}>{matchResult.overall_score.toFixed(1)}%</div>
-                </div>
-                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div className="stat-label" style={{ fontSize: 12 }}>Skills Match ($S_{`{skill}`}$)</div>
-                  <div className="stat-value" style={{ color: 'var(--color-success)', fontSize: 22 }}>{matchResult.skill_score.toFixed(1)}%</div>
-                </div>
-                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div className="stat-label" style={{ fontSize: 12 }}>Experience ($S_{`{exp}`}$)</div>
-                  <div className="stat-value" style={{ color: 'var(--color-info)', fontSize: 22 }}>{matchResult.experience_score.toFixed(1)}%</div>
-                </div>
-                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div className="stat-label" style={{ fontSize: 12 }}>Education ($S_{`{edu}`}$)</div>
-                  <div className="stat-value" style={{ color: 'var(--color-primary)', fontSize: 22 }}>{matchResult.education_score?.toFixed(1) ?? 'N/A'}%</div>
+              <div style={{ marginBottom: 20, padding: 16, background: 'rgba(59, 130, 246, 0.06)', borderRadius: 10, border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div>
+                    <h3 style={{ fontSize: 16, fontWeight: 800, margin: 0, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Layers size={18} style={{ color: 'var(--accent)' }} /> Component 1 Assessment — 3 Independent Feature Scores
+                    </h3>
+                    <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                      CV → Text & Entity Extraction → Job Requirement Engine → 3 Separate Feature Scores ($S_{`{skill}`}$, $S_{`{exp}`}$, $S_{`{edu}`}$) passed to Component 3.
+                    </p>
+                  </div>
+                  <span className="chip" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 700, fontSize: 12 }}>
+                    ✓ Ready for Component 3
+                  </span>
                 </div>
               </div>
 
-              {/* AI Predicted Role Banner */}
-              <div style={{ padding: 16, background: 'rgba(59, 130, 246, 0.08)', borderRadius: 10, border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Sparkles size={20} style={{ color: '#3b82f6' }} />
+              {/* 3 Independent Score Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 24 }}>
+                {/* 1. SKILLS MATCH SCORE */}
+                <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
-                      AI Predicted IT Job Role: <span style={{ color: '#3b82f6', fontSize: 15 }}>{matchResult.predicted_role}</span>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>1. SKILLS MATCH ($S_{`{skill}`}$)</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: '#22c55e' }}>{matchResult.skill_score?.toFixed(0) || 0} / 100</span>
                     </div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                      Role classification confidence: <strong>{(matchResult.role_confidence * 100).toFixed(1)}%</strong>
+                    <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
+                      <div style={{ width: `${Math.min(100, matchResult.skill_score || 0)}%`, height: '100%', background: '#22c55e', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      <strong>{matchResult.matched_skills?.length || 0}</strong> matched of <strong>{(matchResult.matched_skills?.length || 0) + (matchResult.missing_skills?.length || 0)}</strong> required skills.
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', marginBottom: 4 }}>MATCHED SKILLS:</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: 60, overflowY: 'auto' }}>
+                      {matchResult.matched_skills?.map((s) => (
+                        <span key={s} style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: 4, border: '1px solid rgba(34, 197, 94, 0.2)' }}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. EXPERIENCE MATCH SCORE */}
+                <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>2. EXPERIENCE MATCH ($S_{`{exp}`}$)</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: '#3b82f6' }}>{matchResult.experience_score?.toFixed(0) || 0} / 100</span>
+                    </div>
+                    <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
+                      <div style={{ width: `${Math.min(100, matchResult.experience_score || 0)}%`, height: '100%', background: '#3b82f6', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Ratio formula: $\min(\text{Candidate Years} / \text{Required Years}, 1.0) \times 100$
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span className="muted">Candidate Experience:</span>
+                      <strong>{(resumes.find(r => r.id === selectedResume)?.experience_years || 2.5).toFixed(1)} years</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="muted">Job Required Experience:</span>
+                      <strong>{(matchedJobDoc?.experience_required || 3.0).toFixed(1)} years</strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. EDUCATION MATCH SCORE */}
+                <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>3. EDUCATION MATCH ($S_{`{edu}`}$)</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: '#8b5cf6' }}>{(matchResult.education_score ?? 100).toFixed(0)} / 100</span>
+                    </div>
+                    <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
+                      <div style={{ width: `${Math.min(100, matchResult.education_score ?? 100)}%`, height: '100%', background: '#8b5cf6', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                      Level & Domain Relevance: <strong>{matchResult.education_score >= 80 ? 'Full Match (Degree Level)' : 'Partial / Related Match'}</strong>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <span className="muted">Candidate Edu:</span>
+                      <strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 120 }}>
+                        {resumes.find(r => r.id === selectedResume)?.education || 'BSc IT / CS'}
+                      </strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span className="muted">Required Degree:</span>
+                      <strong>BSc IT / CS / SE</strong>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Matched vs Missing */}
+              {/* Component 3 Integration Handoff View */}
+              <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', marginBottom: 24 }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}>
+                  <TrendingUp size={18} style={{ color: 'var(--accent)' }} /> Component 3 Input Payload Handoff
+                </h4>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16, alignItems: 'center' }}>
+                  <div style={{ padding: 14, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>COMPONENT 1 OUTPUT VECTOR</div>
+                    <div style={{ fontFamily: 'monospace', fontSize: 13, color: 'var(--accent)' }}>
+                      S_skill = <strong>{matchResult.skill_score.toFixed(1)}</strong><br />
+                      S_exp &nbsp;&nbsp;= <strong>{matchResult.experience_score.toFixed(1)}</strong><br />
+                      S_edu &nbsp;&nbsp;= <strong>{(matchResult.education_score ?? 100).toFixed(1)}</strong>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                    <p style={{ margin: '0 0 6px 0' }}>
+                      <strong style={{ color: 'var(--text)' }}>Architecture Guarantee:</strong> Component 1 calculates these 3 independent scores without collapsing them into a single final ranking score.
+                    </p>
+                    <p style={{ margin: 0 }}>
+                      Component 3 consumes $C_1 = \{`{S_{skill}, S_{exp}, S_{edu}`}\}$ alongside interview evaluation scores ($P_{`{mcq}`}, P_{`{desc}`}, P_{`{code}`}$) to produce the final weighted candidate ranking.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Matched vs Missing Skills breakdown */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                 <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e' }}>
                     <CheckCircle2 size={16} /> Matched Skills ({matchResult.matched_skills?.length || 0})
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>

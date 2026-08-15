@@ -38,7 +38,8 @@ def _sanitise_text(v: str) -> str:
 
 class RoleAlternative(BaseModel):
     role:       str
-    confidence: float = Field(..., ge=0.0, le=1.0)
+    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    probability: Optional[float] = None
 
 
 # ── Request schemas ────────────────────────────────────────────────────────────
@@ -85,6 +86,43 @@ class ClassifyRequest(BaseModel):
         return v.strip()
 
 
+class Component1ScoresModel(BaseModel):
+    S_skill: float = Field(..., ge=0.0, le=100.0)
+    S_exp:   float = Field(..., ge=0.0, le=100.0)
+    S_edu:   float = Field(..., ge=0.0, le=100.0)
+
+
+class SkillAnalysisModel(BaseModel):
+    matched_count: int
+    required_count: int
+    percentage: float
+    matched_skills: List[str]
+    missing_skills: List[str]
+
+
+class ExperienceAnalysisModel(BaseModel):
+    candidate_years: float
+    required_years: float
+    relevant_years: float
+    score: float
+
+
+class EducationAnalysisModel(BaseModel):
+    candidate_education: List[str]
+    required_education: List[str]
+    education_match: str
+    score: float
+
+
+class JobRequirementSpec(BaseModel):
+    job_id: str = "JOB001"
+    company: Optional[str] = "Company Inc."
+    position: Optional[str] = "Software Engineer"
+    required_skills: Optional[List[Any]] = None
+    required_experience_years: Optional[float] = 3.0
+    required_education: Optional[List[str]] = None
+
+
 class BatchCandidateItem(BaseModel):
     """A single candidate in a batch ranking request."""
     candidate_id:   Optional[str] = Field(None, max_length=50)
@@ -100,8 +138,10 @@ class BatchCandidateItem(BaseModel):
 
 
 class BatchRankRequest(BaseModel):
-    """Batch ranking: given a JD + multiple CVs, return ranked results."""
-    job_description: str                    = Field(..., min_length=10)
+    """Batch ranking: given a JD or job_id + multiple CVs, return ranked results."""
+    job_id:          Optional[str] = Field(None)
+    job_description: Optional[str] = Field(None)
+    job_spec:        Optional[JobRequirementSpec] = Field(None)
     candidates:      List[BatchCandidateItem] = Field(..., min_length=1, max_length=100)
 
 
@@ -111,6 +151,7 @@ class CVAnalysisResponse(BaseModel):
     """Full CV analysis result — the canonical output contract for Component 1."""
     candidate_id:         str
     candidate_name:       str
+    job_id:               Optional[str] = "JOB001"
 
     # Role classification
     job_role:             str
@@ -124,14 +165,23 @@ class CVAnalysisResponse(BaseModel):
     experience_years:     float = Field(..., ge=0.0)
     skills:               List[str]
 
-    # Scores (mirrors CandidateFeatures in component3/engine/css_engine.py)
-    S_edu:                float = Field(..., ge=0.0, le=1.0)
-    S_exp:                float = Field(..., ge=0.0, le=1.0)
-    S_skill:              float = Field(..., ge=0.0, le=1.0)
-    skill_score_raw:      float = Field(..., ge=0.0, le=1.0)   # alias for S_skill; consumed by Component 3
+    # Three Independent Scores for Component 3 (0-100)
+    component_1_scores:   Component1ScoresModel
+    S_skill:              float = Field(..., ge=0.0, le=100.0)
+    S_exp:                float = Field(..., ge=0.0, le=100.0)
+    S_edu:                float = Field(..., ge=0.0, le=100.0)
 
+    # Detailed Analysis Breakdowns
+    skill_analysis:       SkillAnalysisModel
+    experience_analysis:  ExperienceAnalysisModel
+    education_analysis:   EducationAnalysisModel
+
+    # Legacy & raw aliases for backward compatibility
+    skill_score_raw:      float = Field(..., ge=0.0, le=1.0)   # 0-1 alias for Component 3 compatibility
     jd_similarity_score:  Optional[float] = Field(None, ge=0.0, le=1.0)
+    optional_legacy_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     cv_matching_score:    float = Field(..., ge=0.0, le=100.0)
+    status:               str = "READY_FOR_COMPONENT_3"
 
     analysis_timestamp:   datetime
 
@@ -151,16 +201,21 @@ class BatchRankItem(BaseModel):
     candidate_name:       str
     job_role:             str
     role_confidence:      float
-    cv_matching_score:    float
-    jd_similarity_score:  Optional[float]
-    S_edu:                float
-    S_exp:                float
+    component_1_scores:   Component1ScoresModel
     S_skill:              float
-    skill_score_raw:      float
+    S_exp:                float
+    S_edu:                float
+    skill_analysis:       SkillAnalysisModel
+    experience_analysis:  ExperienceAnalysisModel
+    education_analysis:   EducationAnalysisModel
+    cv_matching_score:    Optional[float] = None
+    jd_similarity_score:  Optional[float] = None
+    status:               str = "READY_FOR_COMPONENT_3"
 
 
 class BatchRankResponse(BaseModel):
-    job_description_snippet: str
+    job_id:                  Optional[str] = None
+    job_description_snippet: Optional[str] = None
     total_candidates:        int
     ranked_candidates:       List[BatchRankItem]
 
@@ -187,3 +242,4 @@ class DeleteResponse(BaseModel):
     deleted:      bool
     candidate_id: str
     message:      str
+

@@ -99,19 +99,6 @@ export default function CompanyLogin() {
             </button>
           </form>
 
-          {/* Quick Demo Login Button */}
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed var(--border)' }}>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={fillDemo}
-              disabled={busy}
-              style={{ width: '100%', height: 40, fontSize: 13, border: '1px solid var(--accent)', color: 'var(--accent)', background: 'rgba(59, 130, 246, 0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              <Zap size={15} /> Quick Demo Company Login
-            </button>
-          </div>
-
           <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13 }}>
             <span className="muted">Don't have a company account? </span>
             <Link to="/register/company" style={{ color: 'var(--accent)', fontWeight: 600 }}>Register Company</Link>
