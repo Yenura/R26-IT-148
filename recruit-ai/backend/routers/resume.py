@@ -80,6 +80,8 @@ def _pred_out(doc: dict) -> PredictionOut:
     )
 
 
+@router.post("", response_model=ResumeOut, status_code=201)
+@router.post("/", response_model=ResumeOut, status_code=201)
 @router.post("/upload", response_model=ResumeOut, status_code=201)
 async def upload_resume(
     file: UploadFile = File(...),
@@ -161,11 +163,36 @@ async def predict_role(
     return {"predicted_role": role, "confidence": round(confidence, 4)}
 
 
+CANONICAL_ROLE_REQS = {
+    "Software Engineer": {"skills": ["Python", "Java", "Data Structures", "Algorithms", "Git", "SQL"], "exp": 2},
+    "Data Scientist": {"skills": ["Python", "Pandas", "Statistics", "Machine Learning", "SQL", "Data Visualization"], "exp": 2},
+    "Machine Learning Engineer": {"skills": ["Python", "Machine Learning", "Deep Learning", "PyTorch", "MLOps", "Docker", "TensorFlow"], "exp": 3},
+    "DevOps Engineer": {"skills": ["Linux", "Docker", "Kubernetes", "CI/CD", "Terraform", "AWS", "Python"], "exp": 3},
+    "Cloud Solutions Architect": {"skills": ["AWS", "Cloud Architecture", "Azure", "Kubernetes", "Networking", "Security"], "exp": 5},
+    "Database Administrator": {"skills": ["SQL", "PostgreSQL", "MySQL", "Database Tuning", "Backup and Recovery", "Linux"], "exp": 3},
+    "Frontend Developer": {"skills": ["JavaScript", "React", "HTML", "CSS", "TypeScript", "Tailwind", "Git"], "exp": 2},
+    "Backend Developer": {"skills": ["Python", "FastAPI", "SQL", "PostgreSQL", "Docker", "Redis", "AWS"], "exp": 2},
+    "Mobile App Developer": {"skills": ["Flutter", "Dart", "React Native", "iOS", "Android", "REST APIs"], "exp": 2},
+    "Full Stack Developer": {"skills": ["JavaScript", "React", "Node.js", "SQL", "MongoDB", "Docker", "Git"], "exp": 3},
+    "QA/Test Automation Engineer": {"skills": ["Selenium", "Python", "Test Automation", "Jest", "CI/CD", "Git"], "exp": 2},
+    "Data Engineer": {"skills": ["Python", "SQL", "Spark", "Airflow", "ETL Pipelines", "Kafka"], "exp": 3},
+    "Site Reliability Engineer": {"skills": ["Linux", "Kubernetes", "Prometheus", "Python", "Docker", "CI/CD"], "exp": 4},
+    "Cybersecurity Analyst": {"skills": ["Network Security", "Ethical Hacking", "SIEM", "Linux", "Cryptography", "Python"], "exp": 3},
+    "UI/UX Designer": {"skills": ["Figma", "Wireframing", "User Research", "Prototyping", "Design Systems"], "exp": 2},
+    "Network Engineer": {"skills": ["Cisco", "Networking", "Firewalls", "Routing Protocols", "Linux"], "exp": 3},
+    "Business/Systems Analyst": {"skills": ["Requirements Gathering", "SQL", "UML", "Data Analysis", "Agile"], "exp": 2},
+    "AI/NLP Engineer": {"skills": ["Python", "NLP", "PyTorch", "Transformers", "Spacy"], "exp": 3},
+    "Blockchain Developer": {"skills": ["Solidity", "Smart Contracts", "Ethereum", "Web3.js"], "exp": 3},
+    "Embedded Systems Engineer": {"skills": ["C++", "C", "RTOS", "Microcontrollers"], "exp": 3},
+}
+
+
 @router.get("/match", response_model=PredictionOut)
 async def match_resume(
     request: Request,
     resume_id: str = "",
     job_id: str = "",
+    target_role: str = "",
     user: dict = Depends(get_current_user),
 ):
     db = request.app.state.db
@@ -191,11 +218,27 @@ async def match_resume(
     job_skills_original = []
     job_skills_lower = []
     required_years = 0
+
     if job_doc:
         job_text = f"{job_doc.get('title', '')} {job_doc.get('description', '')}"
         job_skills_original = job_doc.get("required_skills", [])
         job_skills_lower = [s.strip().lower() for s in job_skills_original]
         required_years = job_doc.get("experience_required", 0) or 0
+    elif target_role and target_role in CANONICAL_ROLE_REQS:
+        role_data = CANONICAL_ROLE_REQS[target_role]
+        job_text = f"{target_role} required skills and experience"
+        job_skills_original = role_data["skills"]
+        job_skills_lower = [s.strip().lower() for s in job_skills_original]
+        required_years = role_data["exp"]
+    else:
+        # Fallback to predicted role from classifier
+        classifier = _get_classifier()
+        p_role, _ = classifier.predict(resume_text, resume_doc.get("skills", []))
+        role_data = CANONICAL_ROLE_REQS.get(p_role, CANONICAL_ROLE_REQS["Software Engineer"])
+        job_text = f"{p_role} required skills"
+        job_skills_original = role_data["skills"]
+        job_skills_lower = [s.strip().lower() for s in job_skills_original]
+        required_years = role_data["exp"]
 
     # Semantic: TF-IDF cosine similarity
     matcher = _get_matcher()

@@ -1,8 +1,17 @@
 """Router: Career Path & Learning Plan endpoints"""
 
+import sys, os
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Request, HTTPException
+
+COMPONENT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(COMPONENT_ROOT))
+
 from models.schemas import CareerPathRequest
 from services.ml_engine import JOB_REQ, RESOURCES, CAREER_PATHS, ROLE_TRANSITIONS, compute_gap
+from src.recommendation.career_recommender import recommend_career_paths
+from src.recommendation.learning_path import generate_learning_path
 
 router = APIRouter()
 
@@ -15,7 +24,52 @@ def _exp_to_level(exp: int) -> int:
     return 4
 
 
-@router.post("/path", summary="Generate career path for a candidate")
+@router.post("/recommendation", summary="Career Recommendation (Simple JSON)")
+@router.post("/career-recommendation", summary="Career Recommendation (Simple JSON)")
+async def career_recommendations_endpoint(payload: Dict[str, Any]):
+    current_skills = payload.get("current_skills") or payload.get("skills") or []
+    current_role = payload.get("current_role") or payload.get("role") or "Backend Developer"
+
+    res = recommend_career_paths(current_skills=current_skills, current_role=current_role)
+
+    formatted_recs = [
+        {
+            "role": r["role"],
+            "match_percentage": r["match_percentage"],
+            "missing_skills": r["missing_skills"]
+        }
+        for r in res["recommendations"]
+    ]
+
+    return {
+        "current_role": current_role,
+        "recommendations": formatted_recs
+    }
+
+
+@router.post("/learning-path", summary="Learning Path Recommendation (Simple JSON)")
+async def learning_path_endpoint(payload: Dict[str, Any]):
+    current_skills = payload.get("current_skills") or payload.get("skills") or []
+    target_role = payload.get("target_role") or payload.get("role") or "Data Scientist"
+
+    res = generate_learning_path(current_skills=current_skills, target_role=target_role)
+
+    formatted_steps = [
+        {
+            "step": item["step"],
+            "skill": item["skill"],
+            "priority": item["priority"]
+        }
+        for item in res["learning_path"]
+    ]
+
+    return {
+        "target_role": target_role,
+        "learning_path": formatted_steps
+    }
+
+
+@router.post("/path", summary="Generate detailed career path for a candidate")
 async def generate_career_path(payload: CareerPathRequest, request: Request):
     db   = request.app.state.db
     role = payload.current_role

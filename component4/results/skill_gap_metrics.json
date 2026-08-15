@@ -1,0 +1,12 @@
+{
+  "baseline": {
+    "precision": 0.4833,
+    "recall": 0.5,
+    "f1_score": 0.4786
+  },
+  "proposed": {
+    "precision": 0.2429,
+    "recall": 0.55,
+    "f1_score": 0.3321
+  }
+}

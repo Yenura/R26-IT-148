@@ -9,6 +9,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 
 servers = [
     {"name": "C0", "dir": os.path.join(ROOT, "recruit-ai", "backend"), "port": 8000},
+    {"name": "C1", "dir": os.path.join(ROOT, "component1", "backend"), "port": 8001},
     {"name": "C2", "dir": os.path.join(ROOT, "component2", "backend"), "port": 8002},
     {"name": "C3", "dir": os.path.join(ROOT, "component3", "backend"), "port": 8003},
     {"name": "C4", "dir": os.path.join(ROOT, "component4", "backend"), "port": 8004},
@@ -17,12 +18,17 @@ servers = [
 log_dir = os.path.join(ROOT, "server_logs")
 os.makedirs(log_dir, exist_ok=True)
 
+env = {
+    **os.environ,
+    "MONGODB_URI": "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR",
+    "DB_NAME": "HR"
+}
 procs = []
 for s in servers:
     log_path = os.path.join(log_dir, f"{s['name']}.log")
     log_file = open(log_path, "w")
     cmd = [PYTHON, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(s["port"])]
-    p = subprocess.Popen(cmd, cwd=s["dir"], stdout=log_file, stderr=log_file,
+    p = subprocess.Popen(cmd, cwd=s["dir"], env=env, stdout=log_file, stderr=log_file,
                          creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW)
     procs.append((s["name"], s["port"], p, log_file))
     print(f"Started {s['name']} (PID {p.pid}) on port {s['port']}, log: {log_path}")

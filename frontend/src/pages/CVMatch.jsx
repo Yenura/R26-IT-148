@@ -1,13 +1,41 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { FileSearch, Upload, BarChart3, Trash2 } from 'lucide-react'
+import {
+  FileSearch, Upload, BarChart3, Trash2, Sparkles, CheckCircle2, AlertCircle,
+  ArrowRight, Briefcase, Zap, Target, Route as RouteIcon, BookOpen, Layers,
+  ExternalLink, ChevronRight, TrendingUp
+} from 'lucide-react'
 import axios from 'axios'
-import { uResumeDelete } from '../api'
+import { uResumeDelete, uResumeUpload } from '../api'
 
 const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const C1 = 'http://127.0.0.1:8001'
+const C4 = 'http://127.0.0.1:8004'
 const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+
+const CANONICAL_ROLES = [
+  'Software Engineer',
+  'Data Scientist',
+  'Machine Learning Engineer',
+  'DevOps Engineer',
+  'Cloud Solutions Architect',
+  'Database Administrator',
+  'Frontend Developer',
+  'Backend Developer',
+  'Mobile App Developer',
+  'Full Stack Developer',
+  'QA/Test Automation Engineer',
+  'Data Engineer',
+  'Site Reliability Engineer',
+  'Cybersecurity Analyst',
+  'UI/UX Designer',
+  'Network Engineer',
+  'Business/Systems Analyst',
+  'AI/NLP Engineer',
+  'Blockchain Developer',
+  'Embedded Systems Engineer',
+]
 
 export default function CVMatch() {
   const navigate = useNavigate()
@@ -15,12 +43,54 @@ export default function CVMatch() {
   const [jobs, setJobs] = useState([])
   const [selectedResume, setSelectedResume] = useState('')
   const [selectedJob, setSelectedJob] = useState('')
-  const [result, setResult] = useState(null)
+  const [selectedCanonicalRole, setSelectedCanonicalRole] = useState('')
+  const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [activeTab, setActiveTab] = useState('match')
+
+  // Results state
+  const [matchResult, setMatchResult] = useState(null)
+  const [c1Result, setC1Result] = useState(null)
+  const [skillGapResult, setSkillGapResult] = useState(null)
+  const [careerResult, setCareerResult] = useState(null)
+  const [learningPathResult, setLearningPathResult] = useState(null)
+  const [simulatedAcquiredSkills, setSimulatedAcquiredSkills] = useState([])
+  const [simulationResult, setSimulationResult] = useState(null)
+
+  const handleSimulateSkill = async (skillName) => {
+    const isAcquired = simulatedAcquiredSkills.includes(skillName)
+    const nextSkills = isAcquired
+      ? simulatedAcquiredSkills.filter((s) => s !== skillName)
+      : [...simulatedAcquiredSkills, skillName]
+
+    setSimulatedAcquiredSkills(nextSkills)
+
+    if (nextSkills.length === 0) {
+      setSimulationResult(null)
+      return
+    }
+
+    try {
+      const targetResumeDoc = resumes.find((res) => res.id === selectedResume) || {}
+      const currentSkills = targetResumeDoc.skills || ['Python', 'SQL']
+      const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
+      const roleName = matchedJobDoc ? matchedJobDoc.title : selectedCanonicalRole || 'Software Engineer'
+
+      const simRes = await axios.post(`${C4}/api/v1/skill-gap/simulate`, {
+        current_skills: currentSkills,
+        acquired_skills: nextSkills,
+        target_role: roleName,
+      })
+      setSimulationResult(simRes.data)
+    } catch {}
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/login/candidate'); return }
+    if (!token) {
+      navigate('/login/candidate')
+      return
+    }
     loadData()
   }, [])
 
@@ -30,25 +100,116 @@ export default function CVMatch() {
         axios.get(`${API}/api/v1/resume/`, authHeader()),
         axios.get(`${API}/api/v1/jobs/all`).catch(() => ({ data: [] })),
       ])
-      setResumes(r1.data)
-      setJobs(r2.data)
-    } catch {}
+      const resumeList = r1.data || []
+      setResumes(resumeList)
+      setJobs(r2.data || [])
+      if (resumeList.length > 0) {
+        setSelectedResume((prev) => prev || resumeList[0].id)
+      }
+    } catch (err) {
+      console.error(err)
+    }
   }
 
-  const match = async () => {
-    if (!selectedResume) return toast.error('Select a resume')
-    setBusy(true)
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    const formData = new FormData()
+    formData.append('file', file)
+    setUploading(true)
     try {
-      const r = await axios.get(`${API}/api/v1/resume/match?resume_id=${selectedResume}${selectedJob ? `&job_id=${selectedJob}` : ''}`, authHeader())
-      setResult(r.data)
-      toast.success(`Score: ${r.data.overall_score.toFixed(1)}%`)
+      const res = await uResumeUpload(formData)
+      toast.success('Resume uploaded & parsed!')
+      await loadData()
+      if (res.data?.id) {
+        setSelectedResume(res.data.id)
+      }
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Match failed')
-    } finally { setBusy(false) }
+      toast.error(err?.response?.data?.detail || 'Upload failed')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const runUnifiedAnalysis = async () => {
+    let resumeToUse = selectedResume
+    if (!resumeToUse && resumes.length > 0) {
+      resumeToUse = resumes[0].id
+      setSelectedResume(resumeToUse)
+    }
+    if (!resumeToUse) return toast.error('Please upload a resume first')
+
+    setBusy(true)
+    setMatchResult(null)
+    setC1Result(null)
+    setSkillGapResult(null)
+    setCareerResult(null)
+    setLearningPathResult(null)
+
+    try {
+      const targetResumeDoc = resumes.find(res => res.id === resumeToUse) || {}
+      const candidateSkills = targetResumeDoc.skills || ['Python', 'SQL', 'Git']
+
+      const matchedJobDoc = jobs.find(j => j.id === selectedJob)
+      const targetRoleName = matchedJobDoc
+        ? matchedJobDoc.title
+        : (selectedCanonicalRole || 'Software Engineer')
+
+      // 1. Fetch Component 0 Resume Match
+      let matchUrl = `${API}/api/v1/resume/match?resume_id=${resumeToUse}`
+      if (selectedJob) {
+        matchUrl += `&job_id=${selectedJob}`
+      } else if (selectedCanonicalRole) {
+        matchUrl += `&target_role=${encodeURIComponent(selectedCanonicalRole)}`
+      }
+      const matchRes = await axios.get(matchUrl, authHeader())
+      setMatchResult(matchRes.data)
+
+      const finalRole = selectedCanonicalRole || matchRes.data.predicted_role || targetRoleName
+
+      // 2. Parallel Fetch Component 4 Analysis (Skill Gap, Career Recommendations, Learning Path)
+      const [gapRes, careerRes, pathRes] = await Promise.all([
+        axios.post(`${C4}/api/v1/skill-gap`, {
+          current_skills: candidateSkills,
+          target_role: finalRole
+        }).catch(() => null),
+        axios.post(`${C4}/api/v1/career-recommendation`, {
+          current_skills: candidateSkills,
+          current_role: finalRole
+        }).catch(() => null),
+        axios.post(`${C4}/api/v1/learning-path`, {
+          current_skills: candidateSkills,
+          target_role: finalRole
+        }).catch(() => null)
+      ])
+
+      if (gapRes) setSkillGapResult(gapRes.data)
+      if (careerRes) setCareerResult(careerRes.data)
+      if (pathRes) setLearningPathResult(pathRes.data)
+
+      // 3. Optional C1 Deep Analysis if raw text exists
+      if (targetResumeDoc.raw_text) {
+        try {
+          const c1Res = await axios.post(`${C1}/api/v1/cv/analyze`, {
+            candidate_id: targetResumeDoc.candidate_id || resumeToUse,
+            candidate_name: targetResumeDoc.candidate_name || 'Candidate',
+            raw_text: targetResumeDoc.raw_text,
+            target_role: finalRole
+          })
+          if (c1Res.data) setC1Result(c1Res.data)
+        } catch {}
+      }
+
+      toast.success(`Analysis Complete! Overall Fit: ${matchRes.data.overall_score.toFixed(1)}%`)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Analysis failed')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const deleteResume = async (id) => {
-    if (!confirm('Delete this resume?')) return
+    if (!confirm('Delete this resume and its match predictions?')) return
     try {
       await uResumeDelete(id)
       toast.success('Resume deleted')
@@ -59,67 +220,435 @@ export default function CVMatch() {
     }
   }
 
-  return (
-    <div className="fade-in" style={{ padding: 28, maxWidth: 800, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>CV Match</h1>
-      <p className="muted" style={{ fontSize: 13, marginBottom: 24 }}>Upload your resume and match against jobs</p>
+  const matchedJobDoc = jobs.find(j => j.id === selectedJob)
+  const displayJobTitle = matchedJobDoc
+    ? matchedJobDoc.title
+    : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : 'Target IT Role'))
 
-      <div className="card" style={{ padding: 24, marginBottom: 20 }}>
-        <h3 style={{ marginBottom: 16 }}><FileSearch size={16} style={{ color: 'var(--accent)' }} /> Match Setup</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+  return (
+    <div className="fade-in" style={{ padding: 28, maxWidth: 1040, margin: '0 auto' }}>
+      {/* Page Header */}
+      <div className="page-head" style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Sparkles size={30} style={{ color: 'var(--accent)' }} /> CV Match, AI Screening & Career Progression
+        </h1>
+        <p className="muted" style={{ fontSize: 14 }}>
+          Unified AI suite: Upload your CV to get instant match scoring, explainable skill gap priority, career progression paths, and dependency learning roadmaps.
+        </p>
+      </div>
+
+      {/* Control Setup Card */}
+      <div className="card" style={{ padding: 24, marginBottom: 24, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Zap size={18} style={{ color: 'var(--accent)' }} /> Match Setup & Target Configuration
+          </h3>
+          <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, background: 'var(--bg)', border: '1px solid var(--border)' }}>
+            <Upload size={14} /> {uploading ? 'Processing CV...' : 'Upload New Resume'}
+            <input type="file" accept=".pdf,.docx,.doc,.txt" onChange={handleFileUpload} style={{ display: 'none' }} />
+          </label>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginBottom: 20 }}>
+          {/* Resume Dropdown */}
           <div>
-            <label>Resume *</label>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>
+              My Resumes *
+            </label>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <select value={selectedResume} onChange={(e) => setSelectedResume(e.target.value)} style={{ flex: 1, padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14 }}>
-                <option value="">Select resume...</option>
-                {resumes.map((r) => <option key={r.id} value={r.id}>{r.filename}</option>)}
+              <select
+                value={selectedResume}
+                onChange={(e) => setSelectedResume(e.target.value)}
+                style={{ flex: 1, padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13 }}
+              >
+                <option value="">Select a resume...</option>
+                {resumes.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.filename} {r.candidate_name ? `(${r.candidate_name})` : ''}
+                  </option>
+                ))}
               </select>
               {selectedResume && (
-                <button type="button" className="btn btn-ghost btn-sm" onClick={() => deleteResume(selectedResume)} style={{ padding: 8, color: 'var(--danger)' }} title="Delete resume">
-                  <Trash2 size={14} />
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => deleteResume(selectedResume)}
+                  style={{ padding: 8, color: 'var(--danger)' }}
+                  title="Delete resume"
+                >
+                  <Trash2 size={16} />
                 </button>
               )}
             </div>
           </div>
+
+          {/* Posted Job Dropdown */}
           <div>
-            <label>Target Job (optional)</label>
-            <select value={selectedJob} onChange={(e) => setSelectedJob(e.target.value)} style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14 }}>
-              <option value="">Any job...</option>
-              {jobs.map((j) => <option key={j.id} value={j.id}>{j.title}{j.company_name ? ` — ${j.company_name}` : ''}</option>)}
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>
+              Posted Company Job (Optional)
+            </label>
+            <select
+              value={selectedJob}
+              onChange={(e) => {
+                setSelectedJob(e.target.value)
+                if (e.target.value) setSelectedCanonicalRole('')
+              }}
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13 }}
+            >
+              <option value="">Any open company job...</option>
+              {jobs.map((j) => (
+                <option key={j.id} value={j.id}>
+                  {j.title} {j.company_name ? `— ${j.company_name}` : ''}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Canonical Role Dropdown */}
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>
+              Or Target IT Role (20 Canonical)
+            </label>
+            <select
+              value={selectedCanonicalRole}
+              onChange={(e) => {
+                setSelectedCanonicalRole(e.target.value)
+                if (e.target.value) setSelectedJob('')
+              }}
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13 }}
+            >
+              <option value="">AI Auto-Detect Role</option>
+              {CANONICAL_ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
             </select>
           </div>
         </div>
-        <button className="btn" onClick={match} disabled={busy} style={{ marginTop: 16, width: '100%' }}>
-          <BarChart3 size={16} /> {busy ? 'Matching...' : 'Run Match'}
+
+        <button
+          className="btn"
+          onClick={runUnifiedAnalysis}
+          disabled={busy || (!selectedResume && resumes.length === 0)}
+          style={{ width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--color-primary)', color: '#fff' }}
+        >
+          <BarChart3 size={18} /> {busy ? 'Running AI Screening & Career Progression Analysis...' : 'Run AI CV Match & Unified Career Analysis'}
         </button>
       </div>
 
-      {result && (
-        <div className="card" style={{ padding: 24 }}>
-          <h3 style={{ marginBottom: 16 }}>Match Results</h3>
-          <div className="grid grid-4" style={{ marginBottom: 16 }}>
-            <div className="stat"><div className="stat-label">Overall</div><div className="stat-value" style={{ color: 'var(--accent)' }}>{result.overall_score.toFixed(1)}%</div></div>
-            <div className="stat"><div className="stat-label">Skills</div><div className="stat-value">{result.skill_score.toFixed(1)}%</div></div>
-            <div className="stat"><div className="stat-label">Experience</div><div className="stat-value">{result.experience_score.toFixed(1)}%</div></div>
-            <div className="stat"><div className="stat-label">Semantic</div><div className="stat-value">{result.semantic_score.toFixed(1)}%</div></div>
+      {/* Unified Tabbed Output */}
+      {matchResult && (
+        <div className="fade-in card" style={{ padding: 28, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+          {/* Top Overview Banner */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', paddingBottom: 20, marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
+            <div>
+              <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: 1 }}>
+                Unified AI Evaluation
+              </div>
+              <h2 style={{ fontSize: 22, fontWeight: 800, marginTop: 4, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Briefcase size={22} style={{ color: 'var(--color-primary)' }} />
+                Target Job Role: <span style={{ color: 'var(--accent)' }}>{displayJobTitle}</span>
+              </h2>
+            </div>
+            <div style={{ textAlign: 'right' }}>
+              <div style={{ fontSize: 32, fontWeight: 900, color: 'var(--accent)', lineHeight: 1 }}>
+                {matchResult.overall_score.toFixed(1)}%
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginTop: 4 }}>
+                Overall Fit Score
+              </div>
+            </div>
           </div>
-          <div className="grid grid-4" style={{ marginBottom: 16 }}>
-            <div className="stat"><div className="stat-label">Education</div><div className="stat-value">{result.education_score?.toFixed(1) ?? 'N/A'}%</div></div>
+
+          {/* Navigation Tabs */}
+          <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--border)', paddingBottom: 12, marginBottom: 24 }}>
+            <button
+              className={`btn btn-sm ${activeTab === 'match' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('match')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+            >
+              <BarChart3 size={15} /> 1. Match & Screening
+            </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'gap' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('gap')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+            >
+              <Target size={15} /> 2. Skill Gap Matrix
+            </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'career' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('career')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+            >
+              <RouteIcon size={15} /> 3. Career Progression
+            </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'learning' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('learning')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}
+            >
+              <BookOpen size={15} /> 4. Dependency Roadmap
+            </button>
           </div>
-          <div style={{ marginBottom: 12 }}>
-            <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Predicted Role: <strong>{result.predicted_role}</strong> ({(result.role_confidence * 100).toFixed(0)}%)</div>
-          </div>
-          {result.matched_skills?.length > 0 && (
-            <div style={{ marginBottom: 8 }}><span className="muted" style={{ fontSize: 12 }}>Matched: </span>{result.matched_skills.map((s) => <span key={s} className="chip" style={{ fontSize: 11, borderColor: 'var(--accent-2)', color: 'var(--accent-2)' }}>{s}</span>)}</div>
-          )}
-          {result.missing_skills?.length > 0 && (
-            <div><span className="muted" style={{ fontSize: 12 }}>Missing: </span>{result.missing_skills.map((s) => <span key={s} className="chip" style={{ fontSize: 11, borderColor: 'var(--danger)', color: 'var(--danger)' }}>{s}</span>)}</div>
-          )}
-          {result.career_suggestions?.length > 0 && (
-            <div style={{ marginTop: 12, padding: 12, background: 'var(--bg)', borderRadius: 8, fontSize: 13 }}>
-              {result.career_suggestions.map((s, i) => <div key={i} style={{ marginBottom: 4 }}>• {s}</div>)}
+
+          {/* TAB 1: AI MATCH & SCREENING */}
+          {activeTab === 'match' && (
+            <div className="fade-in">
+              <div className="grid grid-4" style={{ gap: 12, marginBottom: 24 }}>
+                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <div className="stat-label" style={{ fontSize: 12 }}>Overall Fit</div>
+                  <div className="stat-value" style={{ color: 'var(--accent)', fontSize: 22 }}>{matchResult.overall_score.toFixed(1)}%</div>
+                </div>
+                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <div className="stat-label" style={{ fontSize: 12 }}>Skills Match ($S_{`{skill}`}$)</div>
+                  <div className="stat-value" style={{ color: 'var(--color-success)', fontSize: 22 }}>{matchResult.skill_score.toFixed(1)}%</div>
+                </div>
+                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <div className="stat-label" style={{ fontSize: 12 }}>Experience ($S_{`{exp}`}$)</div>
+                  <div className="stat-value" style={{ color: 'var(--color-info)', fontSize: 22 }}>{matchResult.experience_score.toFixed(1)}%</div>
+                </div>
+                <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <div className="stat-label" style={{ fontSize: 12 }}>Education ($S_{`{edu}`}$)</div>
+                  <div className="stat-value" style={{ color: 'var(--color-primary)', fontSize: 22 }}>{matchResult.education_score?.toFixed(1) ?? 'N/A'}%</div>
+                </div>
+              </div>
+
+              {/* AI Predicted Role Banner */}
+              <div style={{ padding: 16, background: 'rgba(59, 130, 246, 0.08)', borderRadius: 10, border: '1px solid rgba(59, 130, 246, 0.2)', marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Sparkles size={20} style={{ color: '#3b82f6' }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                      AI Predicted IT Job Role: <span style={{ color: '#3b82f6', fontSize: 15 }}>{matchResult.predicted_role}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                      Role classification confidence: <strong>{(matchResult.role_confidence * 100).toFixed(1)}%</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Matched vs Missing */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                    <CheckCircle2 size={16} /> Matched Skills ({matchResult.matched_skills?.length || 0})
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {matchResult.matched_skills?.map((s) => (
+                      <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--danger)' }}>
+                    <AlertCircle size={16} /> Missing Skills ({matchResult.missing_skills?.length || 0})
+                  </h4>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {matchResult.missing_skills?.map((s) => (
+                      <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
           )}
+
+          {/* TAB 2: SKILL GAP MATRIX */}
+          {activeTab === 'gap' && (
+            <div className="fade-in">
+              <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)', marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                  <h4 style={{ fontSize: 15, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Target size={18} style={{ color: 'var(--accent)' }} /> Skill Coverage & Priority Breakdown
+                  </h4>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--accent)' }}>
+                    Skill Coverage: {skillGapResult?.skill_coverage ?? matchResult.skill_score.toFixed(1)}%
+                  </div>
+                </div>
+
+                {/* Missing Skills with Priority Scores & Simulation Checkboxes */}
+                {skillGapResult?.missing_skills?.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>
+                      💡 Click missing skills below to simulate acquiring them in real-time:
+                    </div>
+                    {skillGapResult.missing_skills.map((item, idx) => {
+                      const isSimulated = simulatedAcquiredSkills.includes(item.skill)
+                      const pColor = item.priority === 'Critical' ? '#ef4444' : item.priority === 'High' ? '#f97316' : item.priority === 'Medium' ? '#eab308' : '#22c55e'
+                      return (
+                        <div
+                          key={idx}
+                          onClick={() => handleSimulateSkill(item.skill)}
+                          style={{
+                            padding: '12px 16px',
+                            background: isSimulated ? 'rgba(34, 197, 94, 0.08)' : 'var(--bg-elevated)',
+                            borderRadius: 8,
+                            border: isSimulated ? '1px solid #22c55e' : '1px solid var(--border)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justify: 'space-between',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <input type="checkbox" checked={isSimulated} onChange={() => {}} style={{ cursor: 'pointer' }} />
+                            <div>
+                              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+                                {item.skill} {isSimulated && <span style={{ color: '#22c55e', fontSize: 12 }}>(Simulated Acquired)</span>}
+                              </div>
+                              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                                Priority Score: <strong>{item.priority_score}</strong> / 100
+                              </div>
+                            </div>
+                          </div>
+                          <span className="chip" style={{ fontSize: 12, padding: '4px 12px', background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}40`, fontWeight: 700 }}>
+                            {item.priority} Priority
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: 'var(--color-success)' }}>All required skills satisfied!</div>
+                )}
+              </div>
+
+              {/* Simulation Result Card */}
+              {simulationResult && (
+                <div style={{ padding: 20, background: 'rgba(34, 197, 94, 0.08)', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', marginBottom: 20 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Sparkles size={18} style={{ color: '#22c55e' }} /> Interactive What-If Simulation Result
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Original Coverage</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{simulationResult.original_coverage}%</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Simulated Coverage</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>{simulationResult.simulated_coverage}%</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Boost Improvement</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>+{simulationResult.coverage_improvement}%</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 3: CAREER PROGRESSION */}
+          {activeTab === 'career' && (
+            <div className="fade-in">
+              {/* Vertical Growth Track */}
+              <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)', marginBottom: 20 }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <TrendingUp size={18} style={{ color: 'var(--accent)' }} /> Vertical Progression Path ({displayJobTitle})
+                </h4>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  {(careerResult?.vertical_progression || ['Junior', 'Mid-Level', 'Senior', 'Lead', 'Principal']).map((level, i) => (
+                    <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span className="chip" style={{ padding: '8px 14px', fontSize: 13, fontWeight: 700, background: i === 1 ? 'var(--color-primary)' : 'var(--bg-elevated)', color: i === 1 ? '#fff' : 'var(--text)', border: '1px solid var(--border)' }}>
+                        {level}
+                      </span>
+                      {i < 4 && <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Lateral Role Transitions */}
+              {careerResult?.recommendations?.length > 0 && (
+                <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                  <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Layers size={18} style={{ color: 'var(--accent)' }} /> Recommended Lateral Role Moves (Jaccard Match)
+                  </h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    {careerResult.recommendations.map((rec, idx) => (
+                      <div key={idx} style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{rec.role}</div>
+                          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent)' }}>{rec.match_percentage}% Match</div>
+                        </div>
+                        <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+                          Missing: {rec.missing_skills?.slice(0, 3).join(', ') || 'None'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* TAB 4: DEPENDENCY ROADMAP */}
+          {activeTab === 'learning' && (
+            <div className="fade-in">
+              <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                <h4 style={{ fontSize: 15, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <BookOpen size={18} style={{ color: 'var(--accent)' }} /> Step-by-Step Dependency Learning Sequence
+                </h4>
+                {learningPathResult?.learning_path?.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {learningPathResult.learning_path.map((stepItem) => (
+                      <div key={stepItem.step} style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
+                            {stepItem.step}
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{stepItem.skill}</div>
+                            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                              Priority: <strong style={{ color: stepItem.priority === 'Critical' ? '#ef4444' : '#f97316' }}>{stepItem.priority}</strong>
+                            </div>
+                          </div>
+                        </div>
+                        <a
+                          href={`https://www.coursera.org/search?query=${encodeURIComponent(stepItem.skill)}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: 12, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 4 }}
+                        >
+                          Find Courses <ExternalLink size={12} />
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No additional learning steps required.</div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Action Footer */}
+          <div style={{ display: 'flex', gap: 12, marginTop: 24, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <button
+              className="btn"
+              onClick={() => navigate('/candidate/interview')}
+              style={{ flex: 1, padding: '12px 16px', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              Take AI Mock Interview <ArrowRight size={14} />
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={() => navigate('/candidate/jobs')}
+              style={{ flex: 1, padding: '12px 16px', fontSize: 13, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              Browse Open Jobs <Briefcase size={14} />
+            </button>
+          </div>
         </div>
       )}
     </div>

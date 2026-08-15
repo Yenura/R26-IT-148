@@ -1,55 +1,50 @@
-"""Synthetic resume dataset generator — Component 1
+"""
+Dataset Preparation & Synthetic/Augmented CV Dataset Generator — Component 1
 IT22094872 | Dulnith K.D. | R26-IT-148
 
-Generates N synthetic resume texts per role (default 150) covering all 20 canonical
-roles. Applies realistic variation in:
-  - Professional summaries
-  - Skills sections
-  - Experience descriptions (including date ranges)
-  - Education backgrounds
+Generates and normalizes resume dataset for all 20 canonical IT job roles.
+Applies text cleaning and anonymization (PII stripping: emails, phones, URLs, addresses).
 
-Output
+Output:
 ------
-  data/synthetic_resumes.csv   — columns: role, text
-  data/train.csv               — 60 % split
-  data/val.csv                 — 15 % split
-  data/test.csv                — 25 % split (held-out)
-
-Run from inside component1/:
-    python ml/generate_data.py
+  data/normalized_resumes.csv — complete dataset (200 samples per role = 4,000 total)
+  data/train.csv              — 70% stratified train split (2,800 samples)
+  data/val.csv                — 15% stratified validation split (600 samples)
+  data/test.csv               — 15% stratified held-out test split (600 samples)
 """
-
-from __future__ import annotations
 
 import csv
 import os
 import random
 import sys
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Tuple
 
-# Allow imports from component1 root
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# Ensure component1 root is in path
+ROOT = Path(__file__).parent.parent
+sys.path.insert(0, str(ROOT))
+
 from data.role_requirements import ALL_ROLES, REQUIRED_SKILLS
+from ml.extractor import clean_text
 
 random.seed(42)
 
-N_PER_ROLE   = 150
-TRAIN_RATIO  = 0.60
-VAL_RATIO    = 0.15
-# TEST_RATIO  = 0.25  (remainder)
+N_PER_ROLE = 200  # 200 samples per role = 4,000 total resumes
+TRAIN_RATIO = 0.70
+VAL_RATIO = 0.15
+TEST_RATIO = 0.15
 
-OUT_DIR = Path(__file__).parent.parent / "data"
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR = ROOT / "data"
+DATA_DIR.mkdir(parents=True, exist_ok=True)
 
-# ── Template banks ─────────────────────────────────────────────────────────────
+# ── Templates for Realistic Resume Generation ─────────────────────────────────
 
 SUMMARY_TEMPLATES = [
-    "Experienced {role} with {n} years of hands-on expertise in {skill1} and {skill2}. "
-    "Passionate about delivering high-quality solutions in fast-paced environments.",
+    "Experienced {role} with {n} years of hands-on expertise in {skill1}, {skill2}, and {skill3}. "
+    "Passionate about delivering scalable, production-grade solutions in fast-paced engineering teams.",
 
     "Results-driven {role} skilled in {skill1}, {skill2}, and {skill3}. "
-    "Proven track record of delivering scalable, production-ready systems over {n}+ years.",
+    "Proven track record of building and optimizing enterprise systems over {n}+ years.",
 
     "Dynamic {role} with a strong background in {skill1} and {skill2}. "
     "Adept at collaborating with cross-functional teams to solve complex technical challenges.",
@@ -58,161 +53,172 @@ SUMMARY_TEMPLATES = [
     "Core competencies: {skill1}, {skill2}, {skill3}. Strong analytical and problem-solving skills.",
 
     "Motivated {role} bringing {n} years of industry experience in {skill1} and {skill2}. "
-    "Committed to continuous learning and adopting best practices.",
+    "Committed to continuous learning, code quality, and engineering best practices.",
 
     "Senior {role} with expertise across {skill1}, {skill2}, and {skill3}. "
-    "Led multiple end-to-end projects and mentored junior team members.",
+    "Led multiple end-to-end projects and mentored junior team members over {n} years.",
 
-    "Junior {role} with 1 year of experience in {skill1} and {skill2}. "
-    "Eager to grow and contribute to innovative projects.",
+    "Junior {role} with 1-2 years of experience in {skill1} and {skill2}. "
+    "Eager to grow and contribute to innovative software and data engineering initiatives.",
 ]
 
 EDUCATION_TEMPLATES = [
-    "B.Sc. in Computer Science — University of Colombo (2018)",
-    "B.Sc. in Software Engineering — SLIIT (2019)",
-    "B.Sc. in Information Technology — University of Moratuwa (2020)",
-    "M.Sc. in Data Science — University of Edinburgh (2021)",
-    "M.Sc. in Computer Science — University of Auckland (2020)",
-    "B.Sc. in Computer Engineering — University of Kelaniya (2017)",
-    "Diploma in Information Technology — NIBM (2016)",
-    "B.Sc. in Electrical Engineering — University of Peradeniya (2018)",
-    "M.Sc. in Artificial Intelligence — University of Manchester (2022)",
-    "Ph.D. in Computer Science — University of Melbourne (2023)",
-    "B.Sc. in Mathematics and Computer Science — University of Ruhuna (2019)",
-    "HND in Computing — Pearson (2015)",
+    "B.Sc. in Computer Science — State University (2018)",
+    "B.Sc. in Software Engineering — Institute of Technology (2019)",
+    "B.Sc. in Information Technology — SLIIT (2020)",
+    "M.Sc. in Data Science — Tech University (2021)",
+    "M.Sc. in Computer Science — National University (2020)",
+    "B.Sc. in Computer Engineering — Engineering College (2017)",
+    "Diploma in Information Technology — Technical Institute (2016)",
+    "B.Sc. in Electrical & Electronic Engineering (2018)",
+    "M.Sc. in Artificial Intelligence — University of Technology (2022)",
+    "Ph.D. in Computer Science — Research University (2023)",
+    "HND in Computing — Technical College (2015)",
 ]
 
 EXPERIENCE_TEMPLATES = [
-    "{role} at TechCorp Pvt Ltd (Jan {start_yr} – Present)\n"
+    "{role} at TechCorp (Jan {start_yr} – Present)\n"
     "  • Developed and maintained {skill1} and {skill2} based services.\n"
     "  • Collaborated with agile teams to deliver sprint goals.\n"
-    "  • Improved system performance by 30%% through {skill3} optimisation.",
+    "  • Improved system performance by 30% through {skill3} optimization.",
 
     "Associate {role} at Innovatech Solutions (Jun {start_yr} – Dec {end_yr})\n"
-    "  • Built RESTful APIs using {skill1}.\n"
+    "  • Built RESTful APIs and modules using {skill1}.\n"
     "  • Managed {skill2} deployments and CI/CD pipelines.\n"
-    "  • Wrote unit and integration tests achieving 85%% code coverage.",
+    "  • Wrote unit and integration tests achieving 85% code coverage.",
 
     "Junior {role} at DataBridge (Mar {start_yr} – Feb {end_yr})\n"
     "  • Implemented {skill1} modules for production workloads.\n"
     "  • Assisted in designing {skill2} architectures.\n"
     "  • Participated in code reviews and documentation efforts.",
 
-    "Senior {role} at CloudBase Ltd (Aug {start_yr} – Present)\n"
-    "  • Architected scalable {skill1} solutions serving 1M+ users.\n"
-    "  • Mentored a team of 5 engineers in {skill2} best practices.\n"
-    "  • Reduced infrastructure costs by 40%% using {skill3}.",
-
-    "Contract {role} at Synapse Systems (Apr {start_yr} – Sep {end_yr})\n"
-    "  • Delivered {skill1} feature sets within tight deadlines.\n"
-    "  • Integrated {skill2} with third-party APIs.\n"
-    "  • Documented all modules following company standards.",
+    "Senior {role} at Global Cloud Systems (Feb {start_yr} – Present)\n"
+    "  • Spearheaded technical strategy using {skill1}, {skill2}, and {skill3}.\n"
+    "  • Reduced infrastructure downtime by 40% using observability and automated failover.\n"
+    "  • Mentored junior engineers and conducted technical interviews.",
 ]
 
-SKILLS_PREFIX = [
-    "Technical Skills:", "Core Skills:", "Key Technologies:", "Skills & Tools:",
-    "Competencies:", "Technologies:", "Expertise:",
+CERTIFICATION_TEMPLATES = [
+    "AWS Certified Solutions Architect",
+    "Azure Certified Developer",
+    "Certified Kubernetes Administrator (CKA)",
+    "CCNA Network Associate",
+    "CompTIA Security+",
+    "Certified Ethical Hacker (CEH)",
+    "Scrum Master (CSM)",
+    "Oracle Certified Professional"
 ]
 
 
-def _pick_skills(role: str, n: int = 5) -> List[str]:
-    pool = REQUIRED_SKILLS.get(role, [])
-    if len(pool) >= n:
-        return random.sample(pool, n)
-    return pool + random.sample(pool, n - len(pool)) if pool else []
+def generate_single_resume(role: str, resume_id: str) -> Dict[str, str]:
+    """Generate a single clean, anonymized resume text for a target role."""
+    req_skills = REQUIRED_SKILLS.get(role, ["python", "sql", "git"])
+    
+    # Pick 3-5 role-specific skills
+    skills_sample = random.sample(req_skills, k=min(len(req_skills), random.randint(3, 5)))
+    s1 = skills_sample[0]
+    s2 = skills_sample[1] if len(skills_sample) > 1 else s1
+    s3 = skills_sample[2] if len(skills_sample) > 2 else s1
 
+    # Random experience years (1 to 10)
+    exp_years = random.randint(1, 10)
+    start_yr = 2026 - exp_years
+    end_yr = start_yr + max(1, exp_years - 1)
 
-def _generate_resume(role: str) -> str:
-    skills = _pick_skills(role, 6)
-    if len(skills) < 3:
-        skills = (skills * 3)[:6]
-
-    n_years   = random.randint(1, 8)
-    start_yr  = 2024 - n_years
-    end_yr    = start_yr + random.randint(1, max(1, n_years - 1))
-
-    summary_tmpl = random.choice(SUMMARY_TEMPLATES)
-    summary = summary_tmpl.format(
-        role=role,
-        n=n_years,
-        skill1=skills[0],
-        skill2=skills[1] if len(skills) > 1 else skills[0],
-        skill3=skills[2] if len(skills) > 2 else skills[0],
+    summary = random.choice(SUMMARY_TEMPLATES).format(
+        role=role, n=exp_years, skill1=s1, skill2=s2, skill3=s3
     )
 
-    exp_tmpl = random.choice(EXPERIENCE_TEMPLATES)
-    experience = exp_tmpl.format(
-        role=role,
-        start_yr=start_yr,
-        end_yr=end_yr,
-        skill1=skills[0],
-        skill2=skills[1] if len(skills) > 1 else skills[0],
-        skill3=skills[2] if len(skills) > 2 else skills[0],
+    edu = random.choice(EDUCATION_TEMPLATES)
+    exp = random.choice(EXPERIENCE_TEMPLATES).format(
+        role=role, start_yr=start_yr, end_yr=end_yr, skill1=s1, skill2=s2, skill3=s3
     )
 
-    education = random.choice(EDUCATION_TEMPLATES)
-    skills_header = random.choice(SKILLS_PREFIX)
-    skills_line   = ", ".join(skills)
+    cert = random.choice(CERTIFICATION_TEMPLATES) if random.random() > 0.4 else "None"
 
-    # Add extra random skills for realism
-    extra = random.sample(
-        ["Git", "Linux", "Agile", "Scrum", "Jira", "REST APIs", "SQL", "Python", "Docker"],
-        k=random.randint(2, 5),
-    )
-    all_skills_line = skills_line + ", " + ", ".join(extra)
+    # All skills section
+    additional_skills = random.sample(req_skills, k=min(len(req_skills), random.randint(4, len(req_skills))))
+    skills_str = ", ".join(sorted(list(set(skills_sample + additional_skills))))
 
-    resume = (
-        f"PROFESSIONAL SUMMARY\n{summary}\n\n"
-        f"{skills_header}\n{all_skills_line}\n\n"
-        f"WORK EXPERIENCE\n{experience}\n\n"
-        f"EDUCATION\n{education}\n"
-    )
-    return resume
+    raw_text = f"""
+SUMMARY
+{summary}
+
+TECHNICAL SKILLS
+{skills_str}
+
+WORK EXPERIENCE
+{exp}
+
+EDUCATION
+{edu}
+
+CERTIFICATIONS
+{cert}
+"""
+
+    cleaned_resume_text = clean_text(raw_text)
+
+    return {
+        "resume_id": resume_id,
+        "resume_text": cleaned_resume_text,
+        "job_role": role,
+        "education": edu,
+        "experience_years": str(exp_years),
+        "skills": skills_str,
+        "source": "SLIIT_Component1_Dataset"
+    }
 
 
-def generate(n_per_role: int = N_PER_ROLE):
-    records = []
+def generate_dataset(n_per_role: int = N_PER_ROLE) -> Tuple[List[Dict], List[Dict], List[Dict], List[Dict]]:
+    """Generates the full dataset and splits into train, val, and test sets."""
+    all_records = []
+    id_counter = 1000
+
     for role in ALL_ROLES:
         for _ in range(n_per_role):
-            text = _generate_resume(role)
-            records.append({"role": role, "text": text})
+            resume_id = f"CV-{id_counter}"
+            id_counter += 1
+            rec = generate_single_resume(role, resume_id)
+            all_records.append(rec)
 
-    random.shuffle(records)
+    # Stratified shuffle split
+    role_groups = {}
+    for r in all_records:
+        role_groups.setdefault(r["job_role"], []).append(r)
 
-    # Write full dataset
-    full_path = OUT_DIR / "synthetic_resumes.csv"
-    _write_csv(full_path, records)
-    print(f"[generate_data] Total records: {len(records)} -> {full_path}")
+    train_recs, val_recs, test_recs = [], [], []
 
-    # Split per role to maintain class balance
-    train_rows, val_rows, test_rows = [], [], []
-    for role in ALL_ROLES:
-        role_records = [r for r in records if r["role"] == role]
-        n = len(role_records)
-        n_train = int(n * TRAIN_RATIO)
-        n_val   = int(n * VAL_RATIO)
-        train_rows.extend(role_records[:n_train])
-        val_rows.extend(role_records[n_train:n_train + n_val])
-        test_rows.extend(role_records[n_train + n_val:])
+    for role, group in role_groups.items():
+        random.shuffle(group)
+        n_total = len(group)
+        n_train = int(n_total * TRAIN_RATIO)
+        n_val = int(n_total * VAL_RATIO)
 
-    random.shuffle(train_rows)
-    random.shuffle(val_rows)
-    random.shuffle(test_rows)
+        train_recs.extend(group[:n_train])
+        val_recs.extend(group[n_train:n_train + n_val])
+        test_recs.extend(group[n_train + n_val:])
 
-    _write_csv(OUT_DIR / "train.csv", train_rows)
-    _write_csv(OUT_DIR / "val.csv",   val_rows)
-    _write_csv(OUT_DIR / "test.csv",  test_rows)
+    # Write files
+    fieldnames = ["resume_id", "resume_text", "job_role", "education", "experience_years", "skills", "source"]
 
-    print(f"[generate_data] Train: {len(train_rows)} | Val: {len(val_rows)} | Test: {len(test_rows)}")
-    return train_rows, val_rows, test_rows
+    def _write_csv(path: Path, data: List[Dict]):
+        with open(path, "w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(data)
 
+    _write_csv(DATA_DIR / "normalized_resumes.csv", all_records)
+    _write_csv(DATA_DIR / "train.csv", train_recs)
+    _write_csv(DATA_DIR / "val.csv", val_recs)
+    _write_csv(DATA_DIR / "test.csv", test_recs)
 
-def _write_csv(path: Path, rows: list):
-    with open(path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=["role", "text"])
-        writer.writeheader()
-        writer.writerows(rows)
+    print(f"Dataset generated successfully:")
+    print(f"  Total records: {len(all_records)} ({n_per_role} per role across 20 roles)")
+    print(f"  Train: {len(train_recs)}, Val: {len(val_recs)}, Test: {len(test_recs)}")
+
+    return all_records, train_recs, val_recs, test_recs
 
 
 if __name__ == "__main__":
-    generate()
+    generate_dataset(N_PER_ROLE)

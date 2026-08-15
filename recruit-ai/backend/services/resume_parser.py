@@ -423,7 +423,7 @@ def _extract_projects_with_dates(text: str) -> tuple[list[dict], list[dict]]:
 
 
 def extract_entities(text: str) -> dict[str, Any]:
-    """Extract structured entities from resume text."""
+    """Extract structured entities from resume text with high accuracy."""
     entities: dict[str, Any] = {
         "name": "", "email": "", "phone": "", "address": "",
         "linkedin": "", "github": "", "skills": [], "education": "",
@@ -433,20 +433,42 @@ def extract_entities(text: str) -> dict[str, Any]:
         "certifications": [], "languages": [], "tools": [], "frameworks": [],
     }
 
-    lines = text.strip().split("\n")
-    non_empty = [l.strip() for l in lines if l.strip()]
-    if non_empty:
-        first_line = non_empty[0]
-        if not EMAIL_RE.search(first_line) and not PHONE_RE.search(first_line):
-            entities["name"] = first_line[:100]
-
-    emails = EMAIL_RE.findall(text)
-    if emails:
-        entities["email"] = emails[0]
-
     phones = PHONE_RE.findall(text)
     if phones:
         entities["phone"] = phones[0].strip()
+
+    emails = EMAIL_RE.findall(text)
+    if emails:
+        raw_email = emails[0]
+        # Clean phone digits attached to start of email (e.g. 114inukajathmal11@gmail.com -> inukajathmal11@gmail.com)
+        phone_digits = re.sub(r'\D', '', entities["phone"])
+        if phone_digits:
+            for d_len in range(6, 1, -1):
+                suffix = phone_digits[-d_len:]
+                if raw_email.startswith(suffix) and len(raw_email) > d_len and raw_email[d_len].isalpha():
+                    raw_email = raw_email[d_len:]
+                    break
+        entities["email"] = raw_email
+
+    # Candidate Name extraction
+    lines = [l.strip() for l in text.split("\n") if l.strip()]
+    for line in lines[:10]:
+        line_lower = line.lower()
+        if any(sw in line_lower for sw in ['about', 'education', 'projects', 'experience', 'skills', 'summary', 'profile', 'curriculum', 'resume', 'contact', 'references']):
+            continue
+        if EMAIL_RE.search(line) or PHONE_RE.search(line) or 'http' in line_lower:
+            continue
+        words = line.split()
+        if 1 <= len(words) <= 4 and all(re.match(r'^[A-Za-z\.]+$', w) for w in words):
+            if line_lower in {'developer', 'engineer', 'manager', 'student', 'designer', 'analyst'}:
+                continue
+            entities["name"] = line.title()
+            break
+
+    if not entities["name"] and lines:
+        first_line = lines[0]
+        if not EMAIL_RE.search(first_line) and not PHONE_RE.search(first_line):
+            entities["name"] = first_line[:100].title()
 
     linkedin = LINKEDIN_RE.findall(text)
     if linkedin:
@@ -466,24 +488,38 @@ def extract_entities(text: str) -> dict[str, Any]:
             found_skills.append(skill.title())
     entities["skills"] = list(dict.fromkeys(found_skills))
 
-    # Education: only look inside the EDUCATION section
+    # Education: extract complete degree specification line
     edu_text = _segment_text(segments, "education") or text
-    edu_match = EDU_RE.search(edu_text)
-    if edu_match:
-        entities["education"] = edu_match.group(0).title()
+    edu_lines = []
+    for line in edu_text.split('\n'):
+        clean_line = line.strip()
+        if EDU_RE.search(clean_line):
+            if not any(k in clean_line.lower() for k in ['passed finalist', 'ordinary level', 'advanced level', 'gce', 'school']):
+                clean_line = re.sub(r'^[•\*\-\s]+', '', clean_line)
+                clean_line = re.sub(r'\|\s*\d{4}\s*[-–]\s*\d{4}', '', clean_line).strip()
+                if clean_line and len(clean_line) > 3:
+                    edu_lines.append(clean_line)
+    if edu_lines:
+        entities["education"] = " | ".join(edu_lines[:2])
+    else:
+        edu_match = EDU_RE.search(edu_text)
+        if edu_match:
+            entities["education"] = edu_match.group(0).title()
 
-    # Experience: only look inside the EXPERIENCE section
-    exp_text = _segment_text(segments, "experience") or text
-    years_matches = YEARS_RE.findall(exp_text)
-    years_values = []
-    for g1, g2 in years_matches:
-        if g1:
-            years_values.append(float(g1))
-        if g2:
-            years_values.append(float(g2))
-    if years_values:
-        raw_years = max(years_values)
-        entities["experience_years"] = min(raw_years, 40)
+    # Experience: only look inside actual EXPERIENCE section
+    has_exp_section = any(k == "experience" for k, _ in segments)
+    exp_text = _segment_text(segments, "experience") if has_exp_section else ""
+    if exp_text:
+        years_matches = YEARS_RE.findall(exp_text)
+        years_values = []
+        for g1, g2 in years_matches:
+            if g1:
+                years_values.append(float(g1))
+            if g2:
+                years_values.append(float(g2))
+        if years_values:
+            raw_years = max(years_values)
+            entities["experience_years"] = min(raw_years, 40)
 
     # Projects: only look inside the PROJECTS section
     proj_text = _segment_text(segments, "projects") or text

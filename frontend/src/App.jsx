@@ -2,11 +2,13 @@ import { useState, useEffect, Suspense, lazy } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
 import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
-  Search, TrendingUp, ListOrdered, Brain,
+  Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,
   Sun, Moon, Briefcase, BarChart3, Route as RouteIcon, Target, Award,
-  Menu, X, User, LogOut, ChevronDown
+  Menu, X, User, LogOut, ChevronDown, Cpu
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
+
+import ResearchArchitectureModal from './components/ResearchArchitectureModal'
 
 const Landing        = lazy(() => import('./pages/Landing'))
 const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
@@ -28,12 +30,17 @@ const LeaderboardPage = lazy(() => import('./pages/Leaderboard'))
 const ProfilePage   = lazy(() => import('./pages/Profile'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfile'))
 
-const Loading = () => <div style={{ padding: 40, textAlign: 'center', color: 'var(--color-fg-muted)' }}>Loading...</div>
+const Loading = () => (
+  <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>
+    <Brain size={36} className="spin" style={{ color: 'var(--color-primary)', marginBottom: 12 }} />
+    <div style={{ fontSize: 14, fontWeight: 600 }}>Loading AI Recruitment Intelligence...</div>
+  </div>
+)
 
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('recruitai.token')
   const userRole = localStorage.getItem('recruitai.role')
-  if (!token) return <Navigate to="/" />
+  if (!token) return <Navigate to="/login/candidate" />
   if (role && userRole !== role) return <Navigate to="/" />
   return children
 }
@@ -44,6 +51,7 @@ export default function App() {
   const navigate = useNavigate()
   const [mobileMenu, setMobileMenu] = useState(false)
   const [userMenu, setUserMenu] = useState(false)
+  const [researchModal, setResearchModal] = useState(false)
   const [userName, setUserName] = useState('')
   const [userAvatar, setUserAvatar] = useState('')
 
@@ -60,7 +68,6 @@ export default function App() {
     { to: '/candidate/interview', icon: MessagesSquare, label: 'Interview' },
     { to: '/pipeline/cv-match', icon: FileSearch, label: 'CV Match' },
     { to: '/pipeline/skill-gap', icon: Target, label: 'Skill Gap' },
-    { to: '/pipeline/career-path', icon: RouteIcon, label: 'Career' },
     { to: '/pipeline/progress', icon: TrendingUp, label: 'Progress' },
   ]
 
@@ -88,7 +95,7 @@ export default function App() {
           <div className="navbar-inner">
             <div className="navbar-left">
               <div className="navbar-logo" onClick={() => navigate(role === 'candidate' ? '/candidate/dashboard' : '/company/dashboard')}>
-                <Brain size={18} />
+                <Brain size={22} style={{ color: 'var(--color-primary)' }} />
                 <span className="navbar-brand">RecruitAI</span>
               </div>
               <div className="navbar-links">
@@ -101,9 +108,19 @@ export default function App() {
               </div>
             </div>
 
-            <div className="navbar-right">
+            <div className="navbar-right" style={{ gap: 10 }}>
+              {/* Research Presentation Modal Toggle Button */}
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => setResearchModal(true)}
+                style={{ fontSize: 12, fontWeight: 700, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--bg-elevated)' }}
+                title="View SLIIT Final-Year Research Architecture & Benchmarks"
+              >
+                <Cpu size={14} style={{ color: 'var(--accent)' }} /> Research Specs
+              </button>
+
               <button className="btn-ghost btn-sm" onClick={toggleTheme} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-                {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+                {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </button>
 
               {profileLink && (
@@ -121,6 +138,9 @@ export default function App() {
                       <div className="navbar-dropdown-label">{userName || 'User'}</div>
                       <button onClick={() => { navigate(profileLink); setUserMenu(false) }}>
                         <User size={14} /> Profile
+                      </button>
+                      <button onClick={() => { setResearchModal(true); setUserMenu(false) }}>
+                        <Cpu size={14} /> Research Architecture
                       </button>
                       <button onClick={handleLogout}>
                         <LogOut size={14} /> Sign Out
@@ -145,6 +165,9 @@ export default function App() {
                   <l.icon size={18} /> {l.label}
                 </NavLink>
               ))}
+              <button className="navbar-mobile-link" onClick={() => { setResearchModal(true); setMobileMenu(false) }}>
+                <Cpu size={18} /> Research Specs
+              </button>
               {profileLink && (
                 <button className="navbar-mobile-link" onClick={() => { navigate(profileLink); setMobileMenu(false) }}>
                   <User size={18} /> Profile
@@ -158,39 +181,45 @@ export default function App() {
         </nav>
       )}
 
+      {/* Main Content shell */}
       <div className="app-shell">
-      <main className="main-content">
-        <Suspense fallback={<Loading />}>
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login/company" element={<CompanyLogin />} />
-            <Route path="/register/company" element={<CompanyRegister />} />
-            <Route path="/login/candidate" element={<CandidateLogin />} />
-            <Route path="/register/candidate" element={<CandidateRegister />} />
+        <main className="main-content">
+          <Suspense fallback={<Loading />}>
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/login/company" element={<CompanyLogin />} />
+              <Route path="/register/company" element={<CompanyRegister />} />
+              <Route path="/login/candidate" element={<CandidateLogin />} />
+              <Route path="/register/candidate" element={<CandidateRegister />} />
 
-            <Route path="/candidate/dashboard" element={<PrivateRoute role="candidate"><CandidateDashboard /></PrivateRoute>} />
-            <Route path="/candidate/jobs" element={<PrivateRoute role="candidate"><JobBoard /></PrivateRoute>} />
-            <Route path="/candidate/jobs/:id" element={<PrivateRoute role="candidate"><JobDetail /></PrivateRoute>} />
-            <Route path="/candidate/interview" element={<PrivateRoute role="candidate"><InterviewPage /></PrivateRoute>} />
-            <Route path="/profile" element={<PrivateRoute role="candidate"><ProfilePage /></PrivateRoute>} />
+              <Route path="/candidate/dashboard" element={<PrivateRoute role="candidate"><CandidateDashboard /></PrivateRoute>} />
+              <Route path="/candidate/jobs" element={<PrivateRoute role="candidate"><JobBoard /></PrivateRoute>} />
+              <Route path="/candidate/jobs/:id" element={<PrivateRoute role="candidate"><JobDetail /></PrivateRoute>} />
+              <Route path="/candidate/interview" element={<PrivateRoute role="candidate"><InterviewPage /></PrivateRoute>} />
+              <Route path="/profile" element={<PrivateRoute role="candidate"><ProfilePage /></PrivateRoute>} />
 
-            <Route path="/company/dashboard" element={<PrivateRoute role="company"><CompanyDashboard /></PrivateRoute>} />
-            <Route path="/company/jobs/:id" element={<PrivateRoute role="company"><JobDetail /></PrivateRoute>} />
-            <Route path="/company/pipeline/:jobId" element={<PrivateRoute role="company"><ApplicantPipeline /></PrivateRoute>} />
-            <Route path="/company/profile" element={<PrivateRoute role="company"><CompanyProfilePage /></PrivateRoute>} />
+              <Route path="/company/dashboard" element={<PrivateRoute role="company"><CompanyDashboard /></PrivateRoute>} />
+              <Route path="/company/jobs/:id" element={<PrivateRoute role="company"><JobDetail /></PrivateRoute>} />
+              <Route path="/company/pipeline/:jobId" element={<PrivateRoute role="company"><ApplicantPipeline /></PrivateRoute>} />
+              <Route path="/company/profile" element={<PrivateRoute role="company"><CompanyProfilePage /></PrivateRoute>} />
 
-            <Route path="/pipeline/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
-            <Route path="/pipeline/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
-            <Route path="/pipeline/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
-            <Route path="/pipeline/career-path" element={<PrivateRoute><CareerPathPage /></PrivateRoute>} />
-            <Route path="/pipeline/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
-            <Route path="/pipeline/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
+              <Route path="/pipeline/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
+              <Route path="/candidate/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
+              <Route path="/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
+              <Route path="/pipeline/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
+              <Route path="/pipeline/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
+              <Route path="/pipeline/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
+              <Route path="/pipeline/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
+              <Route path="/pipeline/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
 
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </Suspense>
-      </main>
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </Suspense>
+        </main>
       </div>
+
+      {/* Research Presentation Architecture Modal */}
+      <ResearchArchitectureModal isOpen={researchModal} onClose={() => setResearchModal(false)} />
     </div>
   )
 }

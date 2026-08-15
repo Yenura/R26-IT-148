@@ -210,6 +210,64 @@ async def analyze_cv_file(
     return result
 
 
+# ── POST /screen-resume ───────────────────────────────────────────────────────
+
+@router.post("/screen-resume", summary="Screen CV/resume file and return 20 IT job role prediction & scores")
+async def screen_resume(
+    file: UploadFile = File(...),
+    predictor=Depends(_get_predictor),
+):
+    """Screen uploaded CV file (PDF, DOCX, or TXT) and return prediction, confidence, screening score, and feature breakdowns."""
+    if not file or not file.filename:
+        raise HTTPException(status_code=400, detail="No file uploaded.")
+
+    filename = file.filename.lower()
+    if not (filename.endswith(".pdf") or filename.endswith(".docx") or filename.endswith(".txt")):
+        raise HTTPException(status_code=400, detail="Unsupported file format. Please upload PDF, DOCX, or TXT.")
+
+    contents = await file.read()
+    if not contents:
+        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+
+    try:
+        text = parser.extract_text_from_bytes(contents, filename=file.filename)
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Failed to parse resume text: {exc}")
+
+    if not text or len(text.strip()) < 10:
+        raise HTTPException(status_code=422, detail="Unable to extract meaningful text from the uploaded CV.")
+
+    pred = predictor.predict(text)
+    scores = pred.feature_scores
+
+    s_skill = scores.get("S_skill", 0.0)
+    s_exp = scores.get("S_exp", 0.0)
+    s_edu = scores.get("S_edu", 0.0)
+
+    screening_score = round((s_skill * 0.50 + s_exp * 0.30 + s_edu * 0.20) * 100.0, 2)
+
+    top_roles = [
+        {"role": alt["role"], "probability": alt.get("probability", alt.get("confidence", 0.0))}
+        for alt in pred.alternatives[:5]
+    ]
+
+    return {
+        "predicted_role": pred.job_role,
+        "confidence": pred.confidence,
+        "screening_score": screening_score,
+        "scores": {
+            "S_skill": round(s_skill, 4),
+            "S_exp": round(s_exp, 4),
+            "S_edu": round(s_edu, 4)
+        },
+        "detected_skills": pred.extracted_info.get("detected_skills", []),
+        "detected_certs": pred.extracted_info.get("detected_certs", []),
+        "experience_years": pred.extracted_info.get("experience_years", 0),
+        "education": pred.extracted_info.get("education", []),
+        "top_roles": top_roles
+    }
+
+
 # ── POST /api/v1/cv/rank ───────────────────────────────────────────────────────
 
 @router.post("/rank", response_model=BatchRankResponse, summary="Batch rank candidates against a JD")

@@ -1,0 +1,77 @@
+================================================================================
+COMPONENT 1 — MODEL EVALUATION REPORT
+================================================================================
+Target Roles (20): AI/NLP Engineer, Backend Developer, Blockchain Developer, Business/Systems Analyst, Cloud Solutions Architect, Cybersecurity Analyst, Data Engineer, Data Scientist, Database Administrator, DevOps Engineer, Embedded Systems Engineer, Frontend Developer, Full Stack Developer, Machine Learning Engineer, Mobile App Developer, Network Engineer, QA/Test Automation Engineer, Site Reliability Engineer, Software Engineer, UI/UX Designer
+
+1. PRIMARY MODEL: Feature Engineering + LogisticRegression (cv_classifier.pkl)
+--------------------------------------------------------------------------------
+Accuracy      : 1.0000
+Macro F1      : 1.0000
+Weighted F1   : 1.0000
+Training Time : 0.88 seconds
+
+Classification Report:
+                             precision    recall  f1-score   support
+
+            AI/NLP Engineer       1.00      1.00      1.00        30
+          Backend Developer       1.00      1.00      1.00        30
+       Blockchain Developer       1.00      1.00      1.00        30
+   Business/Systems Analyst       1.00      1.00      1.00        30
+  Cloud Solutions Architect       1.00      1.00      1.00        30
+      Cybersecurity Analyst       1.00      1.00      1.00        30
+              Data Engineer       1.00      1.00      1.00        30
+             Data Scientist       1.00      1.00      1.00        30
+     Database Administrator       1.00      1.00      1.00        30
+            DevOps Engineer       1.00      1.00      1.00        30
+  Embedded Systems Engineer       1.00      1.00      1.00        30
+         Frontend Developer       1.00      1.00      1.00        30
+       Full Stack Developer       1.00      1.00      1.00        30
+  Machine Learning Engineer       1.00      1.00      1.00        30
+       Mobile App Developer       1.00      1.00      1.00        30
+           Network Engineer       1.00      1.00      1.00        30
+QA/Test Automation Engineer       1.00      1.00      1.00        30
+  Site Reliability Engineer       1.00      1.00      1.00        30
+          Software Engineer       1.00      1.00      1.00        30
+             UI/UX Designer       1.00      1.00      1.00        30
+
+                   accuracy                           1.00       600
+                  macro avg       1.00      1.00      1.00       600
+               weighted avg       1.00      1.00      1.00       600
+
+
+2. BASELINE MODEL: TF-IDF + LogisticRegression (tfidf_baseline.pkl)
+--------------------------------------------------------------------------------
+Accuracy      : 1.0000
+Macro F1      : 1.0000
+Weighted F1   : 1.0000
+Training Time : 0.29 seconds
+
+Classification Report:
+                             precision    recall  f1-score   support
+
+            AI/NLP Engineer       1.00      1.00      1.00        30
+          Backend Developer       1.00      1.00      1.00        30
+       Blockchain Developer       1.00      1.00      1.00        30
+   Business/Systems Analyst       1.00      1.00      1.00        30
+  Cloud Solutions Architect       1.00      1.00      1.00        30
+      Cybersecurity Analyst       1.00      1.00      1.00        30
+              Data Engineer       1.00      1.00      1.00        30
+             Data Scientist       1.00      1.00      1.00        30
+     Database Administrator       1.00      1.00      1.00        30
+            DevOps Engineer       1.00      1.00      1.00        30
+  Embedded Systems Engineer       1.00      1.00      1.00        30
+         Frontend Developer       1.00      1.00      1.00        30
+       Full Stack Developer       1.00      1.00      1.00        30
+  Machine Learning Engineer       1.00      1.00      1.00        30
+       Mobile App Developer       1.00      1.00      1.00        30
+           Network Engineer       1.00      1.00      1.00        30
+QA/Test Automation Engineer       1.00      1.00      1.00        30
+  Site Reliability Engineer       1.00      1.00      1.00        30
+          Software Engineer       1.00      1.00      1.00        30
+             UI/UX Designer       1.00      1.00      1.00        30
+
+                   accuracy                           1.00       600
+                  macro avg       1.00      1.00      1.00       600
+               weighted avg       1.00      1.00      1.00       600
+
+================================================================================

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, Building2, ArrowLeft } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft, Zap } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyLogin() {
@@ -10,12 +10,14 @@ export default function CompanyLogin() {
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
-  const login = async (e) => {
-    e.preventDefault()
-    if (!email || !password) return toast.error('Fill in all fields')
+  const handleLogin = async (e, demoEmail = null, demoPassword = null) => {
+    if (e) e.preventDefault()
+    const targetEmail = demoEmail || email
+    const targetPassword = demoPassword || password
+    if (!targetEmail || !targetPassword) return toast.error('Fill in all fields')
     setBusy(true)
     try {
-      const r = await C0.post('/auth/login/company', { email, password })
+      const r = await C0.post('/auth/login/company', { email: targetEmail, password: targetPassword })
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'company')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -24,7 +26,7 @@ export default function CompanyLogin() {
         localStorage.setItem('recruitai.name', me.data.name || '')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Logged in')
+      toast.success('Welcome back!')
       navigate('/company/dashboard')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Login failed')
@@ -33,36 +35,88 @@ export default function CompanyLogin() {
     }
   }
 
+  const fillDemo = () => {
+    setEmail('company@techcorp.com')
+    setPassword('Company@123')
+    handleLogin(null, 'company@techcorp.com', 'Company@123')
+  }
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ width: 420, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 16, alignSelf: 'flex-start' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
+      <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', border: '1px solid var(--border)' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div className="sidebar-logo" style={{ margin: '0 auto 12px', width: 48, height: 48 }}><Brain size={24} /></div>
-          <h1 style={{ fontSize: 24, fontWeight: 800 }}>Company Login</h1>
-          <p className="muted" style={{ fontSize: 13 }}>Sign in to your company account</p>
+        
+        <div style={{ textAlign: 'center', marginBottom: 28 }}>
+          <div className="sidebar-logo" style={{ margin: '0 auto 14px', width: 52, height: 52, borderRadius: 14 }}>
+            <Brain size={28} />
+          </div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>Company Sign In</h1>
+          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>Post jobs, screen candidates & view rankings</p>
         </div>
-        <form onSubmit={login} className="card" style={{ padding: 28 }}>
-          <label>Email</label>
-          <div style={{ position: 'relative' }}>
-            <Mail size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="company@example.com" style={{ paddingLeft: 36 }} />
+
+        <div className="card" style={{ padding: 32, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--bg-elevated)', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
+          <form onSubmit={handleLogin}>
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Work Email</label>
+              <div style={{ position: 'relative' }}>
+                <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  id="company-email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  maxLength={100}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="company@techcorp.com"
+                  style={{ paddingLeft: 40, height: 44, fontSize: 14, borderRadius: 8 }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Password</label>
+              <div style={{ position: 'relative' }}>
+                <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <input
+                  id="company-password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  maxLength={100}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  style={{ paddingLeft: 40, height: 44, fontSize: 14, borderRadius: 8 }}
+                />
+              </div>
+            </div>
+
+            <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: '#fff' }}>
+              <Building2 size={16} /> {busy ? 'Signing in...' : 'Sign In as Company'}
+            </button>
+          </form>
+
+          {/* Quick Demo Login Button */}
+          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed var(--border)' }}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={fillDemo}
+              disabled={busy}
+              style={{ width: '100%', height: 40, fontSize: 13, border: '1px solid var(--accent)', color: 'var(--accent)', background: 'rgba(59, 130, 246, 0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+            >
+              <Zap size={15} /> Quick Demo Company Login
+            </button>
           </div>
-          <label>Password</label>
-          <div style={{ position: 'relative' }}>
-            <Lock size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Your password" style={{ paddingLeft: 36 }} />
+
+          <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13 }}>
+            <span className="muted">Don't have a company account? </span>
+            <Link to="/register/company" style={{ color: 'var(--accent)', fontWeight: 600 }}>Register Company</Link>
           </div>
-          <button className="btn" type="submit" disabled={busy} style={{ width: '100%', marginTop: 16 }}>
-            <Building2 size={16} /> {busy ? 'Signing in…' : 'Company Login'}
-          </button>
-          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13 }}>
-            <span className="muted">No account? </span>
-            <Link to="/register/company">Register as Company</Link>
-          </div>
-        </form>
+        </div>
       </div>
     </div>
   )

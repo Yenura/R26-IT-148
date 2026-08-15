@@ -31,8 +31,8 @@ logging.basicConfig(
 logger = logging.getLogger("component1")
 
 # ── Config ────────────────────────────────────────────────────────────────────
-MONGODB_URI     = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME         = os.getenv("DB_NAME", "recruit_ai")
+MONGODB_URI     = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+DB_NAME         = os.getenv("DB_NAME", "HR")
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:3000,http://localhost:5173,http://localhost:5174",
@@ -82,8 +82,8 @@ async def lifespan(app: FastAPI):
 
     # Share SBERT / TF-IDF with the matcher to avoid loading models twice
     matcher = JDMatcher(
-        sbert_model=predictor._sbert_model,
-        tfidf_vectorizer=predictor._vectorizer,
+        sbert_model=getattr(predictor, "_sbert_model", None),
+        tfidf_vectorizer=getattr(predictor, "_vectorizer", None),
     )
     logger.info("JDMatcher loaded in mode: %s", matcher.mode)
 
@@ -119,6 +119,7 @@ app.add_middleware(
 from backend.routers.cv import router as cv_router  # noqa: E402
 
 app.include_router(cv_router, prefix="/api/v1/cv", tags=["CV Analysis"])
+app.include_router(cv_router, prefix="/api/v1", tags=["Screen Resume"])
 
 
 # ── Health ────────────────────────────────────────────────────────────────────

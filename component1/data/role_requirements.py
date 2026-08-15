@@ -39,7 +39,7 @@ REQUIRED_YEARS: Dict[str, float] = {
     "Full Stack Developer":        3.0,   # Comparable to Backend Developer
     "QA/Test Automation Engineer": 2.5,   # Moderate; automation tooling learnable quickly
     "Data Engineer":               3.5,   # Pipeline expertise takes time to build
-    "Site Reliability Engineer (SRE)": 4.0, # Operational maturity; similar to DevOps
+    "Site Reliability Engineer": 4.0, # Operational maturity; similar to DevOps
     "UI/UX Designer":              2.5,   # Portfolio-driven; 2-3 years typical expectation
     "Network Engineer":            3.5,   # Certifications (CCNA/CCNP) + hands-on time
     "Business/Systems Analyst":    3.0,   # Domain knowledge accumulation
@@ -107,7 +107,7 @@ REQUIRED_SKILLS: Dict[str, List[str]] = {
         "python", "sql", "spark", "airflow", "kafka",
         "etl", "data warehousing", "hdfs", "dbt", "cloud storage",
     ],
-    "Site Reliability Engineer (SRE)": [
+    "Site Reliability Engineer": [
         "kubernetes", "prometheus", "grafana", "linux", "python",
         "terraform", "slo/sli", "incident management", "chaos engineering", "go",
     ],
@@ -155,7 +155,7 @@ ROLE_CV_WEIGHTS: Dict[str, Dict[str, float]] = {
     "Full Stack Developer":        {"w_edu": 0.15, "w_exp": 0.35, "w_skill": 0.50},
     "QA/Test Automation Engineer": {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
     "Data Engineer":               {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
-    "Site Reliability Engineer (SRE)": {"w_edu": 0.15, "w_exp": 0.40, "w_skill": 0.45},
+    "Site Reliability Engineer": {"w_edu": 0.15, "w_exp": 0.40, "w_skill": 0.45},
     "UI/UX Designer":              {"w_edu": 0.15, "w_exp": 0.25, "w_skill": 0.60},
     "Network Engineer":            {"w_edu": 0.20, "w_exp": 0.40, "w_skill": 0.40},
     "Business/Systems Analyst":    {"w_edu": 0.25, "w_exp": 0.35, "w_skill": 0.40},

@@ -1,20 +1,112 @@
 """Router: Skill Gap Analysis endpoints"""
 
-from fastapi import APIRouter, Request, HTTPException
+import sys, os
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
+from fastapi import APIRouter, Request, HTTPException
+from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+COMPONENT_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(COMPONENT_ROOT))
+
 from models.schemas import SkillGapRequest
 from services.ml_engine import run_skill_gap_analysis
+from src.gap_analysis.skill_gap import analyze_skill_gap
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
+class SimpleSkillGapRequest(BaseModel):
+    current_skills: Optional[List[str]] = None
+    target_role: Optional[str] = None
+    # Component 1 integration fields (Option 2)
+    predicted_role: Optional[str] = None
+    detected_skills: Optional[List[str]] = None
+
+
+@router.post("", summary="Skill Gap Analysis (Simple JSON or Option 2 Component 1 Integration)")
+@router.post("/", summary="Skill Gap Analysis (Simple JSON or Option 2 Component 1 Integration)")
+async def simple_skill_gap(payload: Dict[str, Any]):
+    """
+    Accepts Option 1 (current_skills + target_role) or Option 2 (Component 1 output).
+    """
+    current_skills = payload.get("current_skills") or payload.get("detected_skills") or payload.get("skills") or []
+    target_role = payload.get("target_role") or payload.get("predicted_role") or payload.get("job_role") or "Data Scientist"
+
+    if not current_skills:
+        current_skills = ["Python", "SQL"]
+
+    res = analyze_skill_gap(current_skills=current_skills, target_role=target_role)
+
+    missing_formatted = [
+        {
+            "skill": m["skill"],
+            "priority": m["priority"],
+            "priority_score": m["priority_score"]
+        }
+        for m in res["missing_skills"]
+    ]
+
+    return {
+        "target_role": res["target_role"],
+        "skill_coverage": res["skill_coverage_percentage"],
+        "matched_skills": res["matched_skills"],
+        "missing_skills": missing_formatted
+    }
+
+
+@router.post("/simulate", summary="Run 'What-If' skill acquisition simulation")
+async def simulate_skill_acquisition(payload: Dict[str, Any]):
+    current_skills = payload.get("current_skills") or []
+    acquired_skills = payload.get("acquired_skills") or []
+    target_role = payload.get("target_role") or "Data Scientist"
+
+    combined_skills = list(set(current_skills + acquired_skills))
+
+    res_orig = analyze_skill_gap(current_skills=current_skills, target_role=target_role)
+    res_sim = analyze_skill_gap(current_skills=combined_skills, target_role=target_role)
+
+    orig_pct = res_orig["skill_coverage_percentage"]
+    sim_pct = res_sim["skill_coverage_percentage"]
+
+    return {
+        "target_role": target_role,
+        "original_coverage": orig_pct,
+        "simulated_coverage": sim_pct,
+        "coverage_improvement": round(sim_pct - orig_pct, 2),
+        "matched_skills": res_sim["matched_skills"],
+        "remaining_missing_skills": [m["skill"] for m in res_sim["missing_skills"]]
+    }
+
+
+@router.get("/graph", summary="Get skill dependency DAG graph")
+async def get_skill_dependency_graph():
+    from src.recommendation.learning_path import SKILL_DEPENDENCY_GRAPH
+    nodes = []
+    edges = []
+    seen_nodes = set()
+
+    for target, deps in SKILL_DEPENDENCY_GRAPH.items():
+        if target not in seen_nodes:
+            seen_nodes.add(target)
+            nodes.append({"id": target, "label": target})
+        for dep in deps:
+            if dep not in seen_nodes:
+                seen_nodes.add(dep)
+                nodes.append({"id": dep, "label": dep})
+            edges.append({"source": dep, "target": target})
+
+    return {"success": True, "nodes": nodes, "edges": edges}
+
+
 @router.post("/analyze", summary="Run full skill gap analysis for a candidate")
 @limiter.limit("10/minute")
-async def analyze_skill_gap(request: Request, payload: SkillGapRequest):
+async def analyze_skill_gap_full(request: Request, payload: SkillGapRequest):
     db = request.app.state.db
 
     # ── Validation ────────────────────────────────────────────────────────────

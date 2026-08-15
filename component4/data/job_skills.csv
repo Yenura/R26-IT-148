@@ -1,0 +1,128 @@
+job_role,skill,importance
+Software Engineer,Python,high
+Software Engineer,Java,high
+Software Engineer,Data Structures,high
+Software Engineer,Algorithms,high
+Software Engineer,Git,medium
+Software Engineer,SQL,medium
+Software Engineer,System Design,medium
+Software Engineer,Unit Testing,low
+Data Scientist,Python,high
+Data Scientist,Pandas,high
+Data Scientist,Statistics,high
+Data Scientist,Machine Learning,high
+Data Scientist,SQL,medium
+Data Scientist,Data Visualization,medium
+Data Scientist,Scikit-Learn,medium
+Data Scientist,TensorFlow,low
+Machine Learning Engineer,Python,high
+Machine Learning Engineer,Machine Learning,high
+Machine Learning Engineer,Deep Learning,high
+Machine Learning Engineer,PyTorch,high
+Machine Learning Engineer,MLOps,medium
+Machine Learning Engineer,Docker,medium
+Machine Learning Engineer,TensorFlow,medium
+Machine Learning Engineer,SQL,low
+DevOps Engineer,Linux,high
+DevOps Engineer,Docker,high
+DevOps Engineer,Kubernetes,high
+DevOps Engineer,CI/CD,high
+DevOps Engineer,Terraform,medium
+DevOps Engineer,AWS,medium
+DevOps Engineer,Python,medium
+DevOps Engineer,Bash,low
+Cloud Solutions Architect,AWS,high
+Cloud Solutions Architect,Cloud Architecture,high
+Cloud Solutions Architect,Azure,high
+Cloud Solutions Architect,Kubernetes,medium
+Cloud Solutions Architect,Networking,medium
+Cloud Solutions Architect,Security,medium
+Cloud Solutions Architect,Terraform,low
+Database Administrator,SQL,high
+Database Administrator,PostgreSQL,high
+Database Administrator,MySQL,high
+Database Administrator,Database Tuning,high
+Database Administrator,Backup and Recovery,medium
+Database Administrator,Linux,medium
+Database Administrator,MongoDB,low
+Frontend Developer,JavaScript,high
+Frontend Developer,React,high
+Frontend Developer,HTML,high
+Frontend Developer,CSS,high
+Frontend Developer,TypeScript,medium
+Frontend Developer,Tailwind,medium
+Frontend Developer,Git,low
+Backend Developer,Python,high
+Backend Developer,FastAPI,high
+Backend Developer,SQL,high
+Backend Developer,PostgreSQL,high
+Backend Developer,Docker,medium
+Backend Developer,Redis,medium
+Backend Developer,AWS,medium
+Backend Developer,Git,low
+Mobile App Developer,Flutter,high
+Mobile App Developer,Dart,high
+Mobile App Developer,React Native,medium
+Mobile App Developer,iOS,medium
+Mobile App Developer,Android,medium
+Mobile App Developer,REST APIs,low
+Full Stack Developer,JavaScript,high
+Full Stack Developer,React,high
+Full Stack Developer,Node.js,high
+Full Stack Developer,SQL,high
+Full Stack Developer,MongoDB,medium
+Full Stack Developer,Docker,medium
+Full Stack Developer,Git,low
+QA/Test Automation Engineer,Selenium,high
+QA/Test Automation Engineer,Python,high
+QA/Test Automation Engineer,Test Automation,high
+QA/Test Automation Engineer,Jest,medium
+QA/Test Automation Engineer,CI/CD,medium
+QA/Test Automation Engineer,Git,low
+Data Engineer,Python,high
+Data Engineer,SQL,high
+Data Engineer,Spark,high
+Data Engineer,Airflow,high
+Data Engineer,ETL Pipelines,medium
+Data Engineer,Kafka,medium
+Data Engineer,PostgreSQL,low
+Site Reliability Engineer,Linux,high
+Site Reliability Engineer,Kubernetes,high
+Site Reliability Engineer,Prometheus,high
+Site Reliability Engineer,Python,medium
+Site Reliability Engineer,Docker,medium
+Site Reliability Engineer,CI/CD,low
+Cybersecurity Analyst,Network Security,high
+Cybersecurity Analyst,Ethical Hacking,high
+Cybersecurity Analyst,SIEM,high
+Cybersecurity Analyst,Linux,medium
+Cybersecurity Analyst,Cryptography,medium
+Cybersecurity Analyst,Python,low
+UI/UX Designer,Figma,high
+UI/UX Designer,Wireframing,high
+UI/UX Designer,User Research,high
+UI/UX Designer,Prototyping,medium
+UI/UX Designer,Design Systems,low
+Network Engineer,Cisco,high
+Network Engineer,Networking,high
+Network Engineer,Firewalls,high
+Network Engineer,Routing Protocols,medium
+Network Engineer,Linux,low
+Business/Systems Analyst,Requirements Gathering,high
+Business/Systems Analyst,SQL,high
+Business/Systems Analyst,UML,medium
+Business/Systems Analyst,Data Analysis,medium
+Business/Systems Analyst,Agile,low
+AI/NLP Engineer,Python,high
+AI/NLP Engineer,NLP,high
+AI/NLP Engineer,PyTorch,high
+AI/NLP Engineer,Transformers,medium
+AI/NLP Engineer,Spacy,low
+Blockchain Developer,Solidity,high
+Blockchain Developer,Smart Contracts,high
+Blockchain Developer,Ethereum,medium
+Blockchain Developer,Web3.js,low
+Embedded Systems Engineer,C++,high
+Embedded Systems Engineer,C,high
+Embedded Systems Engineer,RTOS,medium
+Embedded Systems Engineer,Microcontrollers,low

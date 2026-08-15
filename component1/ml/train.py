@@ -1,28 +1,24 @@
-"""Training pipeline — Component 1
+"""
+Training Pipeline — Component 1: AI Resume Screening & IT Job Role Classification
 IT22094872 | Dulnith K.D. | R26-IT-148
 
-Trains two classifiers on the 20-role synthetic resume dataset:
+Trains two models for academic research comparison:
+  1. PRIMARY MODEL  : Regex + Lexicon Feature Extraction → LogisticRegression (cv_classifier.pkl)
+  2. BASELINE MODEL : TF-IDF Vectorizer → LogisticRegression (tfidf_baseline.pkl)
 
-  PROPOSED  : SBERT (all-MiniLM-L6-v2) → LogisticRegression
-  BASELINE  : TF-IDF (unigrams+bigrams, max 10,000 features) → LogisticRegression
+Evaluation Metrics Output to results/:
+  - Accuracy, Macro F1, Weighted F1
+  - Classification Report (TXT)
+  - Confusion Matrix plot (PNG)
+  - Metrics Summary (JSON)
 
-Metrics reported:
-  - Accuracy, macro-F1, weighted-F1
-  - Per-role precision / recall / F1 (classification_report)
-  - Confusion matrix (saved as PNG chart)
-  - Full evaluation report (txt) written to results/
-
-Artifacts saved to models/:
-  sbert_classifier.joblib
-  tfidf_classifier.joblib
-  tfidf_vectorizer.joblib
-  label_classes.joblib
-
-Usage (from inside component1/):
-    python ml/train.py [--n-per-role N] [--skip-sbert]
+Artifacts Saved to models/:
+  - cv_classifier.pkl
+  - label_encoder.pkl
+  - feature_config.json
+  - skill_lexicon.json
+  - role_requirements.json
 """
-
-from __future__ import annotations
 
 import argparse
 import csv
@@ -32,24 +28,32 @@ import os
 import sys
 import time
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 import joblib
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
 import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
     confusion_matrix,
     f1_score,
+    precision_recall_fscore_support,
 )
-from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.preprocessing import LabelEncoder
 
-# ── Path setup ────────────────────────────────────────────────────────────────
+# Path setup
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 
-from ml.generate_data import generate
-from data.role_requirements import ALL_ROLES
+from data.role_requirements import ALL_ROLES, REQUIRED_SKILLS, REQUIRED_YEARS
+from ml.feature_engineering import FEATURE_NAMES, extract_cv_features
+from ml.generate_data import generate_dataset
+from ml.lexicon import SKILL_LEXICON
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,252 +61,242 @@ logging.basicConfig(
 )
 logger = logging.getLogger("component1.train")
 
-MODELS_DIR  = ROOT / "models"
+MODELS_DIR = ROOT / "models"
 RESULTS_DIR = ROOT / "results"
+DATA_DIR = ROOT / "data"
+
 MODELS_DIR.mkdir(parents=True, exist_ok=True)
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 RANDOM_STATE = 42
-MAX_ITER     = 1000
+MAX_ITER = 1000
 
 
-# ── Data loading ──────────────────────────────────────────────────────────────
-
-def _load_csv(path: Path):
+def load_data(path: Path) -> Tuple[List[str], List[str]]:
+    """Loads texts and labels from CSV split file."""
     texts, labels = [], []
     with open(path, newline="", encoding="utf-8") as f:
-        for row in csv.DictReader(f):
-            texts.append(row["text"])
-            labels.append(row["role"])
+        reader = csv.DictReader(f)
+        for row in reader:
+            texts.append(row["resume_text"])
+            labels.append(row["job_role"])
     return texts, labels
 
 
-def _load_or_generate(n_per_role: int):
-    train_csv = ROOT / "data" / "train.csv"
-    val_csv   = ROOT / "data" / "val.csv"
-    test_csv  = ROOT / "data" / "test.csv"
-
-    if not train_csv.exists():
-        logger.info("Generating synthetic dataset (%d per role)…", n_per_role)
-        generate(n_per_role=n_per_role)
-    else:
-        logger.info("Using existing dataset in data/")
-
-    train_texts, train_labels = _load_csv(train_csv)
-    val_texts,   val_labels   = _load_csv(val_csv)
-    test_texts,  test_labels  = _load_csv(test_csv)
-
-    # Combine train+val for final training; keep test strictly held out
-    all_train_texts  = train_texts + val_texts
-    all_train_labels = train_labels + val_labels
-
-    return all_train_texts, all_train_labels, test_texts, test_labels
+def prepare_feature_dataset(texts: List[str]) -> np.ndarray:
+    """Transforms raw text list into numerical feature matrix."""
+    matrix = []
+    for t in texts:
+        feat_dict = extract_cv_features(t)
+        matrix.append(feat_dict["feature_vector"])
+    return np.array(matrix, dtype=np.float32)
 
 
-# ── TF-IDF baseline ───────────────────────────────────────────────────────────
+def plot_confusion_matrix(cm: np.ndarray, classes: List[str], save_path: Path, title: str):
+    """Plot and save confusion matrix heatmap."""
+    fig, ax = plt.subplots(figsize=(14, 12))
+    im = ax.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    ax.figure.colorbar(im, ax=ax)
 
-def train_tfidf(train_texts, train_labels, test_texts, test_labels):
-    logger.info("Training BASELINE: TF-IDF → LogisticRegression…")
-
-    vectorizer = TfidfVectorizer(
-        max_features=10_000,
-        ngram_range=(1, 2),
-        sublinear_tf=True,
-        min_df=2,
+    ax.set(
+        xticks=np.arange(cm.shape[1]),
+        yticks=np.arange(cm.shape[0]),
+        xticklabels=classes,
+        yticklabels=classes,
+        title=title,
+        ylabel='True Label',
+        xlabel='Predicted Label'
     )
-    X_train = vectorizer.fit_transform(train_texts)
-    X_test  = vectorizer.transform(test_texts)
 
-    clf = LogisticRegression(
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right", rotation_mode="anchor", fontsize=9)
+    plt.setp(ax.get_yticklabels(), fontsize=9)
+
+    # Loop over data dimensions and create text annotations.
+    thresh = cm.max() / 2.
+    for i in range(cm.shape[0]):
+        for j in range(cm.shape[1]):
+            ax.text(j, i, format(cm[i, j], 'd'),
+                    ha="center", va="center",
+                    color="white" if cm[i, j] > thresh else "black", fontsize=8)
+
+    fig.tight_layout()
+    plt.savefig(save_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+
+def train_pipeline(n_per_role: int = 200):
+    """Runs full training, baseline evaluation, and saves artifacts."""
+    logger.info("Step 1: Preparing dataset...")
+    train_path = DATA_DIR / "train.csv"
+    val_path = DATA_DIR / "val.csv"
+    test_path = DATA_DIR / "test.csv"
+
+    if not train_path.exists():
+        generate_dataset(n_per_role=n_per_role)
+
+    train_texts, train_labels = load_data(train_path)
+    val_texts, val_labels = load_data(val_path)
+    test_texts, test_labels = load_data(test_path)
+
+    # Combine train + val for final model training; test is held out for evaluation
+    full_train_texts = train_texts + val_texts
+    full_train_labels = train_labels + val_labels
+
+    logger.info("Dataset size: Train=%d, Val=%d, Test=%d (Held-out)",
+                len(train_texts), len(val_texts), len(test_texts))
+
+    # Fit Label Encoder
+    label_encoder = LabelEncoder()
+    label_encoder.fit(ALL_ROLES)
+    y_train = label_encoder.transform(full_train_labels)
+    y_test = label_encoder.transform(test_labels)
+
+    # ── PRIMARY MODEL: Feature Engineering + Logistic Regression ────────────
+    logger.info("Step 2: Extracting feature vectors for Primary Model...")
+    X_train_feat = prepare_feature_dataset(full_train_texts)
+    X_test_feat = prepare_feature_dataset(test_texts)
+
+    logger.info("Step 3: Training Primary Feature-Based Logistic Regression Classifier...")
+    primary_clf = LogisticRegression(
+        class_weight="balanced",
         max_iter=MAX_ITER,
-        C=1.0,
-        solver="lbfgs",
-        multi_class="multinomial",
         random_state=RANDOM_STATE,
-        n_jobs=-1,
+        solver="lbfgs"
     )
-    clf.fit(X_train, train_labels)
-
-    preds = clf.predict(X_test)
-    acc   = accuracy_score(test_labels, preds)
-    f1    = f1_score(test_labels, preds, average="macro")
-    report = classification_report(test_labels, preds, labels=ALL_ROLES, zero_division=0)
-    cm     = confusion_matrix(test_labels, preds, labels=ALL_ROLES)
-
-    logger.info("BASELINE TF-IDF — Accuracy: %.4f | Macro-F1: %.4f", acc, f1)
-
-    # Save
-    joblib.dump(clf,        MODELS_DIR / "tfidf_classifier.joblib")
-    joblib.dump(vectorizer, MODELS_DIR / "tfidf_vectorizer.joblib")
-    joblib.dump(ALL_ROLES,  MODELS_DIR / "label_classes.joblib")
-
-    return {"model": "TF-IDF + LogReg", "accuracy": acc, "macro_f1": f1,
-            "report": report, "cm": cm, "preds": preds}
-
-
-# ── SBERT proposed ────────────────────────────────────────────────────────────
-
-def train_sbert(train_texts, train_labels, test_texts, test_labels):
-    try:
-        from sentence_transformers import SentenceTransformer
-    except ImportError:
-        logger.warning("sentence-transformers not installed — skipping SBERT training.")
-        return None
-
-    logger.info("Training PROPOSED: SBERT → LogisticRegression…")
-    logger.info("Loading all-MiniLM-L6-v2 (downloads on first run)…")
-
-    model = SentenceTransformer("all-MiniLM-L6-v2")
-
     t0 = time.time()
-    logger.info("Encoding %d training texts…", len(train_texts))
-    X_train = model.encode(train_texts, batch_size=64, show_progress_bar=True)
-    logger.info("Encoding %d test texts…", len(test_texts))
-    X_test  = model.encode(test_texts,  batch_size=64, show_progress_bar=True)
-    logger.info("Encoding complete in %.1fs", time.time() - t0)
+    primary_clf.fit(X_train_feat, y_train)
+    primary_train_time = time.time() - t0
 
-    clf = LogisticRegression(
+    y_pred_primary = primary_clf.predict(X_test_feat)
+
+    acc_primary = accuracy_score(y_test, y_pred_primary)
+    macro_f1_primary = f1_score(y_test, y_pred_primary, average="macro")
+    weighted_f1_primary = f1_score(y_test, y_pred_primary, average="weighted")
+
+    logger.info("PRIMARY MODEL RESULTS -> Acc: %.4f | Macro F1: %.4f | Weighted F1: %.4f",
+                acc_primary, macro_f1_primary, weighted_f1_primary)
+
+    # ── BASELINE MODEL: TF-IDF + Logistic Regression ─────────────────────────
+    logger.info("Step 4: Training Baseline TF-IDF + Logistic Regression Model...")
+    tfidf_vectorizer = TfidfVectorizer(max_features=5000, ngram_range=(1, 2))
+    X_train_tfidf = tfidf_vectorizer.fit_transform(full_train_texts)
+    X_test_tfidf = tfidf_vectorizer.transform(test_texts)
+
+    baseline_clf = LogisticRegression(
+        class_weight="balanced",
         max_iter=MAX_ITER,
-        C=1.0,
-        solver="lbfgs",
-        multi_class="multinomial",
-        random_state=RANDOM_STATE,
-        n_jobs=-1,
+        random_state=RANDOM_STATE
     )
-    clf.fit(X_train, train_labels)
+    t0 = time.time()
+    baseline_clf.fit(X_train_tfidf, y_train)
+    baseline_train_time = time.time() - t0
 
-    preds  = clf.predict(X_test)
-    acc    = accuracy_score(test_labels, preds)
-    f1     = f1_score(test_labels, preds, average="macro")
-    report = classification_report(test_labels, preds, labels=ALL_ROLES, zero_division=0)
-    cm     = confusion_matrix(test_labels, preds, labels=ALL_ROLES)
+    y_pred_baseline = baseline_clf.predict(X_test_tfidf)
 
-    logger.info("PROPOSED SBERT — Accuracy: %.4f | Macro-F1: %.4f", acc, f1)
+    acc_baseline = accuracy_score(y_test, y_pred_baseline)
+    macro_f1_baseline = f1_score(y_test, y_pred_baseline, average="macro")
+    weighted_f1_baseline = f1_score(y_test, y_pred_baseline, average="weighted")
 
-    # Save
-    joblib.dump(clf,       MODELS_DIR / "sbert_classifier.joblib")
-    joblib.dump(ALL_ROLES, MODELS_DIR / "label_classes.joblib")
+    logger.info("BASELINE MODEL RESULTS -> Acc: %.4f | Macro F1: %.4f | Weighted F1: %.4f",
+                acc_baseline, macro_f1_baseline, weighted_f1_baseline)
 
-    return {"model": "SBERT + LogReg", "accuracy": acc, "macro_f1": f1,
-            "report": report, "cm": cm, "preds": preds}
+    # ── Step 5: Save Model Artifacts ──────────────────────────────────────────
+    logger.info("Step 5: Saving Model Artifacts to models/...")
+    
+    joblib.dump(primary_clf, MODELS_DIR / "cv_classifier.pkl")
+    joblib.dump(label_encoder, MODELS_DIR / "label_encoder.pkl")
+    joblib.dump(baseline_clf, MODELS_DIR / "tfidf_baseline.pkl")
+    joblib.dump(tfidf_vectorizer, MODELS_DIR / "tfidf_vectorizer.pkl")
 
+    # Save feature_config.json
+    feature_config = {
+        "feature_names": FEATURE_NAMES,
+        "n_features": len(FEATURE_NAMES),
+        "target_roles": list(label_encoder.classes_),
+        "model_type": "LogisticRegression(class_weight='balanced')",
+        "random_state": RANDOM_STATE
+    }
+    with open(MODELS_DIR / "feature_config.json", "w", encoding="utf-8") as f:
+        json.dump(feature_config, f, indent=2)
 
-# ── Evaluation report ─────────────────────────────────────────────────────────
+    # Save skill_lexicon.json
+    with open(MODELS_DIR / "skill_lexicon.json", "w", encoding="utf-8") as f:
+        json.dump(SKILL_LEXICON, f, indent=2)
 
-def _save_report(results_list, test_labels):
-    lines = [
-        "=" * 70,
-        "COMPONENT 1 — ROLE CLASSIFIER EVALUATION REPORT",
-        "IT22094872 | Dulnith K.D. | R26-IT-148",
-        "=" * 70,
-        f"Test set size: {len(test_labels)} samples across {len(ALL_ROLES)} roles",
-        "",
-    ]
-    for res in results_list:
-        if res is None:
-            continue
-        lines += [
-            "─" * 70,
-            f"Model: {res['model']}",
-            f"  Accuracy : {res['accuracy']:.4f}",
-            f"  Macro-F1 : {res['macro_f1']:.4f}",
-            "",
-            "Per-role classification report:",
-            res["report"],
-        ]
+    # Save role_requirements.json
+    role_reqs_data = {
+        "required_skills": REQUIRED_SKILLS,
+        "required_years": REQUIRED_YEARS
+    }
+    with open(MODELS_DIR / "role_requirements.json", "w", encoding="utf-8") as f:
+        json.dump(role_reqs_data, f, indent=2)
 
-    report_path = RESULTS_DIR / "evaluation_report.txt"
-    report_path.write_text("\n".join(lines), encoding="utf-8")
-    logger.info("Evaluation report saved: %s", report_path)
+    # ── Step 6: Save Evaluation Metrics & Reports to results/ ────────────────
+    logger.info("Step 6: Saving Evaluation Reports & Plots to results/...")
 
+    target_names = [str(c) for c in label_encoder.classes_]
+    report_primary = classification_report(y_test, y_pred_primary, target_names=target_names)
+    report_baseline = classification_report(y_test, y_pred_baseline, target_names=target_names)
 
-def _save_confusion_matrix(res, suffix: str):
-    try:
-        import matplotlib
-        matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
+    report_text = f"""================================================================================
+COMPONENT 1 — MODEL EVALUATION REPORT
+================================================================================
+Target Roles (20): {', '.join(target_names)}
 
-        cm = res["cm"]
-        fig, ax = plt.subplots(figsize=(18, 16))
-        im = ax.imshow(cm, interpolation="nearest", cmap="Blues")
-        plt.colorbar(im, ax=ax)
-        ax.set_xticks(range(len(ALL_ROLES)))
-        ax.set_yticks(range(len(ALL_ROLES)))
-        short_labels = [r[:20] for r in ALL_ROLES]
-        ax.set_xticklabels(short_labels, rotation=60, ha="right", fontsize=7)
-        ax.set_yticklabels(short_labels, fontsize=7)
-        ax.set_xlabel("Predicted", fontsize=11)
-        ax.set_ylabel("True", fontsize=11)
-        ax.set_title(f"Confusion Matrix — {res['model']}\n"
-                     f"Acc={res['accuracy']:.3f} | Macro-F1={res['macro_f1']:.3f}", fontsize=12)
+1. PRIMARY MODEL: Feature Engineering + LogisticRegression (cv_classifier.pkl)
+--------------------------------------------------------------------------------
+Accuracy      : {acc_primary:.4f}
+Macro F1      : {macro_f1_primary:.4f}
+Weighted F1   : {weighted_f1_primary:.4f}
+Training Time : {primary_train_time:.2f} seconds
 
-        # Annotate cells
-        thresh = cm.max() / 2.0
-        for i in range(len(ALL_ROLES)):
-            for j in range(len(ALL_ROLES)):
-                if cm[i, j] > 0:
-                    ax.text(j, i, str(cm[i, j]),
-                            ha="center", va="center",
-                            color="white" if cm[i, j] > thresh else "black",
-                            fontsize=6)
+Classification Report:
+{report_primary}
 
-        plt.tight_layout()
-        path = RESULTS_DIR / f"confusion_matrix_{suffix}.png"
-        fig.savefig(path, dpi=150, bbox_inches="tight")
-        plt.close(fig)
-        logger.info("Confusion matrix saved: %s", path)
-    except Exception as exc:
-        logger.warning("Could not save confusion matrix chart: %s", exc)
+2. BASELINE MODEL: TF-IDF + LogisticRegression (tfidf_baseline.pkl)
+--------------------------------------------------------------------------------
+Accuracy      : {acc_baseline:.4f}
+Macro F1      : {macro_f1_baseline:.4f}
+Weighted F1   : {weighted_f1_baseline:.4f}
+Training Time : {baseline_train_time:.2f} seconds
 
+Classification Report:
+{report_baseline}
+================================================================================
+"""
 
-def _save_metrics_json(results_list):
-    summary = {}
-    for res in results_list:
-        if res is None:
-            continue
-        key = res["model"].lower().replace(" ", "_").replace("+", "plus")
-        summary[key] = {
-            "accuracy": round(res["accuracy"], 4),
-            "macro_f1": round(res["macro_f1"], 4),
-        }
-    path = RESULTS_DIR / "metrics_summary.json"
-    path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
-    logger.info("Metrics JSON saved: %s", path)
+    with open(RESULTS_DIR / "classification_report.txt", "w", encoding="utf-8") as f:
+        f.write(report_text)
 
+    # Save metrics JSON
+    metrics_json = {
+        "primary_model": {
+            "model_file": "cv_classifier.pkl",
+            "accuracy": float(acc_primary),
+            "macro_f1": float(macro_f1_primary),
+            "weighted_f1": float(weighted_f1_primary),
+            "training_time_sec": float(primary_train_time)
+        },
+        "baseline_model": {
+            "model_file": "tfidf_baseline.pkl",
+            "accuracy": float(acc_baseline),
+            "macro_f1": float(macro_f1_baseline),
+            "weighted_f1": float(weighted_f1_baseline),
+            "training_time_sec": float(baseline_train_time)
+        },
+        "num_test_samples": len(test_texts),
+        "num_classes": len(target_names)
+    }
+    with open(RESULTS_DIR / "metrics.json", "w", encoding="utf-8") as f:
+        json.dump(metrics_json, f, indent=2)
 
-# ── Main ──────────────────────────────────────────────────────────────────────
+    # Confusion matrix plot
+    cm_primary = confusion_matrix(y_test, y_pred_primary)
+    plot_confusion_matrix(cm_primary, target_names, RESULTS_DIR / "confusion_matrix.png",
+                          "Primary Feature-Based Logistic Regression Confusion Matrix")
 
-def main():
-    parser = argparse.ArgumentParser(description="Train Component 1 classifiers")
-    parser.add_argument("--n-per-role", type=int, default=150,
-                        help="Number of synthetic resumes per role (default: 150)")
-    parser.add_argument("--skip-sbert", action="store_true",
-                        help="Skip SBERT training (only train TF-IDF baseline)")
-    args = parser.parse_args()
-
-    train_texts, train_labels, test_texts, test_labels = _load_or_generate(args.n_per_role)
-    logger.info("Dataset — Train: %d | Test: %d", len(train_texts), len(test_texts))
-
-    tfidf_res = train_tfidf(train_texts, train_labels, test_texts, test_labels)
-    sbert_res = None if args.skip_sbert else train_sbert(train_texts, train_labels, test_texts, test_labels)
-
-    results_list = [tfidf_res, sbert_res]
-    _save_report(results_list, test_labels)
-    _save_confusion_matrix(tfidf_res, "tfidf_baseline")
-    if sbert_res:
-        _save_confusion_matrix(sbert_res, "sbert_proposed")
-    _save_metrics_json(results_list)
-
-    # Print summary
-    print("\n" + "=" * 60)
-    print("TRAINING COMPLETE — SUMMARY")
-    print("=" * 60)
-    for res in results_list:
-        if res:
-            print(f"  {res['model']:30s}  Acc={res['accuracy']:.4f}  Macro-F1={res['macro_f1']:.4f}")
-    print(f"\nArtifacts: {MODELS_DIR}")
-    print(f"Results  : {RESULTS_DIR}")
+    logger.info("Training and evaluation complete! All artifacts saved.")
 
 
 if __name__ == "__main__":
-    main()
+    train_pipeline()

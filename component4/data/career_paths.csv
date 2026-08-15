@@ -1,0 +1,13 @@
+source_role,target_role,required_skills,experience_level
+Backend Developer,Senior Backend Developer,System Design|Redis|PostgreSQL|Docker,Senior
+Backend Developer,DevOps Engineer,Docker|Kubernetes|CI/CD|Linux,Mid-Level
+Backend Developer,Cloud Solutions Architect,AWS|Cloud Architecture|Terraform,Senior
+Frontend Developer,Full Stack Developer,Node.js|SQL|MongoDB|Express.js,Mid-Level
+Frontend Developer,UI/UX Designer,Figma|Wireframing|User Research,Mid-Level
+Software Engineer,Data Scientist,Statistics|Pandas|Machine Learning|SQL,Mid-Level
+Software Engineer,DevOps Engineer,Docker|Kubernetes|CI/CD|Terraform,Mid-Level
+Data Scientist,Machine Learning Engineer,Deep Learning|PyTorch|MLOps|Docker,Mid-Level
+Data Scientist,AI/NLP Engineer,NLP|Transformers|PyTorch|Deep Learning,Senior
+QA/Test Automation Engineer,DevOps Engineer,CI/CD|Docker|Linux|Kubernetes,Mid-Level
+Data Engineer,Cloud Solutions Architect,AWS|Cloud Architecture|Networking,Senior
+Cloud Solutions Architect,Site Reliability Engineer,Kubernetes|Prometheus|Linux,Senior

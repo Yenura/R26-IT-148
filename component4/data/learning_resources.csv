@@ -1,0 +1,26 @@
+skill,resource_title,resource_type,level,provider,url
+Python,Python Programming Masterclass,course,beginner,Coursera,https://www.coursera.org/specializations/python
+SQL,Complete SQL BootCamp,course,beginner,Udemy,https://www.udemy.com/course/the-complete-sql-bootcamp
+FastAPI,FastAPI Modern Python Web APIs,course,intermediate,Udemy,https://www.udemy.com/course/fastapi-python
+Docker,Docker & Kubernetes Fundamentals,course,intermediate,Coursera,https://www.coursera.org/learn/docker-kubernetes
+Kubernetes,Kubernetes for Developers,course,intermediate,edX,https://www.edx.org/course/kubernetes-for-developers
+Machine Learning,Machine Learning Specialization by Andrew Ng,course,intermediate,Coursera,https://www.coursera.org/specializations/machine-learning-introduction
+Deep Learning,Deep Learning Specialization,course,advanced,Coursera,https://www.coursera.org/specializations/deep-learning
+PyTorch,Deep Learning with PyTorch,course,intermediate,Udacity,https://www.udacity.com/course/deep-learning-pytorch
+TensorFlow,TensorFlow Developer Professional Certificate,course,intermediate,Coursera,https://www.coursera.org/professional-certificates/tensorflow-in-practice
+Pandas,Data Analysis with Pandas and Python,course,beginner,Coursera,https://www.coursera.org/learn/pandas
+Statistics,Introduction to Statistics for Data Science,course,beginner,edX,https://www.edx.org/course/introduction-to-statistics
+AWS,AWS Certified Solutions Architect Associate,course,intermediate,Udemy,https://www.udemy.com/course/aws-certified-solutions-architect-associate
+Azure,Microsoft Azure Fundamentals (AZ-900),course,beginner,Microsoft,https://learn.microsoft.com/en-us/certifications/azure-fundamentals
+React,React Complete Guide (Hooks & Redux),course,beginner,Udemy,https://www.udemy.com/course/react-the-complete-guide-incl-redux
+JavaScript,Modern JavaScript From The Beginning,course,beginner,Udemy,https://www.udemy.com/course/modern-javascript-from-the-beginning
+Linux,Linux Administration Bootcamp,course,beginner,Coursera,https://www.coursera.org/learn/linux-fundamentals
+CI/CD,CI/CD Pipelines with Jenkins and GitHub Actions,course,intermediate,Udemy,https://www.udemy.com/course/cicd-pipelines
+Scikit-Learn,Applied Machine Learning in Python,course,intermediate,Coursera,https://www.coursera.org/learn/python-machine-learning
+MLOps,MLOps Specialization,course,advanced,Coursera,https://www.coursera.org/specializations/mlops-machine-learning-duet
+PostgreSQL,Mastering PostgreSQL Development,course,intermediate,Udemy,https://www.udemy.com/course/mastering-postgresql
+MongoDB,MongoDB Complete Developer Guide,course,intermediate,Coursera,https://www.coursera.org/learn/mongodb-developer
+Figma,Figma UI/UX Design Essentials,course,beginner,Udemy,https://www.udemy.com/course/figma-uiux-design-essentials
+Solidity,Ethereum and Solidity Developer Guide,course,intermediate,Udemy,https://www.udemy.com/course/ethereum-and-solidity-the-complete-developers-guide
+Spark,Apache Spark & Big Data with Python,course,advanced,Coursera,https://www.coursera.org/learn/apache-spark-big-data
+C++,C++ Programming Fundamentals,course,beginner,Coursera,https://www.coursera.org/learn/c-plus-plus-a

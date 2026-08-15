@@ -40,7 +40,7 @@ async def lifespan(app: FastAPI):
     try:
         await db.command("ping")
     except Exception as exc:
-        await client.close()
+        client.close()
         raise RuntimeError(f"MongoDB connection failed: {exc}") from exc
 
     await db.users.create_index("email", unique=True)

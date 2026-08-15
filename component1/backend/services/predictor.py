@@ -1,157 +1,140 @@
-"""Role classifier — Component 1
+"""
+Role Classifier Service — Component 1
 IT22094872 | Dulnith K.D. | R26-IT-148
 
-PROPOSED MODEL: SBERT (all-MiniLM-L6-v2) → sklearn LogisticRegression
-BASELINE MODEL: TF-IDF → sklearn LogisticRegression
-
-Auto-falls back to the TF-IDF baseline if:
-  - sentence-transformers is not installed, OR
-  - the SBERT artifact is not found in MODEL_DIR.
-
-Usage
------
-# At app startup (once):
-    predictor = Predictor(model_dir=MODEL_DIR)
-
-# Per request:
-    result = predictor.predict(resume_text)
-    result.job_role, result.confidence, result.alternatives
+Loads the feature-based LogisticRegression classifier (cv_classifier.pkl)
+and returns top IT job role predictions with confidence probabilities and explainable scores.
 """
 
-from __future__ import annotations
-
 import logging
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 import joblib
 import numpy as np
+
+from ml.feature_engineering import extract_cv_features
 
 logger = logging.getLogger("component1.predictor")
 
 
 @dataclass
 class PredictionResult:
-    job_role:       str
-    confidence:     float
-    alternatives:   List[dict]   = field(default_factory=list)  # [{"role": ..., "confidence": ...}]
-    model_used:     str          = "unknown"
+    job_role: str
+    confidence: float
+    alternatives: List[Dict[str, float]] = field(default_factory=list)  # [{"role": ..., "probability": ...}]
+    feature_scores: Dict[str, float] = field(default_factory=dict)     # {"S_edu": ..., "S_exp": ..., "S_skill": ...}
+    extracted_info: Dict[str, Any] = field(default_factory=dict)
+    model_used: str = "cv_classifier_feature_lr"
 
 
 class Predictor:
-    """Wraps the trained role classifier.
+    """Wraps the feature-based LogisticRegression role classifier."""
 
-    Parameters
-    ----------
-    model_dir : path to the directory containing saved model artifacts.
-    """
-
-    SBERT_CLASSIFIER_FILE  = "sbert_classifier.joblib"
-    TFIDF_CLASSIFIER_FILE  = "tfidf_classifier.joblib"
-    TFIDF_VECTORIZER_FILE  = "tfidf_vectorizer.joblib"
-    LABEL_CLASSES_FILE     = "label_classes.joblib"
-    SBERT_MODEL_NAME       = "all-MiniLM-L6-v2"
+    FEATURE_MODEL_FILE = "cv_classifier.pkl"
+    LABEL_ENCODER_FILE = "label_encoder.pkl"
+    TFIDF_MODEL_FILE = "tfidf_baseline.pkl"
+    TFIDF_VEC_FILE = "tfidf_vectorizer.pkl"
 
     def __init__(self, model_dir: str | Path = "models"):
         self.model_dir = Path(model_dir)
-        self._clf     = None
-        self._vectorizer = None   # TF-IDF only
-        self._classes:  List[str] = []
-        self._sbert_model = None
-        self._mode   = "none"     # "sbert" | "tfidf" | "none"
-        self._load()
-
-    # ── Loading ────────────────────────────────────────────────────────────────
-
-    def _load(self):
-        """Load the best available model."""
-        label_path = self.model_dir / self.LABEL_CLASSES_FILE
-        if label_path.exists():
-            self._classes = joblib.load(label_path)
-
-        # 1. Try SBERT
-        sbert_path = self.model_dir / self.SBERT_CLASSIFIER_FILE
-        if sbert_path.exists():
-            try:
-                from sentence_transformers import SentenceTransformer
-                self._sbert_model = SentenceTransformer(self.SBERT_MODEL_NAME)
-                self._clf         = joblib.load(sbert_path)
-                self._mode        = "sbert"
-                logger.info("Predictor: loaded SBERT classifier from %s", sbert_path)
-                return
-            except ImportError:
-                logger.warning("sentence-transformers not installed; falling back to TF-IDF")
-            except Exception as exc:
-                logger.warning("SBERT load failed (%s); falling back to TF-IDF", exc)
-
-        # 2. Try TF-IDF baseline
-        tfidf_clf_path = self.model_dir / self.TFIDF_CLASSIFIER_FILE
-        tfidf_vec_path = self.model_dir / self.TFIDF_VECTORIZER_FILE
-        if tfidf_clf_path.exists() and tfidf_vec_path.exists():
-            try:
-                self._clf        = joblib.load(tfidf_clf_path)
-                self._vectorizer = joblib.load(tfidf_vec_path)
-                self._mode       = "tfidf"
-                logger.info("Predictor: loaded TF-IDF classifier from %s", tfidf_clf_path)
-                return
-            except Exception as exc:
-                logger.warning("TF-IDF load failed: %s", exc)
-
-        logger.warning("Predictor: no trained model found in %s. Predictions will be random.", self.model_dir)
+        self._clf = None
+        self._label_encoder = None
+        self._classes: List[str] = []
         self._mode = "none"
-
-    # ── Inference ─────────────────────────────────────────────────────────────
-
-    def predict(self, text: str) -> PredictionResult:
-        """Predict the job role for the given resume text.
-
-        Returns a PredictionResult with the top role, its confidence, and the
-        next two alternatives (top-3 total).
-        """
-        if self._mode == "none" or not self._classes:
-            return self._fallback_prediction()
-
-        proba = self._get_proba(text)
-        top3_idx = np.argsort(proba)[::-1][:3]
-        top_role  = self._classes[top3_idx[0]]
-        top_conf  = float(proba[top3_idx[0]])
-        alternatives = [
-            {"role": self._classes[i], "confidence": float(proba[i])}
-            for i in top3_idx[1:]
-        ]
-        return PredictionResult(
-            job_role=top_role,
-            confidence=top_conf,
-            alternatives=alternatives,
-            model_used=self._mode,
-        )
-
-    def _get_proba(self, text: str) -> np.ndarray:
-        if self._mode == "sbert":
-            embedding = self._sbert_model.encode([text])
-            return self._clf.predict_proba(embedding)[0]
-        else:  # tfidf
-            X = self._vectorizer.transform([text])
-            return self._clf.predict_proba(X)[0]
-
-    def _fallback_prediction(self) -> PredictionResult:
-        """Return a uniform-random prediction when no model is available."""
-        import random
-        from data.role_requirements import ALL_ROLES
-        role = random.choice(ALL_ROLES)
-        return PredictionResult(
-            job_role=role,
-            confidence=1.0 / len(ALL_ROLES),
-            alternatives=[],
-            model_used="none",
-        )
-
-    @property
-    def is_ready(self) -> bool:
-        return self._mode in ("sbert", "tfidf")
+        self._load()
 
     @property
     def mode(self) -> str:
         return self._mode
+
+    def _load(self):
+        """Load the feature-based LogisticRegression model or fallback."""
+        cv_model_path = self.model_dir / self.FEATURE_MODEL_FILE
+        encoder_path = self.model_dir / self.LABEL_ENCODER_FILE
+
+        if cv_model_path.exists() and encoder_path.exists():
+            try:
+                self._clf = joblib.load(cv_model_path)
+                self._label_encoder = joblib.load(encoder_path)
+                self._classes = list(self._label_encoder.classes_)
+                self._mode = "feature_lr"
+                logger.info("Predictor: loaded feature-based LogisticRegression from %s", cv_model_path)
+                return
+            except Exception as exc:
+                logger.warning("Feature LR load failed (%s); trying fallback", exc)
+
+        # Fallback to TF-IDF if present
+        tfidf_path = self.model_dir / self.TFIDF_MODEL_FILE
+        if tfidf_path.exists() and encoder_path.exists():
+            try:
+                self._clf = joblib.load(tfidf_path)
+                self._label_encoder = joblib.load(encoder_path)
+                self._classes = list(self._label_encoder.classes_)
+                self._mode = "tfidf_lr"
+                logger.info("Predictor: loaded TF-IDF baseline from %s", tfidf_path)
+                return
+            except Exception as exc:
+                logger.warning("TF-IDF baseline load failed: %s", exc)
+
+        self._mode = "lightweight_regex"
+        logger.info("Predictor operating in lightweight_regex mode")
+
+    def predict(self, resume_text: str, target_role: Optional[str] = None) -> PredictionResult:
+        """Runs prediction on CV text and returns role predictions + features."""
+        # 1. Feature extraction
+        feat_dict = extract_cv_features(resume_text, target_role=target_role or "Software Engineer")
+        feat_vec = feat_dict["feature_vector"]
+
+        extracted_info = {
+            "experience_years": feat_dict["experience_years"],
+            "education": feat_dict["education_info"].get("majors", []),
+            "education_level": feat_dict["education_info"].get("level_name", "None"),
+            "detected_skills": feat_dict["detected_skills"],
+            "detected_certs": feat_dict["detected_certs"]
+        }
+
+        feature_scores = {
+            "S_edu": feat_dict["s_edu"],
+            "S_exp": feat_dict["s_exp"],
+            "S_skill": feat_dict["s_skill"]
+        }
+
+        if self._clf is not None and self._label_encoder is not None and len(self._classes) > 0:
+            probs = self._clf.predict_proba(feat_vec.reshape(1, -1))[0]
+            top_indices = np.argsort(probs)[::-1]
+
+            best_idx = top_indices[0]
+            predicted_role = str(self._classes[best_idx])
+            confidence = float(probs[best_idx])
+
+            alternatives = [
+                {"role": str(self._classes[idx]), "probability": round(float(probs[idx]), 4)}
+                for idx in top_indices[:5]
+            ]
+
+            return PredictionResult(
+                job_role=predicted_role,
+                confidence=round(confidence, 4),
+                alternatives=alternatives,
+                feature_scores=feature_scores,
+                extracted_info=extracted_info,
+                model_used=self._mode
+            )
+
+        # Fallback if no model file loaded: use max skill overlap role
+        overlaps = feat_dict["role_overlaps"]
+        sorted_roles = sorted(overlaps.items(), key=lambda x: x[1], reverse=True)
+        best_role, best_score = sorted_roles[0]
+
+        alternatives = [{"role": r, "probability": round(s, 4)} for r, s in sorted_roles[:5]]
+
+        return PredictionResult(
+            job_role=best_role,
+            confidence=round(best_score if best_score > 0 else 0.50, 4),
+            alternatives=alternatives,
+            feature_scores=feature_scores,
+            extracted_info=extracted_info,
+            model_used="heuristic_regex"
+        )
