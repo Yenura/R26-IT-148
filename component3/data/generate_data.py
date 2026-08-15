@@ -1,12 +1,12 @@
 """
-Synthetic Dataset Generator - Component 3
+Synthetic Dataset Generator & Dataset Ingestion - Component 3
 IT22027610 | Perera K.G.S.N | R26-IT-148
 
-Generates realistic synthetic data for 20 specific IT job roles.
-Each candidate has role-relevant features with realistic correlations.
+Generates and standardizes realistic data for all 20 IT job roles.
+Integrates user-provided Excel datasets with full normalization.
 
 Total: 600 candidates per role × 20 roles = 12,000 records
-Split: Train(7200) / Val(1800) / Test(3000) / Fairness(1000)
+Split: Train (7,200) / Val (1,800) / Test (3,000) / Fairness (10,000)
 """
 
 import numpy as np
@@ -28,6 +28,42 @@ random.seed(42)
 
 RECORDS_PER_ROLE = 600   # 600 × 20 = 12,000 total
 
+EXCEL_ROLE_MAPPING = {
+    "AI_NLP_Engineer": "AI_NLP_Engineer.xlsx",
+    "Blockchain_Developer": "Blockchain_Developer.xlsx",
+    "Business_Systems_Analyst": "Business_Systems_Analyst.xlsx",
+    "Cybersecurity_Analyst": "Cybersecurity_Analyst.xlsx",
+    "Data_Engineer": "Data_Engineer.xlsx",
+    "Embedded_Systems_Engineer": "Embedded_Systems_Engineer.xlsx",
+    "Network_Engineer": "Network_Engineer.xlsx",
+    "QA_Test_Automation_Engineer": "QA_Test_Automation_Engineer (2).xlsx",
+    "Site_Reliability_Engineer": "Site_Reliability_Engineer_(SRE).xlsx",
+    "UI_UX_Designer": "UI_UX_Designer.xlsx",
+}
+
+ROLE_PREFIX_MAP = {
+    "Software_Engineer":         "SE",
+    "Data_Scientist":            "DS",
+    "Machine_Learning_Engineer": "ML",
+    "DevOps_Engineer":           "DO",
+    "Cybersecurity_Analyst":     "CA",
+    "Cloud_Solutions_Architect": "CS",
+    "Database_Administrator":    "DB",
+    "Frontend_Developer":        "FE",
+    "Backend_Developer":         "BE",
+    "Mobile_App_Developer":      "MA",
+    "Full_Stack_Developer":      "FS",
+    "QA_Test_Automation_Engineer": "QA",
+    "Data_Engineer":             "DE",
+    "Site_Reliability_Engineer": "SR",
+    "UI_UX_Designer":            "UX",
+    "Network_Engineer":          "NE",
+    "Business_Systems_Analyst":  "BA",
+    "AI_NLP_Engineer":           "AI",
+    "Blockchain_Developer":      "BC",
+    "Embedded_Systems_Engineer": "EM",
+}
+
 
 # ─────────────────────────────────────────────
 # FEATURE GENERATORS
@@ -40,14 +76,10 @@ def gen_edu_level(role):
 
 def gen_experience(role):
     mean, std = ROLE_EXP_DISTRIBUTION[role]
-    return max(0.0, round(np.random.normal(mean, std), 1))
+    return max(0.0, round(float(np.random.normal(mean, std)), 1))
 
 
 def gen_edu_relevance(role, edu_level):
-    """
-    How relevant the candidate's degree is to the role.
-    Research roles (DS, MLE) have higher relevance on average.
-    """
     base_by_role = {
         "Software_Engineer":         0.65,
         "Data_Scientist":            0.75,
@@ -75,10 +107,6 @@ def gen_edu_relevance(role, edu_level):
 
 
 def gen_skill_score(role, edu_level, experience):
-    """
-    Skill score correlated with education + experience.
-    Higher for roles where skills are easily demonstrated.
-    """
     role_base = {
         "Software_Engineer":         0.45,
         "Data_Scientist":            0.42,
@@ -108,7 +136,6 @@ def gen_skill_score(role, edu_level, experience):
 
 
 def gen_mcq_score(role, skill, edu_level):
-    """MCQ: knowledge-based, correlates with skill and education."""
     role_base = {
         "Software_Engineer":         0.40,
         "Data_Scientist":            0.42,
@@ -136,7 +163,6 @@ def gen_mcq_score(role, skill, edu_level):
 
 
 def gen_desc_score(role, skill, experience):
-    """Descriptive: analytical/communication, correlates with skill + experience."""
     role_base = {
         "Software_Engineer":         0.38,
         "Data_Scientist":            0.42,
@@ -164,11 +190,6 @@ def gen_desc_score(role, skill, experience):
 
 
 def gen_code_score(role, skill, experience, edu_level):
-    """
-    Coding: practical ability.
-    Highest weight for SE, Frontend, Backend, Mobile, DevOps, MLE.
-    Lower for Cloud Architect, Cybersecurity Analyst (more descriptive roles).
-    """
     role_base = {
         "Software_Engineer":         0.38,
         "Data_Scientist":            0.30,
@@ -238,18 +259,12 @@ def hard_filter(role, edu_level, years_exp, s_skill, p_code):
 
 # ─────────────────────────────────────────────
 # GROUND TRUTH RELEVANCE LABELS
-# Role-specific hiring logic → labels 0-3
 # ─────────────────────────────────────────────
 
 def assign_relevance(role, css, s_skill, p_code, p_desc, s_exp, s_edu, p_mcq):
-    """
-    Role-specific ground truth relevance labels (0-3).
-    Based on domain knowledge of what each role values most.
-    """
     dom = ROLE_RELEVANCE_THRESHOLDS[role]["dominance"]
 
     if dom == "code_skill":
-        # SE, DevOps, Frontend, Backend, Mobile
         ct = ROLE_RELEVANCE_THRESHOLDS[role]["code"]
         st = ROLE_RELEVANCE_THRESHOLDS[role]["skill"]
         if p_code >= ct[0] and s_skill >= st[0] and css >= 0.70:
@@ -262,7 +277,6 @@ def assign_relevance(role, css, s_skill, p_code, p_desc, s_exp, s_edu, p_mcq):
             label = 0
 
     elif dom == "desc_skill":
-        # DS, Cybersecurity, Cloud Architect
         dt = ROLE_RELEVANCE_THRESHOLDS[role]["desc"]
         st = ROLE_RELEVANCE_THRESHOLDS[role]["skill"]
         if p_desc >= dt[0] and s_skill >= st[0] and css >= 0.68:
@@ -275,7 +289,6 @@ def assign_relevance(role, css, s_skill, p_code, p_desc, s_exp, s_edu, p_mcq):
             label = 0
 
     elif dom == "desc_skill_exp":
-        # Cloud Architect - experience matters a lot too
         dt = ROLE_RELEVANCE_THRESHOLDS[role]["desc"]
         st = ROLE_RELEVANCE_THRESHOLDS[role]["skill"]
         if p_desc >= dt[0] and s_skill >= st[0] and s_exp >= 0.65 and css >= 0.70:
@@ -288,7 +301,6 @@ def assign_relevance(role, css, s_skill, p_code, p_desc, s_exp, s_edu, p_mcq):
             label = 0
 
     elif dom == "code_skill_desc":
-        # MLE, DBA - balanced
         ct = ROLE_RELEVANCE_THRESHOLDS[role]["code"]
         st = ROLE_RELEVANCE_THRESHOLDS[role]["skill"]
         dt = ROLE_RELEVANCE_THRESHOLDS[role]["desc"]
@@ -303,7 +315,6 @@ def assign_relevance(role, css, s_skill, p_code, p_desc, s_exp, s_edu, p_mcq):
     else:
         label = 1 if css >= 0.50 else 0
 
-    # 12% noise - simulates real-world imperfection
     if random.random() < 0.12:
         label = int(np.clip(label + random.choice([-1, 1]), 0, 3))
 
@@ -311,103 +322,81 @@ def assign_relevance(role, css, s_skill, p_code, p_desc, s_exp, s_edu, p_mcq):
 
 
 # ─────────────────────────────────────────────
-# MAIN GENERATOR
+# INGESTION & GENERATION
 # ─────────────────────────────────────────────
 
-def generate_candidates(role, n=RECORDS_PER_ROLE):
+def normalize_excel_dataset(file_path, role):
+    """
+    Ingests and normalizes an Excel dataset file to the standard 28-column format.
+    """
+    df_raw = pd.read_excel(file_path)
     req_years = REQUIRED_YEARS[role]
-    cv_w      = ROLE_CV_WEIGHTS[role]
-    int_w     = ROLE_INTERVIEW_WEIGHTS[role]
-    records   = []
+    cv_w = ROLE_CV_WEIGHTS[role]
+    int_w = ROLE_INTERVIEW_WEIGHTS[role]
 
-    # Prefix for candidate IDs
-    prefix_map = {
-        "Software_Engineer":         "SE",
-        "Data_Scientist":            "DS",
-        "Machine_Learning_Engineer": "ML",
-        "DevOps_Engineer":           "DO",
-        "Cybersecurity_Analyst":     "CA",
-        "Cloud_Solutions_Architect": "CS",
-        "Database_Administrator":    "DB",
-        "Frontend_Developer":        "FE",
-        "Backend_Developer":         "BE",
-        "Mobile_App_Developer":      "MA",
-        "Full_Stack_Developer":      "FS",
-        "QA_Test_Automation_Engineer": "QA",
-        "Data_Engineer":             "DE",
-        "Site_Reliability_Engineer": "SR",
-        "UI_UX_Designer":            "UX",
-        "Network_Engineer":          "NE",
-        "Business_Systems_Analyst":  "BA",
-        "AI_NLP_Engineer":           "AI",
-        "Blockchain_Developer":      "BC",
-        "Embedded_Systems_Engineer": "EM",
-    }
-    pfx = prefix_map[role]
+    records = []
+    pfx = ROLE_PREFIX_MAP.get(role, role[:2].upper())
 
-    for i in range(n):
-        gender    = np.random.choice(["M", "F"], p=[0.58, 0.42])
-        age_group = np.random.choice(
-            ["22-25", "26-30", "31-35", "36-40", "40+"],
-            p=[0.28, 0.32, 0.22, 0.12, 0.06]
-        )
+    for idx, row in df_raw.iterrows():
+        cid = str(row.get("Candidate_ID") or f"{pfx}{idx+1:05d}")
+        
+        gender_raw = str(row.get("Gender", "M")).strip()
+        gender = "F" if gender_raw.upper().startswith("F") else "M"
+        
+        age_group = str(row.get("Age_Group", "26-30"))
+        
+        edu_num = row.get("Education_Level_Num")
+        if pd.isna(edu_num) or edu_num is None:
+            edu_name = str(row.get("Education_Level", "BSc"))
+            name_to_num = {"Diploma": 1, "BSc": 2, "MSc": 3, "PhD": 4}
+            edu_level = name_to_num.get(edu_name, 2)
+        else:
+            edu_level = int(edu_num)
+        edu_level_name = EDU_LEVEL_NAMES.get(edu_level, "BSc")
 
-        # Generate raw features
-        edu_level    = gen_edu_level(role)
-        years_exp    = gen_experience(role)
-        edu_rel      = gen_edu_relevance(role, edu_level)
-        s_skill      = gen_skill_score(role, edu_level, years_exp)
-        p_mcq        = gen_mcq_score(role, s_skill, edu_level)
-        p_desc       = gen_desc_score(role, s_skill, years_exp)
-        p_code       = gen_code_score(role, s_skill, years_exp, edu_level)
+        years_exp = float(row.get("Years_Experience", 3.0))
+        edu_rel = float(row.get("Education_Relevance", 0.70))
 
-        # Compute scored values (Equations 2-8)
-        s_edu  = compute_s_edu(edu_level, edu_rel)
-        s_exp  = compute_s_exp(years_exp, req_years)
-        s_cv   = compute_s_cv(s_edu, s_exp, s_skill, cv_w)
-        s_int  = compute_s_int(p_mcq, p_desc, p_code, int_w)
-        css    = compute_css(s_cv, s_int)
+        p_mcq = float(row.get("MCQ_Score", 0.5))
+        p_desc = float(row.get("Descriptive_Score", 0.5))
+        p_code = float(row.get("Coding_Score", 0.5))
+        s_skill = float(row.get("Skill_Match_Raw", row.get("S_skill", 0.5)))
 
-        # Hard filter
+        s_edu = compute_s_edu(edu_level, edu_rel)
+        s_exp = compute_s_exp(years_exp, req_years)
+        s_cv = compute_s_cv(s_edu, s_exp, s_skill, cv_w)
+        s_int = compute_s_int(p_mcq, p_desc, p_code, int_w)
+        css = compute_css(s_cv, s_int)
+
         passed = hard_filter(role, edu_level, years_exp, s_skill, p_code)
-
-        # Ground truth label
-        rel = assign_relevance(role, css, s_skill, p_code, p_desc,
-                                s_exp, s_edu, p_mcq)
+        
+        rel_label = row.get("Relevance_Label")
+        if pd.isna(rel_label) or rel_label is None:
+            rel_label = assign_relevance(role, css, s_skill, p_code, p_desc, s_exp, s_edu, p_mcq)
+        else:
+            rel_label = int(rel_label)
 
         records.append({
-            "candidate_id":     f"{pfx}{i+1:05d}",
+            "candidate_id":     cid,
             "job_role":         role,
             "job_role_display": ROLE_DISPLAY_NAMES[role],
-
-            # Demographics (fairness only)
             "gender":           gender,
             "age_group":        age_group,
-
-            # CV raw inputs
             "edu_level":        edu_level,
-            "edu_level_name":   EDU_LEVEL_NAMES[edu_level],
-            "years_experience": years_exp,
-            "edu_relevance":    round(edu_rel,   4),
-
-            # Interview raw inputs
-            "P_mcq":            round(p_mcq,  4),
+            "edu_level_name":   edu_level_name,
+            "years_experience": round(years_exp, 1),
+            "edu_relevance":    round(edu_rel, 4),
+            "P_mcq":            round(p_mcq, 4),
             "P_desc":           round(p_desc, 4),
             "P_code":           round(p_code, 4),
-
-            # Computed sub-scores
-            "S_edu":            round(s_edu,  4),
-            "S_exp":            round(s_exp,  4),
-            "S_skill":          round(s_skill,4),
-            "S_cv":             round(s_cv,   4),
-            "S_int":            round(s_int,  4),
-            "CSS":              round(css,    4),
-
-            # Filter & label
+            "S_edu":            round(s_edu, 4),
+            "S_exp":            round(s_exp, 4),
+            "S_skill":          round(s_skill, 4),
+            "S_cv":             round(s_cv, 4),
+            "S_int":            round(s_int, 4),
+            "CSS":              round(css, 4),
             "passed_hard_filter": int(passed),
-            "relevance_label":    rel,
-
-            # Weights used
+            "relevance_label":    rel_label,
             "w_edu":    cv_w["w_edu"],
             "w_exp":    cv_w["w_exp"],
             "w_skill":  cv_w["w_skill"],
@@ -421,11 +410,98 @@ def generate_candidates(role, n=RECORDS_PER_ROLE):
     return pd.DataFrame(records)
 
 
+def generate_candidates(role, n=RECORDS_PER_ROLE):
+    req_years = REQUIRED_YEARS[role]
+    cv_w      = ROLE_CV_WEIGHTS[role]
+    int_w     = ROLE_INTERVIEW_WEIGHTS[role]
+    records   = []
+    pfx = ROLE_PREFIX_MAP.get(role, role[:2].upper())
+
+    for i in range(n):
+        gender    = np.random.choice(["M", "F"], p=[0.58, 0.42])
+        age_group = np.random.choice(
+            ["22-25", "26-30", "31-35", "36-40", "40+"],
+            p=[0.28, 0.32, 0.22, 0.12, 0.06]
+        )
+
+        edu_level    = gen_edu_level(role)
+        years_exp    = gen_experience(role)
+        edu_rel      = gen_edu_relevance(role, edu_level)
+        s_skill      = gen_skill_score(role, edu_level, years_exp)
+        p_mcq        = gen_mcq_score(role, s_skill, edu_level)
+        p_desc       = gen_desc_score(role, s_skill, years_exp)
+        p_code       = gen_code_score(role, s_skill, years_exp, edu_level)
+
+        s_edu  = compute_s_edu(edu_level, edu_rel)
+        s_exp  = compute_s_exp(years_exp, req_years)
+        s_cv   = compute_s_cv(s_edu, s_exp, s_skill, cv_w)
+        s_int  = compute_s_int(p_mcq, p_desc, p_code, int_w)
+        css    = compute_css(s_cv, s_int)
+
+        passed = hard_filter(role, edu_level, years_exp, s_skill, p_code)
+        rel = assign_relevance(role, css, s_skill, p_code, p_desc,
+                                s_exp, s_edu, p_mcq)
+
+        records.append({
+            "candidate_id":     f"{pfx}{i+1:05d}",
+            "job_role":         role,
+            "job_role_display": ROLE_DISPLAY_NAMES[role],
+            "gender":           gender,
+            "age_group":        age_group,
+            "edu_level":        edu_level,
+            "edu_level_name":   EDU_LEVEL_NAMES[edu_level],
+            "years_experience": years_exp,
+            "edu_relevance":    round(edu_rel, 4),
+            "P_mcq":            round(p_mcq, 4),
+            "P_desc":           round(p_desc, 4),
+            "P_code":           round(p_code, 4),
+            "S_edu":            round(s_edu, 4),
+            "S_exp":            round(s_exp, 4),
+            "S_skill":          round(s_skill, 4),
+            "S_cv":             round(s_cv, 4),
+            "S_int":            round(s_int, 4),
+            "CSS":              round(css, 4),
+            "passed_hard_filter": int(passed),
+            "relevance_label":    rel,
+            "w_edu":    cv_w["w_edu"],
+            "w_exp":    cv_w["w_exp"],
+            "w_skill":  cv_w["w_skill"],
+            "w_mcq":    int_w["w_mcq"],
+            "w_desc":   int_w["w_desc"],
+            "w_code":   int_w["w_code"],
+            "W_CV":     0.40,
+            "W_INT":    0.60,
+        })
+
+    return pd.DataFrame(records)
+
+
+def load_or_generate_all_roles(datasets_dir):
+    """Loads all 20 role datasets, prioritizing provided Excel files, and outputs normalized DataFrames."""
+    role_dfs = {}
+    for role in ROLES:
+        excel_name = EXCEL_ROLE_MAPPING.get(role)
+        excel_path = os.path.join(datasets_dir, excel_name) if excel_name else None
+        
+        if excel_path and os.path.exists(excel_path):
+            df = normalize_excel_dataset(excel_path, role)
+            print(f"  [OK] Loaded Excel: {excel_name:<35} -> {role} ({len(df)} rows)")
+        else:
+            csv_path = os.path.join(datasets_dir, f"role_{role}.csv")
+            if os.path.exists(csv_path):
+                df = pd.read_csv(csv_path)
+                print(f"  [OK] Loaded CSV:   role_{role}.csv{' ':<24} -> {role} ({len(df)} rows)")
+            else:
+                df = generate_candidates(role, RECORDS_PER_ROLE)
+                print(f"  [OK] Generated:    {role:<35} ({len(df)} rows)")
+        role_dfs[role] = df
+    return role_dfs
+
+
 def generate_fairness_dataset(n_per_group=250):
     """
     Demographically balanced dataset for fairness testing.
     250 male + 250 female per role = 500 × 20 = 10,000 total.
-    Tests each role separately.
     """
     all_records = []
 
@@ -433,7 +509,7 @@ def generate_fairness_dataset(n_per_group=250):
         req_years = REQUIRED_YEARS[role]
         cv_w      = ROLE_CV_WEIGHTS[role]
         int_w     = ROLE_INTERVIEW_WEIGHTS[role]
-        pfx       = role[:2].upper()
+        pfx       = ROLE_PREFIX_MAP.get(role, role[:2].upper())
 
         for gender in ["M", "F"]:
             for j in range(n_per_group):
@@ -456,7 +532,7 @@ def generate_fairness_dataset(n_per_group=250):
                                           s_exp, s_edu, p_mcq)
 
                 all_records.append({
-                    "candidate_id":       f"FA{role[:2].upper()}{gender}{j+1:04d}",
+                    "candidate_id":       f"FA{pfx}{gender}{j+1:04d}",
                     "job_role":           role,
                     "gender":             gender,
                     "age_group":          np.random.choice(["22-25","26-30","31-35","36+"]),
@@ -515,7 +591,7 @@ def generate_job_requirements():
 
 
 # ─────────────────────────────────────────────
-# RUN
+# MAIN EXECUTION
 # ─────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -523,27 +599,26 @@ if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
 
     print("=" * 65)
-    print("  GENERATING DATASETS — 20 IT Roles | Component 3")
+    print("  GENERATING & INGESTING DATASETS — 20 IT Roles | Component 3")
     print("  IT22027610 | Perera K.G.S.N | R26-IT-148")
     print("=" * 65)
 
-    all_dfs = []
-    for role in ROLES:
-        df = generate_candidates(role, RECORDS_PER_ROLE)
-        all_dfs.append(df)
-        vc = df["relevance_label"].value_counts().sort_index().to_dict()
-        pf = df["passed_hard_filter"].mean() * 100
-        print(f"  {role:<30} n={len(df)} | filter={pf:.0f}% | labels={vc}")
+    role_dfs = load_or_generate_all_roles(OUT)
+    
+    # Save each role CSV
+    for role, df in role_dfs.items():
+        safe = role.replace(" ", "_")
+        df.to_csv(f"{OUT}/role_{safe}.csv", index=False)
 
-    full_df = pd.concat(all_dfs, ignore_index=True)
-    print(f"\n  Total: {len(full_df):,} candidates")
+    full_df = pd.concat(list(role_dfs.values()), ignore_index=True)
+    print(f"\n  Total Candidates: {len(full_df):,} across {len(ROLES)} roles")
 
     # Train / Val / Test split (60/15/25) per role
     train_l, val_l, test_l = [], [], []
     for role in ROLES:
-        rdf = full_df[full_df["job_role"]==role].sample(frac=1, random_state=42)
-        n   = len(rdf)
-        t1, t2 = int(n*0.60), int(n*0.75)
+        rdf = full_df[full_df["job_role"] == role].sample(frac=1, random_state=42)
+        n = len(rdf)
+        t1, t2 = int(n * 0.60), int(n * 0.75)
         train_l.append(rdf.iloc[:t1])
         val_l.append(rdf.iloc[t1:t2])
         test_l.append(rdf.iloc[t2:])
@@ -552,24 +627,15 @@ if __name__ == "__main__":
     val_df   = pd.concat(val_l,   ignore_index=True)
     test_df  = pd.concat(test_l,  ignore_index=True)
 
-    print(f"\n  Train: {len(train_df):,} | Val: {len(val_df):,} | Test: {len(test_df):,}")
+    print(f"  Train: {len(train_df):,} | Val: {len(val_df):,} | Test: {len(test_df):,}")
 
-    # Per-role datasets for individual training
-    print("\n  Saving per-role datasets...")
-    for role in ROLES:
-        role_df = full_df[full_df["job_role"] == role]
-        safe    = role.replace(" ", "_")
-        role_df.to_csv(f"{OUT}/role_{safe}.csv", index=False)
-
-    # Fairness dataset
-    print("\n  Generating fairness dataset (250M+250F per role)...")
+    print("\n  Generating Fairness Dataset (250M + 250F per role)...")
     fair_df = generate_fairness_dataset(250)
-    print(f"  Fairness: {len(fair_df):,} | Gender: {fair_df['gender'].value_counts().to_dict()}")
+    print(f"  Fairness Set: {len(fair_df):,} records")
 
-    # Job requirements
     jobs_df = generate_job_requirements()
 
-    # Save all
+    # Save master datasets
     full_df.to_csv(f"{OUT}/candidates_full.csv",       index=False)
     train_df.to_csv(f"{OUT}/train_set.csv",             index=False)
     val_df.to_csv(f"{OUT}/val_set.csv",                 index=False)
@@ -577,11 +643,11 @@ if __name__ == "__main__":
     fair_df.to_csv(f"{OUT}/fairness_test_set.csv",      index=False)
     jobs_df.to_csv(f"{OUT}/job_requirements.csv",       index=False)
 
-    print("\n  Files saved:")
-    for fname in ["candidates_full.csv","train_set.csv","val_set.csv",
-                  "test_set.csv","fairness_test_set.csv","job_requirements.csv"]:
+    print("\n  All 20 Role Datasets & Master Splits Saved Successfully:")
+    for fname in ["candidates_full.csv", "train_set.csv", "val_set.csv",
+                  "test_set.csv", "fairness_test_set.csv", "job_requirements.csv"]:
         size = os.path.getsize(f"{OUT}/{fname}") // 1024
         rows = len(pd.read_csv(f"{OUT}/{fname}"))
-        print(f"    {fname:<35} {rows:>6} rows | {size} KB")
-    print(f"\n  Per-role CSVs: datasets/role_<rolename>.csv  (10 files)")
+        print(f"    {fname:<35} {rows:>6} rows | {size:>5} KB")
+    print(f"\n  Per-role CSVs: datasets/role_<rolename>.csv (20 files)")
     print("=" * 65)
