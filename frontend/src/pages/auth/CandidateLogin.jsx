@@ -35,12 +35,6 @@ export default function CandidateLogin() {
     }
   }
 
-  const fillDemo = () => {
-    setEmail('candidate@example.com')
-    setPassword('Candidate@123')
-    handleLogin(null, 'candidate@example.com', 'Candidate@123')
-  }
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>
