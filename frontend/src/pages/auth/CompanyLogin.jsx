@@ -35,12 +35,6 @@ export default function CompanyLogin() {
     }
   }
 
-  const fillDemo = () => {
-    setEmail('company@techcorp.com')
-    setPassword('Company@123')
-    handleLogin(null, 'company@techcorp.com', 'Company@123')
-  }
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>

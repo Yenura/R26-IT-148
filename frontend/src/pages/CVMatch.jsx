@@ -418,7 +418,7 @@ export default function CVMatch() {
                 <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>1. SKILLS MATCH ($S_{`{skill}`}$)</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>1. SKILLS MATCH (S_skill)</span>
                       <span style={{ fontSize: 18, fontWeight: 900, color: '#22c55e' }}>{matchResult.skill_score?.toFixed(0) || 0} / 100</span>
                     </div>
                     <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
@@ -442,14 +442,14 @@ export default function CVMatch() {
                 <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>2. EXPERIENCE MATCH ($S_{`{exp}`}$)</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>2. EXPERIENCE MATCH (S_exp)</span>
                       <span style={{ fontSize: 18, fontWeight: 900, color: '#3b82f6' }}>{matchResult.experience_score?.toFixed(0) || 0} / 100</span>
                     </div>
                     <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
                       <div style={{ width: `${Math.min(100, matchResult.experience_score || 0)}%`, height: '100%', background: '#3b82f6', borderRadius: 4, transition: 'width 0.5s ease' }} />
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      Ratio formula: $\min(\text{Candidate Years} / \text{Required Years}, 1.0) \times 100$
+                      Ratio formula: min(Candidate Years / Required Years, 1.0) × 100
                     </div>
                   </div>
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)', fontSize: 12 }}>
@@ -468,7 +468,7 @@ export default function CVMatch() {
                 <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>3. EDUCATION MATCH ($S_{`{edu}`}$)</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>3. EDUCATION MATCH (S_edu)</span>
                       <span style={{ fontSize: 18, fontWeight: 900, color: '#8b5cf6' }}>{(matchResult.education_score ?? 100).toFixed(0)} / 100</span>
                     </div>
                     <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
@@ -512,7 +512,7 @@ export default function CVMatch() {
                       <strong style={{ color: 'var(--text)' }}>Architecture Guarantee:</strong> Component 1 calculates these 3 independent scores without collapsing them into a single final ranking score.
                     </p>
                     <p style={{ margin: 0 }}>
-                      Component 3 consumes $C_1 = \{`{S_{skill}, S_{exp}, S_{edu}`}\}$ alongside interview evaluation scores ($P_{`{mcq}`}, P_{`{desc}`}, P_{`{code}`}$) to produce the final weighted candidate ranking.
+                      Component 3 consumes C_1 = &#123;S_skill, S_exp, S_edu&#125; alongside interview evaluation scores (P_mcq, P_desc, P_code) to produce the final weighted candidate ranking.
                     </p>
                   </div>
                 </div>
