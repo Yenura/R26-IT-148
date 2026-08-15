@@ -1,12 +1,22 @@
 Role,DP,EOD,Fair
-Software Engineer,0.024,0.0053,True
-Data Scientist,0.004,0.0263,True
-Machine Learning Engineer,0.02,0.007,True
-DevOps Engineer,0.016,0.0062,True
-Cybersecurity Analyst,0.004,0.0111,True
-Cloud Solutions Architect,0.008,0.0,True
-Database Administrator,0.008,0.0205,True
-Frontend Developer,0.032,0.0001,True
-Backend Developer,0.036,0.0106,True
-Mobile App Developer,0.04,0.0001,True
-OVERALL,0.008,0.006,True
+Software Engineer,0.008,0.0286,True
+Data Scientist,0.004,0.0064,True
+Machine Learning Engineer,0.012,0.0056,True
+DevOps Engineer,0.032,0.0002,True
+Cybersecurity Analyst,0.028,0.0,True
+Cloud Solutions Architect,0.004,0.0052,True
+Database Administrator,0.02,0.014,True
+Frontend Developer,0.02,0.0113,True
+Backend Developer,0.016,0.0055,True
+Mobile App Developer,0.02,0.0002,True
+Full Stack Developer,0.02,0.0062,True
+QA/Test Automation Engineer,0.016,0.0161,True
+Data Engineer,0.012,0.0116,True
+Site Reliability Engineer (SRE),0.06,0.0131,False
+UI/UX Designer,0.02,0.0012,True
+Network Engineer,0.044,0.0154,True
+Business/Systems Analyst,0.02,0.013,True
+AI/NLP Engineer,0.004,0.0074,True
+Blockchain Developer,0.02,0.0118,True
+Embedded Systems Engineer,0.028,0.0121,True
+OVERALL,0.0008,0.0026,True
