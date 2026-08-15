@@ -339,11 +339,15 @@ async def rank_pipeline(request: Request, job_id: str):
                 "CSS": round(r["CSS"], 4),
                 "S_cv": round(r["S_cv"], 4),
                 "S_int": round(r["S_int"], 4),
-                "P_mcq": r["P_mcq"],
-                "P_desc": r["P_desc"],
-                "P_code": r["P_code"],
+                "S_edu": round(r.get("S_edu", 0), 4),
+                "S_exp": round(r.get("S_exp", 0), 4),
+                "S_skill": round(r.get("S_skill", 0), 4),
+                "P_mcq": round(r.get("P_mcq", 0), 4),
+                "P_desc": round(r.get("P_desc", 0), 4),
+                "P_code": round(r.get("P_code", 0), 4),
                 "ltr_score": r.get("ltr_score"),
                 "passed_hard_filter": r["passed_hard_filter"],
+                "filter_fail_reason": r.get("filter_fail_reason", ""),
             })
         
         return {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
