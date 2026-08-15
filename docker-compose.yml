@@ -17,8 +17,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb://mongodb:27017}"
-      DB_NAME: "recruit_ai"
+      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      DB_NAME: "HR"
       JWT_SECRET: "change-this-in-production"
       ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:5174,http://localhost:3000"
     depends_on:
@@ -40,8 +40,8 @@ services:
     ports:
       - "8001:8001"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb://mongodb:27017}"
-      DB_NAME: "recruit_ai"
+      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      DB_NAME: "HR"
       PORT: "8001"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
     working_dir: /app/component1/backend
@@ -55,8 +55,8 @@ services:
     ports:
       - "8002:8002"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb://mongodb:27017}"
-      DB_NAME: "recruit_ai"
+      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      DB_NAME: "HR"
       PORT: "8002"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
     working_dir: /app/component2/backend
@@ -70,8 +70,8 @@ services:
     ports:
       - "8003:8003"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb://mongodb:27017}"
-      DB_NAME: "recruit_ai"
+      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      DB_NAME: "HR"
       PORT: "8003"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
     working_dir: /app/component3/backend
@@ -85,8 +85,8 @@ services:
     ports:
       - "8004:8004"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb://mongodb:27017}"
-      DB_NAME: "recruit_ai"
+      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      DB_NAME: "HR"
       PORT: "8004"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8004"]
     working_dir: /app/component4/backend
