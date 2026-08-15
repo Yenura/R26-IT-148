@@ -1,6 +1,6 @@
 """Pydantic schemas for auth, resume, jobs, export."""
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ── Auth ────────────────────────────────────────────────────────
@@ -69,7 +69,27 @@ class JobCreate(BaseModel):
     salary_range: str = ""
     status: str = "open"
     interview_required: bool = False
-    interview_question_count: int = Field(default=10, ge=3, le=30)
+    interview_question_count: int = 10
+
+    @field_validator("experience_required", mode="before")
+    @classmethod
+    def parse_exp(cls, v):
+        if v is None or v == "":
+            return 0
+        try:
+            return int(v)
+        except (ValueError, TypeError):
+            return 0
+
+    @field_validator("interview_question_count", mode="before")
+    @classmethod
+    def parse_iq_count(cls, v):
+        if v is None or v == "":
+            return 10
+        try:
+            return max(3, min(30, int(v)))
+        except (ValueError, TypeError):
+            return 10
 
 
 class JobUpdate(BaseModel):

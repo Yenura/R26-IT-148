@@ -57,6 +57,7 @@ async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
 
 
 @router.post("", response_model=JobOut, status_code=201)
+@router.post("/", response_model=JobOut, status_code=201)
 async def create_job(payload: JobCreate, request: Request, company: dict = Depends(require_company)):
     now = datetime.now(timezone.utc)
     doc = {
@@ -84,6 +85,7 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
 
 
 @router.get("", response_model=list[JobOut])
+@router.get("/", response_model=list[JobOut])
 async def list_jobs(request: Request, company: dict = Depends(require_company)):
     cursor = request.app.state.db.jobs.find({"company_id": company["_id"]}).sort("created_at", -1)
     return [_job_out(doc) async for doc in cursor]
