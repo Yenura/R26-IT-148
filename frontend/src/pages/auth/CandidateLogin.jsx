@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, User, ArrowLeft, Zap } from 'lucide-react'
+import { Brain, Mail, Lock, User, ArrowLeft } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CandidateLogin() {
@@ -10,14 +10,12 @@ export default function CandidateLogin() {
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogin = async (e, demoEmail = null, demoPassword = null) => {
-    if (e) e.preventDefault()
-    const targetEmail = demoEmail || email
-    const targetPassword = demoPassword || password
-    if (!targetEmail || !targetPassword) return toast.error('Fill in all fields')
+  const handleLogin = async (e) => {
+    e?.preventDefault()
+    if (!email || !password) return toast.error('Fill in all fields')
     setBusy(true)
     try {
-      const r = await C0.post('/auth/login/candidate', { email: targetEmail, password: targetPassword })
+      const r = await C0.post('/auth/login/candidate', { email: email, password: password })
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'candidate')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -33,12 +31,6 @@ export default function CandidateLogin() {
     } finally {
       setBusy(false)
     }
-  }
-
-  const fillDemo = () => {
-    setEmail('candidate@example.com')
-    setPassword('Candidate@123')
-    handleLogin(null, 'candidate@example.com', 'Candidate@123')
   }
 
   return (
@@ -98,19 +90,6 @@ export default function CandidateLogin() {
               <User size={16} /> {busy ? 'Signing in...' : 'Sign In as Candidate'}
             </button>
           </form>
-
-          {/* Quick Demo Login Button */}
-          <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px dashed var(--border)' }}>
-            <button
-              type="button"
-              className="btn btn-ghost"
-              onClick={fillDemo}
-              disabled={busy}
-              style={{ width: '100%', height: 40, fontSize: 13, border: '1px solid var(--accent)', color: 'var(--accent)', background: 'rgba(59, 130, 246, 0.05)', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-            >
-              <Zap size={15} /> Quick Demo Candidate Login
-            </button>
-          </div>
 
           <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13 }}>
             <span className="muted">Don't have a candidate account? </span>

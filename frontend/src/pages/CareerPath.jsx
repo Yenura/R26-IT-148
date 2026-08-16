@@ -25,7 +25,7 @@ export default function CareerPath() {
     setBusy(true)
     try {
       const r = await axios.post(`${C4}/api/v1/career/path`, {
-        candidate_id: localStorage.getItem('recruitai.user_id') || 'web-user',
+        candidate_id: localStorage.getItem('recruitai.user_id'),
         current_role: form.current_role,
         target_role: form.current_role,
         skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),

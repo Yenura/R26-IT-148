@@ -237,6 +237,7 @@ class InterviewRequest(BaseModel):
     job_role: str
     required_skills: List[str]
     num_questions: int = 10
+    job_level: Optional[str] = "Mid-Level"
 
 
 # ====================================================================

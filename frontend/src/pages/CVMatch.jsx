@@ -72,9 +72,9 @@ export default function CVMatch() {
 
     try {
       const targetResumeDoc = resumes.find((res) => res.id === selectedResume) || {}
-      const currentSkills = targetResumeDoc.skills || ['Python', 'SQL']
+      const currentSkills = targetResumeDoc.skills || []
       const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
-      const roleName = matchedJobDoc ? matchedJobDoc.title : selectedCanonicalRole || 'Software Engineer'
+      const roleName = matchedJobDoc ? matchedJobDoc.title : selectedCanonicalRole
 
       const simRes = await axios.post(`${C4}/api/v1/skill-gap/simulate`, {
         current_skills: currentSkills,
@@ -148,12 +148,12 @@ export default function CVMatch() {
 
     try {
       const targetResumeDoc = resumes.find(res => res.id === resumeToUse) || {}
-      const candidateSkills = targetResumeDoc.skills || ['Python', 'SQL', 'Git']
+      const candidateSkills = targetResumeDoc.skills || []
 
       const matchedJobDoc = jobs.find(j => j.id === selectedJob)
       const targetRoleName = matchedJobDoc
         ? matchedJobDoc.title
-        : (selectedCanonicalRole || 'Software Engineer')
+        : selectedCanonicalRole
 
       // 1. Fetch Component 0 Resume Match
       let matchUrl = `${API}/api/v1/resume/match?resume_id=${resumeToUse}`

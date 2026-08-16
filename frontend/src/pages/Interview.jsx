@@ -49,7 +49,7 @@ export default function Interview() {
         ? jobSkills.split(',').filter(Boolean)
         : (Object.keys(roles).length > 0 ? (roles[selectedRole] || []).slice(0, 5) : [])
       const r = await c2Start({
-        candidate_id: localStorage.getItem('recruitai.user_id') || 'web-candidate',
+        candidate_id: localStorage.getItem('recruitai.user_id'),
         job_role: selectedRole,
         required_skills: skills,
         num_questions: numQuestions,
@@ -72,7 +72,7 @@ export default function Interview() {
     try {
       const questions = session.questions || []
       const payload = {
-        candidate_id: localStorage.getItem('recruitai.user_id') || 'web-candidate',
+        candidate_id: localStorage.getItem('recruitai.user_id'),
         session_id: session.session_id,
         job_role: selectedRole,
         answers: questions.map((q) => {

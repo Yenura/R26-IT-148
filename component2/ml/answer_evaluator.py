@@ -35,7 +35,7 @@ class DescriptiveAnswerEvaluator:
         self.model = SentenceTransformer(model_name)
         self.alpha = 0.85  # Weight for semantic similarity
         self.beta = 0.15   # Weight for keyword coverage
-        print(f"✓ Loaded SBERT model: {model_name}")
+        print(f"[OK] Loaded SBERT model: {model_name}")
     
     def encode_text(self, text: str) -> np.ndarray:
         """
@@ -187,13 +187,13 @@ class DescriptiveAnswerEvaluator:
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'wb') as f:
             pickle.dump(self.model, f)
-        print(f"✓ Model saved to {output_path}")
+        print(f"[OK] Model saved to {output_path}")
     
     def load_model(self, input_path: str):
         """Load model from disk"""
         with open(input_path, 'rb') as f:
             self.model = pickle.load(f)
-        print(f"✓ Model loaded from {input_path}")
+        print(f"[OK] Model loaded from {input_path}")
 
 
 class MCQEvaluator:

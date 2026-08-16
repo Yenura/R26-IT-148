@@ -1,4 +1,5 @@
 """Job posting routes for companies."""
+import re
 from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
@@ -8,13 +9,66 @@ from routers.auth import require_company, require_candidate, get_current_user
 
 router = APIRouter()
 
+# Canonical interview roles (component2 interview supports exactly these 10).
+_INTERVIEW_ROLES = [
+    "Software Engineer", "Data Scientist", "Machine Learning Engineer",
+    "DevOps Engineer", "Cybersecurity Analyst", "Cloud Solutions Architect",
+    "Database Administrator", "Frontend Developer", "Backend Developer",
+    "Mobile App Developer",
+]
+
+# Level detection: first matching pattern wins. Order matters (Staff before Senior).
+_LEVEL_PATTERNS = [
+    ("Staff/Principal", ["staff", "principal", "l6", "l7"]),
+    ("Senior", ["senior", "sr", "l4", "l5"]),
+    ("Junior", ["junior", "jr", "entry", "l1", "l2"]),
+    ("Intern", ["intern", "trainee"]),
+]
+_DEFAULT_LEVEL = "Mid-Level"
+
+# Words that only carry level meaning and must be stripped before role matching.
+_LEVEL_WORDS = set(w for _, ws in _LEVEL_PATTERNS for w in ws) | {"lead", "associate", "mid", "level", "l3"}
+
+
+def _normalize_job_role(title: str) -> str:
+    """Derive the canonical interview role from a free-text job title."""
+    t = re.sub(r"[^a-z0-9 ]", " ", (title or "").lower())
+    for word in _LEVEL_WORDS:
+        t = t.replace(word, " ")
+    t = re.sub(r"\s+", " ", t).strip()
+    if not t:
+        return ""
+    twords = t.split()
+    best_role, best_score = "", 0
+    for role in _INTERVIEW_ROLES:
+        rwords = role.lower().split()
+        score = sum(1 for rw in rwords if any(tw.startswith(rw) or rw.startswith(tw) for tw in twords))
+        if score > best_score:
+            best_role, best_score = role, score
+    return best_role if best_score else (title or "").strip()
+
+
+def _normalize_job_level(title: str) -> str:
+    """Derive the job level (Intern/Junior/Mid-Level/Senior/Staff/Principal) from a title."""
+    words = re.findall(r"[a-z0-9]+", (title or "").lower())
+    for level, keywords in _LEVEL_PATTERNS:
+        if any(
+            (w == kw if len(kw) <= 3 else w.startswith(kw))
+            for w in words for kw in keywords
+        ):
+            return level
+    return _DEFAULT_LEVEL
+
 
 def _job_out(doc: dict, company_name: str = "") -> JobOut:
+    title = doc.get("title", "")
     return JobOut(
         id=str(doc["_id"]),
         company_id=str(doc.get("company_id", "")),
         company_name=company_name,
-        title=doc.get("title", ""),
+        title=title,
+        job_role=doc.get("job_role") or _normalize_job_role(title),
+        job_level=doc.get("job_level") or _normalize_job_level(title),
         department=doc.get("department", ""),
         employment_type=doc.get("employment_type", ""),
         location=doc.get("location", ""),
@@ -60,9 +114,12 @@ async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
 @router.post("/", response_model=JobOut, status_code=201)
 async def create_job(payload: JobCreate, request: Request, company: dict = Depends(require_company)):
     now = datetime.now(timezone.utc)
+    title = payload.title.strip()
     doc = {
         "company_id": company["_id"],
-        "title": payload.title.strip(),
+        "title": title,
+        "job_role": payload.job_role or _normalize_job_role(title),
+        "job_level": payload.job_level or _normalize_job_level(title),
         "department": payload.department,
         "employment_type": payload.employment_type,
         "location": payload.location,
@@ -119,6 +176,14 @@ async def get_job_public(job_id: str, request: Request):
     if not doc:
         raise HTTPException(status_code=404, detail="Job not found")
     return _job_out(doc)
+
+
+@router.get("/applications", response_model=list[ApplicationOut])
+async def list_my_applications(request: Request, user: dict = Depends(get_current_user)):
+    """Candidate's own applications (used by candidate dashboards)."""
+    db = request.app.state.db
+    cursor = db.applications.find({"candidate_id": str(user["_id"])}).sort("applied_at", -1)
+    return [_app_out(doc) async for doc in cursor]
 
 
 @router.get("/{job_id}", response_model=JobOut)

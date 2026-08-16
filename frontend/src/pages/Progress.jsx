@@ -12,7 +12,7 @@ export default function Progress() {
   const [data, setData] = useState(null)
   const [busy, setBusy] = useState(false)
   const [popBusy, setPopBusy] = useState(false)
-  const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
+  const candidateId = localStorage.getItem('recruitai.user_id')
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')

@@ -1,54 +1,27 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ListOrdered, Trophy, Users, Briefcase } from 'lucide-react'
-import { c3Roles, c3Rank, c0JobsAll, c3Pipeline } from '../api'
+import { ListOrdered, Trophy, Briefcase } from 'lucide-react'
+import { c0JobsAll, c3Pipeline } from '../api'
 
 export default function Ranking() {
   const navigate = useNavigate()
-  const [roles, setRoles] = useState({})
   const [jobs, setJobs] = useState([])
   const [selectedJob, setSelectedJob] = useState('')
-  const [selectedRole, setSelectedRole] = useState('')
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
-  const [mode, setMode] = useState('demo') // 'demo' or 'pipeline'
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     if (!token) { navigate('/'); return }
-    loadRoles()
     loadJobs()
   }, [])
-
-  const loadRoles = async () => {
-    try {
-      const r = await c3Roles()
-      setRoles(r.data.roles || {})
-    } catch {}
-  }
 
   const loadJobs = async () => {
     try {
       const r = await c0JobsAll()
       setJobs(r.data || [])
     } catch {}
-  }
-
-  const computeDemo = async () => {
-    if (!selectedRole) return toast.error('Select a role')
-    setBusy(true)
-    try {
-      const r = await c3Rank({
-        job_role: selectedRole,
-        candidates: [
-          { candidate_id: 'C-1001', candidate_name: 'Ashan', skills: ['Python', 'SQL', 'AWS'], years_experience: 5, edu_level: 2, skill_score_raw: 0.85, P_mcq: 0.8, P_desc: 0.7, P_code: 0.9 },
-          { candidate_id: 'C-1002', candidate_name: 'Bimal', skills: ['Java', 'Docker'], years_experience: 3, edu_level: 1, skill_score_raw: 0.60, P_mcq: 0.5, P_desc: 0.6, P_code: 0.4 },
-        ],
-        w_cv: 0.6, w_int: 0.4,
-      })
-      setResult(r.data)
-    } catch (err) { toast.error('Failed') } finally { setBusy(false) }
   }
 
   const computePipeline = async () => {
@@ -67,51 +40,20 @@ export default function Ranking() {
       <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>Ranking</h1>
       <p className="muted" style={{ fontSize: 13, marginBottom: 24 }}>Rank candidates for a job role</p>
 
-      {/* Mode toggle */}
-      <div className="card" style={{ padding: 16, marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            className={mode === 'demo' ? 'btn' : ''}
-            onClick={() => { setMode('demo'); setResult(null) }}
-            style={{ flex: 1 }}
-          >
-            <ListOrdered size={16} /> Demo Mode
-          </button>
-          <button
-            className={mode === 'pipeline' ? 'btn' : ''}
-            onClick={() => { setMode('pipeline'); setResult(null) }}
-            style={{ flex: 1 }}
-          >
-            <Users size={16} /> Real Pipeline
-          </button>
-        </div>
+      <div className="card" style={{ padding: 24, marginBottom: 20 }}>
+        <label><Briefcase size={14} style={{ verticalAlign: -2 }} /> Select Job</label>
+        <select value={selectedJob} onChange={(e) => setSelectedJob(e.target.value)} style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, marginBottom: 16 }}>
+          <option value="">Choose job...</option>
+          {jobs.map((j) => <option key={j.id} value={j.id}>{j.title} — {j.company_name || 'Unknown'}</option>)}
+        </select>
+        {selectedJobObj && (
+          <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
+            <div><strong>Skills:</strong> {selectedJobObj.required_skills?.join(', ') || 'N/A'}</div>
+            <div><strong>Experience:</strong> {selectedJobObj.experience_required || 0} years</div>
+          </div>
+        )}
+        <button className="btn" onClick={computePipeline} disabled={busy} style={{ width: '100%' }}><ListOrdered size={16} /> {busy ? 'Fetching & Ranking...' : 'Rank Real Applicants'}</button>
       </div>
-
-      {mode === 'demo' ? (
-        <div className="card" style={{ padding: 24, marginBottom: 20 }}>
-          <label>Select Role</label>
-          <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, marginBottom: 16 }}>
-            <option value="">Choose role...</option>
-            {Object.keys(roles).sort().map((r) => <option key={r} value={r}>{r}</option>)}
-          </select>
-          <button className="btn" onClick={computeDemo} disabled={busy} style={{ width: '100%' }}><ListOrdered size={16} /> {busy ? 'Computing...' : 'Rank Candidates'}</button>
-        </div>
-      ) : (
-        <div className="card" style={{ padding: 24, marginBottom: 20 }}>
-          <label><Briefcase size={14} style={{ verticalAlign: -2 }} /> Select Job</label>
-          <select value={selectedJob} onChange={(e) => setSelectedJob(e.target.value)} style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, marginBottom: 16 }}>
-            <option value="">Choose job...</option>
-            {jobs.map((j) => <option key={j.id} value={j.id}>{j.title} — {j.company_name || 'Unknown'}</option>)}
-          </select>
-          {selectedJobObj && (
-            <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, marginBottom: 16, fontSize: 13 }}>
-              <div><strong>Skills:</strong> {selectedJobObj.required_skills?.join(', ') || 'N/A'}</div>
-              <div><strong>Experience:</strong> {selectedJobObj.experience_required || 0} years</div>
-            </div>
-          )}
-          <button className="btn" onClick={computePipeline} disabled={busy} style={{ width: '100%' }}><ListOrdered size={16} /> {busy ? 'Fetching & Ranking...' : 'Rank Real Applicants'}</button>
-        </div>
-      )}
 
       {result && (
         <div className="card" style={{ padding: 24 }}>

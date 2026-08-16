@@ -17,7 +17,7 @@ VALID_JOB_ROLES = {
     "Business/Systems Analyst", "AI/NLP Engineer",
     "Blockchain Developer", "Embedded Systems Engineer",
 }
-VALID_JOB_LEVELS = {"Junior", "Mid-Level", "Senior", "Lead", "Principal / Staff"}
+VALID_JOB_LEVELS = {"Intern", "Junior", "Mid-Level", "Senior", "Staff/Principal", "Lead", "Principal / Staff"}
 VALID_WORK_MODES = {"On-Site", "Hybrid", "Remote"}
 
 

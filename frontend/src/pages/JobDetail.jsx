@@ -40,7 +40,7 @@ export default function JobDetail() {
       const { default: api } = await import('../api')
       const [r1, r2] = await Promise.all([
         api.C0.get('/resume/'),
-        api.C0.get('/jobs'),
+        api.C0.get('/jobs/applications'),
       ])
       setResumes(r1.data)
       const apps = Array.isArray(r2.data) ? r2.data : r2.data.applications || []
@@ -86,13 +86,14 @@ export default function JobDetail() {
   const startInterview = async () => {
     if (!job) return
     try {
-      const skills = job.required_skills?.length > 0 ? job.required_skills : [job.title]
+      const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
       const r = await fetch(`${C2}/api/v1/interview/start`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          candidate_id: localStorage.getItem('recruitai.user_id') || 'guest',
-          job_role: job.title,
+          candidate_id: localStorage.getItem('recruitai.user_id'),
+          job_role: job.job_role || job.title,
+          job_level: job.job_level || 'Mid-Level',
           required_skills: skills,
           num_questions: job.interview_question_count || 10,
         }),
@@ -212,7 +213,7 @@ export default function JobDetail() {
               <h3 style={{ marginBottom: 4 }}>Practice Interview</h3>
               <p className="muted" style={{ fontSize: 13 }}>Practice with questions for this role. Adjustable question count.</p>
             </div>
-            <Link to={`/candidate/interview?role=${encodeURIComponent(job.title)}&skills=${encodeURIComponent(skills.join(','))}`} className="btn btn-ghost btn-sm">
+            <Link to={`/candidate/interview?role=${encodeURIComponent(job.job_role || job.title)}&skills=${encodeURIComponent(skills.join(','))}`} className="btn btn-ghost btn-sm">
               <Play size={14} /> Practice
             </Link>
           </div>
