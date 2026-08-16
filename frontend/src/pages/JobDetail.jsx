@@ -16,6 +16,7 @@ export default function JobDetail() {
   const [applied, setApplied] = useState(false)
   const [interviewStarted, setInterviewStarted] = useState(false)
   const [interviewSession, setInterviewSession] = useState(null)
+  const [interviewDone, setInterviewDone] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -45,6 +46,14 @@ export default function JobDetail() {
       setResumes(r1.data)
       const apps = Array.isArray(r2.data) ? r2.data : r2.data.applications || []
       setApplied(apps.some(a => a.job_id === id && a.status !== 'withdrawn'))
+      // Check if candidate has completed interview for this job
+      try {
+        const candidateId = localStorage.getItem('recruitai.user_id')
+        const r3 = await api.C0.get(`/resume/interview-scores/${candidateId}`)
+        const scores = Array.isArray(r3.data) ? r3.data : []
+        const jobRole = job?.job_role || job?.title || ''
+        setInterviewDone(scores.some(s => s.job_role === jobRole))
+      } catch {}
     } catch {}
   }
 
@@ -57,6 +66,11 @@ export default function JobDetail() {
 
   const apply = async () => {
     if (resumes.length === 0) { toast.error('Upload a resume first'); return }
+    if (job?.interview_required && !interviewDone) {
+      toast.error('You must complete the interview before applying')
+      return
+    }
+    if (!confirm('Apply to this job with your resume?')) return
     try {
       const candidateId = localStorage.getItem('recruitai.user_id') || ''
       const candidateName = localStorage.getItem('recruitai.name') || ''
@@ -85,6 +99,7 @@ export default function JobDetail() {
 
   const startInterview = async () => {
     if (!job) return
+    if (!confirm(`Start interview for ${job.title}? You'll be asked ${job.interview_question_count || 10} questions.`)) return
     try {
       const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
       const r = await fetch(`${C2}/api/v1/interview/start`, {
@@ -162,9 +177,9 @@ export default function JobDetail() {
 
         {/* Interview Config Badge */}
         {job.interview_required && (
-          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: 'var(--color-warning-bg, rgba(251,191,36,0.1))', border: '1px solid var(--color-warning, #f59e0b)', fontSize: 13 }}>
+          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: interviewDone ? 'rgba(34,197,94,0.1)' : 'var(--color-warning-bg, rgba(251,191,36,0.1))', border: `1px solid ${interviewDone ? 'rgba(34,197,94,0.3)' : 'var(--color-warning, #f59e0b)'}`, fontSize: 13 }}>
             <Settings size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
-            Interview required ({job.interview_question_count || 10} questions)
+            {interviewDone ? 'Interview completed' : `Interview required (${job.interview_question_count || 10} questions)`}
           </div>
         )}
       </div>
@@ -182,17 +197,17 @@ export default function JobDetail() {
               <FileSearch size={24} style={{ color: 'var(--color-primary)' }} />
               <span style={{ fontWeight: 600, fontSize: 13 }}>CV Match</span>
             </Link>
-            <button onClick={startInterview} disabled={interviewStarted} style={{
+            <button onClick={startInterview} disabled={interviewStarted || interviewDone} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
               padding: 20, borderRadius: 8, border: '1px solid var(--color-border)',
-              background: 'var(--color-bg-elevated)', color: 'var(--color-fg)',
-              cursor: interviewStarted ? 'default' : 'pointer', opacity: interviewStarted ? 0.6 : 1,
+              background: interviewDone ? 'rgba(34,197,94,0.08)' : 'var(--color-bg-elevated)', color: 'var(--color-fg)',
+              cursor: interviewStarted || interviewDone ? 'default' : 'pointer', opacity: interviewStarted ? 0.6 : 1,
             }}>
-              <MessagesSquare size={24} style={{ color: 'var(--color-success)' }} />
-              <span style={{ fontWeight: 600, fontSize: 13 }}>
-                {interviewStarted ? 'In Progress...' : 'Start Interview'}
+              <MessagesSquare size={24} style={{ color: interviewDone ? 'var(--color-success)' : 'var(--color-success)' }} />
+              <span style={{ fontWeight: 600, fontSize: 13, color: interviewDone ? 'var(--color-success)' : undefined }}>
+                {interviewDone ? 'Interview Done' : interviewStarted ? 'In Progress...' : 'Start Interview'}
               </span>
-              {job.interview_required && (
+              {job.interview_required && !interviewDone && (
                 <span style={{ fontSize: 11, color: 'var(--color-warning)' }}>Required</span>
               )}
             </button>
@@ -225,7 +240,7 @@ export default function JobDetail() {
 
       {/* Inline Interview (if started) */}
       {interviewStarted && interviewSession && (
-        <InlineInterview session={interviewSession} job={job} onDone={() => { setInterviewStarted(false); setInterviewSession(null) }} />
+        <InlineInterview session={interviewSession} job={job} onDone={() => { setInterviewStarted(false); setInterviewSession(null); setInterviewDone(true) }} />
       )}
 
       {/* Company Applicants View */}
