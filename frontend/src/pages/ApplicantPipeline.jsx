@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Users, Trophy, ArrowLeft, Mail, Briefcase, Star, Loader } from 'lucide-react'
-import { C0, C3 } from '../api'
+import { Users, Trophy, ArrowLeft, Mail, Briefcase, Star, Loader, X, CheckCircle, XCircle, Code, FileText } from 'lucide-react'
+import { C0, C3, uInterviewDetail } from '../api'
 
 export default function ApplicantPipeline() {
   const navigate = useNavigate()
@@ -12,6 +12,8 @@ export default function ApplicantPipeline() {
   const [rankings, setRankings] = useState([])
   const [busy, setBusy] = useState(true)
   const [ranking, setRanking] = useState(false)
+  const [detail, setDetail] = useState(null)
+  const [detailBusy, setDetailBusy] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -48,6 +50,18 @@ export default function ApplicantPipeline() {
       toast.error('Failed to run ranking')
     } finally {
       setRanking(false)
+    }
+  }
+
+  const openDetail = async (candidateId) => {
+    setDetailBusy(true)
+    try {
+      const r = await uInterviewDetail(candidateId)
+      setDetail(r.data?.[0] || null)
+    } catch (err) {
+      toast.error('No interview data found')
+    } finally {
+      setDetailBusy(false)
     }
   }
 
@@ -201,6 +215,9 @@ export default function ApplicantPipeline() {
                   Applied {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'N/A'}
                 </div>
               </div>
+              <button className="btn btn-sm btn-ghost" onClick={() => openDetail(app.candidate_id)} disabled={detailBusy}>
+                <FileText size={14} /> Interview Details
+              </button>
               <button className="btn btn-sm" onClick={() => navigate(`/profile/${app.candidate_id}`)}>
                 <Star size={14} /> View
               </button>
@@ -208,6 +225,131 @@ export default function ApplicantPipeline() {
           ))
         )}
       </div>
+
+      {/* Interview Detail Modal */}
+      {detail && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
+        }} onClick={() => setDetail(null)}>
+          <div style={{
+            background: 'var(--bg-elevated)', borderRadius: 16, maxWidth: 700, width: '100%',
+            maxHeight: '85vh', overflow: 'auto', padding: 28, border: '1px solid var(--border)'
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <div>
+                <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>Interview Results</h2>
+                <p className="muted" style={{ fontSize: 13 }}>
+                  {detail.candidate_id} · {detail.job_role || 'N/A'} · {detail.grade || 'N/A'}
+                </p>
+              </div>
+              <button className="btn btn-ghost btn-sm" onClick={() => setDetail(null)} style={{ padding: 6 }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Score Summary */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+              {[
+                { label: 'Overall', value: detail.interview_score, color: 'var(--accent)' },
+                { label: 'MCQ', value: detail.mcq_score, color: 'var(--accent-2)' },
+                { label: 'Descriptive', value: detail.descriptive_score, color: '#f59e0b' },
+                { label: 'Coding', value: detail.coding_score, color: '#8b5cf6' },
+              ].map(s => (
+                <div key={s.label} style={{ textAlign: 'center', padding: 12, background: 'var(--bg)', borderRadius: 8 }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{(s.value || 0).toFixed(1)}%</div>
+                  <div className="muted" style={{ fontSize: 11 }}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Weak Topics */}
+            {detail.weak_topics?.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Weak Areas</h3>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {detail.weak_topics.map((t, i) => (
+                    <span key={i} className="chip" style={{ fontSize: 11, borderColor: 'var(--danger)', color: 'var(--danger)' }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* MCQ Details */}
+            {detail.mcq_details?.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
+                  <CheckCircle size={14} style={{ verticalAlign: -2, color: 'var(--accent-2)' }} /> MCQ Questions ({detail.mcq_correct || 0}/{detail.mcq_total || 0} correct)
+                </h3>
+                {detail.mcq_details.map((d, i) => (
+                  <div key={i} style={{
+                    padding: '8px 10px', marginBottom: 4, borderRadius: 6,
+                    background: d.is_correct ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
+                    border: `1px solid ${d.is_correct ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
+                    fontSize: 13
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Q{i + 1}: {d.question_id}</span>
+                      <span style={{ fontWeight: 600, color: d.is_correct ? 'var(--accent-2)' : 'var(--danger)' }}>
+                        {d.is_correct ? 'Correct' : 'Wrong'}
+                      </span>
+                    </div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                      Selected: option {d.candidate_option} · Correct: option {d.correct_option}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Descriptive Details */}
+            {detail.descriptive_details?.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
+                  <FileText size={14} style={{ verticalAlign: -2, color: '#f59e0b' }} /> Descriptive Questions
+                </h3>
+                {detail.descriptive_details.map((d, i) => (
+                  <div key={i} style={{
+                    padding: '8px 10px', marginBottom: 4, borderRadius: 6,
+                    background: 'var(--bg)', fontSize: 13
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Q{i + 1}: {d.question_id}</span>
+                      <span style={{ fontWeight: 600 }}>{(d.final_score || 0).toFixed(1)}%</span>
+                    </div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                      Similarity: {((d.cosine_similarity || 0) * 100).toFixed(0)}% · Keywords: {((d.keyword_coverage || 0) * 100).toFixed(0)}%
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Coding Details */}
+            {detail.coding_details?.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
+                  <Code size={14} style={{ verticalAlign: -2, color: '#8b5cf6' }} /> Coding Questions
+                </h3>
+                {detail.coding_details.map((d, i) => (
+                  <div key={i} style={{
+                    padding: '8px 10px', marginBottom: 4, borderRadius: 6,
+                    background: 'var(--bg)', fontSize: 13
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Q{i + 1}: {d.question_id}</span>
+                      <span style={{ fontWeight: 600 }}>{(d.code_score || 0).toFixed(1)}%</span>
+                    </div>
+                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
+                      Tests: {d.tests_passed || 0}/{d.total_tests || 0} passed · Syntax: {d.syntax_valid ? 'Valid' : 'Invalid'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

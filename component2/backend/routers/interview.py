@@ -317,9 +317,9 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
             processed_answers.append(processed_answer)
 
         evaluation_payload = {
-            "candidate_id": submission.get("candidate_id"),
+            "candidate_id": submission.get("candidate_id") or session.get("candidate_id", ""),
             "session_id": session_id,
-            "job_role": submission.get("job_role"),
+            "job_role": submission.get("job_role") or session.get("job_role", ""),
             "answers": processed_answers
         }
         

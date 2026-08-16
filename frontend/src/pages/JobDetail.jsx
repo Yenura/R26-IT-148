@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
-import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants } from '../api'
+import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode } from '../api'
 
 const C2 = import.meta.env.VITE_C2_URL || 'http://127.0.0.1:8002'
 
@@ -16,6 +16,7 @@ export default function JobDetail() {
   const [applied, setApplied] = useState(false)
   const [interviewStarted, setInterviewStarted] = useState(false)
   const [interviewSession, setInterviewSession] = useState(null)
+  const [interviewDone, setInterviewDone] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -45,6 +46,14 @@ export default function JobDetail() {
       setResumes(r1.data)
       const apps = Array.isArray(r2.data) ? r2.data : r2.data.applications || []
       setApplied(apps.some(a => a.job_id === id && a.status !== 'withdrawn'))
+      // Check if candidate has completed interview for this job
+      try {
+        const candidateId = localStorage.getItem('recruitai.user_id')
+        const r3 = await api.C0.get(`/resume/interview-scores/${candidateId}`)
+        const scores = Array.isArray(r3.data) ? r3.data : []
+        const jobRole = job?.job_role || job?.title || ''
+        setInterviewDone(scores.some(s => s.job_role === jobRole))
+      } catch {}
     } catch {}
   }
 
@@ -57,6 +66,11 @@ export default function JobDetail() {
 
   const apply = async () => {
     if (resumes.length === 0) { toast.error('Upload a resume first'); return }
+    if (job?.interview_required && !interviewDone) {
+      toast.error('You must complete the interview before applying')
+      return
+    }
+    if (!confirm('Apply to this job with your resume?')) return
     try {
       const candidateId = localStorage.getItem('recruitai.user_id') || ''
       const candidateName = localStorage.getItem('recruitai.name') || ''
@@ -85,11 +99,15 @@ export default function JobDetail() {
 
   const startInterview = async () => {
     if (!job) return
+    if (!confirm(`Start interview for ${job.title}? You'll be asked ${job.interview_question_count || 10} questions.`)) return
     try {
       const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
       const r = await fetch(`${C2}/api/v1/interview/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
+        },
         body: JSON.stringify({
           candidate_id: localStorage.getItem('recruitai.user_id'),
           job_role: job.job_role || job.title,
@@ -159,9 +177,9 @@ export default function JobDetail() {
 
         {/* Interview Config Badge */}
         {job.interview_required && (
-          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: 'var(--color-warning-bg, rgba(251,191,36,0.1))', border: '1px solid var(--color-warning, #f59e0b)', fontSize: 13 }}>
+          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: interviewDone ? 'rgba(34,197,94,0.1)' : 'var(--color-warning-bg, rgba(251,191,36,0.1))', border: `1px solid ${interviewDone ? 'rgba(34,197,94,0.3)' : 'var(--color-warning, #f59e0b)'}`, fontSize: 13 }}>
             <Settings size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
-            Interview required ({job.interview_question_count || 10} questions)
+            {interviewDone ? 'Interview completed' : `Interview required (${job.interview_question_count || 10} questions)`}
           </div>
         )}
       </div>
@@ -179,17 +197,17 @@ export default function JobDetail() {
               <FileSearch size={24} style={{ color: 'var(--color-primary)' }} />
               <span style={{ fontWeight: 600, fontSize: 13 }}>CV Match</span>
             </Link>
-            <button onClick={startInterview} disabled={interviewStarted} style={{
+            <button onClick={startInterview} disabled={interviewStarted || interviewDone} style={{
               display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
               padding: 20, borderRadius: 8, border: '1px solid var(--color-border)',
-              background: 'var(--color-bg-elevated)', color: 'var(--color-fg)',
-              cursor: interviewStarted ? 'default' : 'pointer', opacity: interviewStarted ? 0.6 : 1,
+              background: interviewDone ? 'rgba(34,197,94,0.08)' : 'var(--color-bg-elevated)', color: 'var(--color-fg)',
+              cursor: interviewStarted || interviewDone ? 'default' : 'pointer', opacity: interviewStarted ? 0.6 : 1,
             }}>
-              <MessagesSquare size={24} style={{ color: 'var(--color-success)' }} />
-              <span style={{ fontWeight: 600, fontSize: 13 }}>
-                {interviewStarted ? 'In Progress...' : 'Start Interview'}
+              <MessagesSquare size={24} style={{ color: interviewDone ? 'var(--color-success)' : 'var(--color-success)' }} />
+              <span style={{ fontWeight: 600, fontSize: 13, color: interviewDone ? 'var(--color-success)' : undefined }}>
+                {interviewDone ? 'Interview Done' : interviewStarted ? 'In Progress...' : 'Start Interview'}
               </span>
-              {job.interview_required && (
+              {job.interview_required && !interviewDone && (
                 <span style={{ fontSize: 11, color: 'var(--color-warning)' }}>Required</span>
               )}
             </button>
@@ -222,7 +240,7 @@ export default function JobDetail() {
 
       {/* Inline Interview (if started) */}
       {interviewStarted && interviewSession && (
-        <InlineInterview session={interviewSession} job={job} onDone={() => { setInterviewStarted(false); setInterviewSession(null) }} />
+        <InlineInterview session={interviewSession} job={job} onDone={() => { setInterviewStarted(false); setInterviewSession(null); setInterviewDone(true) }} />
       )}
 
       {/* Company Applicants View */}
@@ -265,13 +283,33 @@ function InlineInterview({ session, job, onDone }) {
   const [answers, setAnswers] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
+  const [runResults, setRunResults] = useState(null)
+  const [running, setRunning] = useState(false)
 
   const questions = session.questions || []
   const q = questions[step]
 
-  const setAnswer = (val) => setAnswers(prev => ({ ...prev, [step]: val }))
+  useEffect(() => { setRunResults(null) }, [step])
+
+  const setAnswer = (val) => { setAnswers(prev => ({ ...prev, [step]: val })); setRunResults(null) }
+
+  const runCode = async () => {
+    const q = questions[step]
+    if (!q || q.question_type !== 'Coding') return
+    const code = answers[step] || ''
+    if (!code.trim()) return toast.error('Write some code first')
+    setRunning(true)
+    setRunResults(null)
+    try {
+      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [] })
+      setRunResults(r.data)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Run failed')
+    } finally { setRunning(false) }
+  }
 
   const submit = async () => {
+    if (!confirm('Submit your interview? You cannot change answers after submission.')) return
     setSubmitting(true)
     try {
       const formattedAnswers = questions.map((qq, i) => {
@@ -279,13 +317,21 @@ function InlineInterview({ session, job, onDone }) {
         if (qq.question_type === 'MCQ') {
           return { question_id: qq.id, selected_option: a != null ? Number(a) : null }
         }
+        if (qq.question_type === 'Coding') {
+          return { question_id: qq.id, code_text: a || '', language: 'Python' }
+        }
         return { question_id: qq.id, answer_text: a || '' }
       })
       const r = await fetch(`${C2}/api/v1/interview/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
+        },
         body: JSON.stringify({
+          candidate_id: localStorage.getItem('recruitai.user_id'),
           session_id: session.session_id,
+          job_role: job.job_role || job.title,
           answers: formattedAnswers,
         }),
       })
@@ -300,15 +346,14 @@ function InlineInterview({ session, job, onDone }) {
   }
 
   if (result) {
-    const eval_ = result.evaluation || result
-    const score = eval_.overall_score ?? eval_.score ?? 0
+    const score = result.interview_score ?? 0
     return (
       <div className="card fade-in">
         <h3>Interview Complete</h3>
         <div style={{ fontSize: 48, fontWeight: 800, color: score >= 70 ? 'var(--color-success)' : 'var(--color-danger)', margin: '16px 0' }}>
-          {Math.round(score)}%
+          {score.toFixed(1)}%
         </div>
-        <p className="muted" style={{ marginBottom: 16 }}>{eval_.grade || (score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs improvement')}</p>
+        <p className="muted" style={{ marginBottom: 16 }}>{result.grade || (score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs improvement')}</p>
         <button className="btn btn-primary" onClick={onDone}>Done</button>
       </div>
     )
@@ -357,14 +402,42 @@ function InlineInterview({ session, job, onDone }) {
       )}
 
       {q.question_type === 'Coding' && (
-        <textarea
-          className="input"
-          rows={8}
-          placeholder="Write your code..."
-          value={answers[step] || ''}
-          onChange={e => setAnswer(e.target.value)}
-          style={{ marginBottom: 20, fontFamily: 'monospace', fontSize: 13 }}
-        />
+        <>
+          <textarea
+            className="input"
+            rows={8}
+            placeholder="Write your code..."
+            value={answers[step] || ''}
+            onChange={e => setAnswer(e.target.value)}
+            style={{ marginBottom: 8, fontFamily: 'monospace', fontSize: 13 }}
+          />
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <button className="btn btn-ghost btn-sm" onClick={runCode} disabled={running} type="button">
+              {running ? 'Running...' : 'Run Code'}
+            </button>
+          </div>
+          {runResults && (
+            <div style={{ marginBottom: 12, padding: 12, background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 13 }}>
+              {!runResults.syntax_valid && (
+                <div style={{ color: 'var(--color-danger)', fontWeight: 600, marginBottom: 6 }}>Syntax Error</div>
+              )}
+              {runResults.results?.length === 0 && runResults.syntax_valid && (
+                <div style={{ color: 'var(--color-fg-muted)' }}>No testable cases for this question.</div>
+              )}
+              {runResults.results?.map((r, i) => (
+                <div key={i} style={{ marginBottom: 8, padding: '8px 10px', background: r.passed ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${r.passed ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600 }}>Test {i + 1}</span>
+                    <span style={{ color: r.passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 600 }}>{r.passed ? 'PASS' : 'FAIL'}</span>
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--color-fg-muted)' }}>Input: {JSON.stringify(r.input)}</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Expected: {r.expected}</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Got: {r.output || '(no output)'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
