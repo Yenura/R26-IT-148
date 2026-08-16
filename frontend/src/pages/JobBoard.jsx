@@ -12,6 +12,7 @@ export default function JobBoard() {
   const [jobs, setJobs] = useState([])
   const [resumes, setResumes] = useState([])
   const [appliedIds, setAppliedIds] = useState(new Set())
+  const [interviewDone, setInterviewDone] = useState(new Set())
   const [search, setSearch] = useState('')
 
   useEffect(() => {
@@ -23,21 +24,31 @@ export default function JobBoard() {
 
   const loadData = async () => {
     try {
-      const [r1, r2, r3] = await Promise.all([
+      const candidateId = localStorage.getItem('recruitai.user_id')
+      const [r1, r2, r3, r4] = await Promise.all([
         axios.get(`${API}/api/v1/jobs/all`),
         axios.get(`${API}/api/v1/resume/`, authHeader()),
         axios.get(`${API}/api/v1/jobs/applications`, authHeader()).catch(() => ({ data: [] })),
+        candidateId ? axios.get(`${API}/api/v1/resume/interview-scores/${candidateId}`, authHeader()).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ])
       setJobs(r1.data)
       setResumes(r2.data)
       const apps = Array.isArray(r3.data) ? r3.data : (r3.data?.applications || [])
       setAppliedIds(new Set(apps.filter(a => a.status !== 'withdrawn').map(a => a.job_id)))
+      const scores = Array.isArray(r4.data) ? r4.data : []
+      setInterviewDone(new Set(scores.map(s => s.job_role).filter(Boolean)))
     } catch {}
   }
 
   const apply = async (e, jobId) => {
     e.stopPropagation()
     if (resumes.length === 0) { toast.error('Upload a resume first on the Dashboard'); return }
+    const job = jobs.find(j => j.id === jobId)
+    if (job?.interview_required && !interviewDone.has(job.job_role || job.title)) {
+      toast.error('Complete the interview first (open the job and click Start Interview)')
+      return
+    }
+    if (!confirm('Apply to this job with your resume?')) return
     try {
       const candidateId = localStorage.getItem('recruitai.user_id') || ''
       const candidateName = localStorage.getItem('recruitai.name') || ''
@@ -117,8 +128,8 @@ export default function JobBoard() {
                         </span>
                       )}
                       {job.interview_required && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--accent-2)', background: 'var(--color-accent2-bg, rgba(124,108,255,0.1))', padding: '2px 8px', borderRadius: 99 }}>
-                          <MessageSquare size={11} /> Interview
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: interviewDone.has(job.job_role || job.title) ? 'var(--color-success)' : 'var(--accent-2)', background: interviewDone.has(job.job_role || job.title) ? 'rgba(34,197,94,0.1)' : 'var(--color-accent2-bg, rgba(124,108,255,0.1))', padding: '2px 8px', borderRadius: 99 }}>
+                          <MessageSquare size={11} /> {interviewDone.has(job.job_role || job.title) ? 'Interview Done' : 'Interview'}
                         </span>
                       )}
                     </div>

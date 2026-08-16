@@ -62,11 +62,13 @@ export const uResumeUpload     = (formData)      => C0.post('/resume/upload', fo
 export const uResumeList       = ()              => C0.get('/resume/')
 export const uResumeUpdate     = (id, payload)   => C0.put(`/resume/${id}`, payload)
 export const uResumeDelete     = (id)            => C0.delete(`/resume/${id}`)
+export const uInterviewDetail  = (candidateId)   => C0.get(`/resume/interview-detail/${candidateId}`)
 
 // ── Component 2: AI Interview ─────────────────────────────────
 export const c2Start       = (payload)      => C2.post('/interview/start', payload)
 export const c2Submit      = (payload)      => C2.post('/interview/submit', payload)
 export const c2Jobs        = ()             => C2.get('/interview/jobs')
+export const c2RunCode     = (payload)      => C2.post('/interview/code/run', payload)
 
 // ── Component 3: Candidate Ranking ────────────────────────────
 export const c3Roles       = ()             => C3.get('/rank/jobs')
