@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
-import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants } from '../api'
+import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode } from '../api'
 
 const C2 = import.meta.env.VITE_C2_URL || 'http://127.0.0.1:8002'
 
@@ -265,11 +265,30 @@ function InlineInterview({ session, job, onDone }) {
   const [answers, setAnswers] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [result, setResult] = useState(null)
+  const [runResults, setRunResults] = useState(null)
+  const [running, setRunning] = useState(false)
 
   const questions = session.questions || []
   const q = questions[step]
 
-  const setAnswer = (val) => setAnswers(prev => ({ ...prev, [step]: val }))
+  useEffect(() => { setRunResults(null) }, [step])
+
+  const setAnswer = (val) => { setAnswers(prev => ({ ...prev, [step]: val })); setRunResults(null) }
+
+  const runCode = async () => {
+    const q = questions[step]
+    if (!q || q.question_type !== 'Coding') return
+    const code = answers[step] || ''
+    if (!code.trim()) return toast.error('Write some code first')
+    setRunning(true)
+    setRunResults(null)
+    try {
+      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [] })
+      setRunResults(r.data)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Run failed')
+    } finally { setRunning(false) }
+  }
 
   const submit = async () => {
     setSubmitting(true)
@@ -278,6 +297,9 @@ function InlineInterview({ session, job, onDone }) {
         const a = answers[i]
         if (qq.question_type === 'MCQ') {
           return { question_id: qq.id, selected_option: a != null ? Number(a) : null }
+        }
+        if (qq.question_type === 'Coding') {
+          return { question_id: qq.id, code_text: a || '', language: 'Python' }
         }
         return { question_id: qq.id, answer_text: a || '' }
       })
@@ -357,14 +379,42 @@ function InlineInterview({ session, job, onDone }) {
       )}
 
       {q.question_type === 'Coding' && (
-        <textarea
-          className="input"
-          rows={8}
-          placeholder="Write your code..."
-          value={answers[step] || ''}
-          onChange={e => setAnswer(e.target.value)}
-          style={{ marginBottom: 20, fontFamily: 'monospace', fontSize: 13 }}
-        />
+        <>
+          <textarea
+            className="input"
+            rows={8}
+            placeholder="Write your code..."
+            value={answers[step] || ''}
+            onChange={e => setAnswer(e.target.value)}
+            style={{ marginBottom: 8, fontFamily: 'monospace', fontSize: 13 }}
+          />
+          <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+            <button className="btn btn-ghost btn-sm" onClick={runCode} disabled={running} type="button">
+              {running ? 'Running...' : 'Run Code'}
+            </button>
+          </div>
+          {runResults && (
+            <div style={{ marginBottom: 12, padding: 12, background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 8, fontSize: 13 }}>
+              {!runResults.syntax_valid && (
+                <div style={{ color: 'var(--color-danger)', fontWeight: 600, marginBottom: 6 }}>Syntax Error</div>
+              )}
+              {runResults.results?.length === 0 && runResults.syntax_valid && (
+                <div style={{ color: 'var(--color-fg-muted)' }}>No testable cases for this question.</div>
+              )}
+              {runResults.results?.map((r, i) => (
+                <div key={i} style={{ marginBottom: 8, padding: '8px 10px', background: r.passed ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${r.passed ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 6 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontWeight: 600 }}>Test {i + 1}</span>
+                    <span style={{ color: r.passed ? 'var(--color-success)' : 'var(--color-danger)', fontWeight: 600 }}>{r.passed ? 'PASS' : 'FAIL'}</span>
+                  </div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--color-fg-muted)' }}>Input: {JSON.stringify(r.input)}</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Expected: {r.expected}</div>
+                  <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Got: {r.output || '(no output)'}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
