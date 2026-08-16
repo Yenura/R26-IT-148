@@ -91,28 +91,6 @@ export default function SkillGap() {
           skills: ['Python', 'SQL', 'Git', 'FastAPI']
         }))
       }
-<<<<<<< Updated upstream
-    } catch {}
-  }
-
-  const analyze = async (e) => {
-    e.preventDefault()
-    if (!form.candidate_name || !form.job_role || !form.skills) return toast.error('Please fill required fields')
-    setBusy(true)
-    try {
-      const r = await axios.post(`${C4}/api/v1/skill-gap/analyze`, {
-        candidate_id: localStorage.getItem('recruitai.user_id'),
-        candidate_name: form.candidate_name,
-        job_role: form.job_role,
-        skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
-        experience_years: parseFloat(form.experience_years) || 0,
-        education: form.education || 'B.Sc. Computer Science',
-      })
-      const data = r.data.data || r.data
-      setResult(data)
-      toast.success(`Skill Fit Score: ${(data.skill_match_pct || (data.gap_score * 100)).toFixed(0)}%`)
-=======
->>>>>>> Stashed changes
     } catch (err) {
       console.error('Failed to load job openings:', err)
     }

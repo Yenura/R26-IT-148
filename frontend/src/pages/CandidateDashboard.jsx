@@ -46,11 +46,14 @@ export default function CandidateDashboard() {
       const formData = new FormData()
       formData.append('file', file)
       await uResumeUpload(formData)
-      toast.success('Resume uploaded')
+      toast.success('Resume uploaded and parsed successfully!')
       loadData()
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Upload failed')
-    } finally { setUploading(false) }
+    } finally {
+      setUploading(false)
+      if (e.target) e.target.value = ''
+    }
   }
 
   const deleteResume = async (id) => {

@@ -10,10 +10,7 @@ import { c3Pipeline, C0 } from '../api'
 
 export default function Ranking() {
   const navigate = useNavigate()
-<<<<<<< Updated upstream
-=======
   const userRole = localStorage.getItem('recruitai.role')
->>>>>>> Stashed changes
   const [jobs, setJobs] = useState([])
   const [selectedJob, setSelectedJob] = useState('')
   const [result, setResult] = useState(null)
@@ -23,18 +20,6 @@ export default function Ranking() {
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     if (!token) { navigate('/'); return }
-<<<<<<< Updated upstream
-    loadJobs()
-  }, [])
-
-  const loadJobs = async () => {
-    try {
-      const r = await c0JobsAll()
-      const jobList = r.data || []
-      setJobs(jobList)
-      if (jobList.length > 0) {
-        setSelectedJob(jobList[0].id)
-=======
     loadCompanyJobs()
   }, [])
 
@@ -50,7 +35,6 @@ export default function Ranking() {
         const firstJobId = companyJobs[0].id || companyJobs[0]._id
         setSelectedJob(firstJobId)
         computePipeline(firstJobId)
->>>>>>> Stashed changes
       }
     } catch (err) {
       console.error('Error loading company jobs:', err)
