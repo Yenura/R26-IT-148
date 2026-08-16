@@ -237,7 +237,7 @@ async def rank_pipeline(request: Request, job_id: str):
     import motor.motor_asyncio
     from models.schemas import CandidateInput
     
-    # Connect to MongoDB Atlas (HR database)
+    # Connect to same MongoDB as C0
     c0_mongo_uri = os.environ.get("C0_MONGODB_URI", os.environ.get("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"))
     c0_db_name = os.environ.get("C0_DB_NAME", os.environ.get("DB_NAME", "HR"))
     client = motor.motor_asyncio.AsyncIOMotorClient(c0_mongo_uri)
