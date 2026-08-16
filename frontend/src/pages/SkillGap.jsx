@@ -50,7 +50,7 @@ export default function SkillGap() {
     setBusy(true)
     try {
       const r = await axios.post(`${C4}/api/v1/skill-gap/analyze`, {
-        candidate_id: localStorage.getItem('recruitai.user_id') || 'web-user',
+        candidate_id: localStorage.getItem('recruitai.user_id'),
         candidate_name: form.candidate_name,
         job_role: form.job_role,
         skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),

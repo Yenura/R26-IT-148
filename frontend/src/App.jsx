@@ -38,7 +38,8 @@ const Loading = () => (
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('recruitai.token')
   const userRole = localStorage.getItem('recruitai.role')
-  if (!token) return <Navigate to="/login/candidate" />
+  const userId = localStorage.getItem('recruitai.user_id')
+  if (!token || !userId) return <Navigate to="/login/candidate" />
   if (role && userRole !== role) return <Navigate to="/" />
   return children
 }

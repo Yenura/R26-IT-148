@@ -147,6 +147,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             job_role=interview_request.job_role,
             num_questions=interview_request.num_questions,
             employer_skills=interview_request.required_skills or None,
+            job_level=interview_request.job_level or "Mid-Level",
         )
         
         # Persist interview session to MongoDB

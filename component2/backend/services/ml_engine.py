@@ -373,6 +373,7 @@ class InterviewService:
         job_role: str,
         num_questions: int = 10,
         employer_skills: Optional[List[str]] = None,
+        job_level: str = "Mid-Level",
     ) -> Dict:
         """
         Create interview session with questions
@@ -382,6 +383,7 @@ class InterviewService:
             job_role: Target job role
             num_questions: Number of questions to generate
             employer_skills: Optional skills from employer posting (merged with role defaults)
+            job_level: Intern/Junior/Mid-Level/Senior/Staff level → difficulty filter
 
         Returns:
             Interview session dictionary
@@ -395,6 +397,7 @@ class InterviewService:
         num_mcq, num_desc, num_code = self._get_question_distribution(
             job_role, coding_profile, num_questions
         )
+        difficulty = self._difficulty_for_level(job_level)
 
         qg_questions = generate_questions_qg(
             job_role=job_role,
@@ -414,14 +417,14 @@ class InterviewService:
         else:
             # Select questions by type from bank
             mcq_questions = self._select_questions_by_type(
-                "MCQ", num_mcq, required_skills
+                "MCQ", num_mcq, required_skills, difficulty=difficulty
             )
             desc_questions = self._select_questions_by_type(
-                "Descriptive", num_desc, required_skills
+                "Descriptive", num_desc, required_skills, difficulty=difficulty
             )
             code_questions = self._select_questions_by_type(
                 "Coding", num_code, required_skills,
-                coding_profile=coding_profile
+                coding_profile=coding_profile, difficulty=difficulty
             )
 
             # Combine all questions and top up if bank is smaller than requested count.
@@ -500,10 +503,24 @@ class InterviewService:
             idx += 1
         return topped_up
     
+    def _difficulty_for_level(self, job_level: str) -> str:
+        """Map job level to a preferred question difficulty."""
+        mapping = {
+            "Intern": "Easy",
+            "Junior": "Easy",
+            "Mid-Level": "Medium",
+            "Senior": "Hard",
+            "Staff/Principal": "Hard",
+            "Lead": "Hard",
+            "Principal / Staff": "Hard",
+        }
+        return mapping.get(job_level, "Medium")
+
     def _select_questions_by_type(self, question_type: str, 
                                   count: int, 
                                   relevant_skills: List[str],
-                                  coding_profile: str = "full") -> List[Dict]:
+                                  coding_profile: str = "full",
+                                  difficulty: str = "Medium") -> List[Dict]:
         """
         Select questions by type with relevance filtering
         
@@ -512,7 +529,8 @@ class InterviewService:
             count: Number of questions to select
             relevant_skills: Skills to filter by
             coding_profile: Coding profile for Coding questions
-            
+            difficulty: Preferred difficulty (Easy/Medium/Hard); prefers but does not require
+
         Returns:
             List of selected questions
         """
@@ -554,7 +572,7 @@ class InterviewService:
                 relevant_questions.append(q)
 
         if relevant_questions:
-            return relevant_questions[:count]
+            return self._prefer_difficulty(relevant_questions, difficulty)[:count]
 
         # No relevant questions found; fall back to typed pool but skip
         # obviously-off-topic categories (e.g. Java for Data Scientist).
@@ -564,7 +582,14 @@ class InterviewService:
                        len(typed_questions), len(relevant_questions), len(safe), off_topic_cats,
                        [s.lower() for s in relevant_skills],
                        [q.get("category", "") for q in typed_questions[:5]])
-        return (safe if safe else typed_questions)[:count]
+        return self._prefer_difficulty((safe if safe else typed_questions), difficulty)[:count]
+
+    def _prefer_difficulty(self, questions: List[Dict], difficulty: str) -> List[Dict]:
+        """Stable-sort so preferred-difficulty questions come first; never drops questions."""
+        if not difficulty:
+            return questions
+        return sorted(questions, key=lambda q: (q.get("difficulty") != difficulty,))
+
     
     def _filter_coding_questions_by_profile(self, coding_questions: List[Dict], profile: str) -> List[Dict]:
         """Filter coding questions based on SQL, scripting, or full coding profiles."""

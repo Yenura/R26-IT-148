@@ -26,7 +26,7 @@ export default function JobBoard() {
       const [r1, r2, r3] = await Promise.all([
         axios.get(`${API}/api/v1/jobs/all`),
         axios.get(`${API}/api/v1/resume/`, authHeader()),
-        axios.get(`${API}/api/v1/jobs`, authHeader()).catch(() => ({ data: [] })),
+        axios.get(`${API}/api/v1/jobs/applications`, authHeader()).catch(() => ({ data: [] })),
       ])
       setJobs(r1.data)
       setResumes(r2.data)

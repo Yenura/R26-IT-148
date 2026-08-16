@@ -57,6 +57,8 @@ class PasswordChange(BaseModel):
 # ── Jobs ────────────────────────────────────────────────────────
 class JobCreate(BaseModel):
     title: str = Field(..., min_length=2)
+    job_role: str = ""
+    job_level: str = ""
     department: str = ""
     employment_type: str = "Full-time"
     location: str = ""
@@ -94,6 +96,8 @@ class JobCreate(BaseModel):
 
 class JobUpdate(BaseModel):
     title: str | None = None
+    job_role: str | None = None
+    job_level: str | None = None
     department: str | None = None
     employment_type: str | None = None
     location: str | None = None
@@ -114,6 +118,8 @@ class JobOut(BaseModel):
     company_id: str
     company_name: str = ""
     title: str
+    job_role: str = ""
+    job_level: str = ""
     department: str = ""
     employment_type: str = ""
     location: str = ""

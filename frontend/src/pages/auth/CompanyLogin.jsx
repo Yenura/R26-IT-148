@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, Building2, ArrowLeft, Zap } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyLogin() {
@@ -10,14 +10,12 @@ export default function CompanyLogin() {
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
-  const handleLogin = async (e, demoEmail = null, demoPassword = null) => {
-    if (e) e.preventDefault()
-    const targetEmail = demoEmail || email
-    const targetPassword = demoPassword || password
-    if (!targetEmail || !targetPassword) return toast.error('Fill in all fields')
+  const handleLogin = async (e) => {
+    e?.preventDefault()
+    if (!email || !password) return toast.error('Fill in all fields')
     setBusy(true)
     try {
-      const r = await C0.post('/auth/login/company', { email: targetEmail, password: targetPassword })
+      const r = await C0.post('/auth/login/company', { email: email, password: password })
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'company')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')

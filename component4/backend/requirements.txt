@@ -9,3 +9,4 @@ joblib==1.4.0
 python-dotenv==1.0.1
 python-multipart==0.0.9
 pydantic==2.7.1
+slowapi==0.1.9

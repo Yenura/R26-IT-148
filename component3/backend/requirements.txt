@@ -11,3 +11,4 @@ python-dotenv==1.0.1
 python-multipart==0.0.9
 pydantic==2.7.1
 requests==2.31.0
+slowapi==0.1.9

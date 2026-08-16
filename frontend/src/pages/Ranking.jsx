@@ -6,26 +6,16 @@ import { c3Roles, c0JobsAll, c3Pipeline } from '../api'
 
 export default function Ranking() {
   const navigate = useNavigate()
-  const [roles, setRoles] = useState({})
   const [jobs, setJobs] = useState([])
   const [selectedJob, setSelectedJob] = useState('')
-  const [selectedRole, setSelectedRole] = useState('')
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     if (!token) { navigate('/'); return }
-    loadRoles()
     loadJobs()
   }, [])
-
-  const loadRoles = async () => {
-    try {
-      const r = await c3Roles()
-      setRoles(r.data.roles || {})
-    } catch {}
-  }
 
   const loadJobs = async () => {
     try {

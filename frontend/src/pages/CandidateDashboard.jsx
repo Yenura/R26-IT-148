@@ -29,7 +29,7 @@ export default function CandidateDashboard() {
         uResumeList(),
         fetch(`${API}/api/v1/jobs/all`, authH).then(r => r.json()).catch(() => []),
         fetch(`${API}/api/v1/resume/predictions`, authH).then(r => r.json()).catch(() => []),
-        fetch(`${API}/api/v1/jobs`, authH).then(r => r.json()).catch(() => []),
+        fetch(`${API}/api/v1/jobs/applications`, authH).then(r => r.json()).catch(() => []),
       ])
       setResumes(r1.data)
       setJobs(Array.isArray(r2) ? r2 : r2?.data || [])
