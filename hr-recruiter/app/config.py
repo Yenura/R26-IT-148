@@ -14,12 +14,11 @@ def _int_env(name: str, default: int) -> int:
     return int(raw)
 
 
-MONGODB_URI   = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME       = os.getenv("DB_NAME", "hr_recruiter")
+MONGODB_URI   = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+DB_NAME       = os.getenv("DB_NAME", "HR")
 
 # Component 4's database is read-only (candidate skill-gap reports).
-# C4 writes into the shared global DB (recruit_ai), so reports follow it.
-REPORTS_DB         = os.getenv("REPORTS_DB", "recruit_ai")
+REPORTS_DB         = os.getenv("REPORTS_DB", "HR")
 REPORTS_COLLECTION = os.getenv("REPORTS_COLLECTION", "skill_gap_reports")
 
 JWT_SECRET        = os.getenv("JWT_SECRET", "dev-insecure-secret-change-me")
