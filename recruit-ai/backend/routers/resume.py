@@ -416,3 +416,13 @@ async def get_interview_scores(candidate_id: str, request: Request, user: dict =
         doc["_id"] = str(doc["_id"])
         scores.append(doc)
     return scores
+
+@router.get("/interview-detail/{candidate_id}")
+async def get_interview_detail(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
+    db = request.app.state.db
+    cursor = db.results.find({"candidate_id": candidate_id}).sort("created_at", -1)
+    results = []
+    async for doc in cursor:
+        doc["_id"] = str(doc["_id"])
+        results.append(doc)
+    return results
