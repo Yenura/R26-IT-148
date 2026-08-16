@@ -4,7 +4,6 @@ const mk = (url) => {
   const instance = axios.create({
     baseURL: `${url}/api/v1`,
     timeout: 120_000,
-    headers: { 'Content-Type': 'application/json' },
   })
   // Attach JWT token from localStorage if present
   instance.interceptors.request.use((cfg) => {
@@ -43,9 +42,7 @@ export const C4 = mk(import.meta.env.VITE_C4_URL || 'http://127.0.0.1:8004')
 export const authGetProfile         = ()        => C0.get('/auth/profile')
 export const authUpdateProfile      = (payload) => C0.put('/auth/profile', payload)
 export const authChangePassword     = (payload) => C0.put('/auth/password', payload)
-export const authUploadAvatar       = (formData) => C0.post('/auth/avatar', formData, {
-  headers: { 'Content-Type': 'multipart/form-data' },
-})
+export const authUploadAvatar       = (formData) => C0.post('/auth/avatar', formData)
 
 // ── Unified: Jobs ─────────────────────────────────────────────
 export const c0JobsAll          = ()              => C0.get('/jobs/all')
@@ -56,9 +53,7 @@ export const uJobsWithdraw     = (id)             => C0.delete(`/jobs/${id}/appl
 export const uJobsApplicants   = (id)            => C0.get(`/jobs/${id}/applicants`)
 
 // ── Unified: Resume ───────────────────────────────────────────
-export const uResumeUpload     = (formData)      => C0.post('/resume/upload', formData, {
-  headers: { 'Content-Type': 'multipart/form-data' },
-})
+export const uResumeUpload     = (formData)      => C0.post('/resume/upload', formData)
 export const uResumeList       = ()              => C0.get('/resume/')
 export const uResumeUpdate     = (id, payload)   => C0.put(`/resume/${id}`, payload)
 export const uResumeDelete     = (id)            => C0.delete(`/resume/${id}`)
