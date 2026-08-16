@@ -417,7 +417,6 @@ async def get_interview_scores(candidate_id: str, request: Request, user: dict =
         scores.append(doc)
     return scores
 
-
 @router.get("/interview-detail/{candidate_id}")
 async def get_interview_detail(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
