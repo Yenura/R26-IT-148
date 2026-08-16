@@ -122,6 +122,8 @@ app.include_router(cv_router, prefix="/api/v1/cv", tags=["CV Analysis"])
 app.include_router(cv_router, prefix="/api/v1", tags=["Screen Resume"])
 
 
+
+
 # ── Health ────────────────────────────────────────────────────────────────────
 @app.get("/", tags=["Health"])
 async def root():

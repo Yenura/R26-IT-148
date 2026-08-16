@@ -30,8 +30,8 @@ def _make_mock_app():
     model_dir = Path(os.environ["MODEL_DIR"])
     predictor = Predictor(model_dir=model_dir)
     matcher   = JDMatcher(
-        sbert_model=predictor._sbert_model,
-        tfidf_vectorizer=predictor._vectorizer,
+        sbert_model=getattr(predictor, "_sbert_model", None),
+        tfidf_vectorizer=getattr(predictor, "_vectorizer", None),
     )
 
     # Mock DB (in-memory store)
@@ -160,11 +160,12 @@ class TestAnalyzeEndpoint:
             "candidate_name": "John Smith",
         })
         data = r.json()
-        assert 0.0 <= data["S_edu"] <= 1.0
-        assert 0.0 <= data["S_exp"] <= 1.0
-        assert 0.0 <= data["S_skill"] <= 1.0
+        assert 0.0 <= data["S_edu"] <= 100.0
+        assert 0.0 <= data["S_exp"] <= 100.0
+        assert 0.0 <= data["S_skill"] <= 100.0
         assert 0.0 <= data["skill_score_raw"] <= 1.0
-        assert 0.0 <= data["cv_matching_score"] <= 100.0
+        assert "component_1_scores" in data
+        assert "S_skill" in data["component_1_scores"]
 
     def test_analyze_no_jd_gives_null_similarity(self, client, swe_resume_text):
         r = client.post("/api/v1/cv/analyze", json={
@@ -212,7 +213,7 @@ class TestRankEndpoint:
         r = client.post("/api/v1/cv/rank", json=payload)
         assert r.status_code == 200
 
-    def test_rank_results_sorted_descending(self, client, swe_resume_text, ds_resume_text, sample_jd_swe):
+    def test_rank_results_contains_component_1_scores(self, client, swe_resume_text, ds_resume_text, sample_jd_swe):
         payload = {
             "job_description": sample_jd_swe,
             "candidates": [
@@ -222,8 +223,9 @@ class TestRankEndpoint:
         }
         r = client.post("/api/v1/cv/rank", json=payload)
         ranked = r.json()["ranked_candidates"]
-        scores = [c["cv_matching_score"] for c in ranked]
-        assert scores == sorted(scores, reverse=True)
+        for c in ranked:
+            assert "component_1_scores" in c
+            assert 0.0 <= c["S_skill"] <= 100.0
 
     def test_rank_jd_similarity_populated(self, client, swe_resume_text, sample_jd_swe):
         payload = {

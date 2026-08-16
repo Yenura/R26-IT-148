@@ -4,11 +4,9 @@ import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
   Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,
   Sun, Moon, Briefcase, BarChart3, Route as RouteIcon, Target, Award,
-  Menu, X, User, LogOut, ChevronDown, Cpu
+  Menu, X, User, LogOut, ChevronDown
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
-
-import ResearchArchitectureModal from './components/ResearchArchitectureModal'
 
 const Landing        = lazy(() => import('./pages/Landing'))
 const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
@@ -51,7 +49,6 @@ export default function App() {
   const navigate = useNavigate()
   const [mobileMenu, setMobileMenu] = useState(false)
   const [userMenu, setUserMenu] = useState(false)
-  const [researchModal, setResearchModal] = useState(false)
   const [userName, setUserName] = useState('')
   const [userAvatar, setUserAvatar] = useState('')
 
@@ -109,16 +106,6 @@ export default function App() {
             </div>
 
             <div className="navbar-right" style={{ gap: 10 }}>
-              {/* Research Presentation Modal Toggle Button */}
-              <button
-                className="btn btn-ghost btn-sm"
-                onClick={() => setResearchModal(true)}
-                style={{ fontSize: 12, fontWeight: 700, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', background: 'var(--bg-elevated)' }}
-                title="View SLIIT Final-Year Research Architecture & Benchmarks"
-              >
-                <Cpu size={14} style={{ color: 'var(--accent)' }} /> Research Specs
-              </button>
-
               <button className="btn-ghost btn-sm" onClick={toggleTheme} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
                 {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
               </button>
@@ -138,9 +125,6 @@ export default function App() {
                       <div className="navbar-dropdown-label">{userName || 'User'}</div>
                       <button onClick={() => { navigate(profileLink); setUserMenu(false) }}>
                         <User size={14} /> Profile
-                      </button>
-                      <button onClick={() => { setResearchModal(true); setUserMenu(false) }}>
-                        <Cpu size={14} /> Research Architecture
                       </button>
                       <button onClick={handleLogout}>
                         <LogOut size={14} /> Sign Out
@@ -165,9 +149,6 @@ export default function App() {
                   <l.icon size={18} /> {l.label}
                 </NavLink>
               ))}
-              <button className="navbar-mobile-link" onClick={() => { setResearchModal(true); setMobileMenu(false) }}>
-                <Cpu size={18} /> Research Specs
-              </button>
               {profileLink && (
                 <button className="navbar-mobile-link" onClick={() => { navigate(profileLink); setMobileMenu(false) }}>
                   <User size={18} /> Profile
@@ -217,9 +198,6 @@ export default function App() {
           </Suspense>
         </main>
       </div>
-
-      {/* Research Presentation Architecture Modal */}
-      <ResearchArchitectureModal isOpen={researchModal} onClose={() => setResearchModal(false)} />
     </div>
   )
 }

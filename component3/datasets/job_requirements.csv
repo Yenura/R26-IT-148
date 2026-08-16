@@ -9,13 +9,13 @@ JOB007,Database_Administrator,Database Administrator,"SQL, PostgreSQL, MySQL, Mo
 JOB008,Frontend_Developer,Frontend Developer,"HTML, CSS, JavaScript, React, TypeScript, Responsive Design, REST APIs, Git",2,BSc,1.0,2.0,0.38,0.3,0.15,0.3,0.55,0.2,0.3,0.5,0.4,0.6
 JOB009,Backend_Developer,Backend Developer,"Python/Java/Node.js, REST APIs, SQL, Microservices, Docker, Redis, Git",2,BSc,1.5,3.0,0.4,0.3,0.2,0.3,0.5,0.2,0.3,0.5,0.4,0.6
 JOB010,Mobile_App_Developer,Mobile App Developer,"iOS/Android, Flutter, React Native, Dart, Swift/Kotlin, Firebase, REST APIs",2,BSc,1.0,2.5,0.38,0.3,0.15,0.3,0.55,0.2,0.3,0.5,0.4,0.6
-JOB011,Full_Stack_Developer,Full Stack Developer,"React, Node.js, Python, SQL, REST APIs, Docker, Git, HTML/CSS, TypeScript",2,BSc,1.5,3.0,0.4,0.3,0.15,0.3,0.55,0.2,0.3,0.5,0.4,0.6
-JOB012,QA_Test_Automation_Engineer,QA/Test Automation Engineer,"Selenium, Pytest, Jest, CI/CD, API Testing, Test Strategy, Python, Postman",2,BSc,1.0,2.0,0.38,0.25,0.15,0.35,0.5,0.25,0.35,0.4,0.4,0.6
-JOB013,Data_Engineer,Data Engineer,"Python, SQL, Spark, Kafka, Airflow, ETL, AWS/GCP, Data Modeling, Hadoop",2,BSc,1.5,3.0,0.4,0.28,0.2,0.35,0.45,0.25,0.35,0.4,0.4,0.6
-JOB014,Site_Reliability_Engineer,Site Reliability Engineer (SRE),"Linux, Kubernetes, Prometheus, Grafana, Terraform, Python, Go, CI/CD, incident Response",2,BSc,2.0,4.0,0.42,0.3,0.15,0.4,0.45,0.25,0.3,0.45,0.4,0.6
-JOB015,UI_UX_Designer,UI/UX Designer,"Figma, Sketch, Adobe XD, CSS, HTML, Prototyping, User Research, Wireframing, Accessibility",2,BSc,1.0,2.0,0.35,0.1,0.2,0.25,0.55,0.3,0.5,0.2,0.4,0.6
-JOB016,Network_Engineer,Network Engineer,"TCP/IP, Cisco, Routing, Switching, Firewalls, VPN, DNS, Linux, Python",2,BSc,1.5,3.0,0.38,0.2,0.2,0.35,0.45,0.3,0.4,0.3,0.4,0.6
-JOB017,Business_Systems_Analyst,Business/Systems Analyst,"SQL, Requirements Gathering, UML, BPMN, Stakeholder Management, Agile, JIRA, Data Analysis",2,BSc,1.5,3.0,0.35,0.1,0.25,0.35,0.4,0.35,0.5,0.15,0.4,0.6
-JOB018,AI_NLP_Engineer,AI/NLP Engineer,"Python, TensorFlow, PyTorch, NLP, Transformers, Hugging Face, spaCy, Deep Learning",3,MSc,1.5,3.0,0.42,0.3,0.25,0.3,0.45,0.25,0.35,0.4,0.4,0.6
-JOB019,Blockchain_Developer,Blockchain Developer,"Solidity, Ethereum, Web3.js, Smart Contracts, Rust, C++, Cryptography, DApps",2,BSc,1.0,2.5,0.38,0.3,0.15,0.3,0.55,0.2,0.3,0.5,0.4,0.6
-JOB020,Embedded_Systems_Engineer,Embedded Systems Engineer,"C, C++, Rust, RTOS, Microcontrollers, ARM, Linux Kernel, Communication Protocols",2,BSc,1.5,3.0,0.4,0.3,0.2,0.35,0.45,0.25,0.3,0.45,0.4,0.6
+JOB011,Full_Stack_Developer,Full Stack Developer,"HTML, CSS, JavaScript, React, Node.js, SQL, Git, REST APIs, Express",2,BSc,1.5,3.0,0.4,0.3,0.2,0.3,0.5,0.2,0.3,0.5,0.4,0.6
+JOB012,QA_Automation_Engineer,QA Automation Engineer,"Selenium, Python/Java, CI/CD, API Testing, Jira, TestNG, SQL, Cypress",2,BSc,1.0,2.5,0.38,0.2,0.2,0.3,0.5,0.3,0.45,0.25,0.4,0.6
+JOB013,Data_Engineer,Data Engineer,"Python, SQL, Apache Spark, Hadoop, ETL, Airflow, AWS/Azure, Kafka, Data Modeling",2,BSc,1.5,3.0,0.4,0.25,0.25,0.3,0.45,0.25,0.35,0.4,0.4,0.6
+JOB014,Site_Reliability_Engineer,Site Reliability Engineer,"Linux, Python, Bash, Kubernetes, Prometheus, Grafana, Terraform, CI/CD",2,BSc,2.0,4.0,0.4,0.25,0.15,0.4,0.45,0.25,0.35,0.4,0.4,0.6
+JOB015,Network_Engineer,Network Engineer,"Cisco, Routing & Switching, BGP, OSPF, Firewalls, Network Security, Python, SDN",2,BSc,1.5,3.0,0.38,0.15,0.2,0.35,0.45,0.4,0.45,0.15,0.4,0.6
+JOB016,AI_Research_Scientist,AI Research Scientist,"PyTorch, TensorFlow, Mathematics, NLP, Computer Vision, Python, Research Methodologies",3,MSc,1.5,3.0,0.42,0.25,0.35,0.25,0.4,0.2,0.55,0.25,0.4,0.6
+JOB017,UI_UX_Developer,UI/UX Developer,"HTML, CSS, JavaScript, Figma, React, User Research, Prototyping, Accessibility",2,BSc,1.0,2.0,0.38,0.2,0.15,0.3,0.55,0.2,0.6,0.2,0.4,0.6
+JOB018,Blockchain_Developer,Blockchain Developer,"Solidity, Smart Contracts, Ethereum, Web3.js, Cryptography, Node.js, Git, Rust",2,BSc,1.5,3.0,0.42,0.35,0.2,0.3,0.5,0.25,0.3,0.45,0.4,0.6
+JOB019,Embedded_Systems_Engineer,Embedded Systems Engineer,"C, C++, RTOS, Microcontrollers, IoT, Assembly, Hardware Interfacing, Git",2,BSc,1.5,3.0,0.4,0.35,0.25,0.3,0.45,0.3,0.3,0.4,0.4,0.6
+JOB020,IT_Systems_Analyst,IT Systems Analyst,"Requirements Gathering, SQL, UML, Agile, Jira, System Architecture, Python, BPMN",2,BSc,1.5,2.5,0.35,0.1,0.25,0.35,0.4,0.3,0.6,0.1,0.4,0.6

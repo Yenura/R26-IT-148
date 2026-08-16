@@ -34,20 +34,32 @@ def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = motor.motor_asyncio.AsyncIOMotorClient(
-        MONGODB_URI, tz_aware=True, serverSelectionTimeoutMS=5000
+        MONGODB_URI, tz_aware=True, serverSelectionTimeoutMS=15000
     )
     db = client[DB_NAME]
-    try:
-        await db.command("ping")
-    except Exception as exc:
-        client.close()
-        raise RuntimeError(f"MongoDB connection failed: {exc}") from exc
+    connected = False
+    for attempt in range(3):
+        try:
+            await db.command("ping")
+            connected = True
+            break
+        except Exception as exc:
+            logger.warning(f"MongoDB ping attempt {attempt+1}/3 failed: {exc}")
+            if attempt == 2:
+                logger.error("Could not connect to MongoDB Atlas after 3 attempts.")
+                app.state.db = db
+            import asyncio
+            await asyncio.sleep(2)
 
-    await db.users.create_index("email", unique=True)
-    await db.jobs.create_index([("company_id", 1), ("created_at", -1)])
-    await db.resumes.create_index("candidate_id")
-    await db.predictions.create_index("candidate_id")
-    await db.applications.create_index([("job_id", 1), ("candidate_id", 1)], unique=True)
+    if connected:
+        try:
+            await db.users.create_index("email", unique=True)
+            await db.jobs.create_index([("company_id", 1), ("created_at", -1)])
+            await db.resumes.create_index("candidate_id")
+            await db.predictions.create_index("candidate_id")
+            await db.applications.create_index([("job_id", 1), ("candidate_id", 1)], unique=True)
+        except Exception as idx_exc:
+            logger.warning(f"Index creation warning: {idx_exc}")
 
     app.state.db = db
     os.makedirs("uploads/avatars", exist_ok=True)
