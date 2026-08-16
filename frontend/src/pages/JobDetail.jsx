@@ -89,7 +89,10 @@ export default function JobDetail() {
       const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
       const r = await fetch(`${C2}/api/v1/interview/start`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
+        },
         body: JSON.stringify({
           candidate_id: localStorage.getItem('recruitai.user_id'),
           job_role: job.job_role || job.title,
@@ -291,6 +294,7 @@ function InlineInterview({ session, job, onDone }) {
   }
 
   const submit = async () => {
+    if (!confirm('Submit your interview? You cannot change answers after submission.')) return
     setSubmitting(true)
     try {
       const formattedAnswers = questions.map((qq, i) => {
@@ -305,9 +309,14 @@ function InlineInterview({ session, job, onDone }) {
       })
       const r = await fetch(`${C2}/api/v1/interview/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
+        },
         body: JSON.stringify({
+          candidate_id: localStorage.getItem('recruitai.user_id'),
           session_id: session.session_id,
+          job_role: job.job_role || job.title,
           answers: formattedAnswers,
         }),
       })
