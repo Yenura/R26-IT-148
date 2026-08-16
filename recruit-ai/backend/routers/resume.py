@@ -386,7 +386,7 @@ async def parse_resume_text(
 
 
 @router.post("/interview-scores")
-async def save_interview_scores(payload: dict, request: Request, user: dict = Depends(require_company)):
+async def save_interview_scores(payload: dict, request: Request):
     db = request.app.state.db
     candidate_id = payload.get("candidate_id", "")
     if not candidate_id:
