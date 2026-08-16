@@ -331,15 +331,14 @@ function InlineInterview({ session, job, onDone }) {
   }
 
   if (result) {
-    const eval_ = result.evaluation || result
-    const score = eval_.overall_score ?? eval_.score ?? 0
+    const score = result.interview_score ?? 0
     return (
       <div className="card fade-in">
         <h3>Interview Complete</h3>
         <div style={{ fontSize: 48, fontWeight: 800, color: score >= 70 ? 'var(--color-success)' : 'var(--color-danger)', margin: '16px 0' }}>
-          {Math.round(score)}%
+          {score.toFixed(1)}%
         </div>
-        <p className="muted" style={{ marginBottom: 16 }}>{eval_.grade || (score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs improvement')}</p>
+        <p className="muted" style={{ marginBottom: 16 }}>{result.grade || (score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs improvement')}</p>
         <button className="btn btn-primary" onClick={onDone}>Done</button>
       </div>
     )
