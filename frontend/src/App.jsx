@@ -8,7 +8,6 @@ import {
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
 
-
 const Landing        = lazy(() => import('./pages/Landing'))
 const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
 const CompanyRegister= lazy(() => import('./pages/auth/CompanyRegister'))
@@ -200,7 +199,6 @@ export default function App() {
           </Suspense>
         </main>
       </div>
-
     </div>
   )
 }

@@ -14,17 +14,17 @@ class TestScoreBounds:
     @pytest.mark.parametrize("role", ALL_ROLES[:5])
     def test_s_edu_in_range(self, role):
         result = score(role=role, edu_level=2, experience_years=3.0, skills=["python", "sql"])
-        assert 0.0 <= result.S_edu <= 1.0
+        assert 0.0 <= result.S_edu <= 100.0
 
     @pytest.mark.parametrize("role", ALL_ROLES[:5])
     def test_s_exp_in_range(self, role):
         result = score(role=role, edu_level=2, experience_years=3.0, skills=[])
-        assert 0.0 <= result.S_exp <= 1.0
+        assert 0.0 <= result.S_exp <= 100.0
 
     @pytest.mark.parametrize("role", ALL_ROLES[:5])
     def test_s_skill_in_range(self, role):
         result = score(role=role, edu_level=2, experience_years=3.0, skills=["python", "sql"])
-        assert 0.0 <= result.S_skill <= 1.0
+        assert 0.0 <= result.S_skill <= 100.0
 
     @pytest.mark.parametrize("role", ALL_ROLES[:5])
     def test_cv_matching_score_in_range(self, role):
@@ -33,15 +33,15 @@ class TestScoreBounds:
 
     def test_skill_score_raw_alias(self):
         result = score(role="Software Engineer", edu_level=2, experience_years=3.0, skills=["python", "sql"])
-        assert result.skill_score_raw == result.S_skill
+        assert result.skill_score_raw == pytest.approx(result.S_skill / 100.0)
 
     def test_zero_experience_gives_zero_s_exp(self):
         result = score(role="Software Engineer", edu_level=2, experience_years=0.0, skills=[])
         assert result.S_exp == pytest.approx(0.0)
 
-    def test_high_experience_capped_at_one(self):
+    def test_high_experience_capped_at_hundred(self):
         result = score(role="Software Engineer", edu_level=2, experience_years=100.0, skills=[])
-        assert result.S_exp == pytest.approx(1.0)
+        assert result.S_exp == pytest.approx(100.0)
 
     def test_no_jd_gives_none_similarity(self):
         result = score(role="Software Engineer", edu_level=2, experience_years=3.0, skills=["python"])
@@ -52,7 +52,6 @@ class TestScoreBounds:
         result_with_jd = score(role="Software Engineer", edu_level=2, experience_years=3.0,
                                skills=["python"], jd_similarity_score=0.9)
         assert result_with_jd.jd_similarity_score == pytest.approx(0.9)
-        # Higher JD similarity should push cv_matching_score up
         assert result_with_jd.cv_matching_score >= result_no_jd.cv_matching_score * 0.5
 
     def test_edu_level_scores_match_component3(self):

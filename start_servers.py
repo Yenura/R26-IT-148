@@ -20,34 +20,50 @@ os.makedirs(log_dir, exist_ok=True)
 
 env = {
     **os.environ,
+    "PYTHONUNBUFFERED": "1",
     "MONGODB_URI": "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR",
     "DB_NAME": "HR"
 }
 procs = []
 for s in servers:
     log_path = os.path.join(log_dir, f"{s['name']}.log")
-    log_file = open(log_path, "w")
+    log_file = open(log_path, "w", buffering=1)
     cmd = [PYTHON, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(s["port"])]
-    p = subprocess.Popen(cmd, cwd=s["dir"], env=env, stdout=log_file, stderr=log_file,
-                         creationflags=subprocess.DETACHED_PROCESS | subprocess.CREATE_NO_WINDOW)
+    p = subprocess.Popen(cmd, cwd=s["dir"], env=env, stdout=log_file, stderr=log_file, close_fds=False)
     procs.append((s["name"], s["port"], p, log_file))
     print(f"Started {s['name']} (PID {p.pid}) on port {s['port']}, log: {log_path}")
 
-time.sleep(10)
-
+print("Waiting for servers to initialize...")
 import urllib.request
-for name, port, p, lf in procs:
-    if p.poll() is not None:
+
+ready = set()
+for attempt in range(25):
+    for name, port, p, lf in procs:
+        if name in ready:
+            continue
+        if p.poll() is not None:
+            print(f"  {name} CRASHED (exit {p.returncode})")
+            ready.add(name)
+            continue
+        try:
+            r = urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=2)
+            if r.status == 200:
+                print(f"  {name} port {port}: OK")
+                ready.add(name)
+        except Exception:
+            pass
+    if len(ready) == len(procs):
+        break
+    time.sleep(2)
+
+print("\nAll backend servers online and being monitored. Running continuously...")
+try:
+    while True:
+        time.sleep(10)
+except KeyboardInterrupt:
+    print("Shutting down servers...")
+    for name, port, p, lf in procs:
+        p.terminate()
         lf.close()
-        print(f"  {name} CRASHED (exit {p.returncode})")
-        with open(os.path.join(log_dir, f"{name}.log")) as f:
-            print(f"  {f.read()[-500:]}")
-        continue
-    try:
-        r = urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=3)
-        print(f"  {name} port {port}: OK")
-    except Exception as e:
-        lf.close()
-        print(f"  {name} port {port}: FAIL ({e})")
-        with open(os.path.join(log_dir, f"{name}.log")) as f:
-            print(f"  LOG: {f.read()[-500:]}")
+
+
