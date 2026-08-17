@@ -21,7 +21,8 @@ export default function Progress() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/'); return }
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
     loadData()
   }, [])
 

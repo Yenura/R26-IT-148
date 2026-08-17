@@ -30,7 +30,8 @@ export default function Interview() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/login/candidate'); return }
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
     loadRoles()
   }, [])
 

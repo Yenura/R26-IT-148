@@ -83,7 +83,8 @@ export default function CVMatch() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) {
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') {
       navigate('/login/candidate')
       return
     }

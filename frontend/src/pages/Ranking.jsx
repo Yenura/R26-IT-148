@@ -13,7 +13,8 @@ export default function Ranking() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/'); return }
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'company') { navigate('/login/company'); return }
     loadJobs()
   }, [])
 

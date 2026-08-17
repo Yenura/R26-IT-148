@@ -16,8 +16,9 @@ export default function SkillGap() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/login/candidate'); return }
-    c4SkillGapRoles().then((r) => setRoles(r.data.roles || [])).catch(() => {})
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
+    c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => toast.error('Failed to load roles'))
     loadResumeData()
   }, [])
 

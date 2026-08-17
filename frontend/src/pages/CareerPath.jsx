@@ -13,8 +13,9 @@ export default function CareerPath() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/'); return }
-    c4CareerRoles().then((r) => setRoles(r.data.roles || [])).catch(() => {})
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
+    c4CareerRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => toast.error('Failed to load roles'))
   }, [])
 
   const compute = async (e) => {

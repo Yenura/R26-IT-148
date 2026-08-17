@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight, MessageSquare, Sparkles } from 'lucide-react'
-import { C0 } from '../api'
+import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicants } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 const STANDARD_ROLES = {
@@ -77,20 +77,15 @@ export default function CompanyDashboard() {
 
   const loadJobs = async () => {
     try {
-      let r
-      try {
-        r = await C0.get('/jobs')
-      } catch {
-        r = await C0.get('/jobs/')
-      }
+      const r = await uJobsMy().catch(() => ({ data: [] }))
       const jobList = Array.isArray(r.data) ? r.data : []
       setJobs(jobList)
 
       const counts = {}
       for (const job of jobList) {
         try {
-          const ar = await C0.get(`/jobs/${job.id}/applicants`)
-          const apps = Array.isArray(ar.data) ? ar.data : ar.data.applicants || []
+          const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
+          const apps = Array.isArray(ar.data) ? ar.data : []
           counts[job.id] = apps.length
         } catch {
           counts[job.id] = 0
@@ -144,16 +139,7 @@ export default function CompanyDashboard() {
 
     setSubmitting(true)
     try {
-      let r
-      try {
-        r = await C0.post('/jobs', payload)
-      } catch (err) {
-        if (err?.response?.status === 307 || err?.response?.status === 404) {
-          r = await C0.post('/jobs/', payload)
-        } else {
-          throw err
-        }
-      }
+      await uJobsCreate(payload)
       toast.success('Job posted successfully!')
       setShowForm(false)
       setForm(emptyForm)
@@ -181,7 +167,7 @@ export default function CompanyDashboard() {
       danger: true,
       action: async () => {
         try {
-          await C0.delete(`/jobs/${id}`)
+          await uJobsDelete(id)
           toast.success('Deleted')
           loadJobs()
         } catch (err) {
