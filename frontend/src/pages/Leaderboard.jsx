@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import toast from 'react-hot-toast'
 import { Award, Trophy, Medal } from 'lucide-react'
 import { c4Leaderboard } from '../api'
 
@@ -9,8 +10,8 @@ export default function Leaderboard() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/'); return }
-    c4Leaderboard(10).then((r) => setData(r.data.data || [])).catch(() => {})
+    if (!token) { navigate('/login/candidate'); return }
+    c4Leaderboard(10).then((r) => setData(r?.data?.data || [])).catch(() => toast.error('Failed to load leaderboard'))
   }, [])
 
   const medal = (i) => i === 0 ? <Trophy size={20} style={{ color: '#FFD700' }} /> : i === 1 ? <Medal size={20} style={{ color: '#C0C0C0' }} /> : i === 2 ? <Medal size={20} style={{ color: '#CD7F32' }} /> : <span style={{ width: 20, textAlign: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)' }}>{i + 1}</span>
@@ -33,10 +34,8 @@ export default function Leaderboard() {
             <div
               key={c.candidate_id || i}
               className="card"
-              onClick={() => c.candidate_id && navigate(`/profile/${c.candidate_id}`)}
               style={{
                 padding: 16, background: bg(i), display: 'flex', alignItems: 'center', gap: 12,
-                cursor: c.candidate_id ? 'pointer' : 'default', transition: 'transform 0.15s ease'
               }}
             >
               {medal(i)}

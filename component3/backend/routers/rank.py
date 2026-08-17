@@ -238,7 +238,9 @@ async def rank_pipeline(request: Request, job_id: str):
     from models.schemas import CandidateInput
     
     # Connect to same MongoDB as C0
-    c0_mongo_uri = os.environ.get("C0_MONGODB_URI", os.environ.get("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"))
+    c0_mongo_uri = os.environ.get("C0_MONGODB_URI") or os.environ.get("MONGODB_URI")
+    if not c0_mongo_uri:
+        raise RuntimeError("MONGODB_URI not set — copy .env.example to .env and fill credentials")
     c0_db_name = os.environ.get("C0_DB_NAME", os.environ.get("DB_NAME", "HR"))
     client = motor.motor_asyncio.AsyncIOMotorClient(c0_mongo_uri)
     db = client[c0_db_name]
@@ -302,21 +304,29 @@ async def rank_pipeline(request: Request, job_id: str):
         if not applicants:
             return {"success": True, "job_id": job_id, "data": [], "message": "No applicants or resumes found"}
 
-        # 3. Build candidate inputs from applicant + resume + interview data
+        # 3. Batch-fetch resumes and interview scores for all candidates
+        candidate_ids = [app.get("candidate_id") or str(app.get("_id", "CAND")) for app in applicants]
+        resume_map = {}
+        async for r in db.resumes.find({"candidate_id": {"$in": candidate_ids}}):
+            resume_map[r.get("candidate_id", "")] = r
+        scores_map = {}
+        async for s in db.interview_scores.find({"candidate_id": {"$in": candidate_ids}}).sort("created_at", -1):
+            cid = s.get("candidate_id", "")
+            if cid not in scores_map:
+                scores_map[cid] = s
+
+        # 4. Build candidate inputs from applicant + resume + interview data
         candidates = []
         for app in applicants:
             candidate_id = app.get("candidate_id") or str(app.get("_id", "CAND"))
             candidate_name = app.get("candidate_name") or app.get("name") or "Candidate"
             
-            # Fetch resume data
             resume_skills = app.get("resume_skills", [])
             experience_years = app.get("experience_years", 0)
             edu_level = 2
             
             if not resume_skills:
-                resume = await db.resumes.find_one({"candidate_id": candidate_id})
-                if not resume and ObjectId.is_valid(candidate_id):
-                    resume = await db.resumes.find_one({"_id": ObjectId(candidate_id)})
+                resume = resume_map.get(candidate_id)
                 if resume:
                     resume_skills = resume.get("skills", [])
                     experience_years = resume.get("experience_years", 0)
@@ -335,13 +345,11 @@ async def rank_pipeline(request: Request, job_id: str):
             if not resume_skills:
                 resume_skills = ["Python", "SQL", "Git"]
 
-            # Fetch interview scores
             mcq_score = 0.8
             descriptive_score = 0.75
             coding_score = 0.85
-            scores = await db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1).to_list(length=1)
-            if scores:
-                latest = scores[0]
+            latest = scores_map.get(candidate_id)
+            if latest:
                 mcq_score = (latest.get("mcq_score", 80) or 80) / 100
                 descriptive_score = (latest.get("descriptive_score", 75) or 75) / 100
                 coding_score = (latest.get("coding_score", 85) or 85) / 100

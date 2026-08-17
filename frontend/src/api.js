@@ -51,6 +51,9 @@ export const authUploadAvatar       = (formData) => C0.post('/auth/avatar', form
 export const c0JobsAll          = ()              => C0.get('/jobs/all')
 export const uJobsPublic       = (id)            => C0.get(`/jobs/public/${id}`)
 export const uJobsGet          = (id)            => C0.get(`/jobs/${id}`)
+export const uJobsMy           = ()              => C0.get('/jobs')
+export const uJobsCreate       = (payload)       => C0.post('/jobs', payload)
+export const uJobsDelete       = (id)            => C0.delete(`/jobs/${id}`)
 export const uJobsApply        = (id, payload)   => C0.post(`/jobs/${id}/apply`, payload)
 export const uJobsWithdraw     = (id)             => C0.delete(`/jobs/${id}/apply`)
 export const uJobsApplicants   = (id)            => C0.get(`/jobs/${id}/applicants`)
@@ -63,6 +66,16 @@ export const uResumeList       = ()              => C0.get('/resume/')
 export const uResumeUpdate     = (id, payload)   => C0.put(`/resume/${id}`, payload)
 export const uResumeDelete     = (id)            => C0.delete(`/resume/${id}`)
 export const uInterviewDetail  = (candidateId)   => C0.get(`/resume/interview-detail/${candidateId}`)
+export const c0Predictions     = ()              => C0.get('/resume/predictions')
+export const c0Applications    = ()              => C0.get('/jobs/applications')
+export const c0InterviewScores = (candidateId)   => C0.get(`/resume/interview-scores/${candidateId}`)
+export const c0ResumeMatch     = (resumeId, params = {}) => {
+  const qs = new URLSearchParams({ resume_id: resumeId, ...params }).toString()
+  return C0.get(`/resume/match?${qs}`)
+}
+
+// ── Component 1: CV Analysis ──────────────────────────────────
+export const c1Analyze         = (payload)       => C1.post('/cv/analyze', payload)
 
 // ── Component 2: AI Interview ─────────────────────────────────
 export const c2Start       = (payload)      => C2.post('/interview/start', payload)
@@ -77,3 +90,15 @@ export const c3Pipeline    = (jobId)        => C3.get(`/rank/pipeline/${jobId}`)
 
 // ── Component 4: Skill Gap & Career Development ───────────────
 export const c4Leaderboard     = (limit = 10) => C4.get(`/analytics/leaderboard?limit=${limit}`)
+export const c4SkillGap        = (payload)    => C4.post('/skill-gap', payload)
+export const c4SkillGapRoles   = ()           => C4.get('/skill-gap/roles')
+export const c4SkillGapAnalyze = (payload)    => C4.post('/skill-gap/analyze', payload)
+export const c4SkillGapSimulate= (payload)    => C4.post('/skill-gap/simulate', payload)
+export const c4CareerRec       = (payload)    => C4.post('/career/recommendation', payload)
+export const c4CareerRoles     = ()           => C4.get('/career/roles')
+export const c4CareerPath      = (payload)    => C4.post('/career/path', payload)
+export const c4LearningPath    = (payload)    => C4.post('/career/learning-path', payload)
+export const c4Progress        = (candidateId)=> C4.get(`/progress/${candidateId}`)
+export const c4ProgressPopulate= (payload)    => C4.post('/progress/populate', payload)
+export const c4ProgressUpdate  = (payload)    => C4.post('/progress/update', payload)
+export const c4ProgressDelete  = (candidateId)=> C4.delete(`/progress/${candidateId}`)

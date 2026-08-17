@@ -47,7 +47,7 @@ export default function ResearchArchitectureModal({ isOpen, onClose }) {
             </div>
             <span style={{ color: 'var(--text-muted)' }}>→</span>
             <div style={{ padding: '10px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
-              <Cpu size={16} style={{ color: '#22c55e', margin: '0 auto 4px' }} /> Component 4 (Skill Gap & Career)
+              <Cpu size={16} style={{ color: 'var(--color-success)', margin: '0 auto 4px' }} /> Component 4 (Skill Gap & Career)
             </div>
           </div>
         </div>
@@ -71,25 +71,25 @@ export default function ResearchArchitectureModal({ isOpen, onClose }) {
                 <td style={{ padding: '10px 14px', fontWeight: 700 }}>Component 1</td>
                 <td style={{ padding: '10px 14px' }}>LogisticRegression + TF-IDF Vectorizer</td>
                 <td style={{ padding: '10px 14px' }}>4,000 Resumes</td>
-                <td style={{ padding: '10px 14px', color: '#22c55e', fontWeight: 700 }}>98.57% Accuracy (F1: 0.985)</td>
+                <td style={{ padding: '10px 14px', color: 'var(--color-success)', fontWeight: 700 }}>98.57% Accuracy (F1: 0.985)</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 700 }}>Component 2</td>
                 <td style={{ padding: '10px 14px' }}>NLP Keyword & Sentiment Matrix</td>
                 <td style={{ padding: '10px 14px' }}>20 IT Domains</td>
-                <td style={{ padding: '10px 14px', color: '#22c55e', fontWeight: 700 }}>100% MCQ & Descriptive Pipeline</td>
+                <td style={{ padding: '10px 14px', color: 'var(--color-success)', fontWeight: 700 }}>100% MCQ & Descriptive Pipeline</td>
               </tr>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 <td style={{ padding: '10px 14px', fontWeight: 700 }}>Component 3</td>
                 <td style={{ padding: '10px 14px' }}>Multi-Criteria Learning-to-Rank (LTR)</td>
                 <td style={{ padding: '10px 14px' }}>Applicant Pipeline</td>
-                <td style={{ padding: '10px 14px', color: '#22c55e', fontWeight: 700 }}>NDCG@5 Ranking Precision</td>
+                <td style={{ padding: '10px 14px', color: 'var(--color-success)', fontWeight: 700 }}>NDCG@5 Ranking Precision</td>
               </tr>
               <tr>
                 <td style={{ padding: '10px 14px', fontWeight: 700 }}>Component 4</td>
                 <td style={{ padding: '10px 14px' }}>Weighted Jaccard + Priority Score Formula</td>
                 <td style={{ padding: '10px 14px' }}>10,000 Records</td>
-                <td style={{ padding: '10px 14px', color: '#22c55e', fontWeight: 700 }}>AUC 0.9936 / Top-3 Acc: 80%</td>
+                <td style={{ padding: '10px 14px', color: 'var(--color-success)', fontWeight: 700 }}>AUC 0.9936 / Top-3 Acc: 80%</td>
               </tr>
             </tbody>
           </table>

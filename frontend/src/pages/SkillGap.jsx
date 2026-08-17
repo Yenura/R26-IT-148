@@ -2,14 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  Target, CheckCircle2, AlertCircle, BookOpen, ExternalLink, Sparkles,
-  Zap, Award, TrendingUp, ChevronRight, Layers, Lightbulb
+  Target, CheckCircle2, AlertCircle, BookOpen, ExternalLink,
+  Zap, Layers, Lightbulb
 } from 'lucide-react'
-import axios from 'axios'
-
-const C4 = 'http://127.0.0.1:8004'
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+import { uResumeList, c4SkillGapRoles, c4SkillGapAnalyze, c4SkillGapSimulate } from '../api'
 
 export default function SkillGap() {
   const navigate = useNavigate()
@@ -20,14 +16,15 @@ export default function SkillGap() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/login/candidate'); return }
-    axios.get(`${C4}/api/v1/skill-gap/roles`).then((r) => setRoles(r.data.roles || [])).catch(() => {})
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
+    c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => toast.error('Failed to load roles'))
     loadResumeData()
   }, [])
 
   const loadResumeData = async () => {
     try {
-      const r = await axios.get(`${API}/api/v1/resume/`, authHeader())
+      const r = await uResumeList()
       const resumes = r.data || []
       if (resumes.length > 0) {
         const latest = resumes[0]
@@ -41,7 +38,7 @@ export default function SkillGap() {
       } else {
         setForm(f => ({ ...f, candidate_name: localStorage.getItem('recruitai.name') || 'Candidate' }))
       }
-    } catch {}
+    } catch { toast.error('Failed to load resume data') }
   }
 
   const analyze = async (e) => {
@@ -49,7 +46,7 @@ export default function SkillGap() {
     if (!form.candidate_name || !form.job_role || !form.skills) return toast.error('Please fill required fields')
     setBusy(true)
     try {
-      const r = await axios.post(`${C4}/api/v1/skill-gap/analyze`, {
+      const r = await c4SkillGapAnalyze({
         candidate_id: localStorage.getItem('recruitai.user_id'),
         candidate_name: form.candidate_name,
         job_role: form.job_role,
@@ -57,7 +54,7 @@ export default function SkillGap() {
         experience_years: parseFloat(form.experience_years) || 0,
         education: form.education || 'B.Sc. Computer Science',
       })
-      const data = r.data.data || r.data
+      const data = r?.data?.data || r?.data || {}
       setResult(data)
       toast.success(`Skill Fit Score: ${(data.skill_match_pct || (data.gap_score * 100)).toFixed(0)}%`)
     } catch (err) {
@@ -117,7 +114,7 @@ export default function SkillGap() {
           </div>
         </div>
 
-        <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--color-primary)', color: '#fff' }}>
+        <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}>
           <Target size={18} /> {busy ? 'Calculating Skill Coverage & Recommendations...' : 'Run Skill Gap Analysis'}
         </button>
       </form>
@@ -157,7 +154,7 @@ export default function SkillGap() {
             </div>
             <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
               <div className="stat-label" style={{ fontSize: 12 }}>Gap Severity</div>
-              <div className="stat-value" style={{ color: result.gap_severity === 'Low' ? '#22c55e' : result.gap_severity === 'Medium' ? '#f59e0b' : '#ef4444', fontSize: 22 }}>
+              <div className="stat-value" style={{ color: result.gap_severity === 'Low' ? 'var(--color-success)' : result.gap_severity === 'Medium' ? 'var(--color-warning)' : 'var(--color-danger)', fontSize: 22 }}>
                 {result.gap_severity}
               </div>
             </div>
@@ -172,7 +169,7 @@ export default function SkillGap() {
               {result.missing_required?.length > 0 ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {result.missing_required.map((s) => (
-                    <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 600 }}>
+                    <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 600 }}>
                       {s}
                     </span>
                   ))}
@@ -189,7 +186,7 @@ export default function SkillGap() {
               {result.present_skills?.length > 0 ? (
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {result.present_skills.map((s) => (
-                    <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                    <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
                       {s}
                     </span>
                   ))}
@@ -209,7 +206,7 @@ export default function SkillGap() {
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {result.resources.map((resItem, idx) => {
-                  const pColor = resItem.priority === 'Critical' ? '#ef4444' : resItem.priority === 'High' ? '#f97316' : resItem.priority === 'Medium' ? '#eab308' : '#22c55e'
+                  const pColor = resItem.priority === 'Critical' ? 'var(--color-danger)' : resItem.priority === 'High' ? 'var(--color-orange)' : resItem.priority === 'Medium' ? 'var(--color-warning)' : 'var(--color-success)'
                   return (
                     <div key={idx} style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                       <div>
@@ -251,7 +248,7 @@ export default function SkillGap() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {result.learning_plan.map((planItem, i) => (
                   <div key={i} style={{ padding: 14, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent)', color: 'var(--color-on-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
                       {planItem.phase || (i + 1)}
                     </div>
                     <div>
@@ -274,12 +271,12 @@ export default function SkillGap() {
           {result.improvement_suggestions?.length > 0 && (
             <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
               <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Lightbulb size={20} style={{ color: '#eab308' }} /> Actionable AI Profile Recommendations
+                <Lightbulb size={20} style={{ color: 'var(--color-warning)' }} /> Actionable AI Profile Recommendations
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {result.improvement_suggestions.map((s, i) => (
                   <div key={i} style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                    <span style={{ color: '#eab308' }}>•</span> {s}
+                    <span style={{ color: 'var(--color-warning)' }}>•</span> {s}
                   </div>
                 ))}
               </div>

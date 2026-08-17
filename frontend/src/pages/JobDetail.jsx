@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Briefcase, MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
-import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode } from '../api'
-
-const C2 = import.meta.env.VITE_C2_URL || 'http://127.0.0.1:8002'
+import { MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
+import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode, c2Start, c2Submit, uResumeList, c0Applications, c0InterviewScores } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function JobDetail() {
   const { id } = useParams()
@@ -17,6 +16,7 @@ export default function JobDetail() {
   const [interviewStarted, setInterviewStarted] = useState(false)
   const [interviewSession, setInterviewSession] = useState(null)
   const [interviewDone, setInterviewDone] = useState(false)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -28,7 +28,7 @@ export default function JobDetail() {
     try {
       // Candidates use public endpoint, companies use owned endpoint
       const r = role === 'company' ? await uJobsGet(id) : await uJobsPublic(id)
-      setJob(r.data)
+      setJob(r?.data)
       if (role === 'candidate') loadCandidateData()
       if (role === 'company') loadApplicants()
     } catch {
@@ -38,30 +38,30 @@ export default function JobDetail() {
 
   const loadCandidateData = async () => {
     try {
-      const { default: api } = await import('../api')
       const [r1, r2] = await Promise.all([
-        api.C0.get('/resume/'),
-        api.C0.get('/jobs/applications'),
+        uResumeList().catch(() => ({ data: [] })),
+        c0Applications().catch(() => ({ data: [] })),
       ])
-      setResumes(r1.data)
-      const apps = Array.isArray(r2.data) ? r2.data : r2.data.applications || []
+      const resumeList = Array.isArray(r1.data) ? r1.data : []
+      setResumes(resumeList)
+      const apps = Array.isArray(r2.data) ? r2.data : []
       setApplied(apps.some(a => a.job_id === id && a.status !== 'withdrawn'))
       // Check if candidate has completed interview for this job
       try {
         const candidateId = localStorage.getItem('recruitai.user_id')
-        const r3 = await api.C0.get(`/resume/interview-scores/${candidateId}`)
+        const r3 = await c0InterviewScores(candidateId).catch(() => ({ data: [] }))
         const scores = Array.isArray(r3.data) ? r3.data : []
         const jobRole = job?.job_role || job?.title || ''
         setInterviewDone(scores.some(s => s.job_role === jobRole))
       } catch {}
-    } catch {}
+    } catch { toast.error('Failed to load job data') }
   }
 
   const loadApplicants = async () => {
     try {
       const r = await uJobsApplicants(id)
       setApplicants(Array.isArray(r.data) ? r.data : r.data.applicants || [])
-    } catch {}
+    } catch { toast.error('Failed to load applicants') }
   }
 
   const apply = async () => {
@@ -70,59 +70,69 @@ export default function JobDetail() {
       toast.error('You must complete the interview before applying')
       return
     }
-    if (!confirm('Apply to this job with your resume?')) return
-    try {
-      const candidateId = localStorage.getItem('recruitai.user_id') || ''
-      const candidateName = localStorage.getItem('recruitai.name') || ''
-      await uJobsApply(id, {
-        candidate_id: candidateId,
-        candidate_name: candidateName,
-        resume_id: resumes[0].id,
-      })
-      toast.success('Applied!')
-      setApplied(true)
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to apply')
-    }
+    setConfirm({
+      open: true,
+      title: 'Apply to this job?',
+      message: 'Your resume will be submitted to the employer.',
+      action: async () => {
+        try {
+          const candidateId = localStorage.getItem('recruitai.user_id') || ''
+          const candidateName = localStorage.getItem('recruitai.name') || ''
+          await uJobsApply(id, {
+            candidate_id: candidateId,
+            candidate_name: candidateName,
+            resume_id: resumes[0].id,
+          })
+          toast.success('Applied!')
+          setApplied(true)
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed to apply')
+        }
+      }
+    })
   }
 
   const withdraw = async () => {
-    if (!confirm('Withdraw your application?')) return
-    try {
-      await uJobsWithdraw(id)
-      toast.success('Application withdrawn')
-      setApplied(false)
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to withdraw')
-    }
+    setConfirm({
+      open: true,
+      title: 'Withdraw application?',
+      message: 'You can re-apply later if the position is still open.',
+      danger: true,
+      action: async () => {
+        try {
+          await uJobsWithdraw(id)
+          toast.success('Application withdrawn')
+          setApplied(false)
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed to withdraw')
+        }
+      }
+    })
   }
 
   const startInterview = async () => {
     if (!job) return
-    if (!confirm(`Start interview for ${job.title}? You'll be asked ${job.interview_question_count || 10} questions.`)) return
-    try {
-      const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
-      const r = await fetch(`${C2}/api/v1/interview/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
-        },
-        body: JSON.stringify({
-          candidate_id: localStorage.getItem('recruitai.user_id'),
-          job_role: job.job_role || job.title,
-          job_level: job.job_level || 'Mid-Level',
-          required_skills: skills,
-          num_questions: job.interview_question_count || 10,
-        }),
-      })
-      const data = await r.json()
-      if (!r.ok) throw new Error(data.detail || 'Failed to start interview')
-      setInterviewSession(data)
-      setInterviewStarted(true)
-    } catch (err) {
-      toast.error(err.message || 'Failed to start interview')
-    }
+    setConfirm({
+      open: true,
+      title: `Start interview for ${job.title}?`,
+      message: `You'll be asked ${job.interview_question_count || 10} questions.`,
+      action: async () => {
+        try {
+          const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
+          const r = await c2Start({
+            candidate_id: localStorage.getItem('recruitai.user_id'),
+            job_role: job.job_role || job.title,
+            job_level: job.job_level || 'Mid-Level',
+            required_skills: skills,
+            num_questions: job.interview_question_count || 10,
+          })
+          setInterviewSession(r.data)
+          setInterviewStarted(true)
+        } catch (err) {
+          toast.error(err.message || 'Failed to start interview')
+        }
+      }
+    })
   }
 
   if (!job) return <div className="empty">Loading job...</div>
@@ -177,7 +187,7 @@ export default function JobDetail() {
 
         {/* Interview Config Badge */}
         {job.interview_required && (
-          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: interviewDone ? 'rgba(34,197,94,0.1)' : 'var(--color-warning-bg, rgba(251,191,36,0.1))', border: `1px solid ${interviewDone ? 'rgba(34,197,94,0.3)' : 'var(--color-warning, #f59e0b)'}`, fontSize: 13 }}>
+          <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 6, background: interviewDone ? 'rgba(34,197,94,0.1)' : 'var(--color-warning-muted)', border: `1px solid ${interviewDone ? 'rgba(34,197,94,0.3)' : 'var(--color-warning)'}`, fontSize: 13 }}>
             <Settings size={14} style={{ verticalAlign: -2, marginRight: 6 }} />
             {interviewDone ? 'Interview completed' : `Interview required (${job.interview_question_count || 10} questions)`}
           </div>
@@ -273,6 +283,15 @@ export default function JobDetail() {
           )}
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel={confirm.danger ? 'Withdraw' : 'Confirm'}
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }
@@ -285,6 +304,7 @@ function InlineInterview({ session, job, onDone }) {
   const [result, setResult] = useState(null)
   const [runResults, setRunResults] = useState(null)
   const [running, setRunning] = useState(false)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   const questions = session.questions || []
   const q = questions[step]
@@ -309,40 +329,37 @@ function InlineInterview({ session, job, onDone }) {
   }
 
   const submit = async () => {
-    if (!confirm('Submit your interview? You cannot change answers after submission.')) return
-    setSubmitting(true)
-    try {
-      const formattedAnswers = questions.map((qq, i) => {
-        const a = answers[i]
-        if (qq.question_type === 'MCQ') {
-          return { question_id: qq.id, selected_option: a != null ? Number(a) : null }
+    setConfirm({
+      open: true,
+      title: 'Submit interview?',
+      message: 'You cannot change answers after submission.',
+      action: async () => {
+        setSubmitting(true)
+        try {
+          const formattedAnswers = questions.map((qq, i) => {
+            const a = answers[i]
+            if (qq.question_type === 'MCQ') {
+              return { question_id: qq.id, selected_option: a != null ? Number(a) : null }
+            }
+            if (qq.question_type === 'Coding') {
+              return { question_id: qq.id, code_text: a || '', language: 'Python' }
+            }
+            return { question_id: qq.id, answer_text: a || '' }
+          })
+          const r = await c2Submit({
+            candidate_id: localStorage.getItem('recruitai.user_id'),
+            session_id: session.session_id,
+            job_role: job.job_role || job.title,
+            answers: formattedAnswers,
+          })
+          setResult(r.data)
+        } catch (err) {
+          toast.error(err.message)
+        } finally {
+          setSubmitting(false)
         }
-        if (qq.question_type === 'Coding') {
-          return { question_id: qq.id, code_text: a || '', language: 'Python' }
-        }
-        return { question_id: qq.id, answer_text: a || '' }
-      })
-      const r = await fetch(`${C2}/api/v1/interview/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
-        },
-        body: JSON.stringify({
-          candidate_id: localStorage.getItem('recruitai.user_id'),
-          session_id: session.session_id,
-          job_role: job.job_role || job.title,
-          answers: formattedAnswers,
-        }),
-      })
-      const data = await r.json()
-      if (!r.ok) throw new Error(data.detail || 'Submit failed')
-      setResult(data)
-    } catch (err) {
-      toast.error(err.message)
-    } finally {
-      setSubmitting(false)
-    }
+      }
+    })
   }
 
   if (result) {
@@ -450,6 +467,14 @@ function InlineInterview({ session, job, onDone }) {
           </button>
         )}
       </div>
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        confirmLabel="Confirm"
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

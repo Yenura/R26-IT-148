@@ -36,7 +36,10 @@ def _get_mongo_db() -> Optional[Database]:
     if _mongo_db is not None:
         return _mongo_db
 
-    mongo_uri = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+    mongo_uri = os.getenv("MONGODB_URI")
+    if not mongo_uri:
+        logger.critical("MONGODB_URI not set — copy .env.example to .env and fill credentials")
+        raise SystemExit(1)
     db_name = os.getenv("MONGODB_DB", os.getenv("DB_NAME", "HR"))
 
     try:

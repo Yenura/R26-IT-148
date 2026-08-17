@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Route, ArrowRight, ChevronRight } from 'lucide-react'
-import axios from 'axios'
-
-const C4 = 'http://127.0.0.1:8004'
+import { Route } from 'lucide-react'
+import { c4CareerRoles, c4CareerPath } from '../api'
 
 export default function CareerPath() {
   const navigate = useNavigate()
@@ -15,8 +13,9 @@ export default function CareerPath() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/'); return }
-    axios.get(`${C4}/api/v1/career/roles`).then((r) => setRoles(r.data.roles || [])).catch(() => {})
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
+    c4CareerRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => toast.error('Failed to load roles'))
   }, [])
 
   const compute = async (e) => {
@@ -24,7 +23,7 @@ export default function CareerPath() {
     if (!form.current_role) return toast.error('Select a role')
     setBusy(true)
     try {
-      const r = await axios.post(`${C4}/api/v1/career/path`, {
+      const r = await c4CareerPath({
         candidate_id: localStorage.getItem('recruitai.user_id'),
         current_role: form.current_role,
         target_role: form.current_role,

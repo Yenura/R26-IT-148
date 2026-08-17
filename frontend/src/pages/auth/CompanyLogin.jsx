@@ -86,7 +86,7 @@ export default function CompanyLogin() {
               </div>
             </div>
 
-            <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: '#fff' }}>
+            <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}>
               <Building2 size={16} /> {busy ? 'Signing in...' : 'Sign In as Company'}
             </button>
           </form>

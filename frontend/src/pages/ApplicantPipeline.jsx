@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Users, Trophy, ArrowLeft, Mail, Briefcase, Star, Loader, X, CheckCircle, XCircle, Code, FileText } from 'lucide-react'
-import { C0, C3, uInterviewDetail } from '../api'
+import { Users, Trophy, ArrowLeft, Loader, X, CheckCircle, Code, FileText } from 'lucide-react'
+import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail } from '../api'
 
 export default function ApplicantPipeline() {
   const navigate = useNavigate()
@@ -26,12 +26,13 @@ export default function ApplicantPipeline() {
     setBusy(true)
     try {
       const [jobRes, appsRes] = await Promise.all([
-        C0.get('/jobs/all'),
-        C0.get(`/jobs/${jobId}/applicants`)
+        c0JobsAll().catch(() => ({ data: [] })),
+        uJobsApplicants(jobId).catch(() => ({ data: [] })),
       ])
-      const j = jobRes.data.find(j => j.id === jobId)
+      const jobList = Array.isArray(jobRes.data) ? jobRes.data : []
+      const j = jobList.find(j => j.id === jobId)
       setJob(j)
-      const apps = Array.isArray(appsRes.data) ? appsRes.data : appsRes.data.applicants || []
+      const apps = Array.isArray(appsRes.data) ? appsRes.data : []
       setApplicants(apps)
     } catch (err) {
       toast.error('Failed to load data')
@@ -43,9 +44,9 @@ export default function ApplicantPipeline() {
   const runRanking = async () => {
     setRanking(true)
     try {
-      const r = await C3.get(`/rank/pipeline/${jobId}`)
-      setRankings(r.data.data || [])
-      toast.success(`Ranked ${r.data.data?.length || 0} applicants`)
+      const r = await c3Pipeline(jobId)
+      setRankings(r?.data?.data || [])
+      toast.success(`Ranked ${r?.data?.data?.length || 0} applicants`)
     } catch (err) {
       toast.error('Failed to run ranking')
     } finally {
@@ -124,16 +125,16 @@ export default function ApplicantPipeline() {
                   width: 34, height: 34, borderRadius: 8,
                   background: !r.passed_hard_filter ? 'var(--border)' : i === 0 ? 'var(--accent)' : i === 1 ? 'var(--accent-2)' : 'var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 14, color: r.passed_hard_filter && i < 2 ? '#fff' : 'var(--text)'
+                  fontWeight: 800, fontSize: 14, color: r.passed_hard_filter && i < 2 ? 'var(--color-on-primary)' : 'var(--text)'
                 }}>{r.passed_hard_filter ? r.rank : '✗'}</div>
                 
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ fontWeight: 600, fontSize: 15 }}>{r.candidate_name}</span>
                     {r.passed_hard_filter ? (
-                      <span className="chip" style={{ fontSize: 10, background: '#2ecc7120', color: '#2ecc71', borderColor: '#2ecc7150' }}>Qualified</span>
+                      <span className="chip" style={{ fontSize: 10, background: 'rgba(34,197,94,0.12)', color: 'var(--color-success)', borderColor: 'rgba(34,197,94,0.3)' }}>Qualified</span>
                     ) : (
-                      <span className="chip" style={{ fontSize: 10, background: '#e74c3c20', color: '#e74c3c', borderColor: '#e74c3c50' }}>
+                      <span className="chip" style={{ fontSize: 10, background: 'rgba(239,68,68,0.12)', color: 'var(--color-danger)', borderColor: 'rgba(239,68,68,0.3)' }}>
                         {r.filter_fail_reason || 'Disqualified'}
                       </span>
                     )}
@@ -205,7 +206,7 @@ export default function ApplicantPipeline() {
               <div style={{
                 width: 36, height: 36, borderRadius: '50%',
                 background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700, fontSize: 14, color: '#fff'
+                fontWeight: 700, fontSize: 14, color: 'var(--color-on-primary)'
               }}>
                 {(app.candidate_name || '?')[0]?.toUpperCase()}
               </div>
@@ -217,9 +218,6 @@ export default function ApplicantPipeline() {
               </div>
               <button className="btn btn-sm btn-ghost" onClick={() => openDetail(app.candidate_id)} disabled={detailBusy}>
                 <FileText size={14} /> Interview Details
-              </button>
-              <button className="btn btn-sm" onClick={() => navigate(`/profile/${app.candidate_id}`)}>
-                <Star size={14} /> View
               </button>
             </div>
           ))
@@ -253,8 +251,8 @@ export default function ApplicantPipeline() {
               {[
                 { label: 'Overall', value: detail.interview_score, color: 'var(--accent)' },
                 { label: 'MCQ', value: detail.mcq_score, color: 'var(--accent-2)' },
-                { label: 'Descriptive', value: detail.descriptive_score, color: '#f59e0b' },
-                { label: 'Coding', value: detail.coding_score, color: '#8b5cf6' },
+                { label: 'Descriptive', value: detail.descriptive_score, color: 'var(--color-warning)' },
+                { label: 'Coding', value: detail.coding_score, color: 'var(--color-purple)' },
               ].map(s => (
                 <div key={s.label} style={{ textAlign: 'center', padding: 12, background: 'var(--bg)', borderRadius: 8 }}>
                   <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{(s.value || 0).toFixed(1)}%</div>
@@ -306,7 +304,7 @@ export default function ApplicantPipeline() {
             {detail.descriptive_details?.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-                  <FileText size={14} style={{ verticalAlign: -2, color: '#f59e0b' }} /> Descriptive Questions
+                  <FileText size={14} style={{ verticalAlign: -2, color: 'var(--color-warning)' }} /> Descriptive Questions
                 </h3>
                 {detail.descriptive_details.map((d, i) => (
                   <div key={i} style={{
@@ -329,7 +327,7 @@ export default function ApplicantPipeline() {
             {detail.coding_details?.length > 0 && (
               <div style={{ marginBottom: 20 }}>
                 <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-                  <Code size={14} style={{ verticalAlign: -2, color: '#8b5cf6' }} /> Coding Questions
+                  <Code size={14} style={{ verticalAlign: -2, color: 'var(--color-purple)' }} /> Coding Questions
                 </h3>
                 {detail.coding_details.map((d, i) => (
                   <div key={i} style={{
