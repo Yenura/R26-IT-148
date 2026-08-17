@@ -6,8 +6,8 @@ from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 
-from schemas import ResumeOut, ResumeUpdate, PredictionOut
-from routers.auth import get_current_user, require_company
+from schemas import ResumeOut, ResumeUpdate, PredictionOut, InterviewScoresCreate
+from routers.auth import get_current_user, require_company, require_candidate
 from services.resume_parser import parse_resume_file, extract_entities
 from services.semantic_matcher import SemanticMatcher
 from services.role_classifier import RoleClassifier
@@ -386,21 +386,18 @@ async def parse_resume_text(
 
 
 @router.post("/interview-scores")
-async def save_interview_scores(payload: dict, request: Request):
+async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(require_candidate)):
     db = request.app.state.db
-    candidate_id = payload.get("candidate_id", "")
-    if not candidate_id:
-        raise HTTPException(status_code=400, detail="candidate_id required")
     doc = {
-        "candidate_id": candidate_id,
-        "job_id": payload.get("job_id", ""),
-        "session_id": payload.get("session_id", ""),
-        "job_role": payload.get("job_role", ""),
-        "mcq_score": payload.get("mcq_score", 0),
-        "descriptive_score": payload.get("descriptive_score", 0),
-        "coding_score": payload.get("coding_score", 0),
-        "interview_score": payload.get("interview_score", 0),
-        "grade": payload.get("grade", ""),
+        "candidate_id": payload.candidate_id,
+        "job_id": payload.job_id,
+        "session_id": payload.session_id,
+        "job_role": payload.job_role,
+        "mcq_score": payload.mcq_score,
+        "descriptive_score": payload.descriptive_score,
+        "coding_score": payload.coding_score,
+        "interview_score": payload.interview_score,
+        "grade": payload.grade,
         "created_at": datetime.now(timezone.utc),
     }
     await db.interview_scores.insert_one(doc)

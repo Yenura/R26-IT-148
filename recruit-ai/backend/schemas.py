@@ -6,21 +6,21 @@ from pydantic import BaseModel, Field, field_validator
 # ── Auth ────────────────────────────────────────────────────────
 class CompanyRegister(BaseModel):
     company_name: str = Field(..., min_length=2, max_length=200)
-    email: str = Field(..., min_length=5)
-    password: str = Field(..., min_length=6)
-    industry: str = ""
-    website: str = ""
+    email: str = Field(..., min_length=5, max_length=200)
+    password: str = Field(..., min_length=6, max_length=200)
+    industry: str = Field(default="", max_length=200)
+    website: str = Field(default="", max_length=500)
 
 
 class CandidateRegister(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=200)
-    email: str = Field(..., min_length=5)
-    password: str = Field(..., min_length=6)
+    email: str = Field(..., min_length=5, max_length=200)
+    password: str = Field(..., min_length=6, max_length=200)
 
 
 class LoginRequest(BaseModel):
-    email: str
-    password: str
+    email: str = Field(..., max_length=200)
+    password: str = Field(..., max_length=200)
 
 
 class Token(BaseModel):
@@ -43,10 +43,10 @@ class UserOut(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
-    full_name: str | None = None
-    company_name: str | None = None
-    industry: str | None = None
-    website: str | None = None
+    full_name: str | None = Field(default=None, max_length=200)
+    company_name: str | None = Field(default=None, max_length=200)
+    industry: str | None = Field(default=None, max_length=200)
+    website: str | None = Field(default=None, max_length=500)
 
 
 class PasswordChange(BaseModel):
@@ -56,20 +56,20 @@ class PasswordChange(BaseModel):
 
 # ── Jobs ────────────────────────────────────────────────────────
 class JobCreate(BaseModel):
-    title: str = Field(..., min_length=2)
-    job_role: str = ""
-    job_level: str = ""
-    department: str = ""
-    employment_type: str = "Full-time"
-    location: str = ""
+    title: str = Field(..., min_length=2, max_length=300)
+    job_role: str = Field(default="", max_length=200)
+    job_level: str = Field(default="", max_length=100)
+    department: str = Field(default="", max_length=200)
+    employment_type: str = Field(default="Full-time", max_length=50)
+    location: str = Field(default="", max_length=200)
     experience_required: int = 0
-    education_required: str = ""
+    education_required: str = Field(default="", max_length=200)
     required_skills: list[str] = []
     preferred_skills: list[str] = []
-    description: str = ""
-    responsibilities: str = ""
-    salary_range: str = ""
-    status: str = "open"
+    description: str = Field(default="", max_length=10000)
+    responsibilities: str = Field(default="", max_length=10000)
+    salary_range: str = Field(default="", max_length=100)
+    status: str = Field(default="open", max_length=20)
     interview_required: bool = False
     interview_question_count: int = 10
 
@@ -193,20 +193,20 @@ class ApplicationOut(BaseModel):
 
 
 class ApplicationCreate(BaseModel):
-    candidate_id: str
-    candidate_name: str = ""
-    resume_id: str = ""
+    candidate_id: str = Field(..., min_length=1, max_length=100)
+    candidate_name: str = Field(default="", max_length=200)
+    resume_id: str = Field(default="", max_length=100)
 
 
 class ResumeUpdate(BaseModel):
-    candidate_name: str | None = None
-    email: str | None = None
-    phone: str | None = None
-    address: str | None = None
-    linkedin: str | None = None
-    github: str | None = None
+    candidate_name: str | None = Field(default=None, max_length=200)
+    email: str | None = Field(default=None, max_length=200)
+    phone: str | None = Field(default=None, max_length=30)
+    address: str | None = Field(default=None, max_length=500)
+    linkedin: str | None = Field(default=None, max_length=500)
+    github: str | None = Field(default=None, max_length=500)
     skills: list[str] | None = None
-    education: str | None = None
+    education: str | None = Field(default=None, max_length=500)
     experience_years: float | None = None
     projects: list[str] | None = None
     academic_projects: list[dict] | None = None
@@ -216,3 +216,16 @@ class ResumeUpdate(BaseModel):
     languages: list[str] | None = None
     tools: list[str] | None = None
     frameworks: list[str] | None = None
+
+
+# ── Interview Scores ─────────────────────────────────────────────
+class InterviewScoresCreate(BaseModel):
+    candidate_id: str = Field(..., min_length=1, max_length=100)
+    job_id: str = Field(default="", max_length=100)
+    session_id: str = Field(default="", max_length=200)
+    job_role: str = Field(default="", max_length=200)
+    mcq_score: float = Field(default=0, ge=0, le=100)
+    descriptive_score: float = Field(default=0, ge=0, le=100)
+    coding_score: float = Field(default=0, ge=0, le=100)
+    interview_score: float = Field(default=0, ge=0, le=100)
+    grade: str = Field(default="", max_length=10)
