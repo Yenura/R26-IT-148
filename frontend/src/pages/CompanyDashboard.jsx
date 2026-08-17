@@ -182,20 +182,20 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-3" style={{ marginBottom: 20 }}>
+      <div className="grid grid-3 reveal" style={{ marginBottom: 20 }}>
         <div className="stat">
           <div className="stat-label">Posted Jobs</div>
-          <div className="stat-value">{jobs.length}</div>
+          <div className="stat-value" style={{ fontFamily: 'var(--p-font-mono)' }}>{jobs.length}</div>
         </div>
         <div className="stat">
           <div className="stat-label">Active</div>
-          <div className="stat-value" style={{ color: 'var(--color-success)' }}>
+          <div className="stat-value" style={{ color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>
             {jobs.filter((j) => j.status === 'open').length || jobs.length}
           </div>
         </div>
         <div className="stat">
           <div className="stat-label">Total Applicants</div>
-          <div className="stat-value" style={{ color: 'var(--color-primary)' }}>
+          <div className="stat-value" style={{ color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
             {Object.values(applicantCounts).reduce((a, b) => a + b, 0)}
           </div>
         </div>
@@ -205,7 +205,7 @@ export default function CompanyDashboard() {
       {showForm && (
         <form onSubmit={createJob} className="card" style={{ marginBottom: 24, padding: 24 }}>
           <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Plus size={18} style={{ color: 'var(--accent)' }} /> Post New Job Listing
+            <Plus size={18} style={{ color: 'var(--color-primary)' }} /> Post New Job Listing
           </h3>
 
           {/* Quick role selector */}
@@ -357,7 +357,7 @@ export default function CompanyDashboard() {
       {jobs.length === 0 ? (
         <div className="card">
           <div className="empty">
-            <div className="empty-icon">💼</div>
+            <Briefcase size={32} style={{ color: 'var(--color-fg-muted)', marginBottom: 12, opacity: 0.4 }} />
             <p>No jobs posted yet</p>
             <p style={{ fontSize: 13, marginTop: 8 }}>Click "Post New Job" to create your first listing.</p>
           </div>

@@ -104,15 +104,15 @@ export default function CandidateDashboard() {
       </div>
 
       {/* Stat Strip */}
-      <div className="grid grid-4" style={{ marginBottom: 20 }}>
-        <div className="stat"><div className="stat-label">Resumes</div><div className="stat-value">{resumes.length}</div></div>
-        <div className="stat"><div className="stat-label">Applied</div><div className="stat-value" style={{ color: 'var(--color-primary)' }}>{applications.filter(a => a.status !== 'withdrawn').length}</div></div>
-        <div className="stat"><div className="stat-label">Jobs Open</div><div className="stat-value" style={{ color: 'var(--color-success)' }}>{jobs.length}</div></div>
-        <div className="stat"><div className="stat-label">Matches</div><div className="stat-value" style={{ color: 'var(--color-info)' }}>{predictions.length}</div></div>
+      <div className="grid grid-4 reveal" style={{ marginBottom: 20 }}>
+        <div className="stat"><div className="stat-label">Resumes</div><div className="stat-value" style={{ fontFamily: 'var(--p-font-mono)' }}>{resumes.length}</div></div>
+        <div className="stat"><div className="stat-label">Applied</div><div className="stat-value" style={{ color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>{applications.filter(a => a.status !== 'withdrawn').length}</div></div>
+        <div className="stat"><div className="stat-label">Jobs Open</div><div className="stat-value" style={{ color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>{jobs.length}</div></div>
+        <div className="stat"><div className="stat-label">Matches</div><div className="stat-value" style={{ color: 'var(--color-info)', fontFamily: 'var(--p-font-mono)' }}>{predictions.length}</div></div>
       </div>
 
       {/* Resumes List */}
-      <div className="card" style={{ marginBottom: 20 }}>
+      <div className="card reveal" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h3><Upload size={16} /> My Resumes</h3>
           <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
@@ -203,7 +203,7 @@ export default function CandidateDashboard() {
       </div>
 
       {/* Jobs List */}
-      <div className="card">
+      <div className="card reveal">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h3><Briefcase size={16} /> Open Positions</h3>
           <Link to="/candidate/jobs" className="btn btn-ghost btn-sm">View All</Link>

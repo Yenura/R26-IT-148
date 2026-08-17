@@ -1,67 +1,283 @@
 import { Link } from 'react-router-dom'
-import { Brain, Briefcase, User, ArrowRight, CheckCircle, BarChart3, FileSearch, Target } from 'lucide-react'
+import { Brain, Briefcase, User, ArrowRight, FileSearch, BarChart3, Target, CheckCircle } from 'lucide-react'
+
+const features = [
+  {
+    icon: FileSearch,
+    title: 'AI Resume Matching',
+    desc: 'Upload your CV. Our model extracts skills, education, and experience, then scores your fit against open roles.',
+  },
+  {
+    icon: Brain,
+    title: 'Automated Interviews',
+    desc: 'MCQ, descriptive, and coding questions generated from job requirements. Evaluated by semantic scoring.',
+  },
+  {
+    icon: BarChart3,
+    title: 'Candidate Ranking',
+    desc: 'Companies compare applicants by CV match, interview performance, and skill gap analysis in one view.',
+  },
+]
+
+const roles = [
+  'Software Engineer', 'Data Scientist', 'ML Engineer', 'DevOps Engineer',
+  'Cybersecurity Analyst', 'Cloud Architect', 'Frontend Developer',
+  'Backend Developer', 'Full Stack Developer', 'QA Engineer',
+  'Data Engineer', 'Mobile Developer', 'UI/UX Designer', 'SRE',
+  'AI/NLP Engineer', 'Network Engineer', 'Blockchain Developer',
+  'Systems Analyst', 'DBA', 'Embedded Systems Engineer',
+]
 
 export default function Landing() {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      {/* Hero */}
-      <div style={{ padding: '80px 24px 60px', textAlign: 'center', maxWidth: 800, margin: '0 auto' }}>
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 999, padding: '6px 16px', fontSize: 13, color: 'var(--text-muted)', marginBottom: 24 }}>
-          <Brain size={16} style={{ color: 'var(--accent)' }} /> AI-Powered Recruitment
-        </div>
-        <h1 style={{ fontSize: 48, fontWeight: 900, lineHeight: 1.1, marginBottom: 16 }}>
-          Hire Smarter.<br /><span style={{ color: 'var(--accent)' }}>Grow Faster.</span>
-        </h1>
-        <p style={{ fontSize: 18, color: 'var(--text-muted)', maxWidth: 560, margin: '0 auto 40px', lineHeight: 1.6 }}>
-          Match resumes to jobs with AI, run interviews, rank candidates, and track skill gaps — all in one platform.
-        </p>
+    <main style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
+      {/* Hero — stacked center, ambient gradient background */}
+      <section style={{
+        position: 'relative',
+        padding: 'clamp(80px, 12vh, 140px) 24px 60px',
+        textAlign: 'center',
+        maxWidth: 720,
+        margin: '0 auto',
+        overflow: 'hidden',
+      }}>
+        {/* Ambient radial gradient behind hero */}
+        <div style={{
+          position: 'absolute',
+          top: '-40%',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '140%',
+          height: '120%',
+          background: 'radial-gradient(ellipse at center, var(--color-primary-muted) 0%, transparent 70%)',
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          {/* Eyebrow — 1 max on entire page (design-taste-frontend eyebrow restraint) */}
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 999,
+            padding: '6px 16px',
+            fontSize: 'var(--p-text-sm)',
+            color: 'var(--color-fg-muted)',
+            marginBottom: 'var(--p-space-6)',
+          }}>
+            <Brain size={15} style={{ color: 'var(--color-primary)' }} />
+            AI-Powered Recruitment
+          </div>
 
-        {/* CTAs */}
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link to="/register/company" className="btn" style={{ padding: '14px 28px', fontSize: 15 }}>
-            <Briefcase size={18} /> I'm Hiring <ArrowRight size={16} />
-          </Link>
-          <Link to="/register/candidate" className="btn btn-accent2" style={{ padding: '14px 28px', fontSize: 15 }}>
-            <User size={18} /> I'm Looking for Work <ArrowRight size={16} />
-          </Link>
-        </div>
+          {/* Headline — max 2 lines (gpt-taste 2-line iron rule) */}
+          <h1 style={{
+            fontSize: 'clamp(2.25rem, 5vw, 3.5rem)',
+            fontWeight: 800,
+            lineHeight: 1.1,
+            letterSpacing: '-0.03em',
+            marginBottom: 'var(--p-space-4)',
+            color: 'var(--color-fg)',
+          }}>
+            Hire smarter.<br />
+            <span style={{ color: 'var(--color-primary)' }}>Grow faster.</span>
+          </h1>
 
-        <div style={{ marginTop: 24, fontSize: 13, color: 'var(--text-muted)' }}>
-          Already have an account?{' '}
-          <Link to="/login/company">Company Login</Link> or <Link to="/login/candidate">Candidate Login</Link>
-        </div>
-      </div>
+          {/* Subtext — max 20 words (design-taste-frontend 4.7) */}
+          <p style={{
+            fontSize: 'var(--p-text-lg)',
+            color: 'var(--color-fg-secondary)',
+            maxWidth: 520,
+            margin: '0 auto',
+            lineHeight: 1.6,
+            marginBottom: 'var(--p-space-8)',
+          }}>
+            Match resumes to jobs with AI, run interviews, and track skill gaps in one platform.
+          </p>
 
-      {/* Features */}
-      <div style={{ padding: '60px 24px', maxWidth: 1000, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 28, fontWeight: 800, textAlign: 'center', marginBottom: 40 }}>How It Works</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20 }}>
-          {[
-            { icon: FileSearch, title: 'Upload Resume', desc: 'Upload PDF, DOCX, or paste text. AI extracts skills, experience, and education.', color: 'var(--accent)' },
-            { icon: Brain, title: 'AI Matching', desc: 'Semantic matching scores your fit against job requirements with weighted formulas.', color: 'var(--accent-2)' },
-            { icon: BarChart3, title: 'Rank Candidates', desc: 'Companies rank applicants by CV match, interview score, and skill gaps.', color: 'var(--accent)' },
-            { icon: Target, title: 'Skill Gap Analysis', desc: 'Identify missing skills and get a personalized learning roadmap.', color: 'var(--accent-2)' },
-          ].map((f) => (
-            <div key={f.title} className="card" style={{ padding: 24, textAlign: 'center' }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: `${f.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-                <f.icon size={24} style={{ color: f.color }} />
+          {/* CTAs — one primary, one secondary (design-taste-frontend 4.5) */}
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/register/company" className="btn" style={{ padding: '12px 24px', fontSize: 'var(--p-text-base)' }}>
+              <Briefcase size={16} /> Post a Job <ArrowRight size={14} />
+            </Link>
+            <Link to="/register/candidate" className="btn btn-ghost" style={{ padding: '12px 24px', fontSize: 'var(--p-text-base)' }}>
+              <User size={16} /> Find Work
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Features — asymmetric bento grid (gpt-taste 4, design-taste-frontend 4.3) */}
+      <section className="reveal" style={{ padding: 'clamp(40px, 8vw, 80px) 24px', maxWidth: 960, margin: '0 auto' }}>
+        <h2 style={{
+          fontSize: 'var(--p-text-2xl)',
+          fontWeight: 800,
+          letterSpacing: '-0.02em',
+          marginBottom: 'var(--p-space-8)',
+          textAlign: 'center',
+        }}>
+          How it works
+        </h2>
+        {/* Bento: 1 large + 2 stacked (asymmetric, not 3 equal cards) */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(12, 1fr)',
+          gridAutoFlow: 'dense',
+          gap: 'var(--p-space-4)',
+        }}>
+          {/* Large feature card — spans 7 cols */}
+          <div style={{
+            gridColumn: 'span 7',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--p-radius-lg)',
+            padding: 'var(--p-space-6)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            minHeight: 220,
+          }}>
+            <div>
+              <div style={{
+                width: 40, height: 40,
+                borderRadius: 'var(--p-radius-md)',
+                background: 'var(--color-primary-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                marginBottom: 'var(--p-space-4)',
+              }}>
+                <FileSearch size={20} style={{ color: 'var(--color-primary)' }} />
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 8 }}>{f.title}</h3>
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.5 }}>{f.desc}</p>
+              <h3 style={{ fontSize: 'var(--p-text-xl)', fontWeight: 700, marginBottom: 'var(--p-space-2)' }}>
+                AI Resume Matching
+              </h3>
+              <p style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg-secondary)', lineHeight: 1.5 }}>
+                Upload your CV. Our model extracts skills, education, and experience, then scores your fit against open roles using weighted formulas.
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
+          </div>
 
-      {/* Roles */}
-      <div style={{ padding: '40px 24px 80px', maxWidth: 800, margin: '0 auto', textAlign: 'center' }}>
-        <h2 style={{ fontSize: 24, fontWeight: 800, marginBottom: 16 }}>20 Roles Supported</h2>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-          {['Software Engineer','Data Scientist','ML Engineer','DevOps Engineer','Cybersecurity Analyst','Cloud Architect','DBA','Frontend Developer','Backend Developer','Mobile Developer','Full Stack Developer','QA Engineer','Data Engineer','SRE','UI/UX Designer','Network Engineer','Systems Analyst','AI/NLP Engineer','Blockchain Developer','Embedded Systems Engineer'].map((r) => (
-            <span key={r} className="chip" style={{ fontSize: 12 }}>{r}</span>
+          {/* Two smaller cards — stacked in remaining 5 cols */}
+          <div style={{
+            gridColumn: 'span 5',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--p-radius-lg)',
+            padding: 'var(--p-space-5)',
+            minHeight: 100,
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              borderRadius: 'var(--p-radius-md)',
+              background: 'var(--color-success-muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 'var(--p-space-3)',
+            }}>
+              <Brain size={18} style={{ color: 'var(--color-success)' }} />
+            </div>
+            <h3 style={{ fontSize: 'var(--p-text-lg)', fontWeight: 700, marginBottom: 'var(--p-space-1)' }}>
+              Automated Interviews
+            </h3>
+            <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.5 }}>
+              MCQ, descriptive, and coding questions generated from job requirements.
+            </p>
+          </div>
+
+          <div style={{
+            gridColumn: 'span 5',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--p-radius-lg)',
+            padding: 'var(--p-space-5)',
+            minHeight: 100,
+          }}>
+            <div style={{
+              width: 36, height: 36,
+              borderRadius: 'var(--p-radius-md)',
+              background: 'var(--color-primary-muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              marginBottom: 'var(--p-space-3)',
+            }}>
+              <BarChart3 size={18} style={{ color: 'var(--color-primary)' }} />
+            </div>
+            <h3 style={{ fontSize: 'var(--p-text-lg)', fontWeight: 700, marginBottom: 'var(--p-space-1)' }}>
+              Candidate Ranking
+            </h3>
+            <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.5 }}>
+              Compare applicants by CV match, interview score, and skill gap.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Roles — horizontal scroll-snap (design-taste-frontend 4.9: long lists need different UI) */}
+      <section className="reveal" style={{ padding: 'clamp(32px, 6vw, 64px) 24px', maxWidth: 960, margin: '0 auto' }}>
+        <h2 style={{
+          fontSize: 'var(--p-text-xl)',
+          fontWeight: 700,
+          textAlign: 'center',
+          marginBottom: 'var(--p-space-5)',
+        }}>
+          20 IT roles supported
+        </h2>
+        <div style={{
+          display: 'flex',
+          gap: 'var(--p-space-2)',
+          overflowX: 'auto',
+          scrollSnapType: 'x mandatory',
+          paddingBottom: 'var(--p-space-2)',
+          WebkitOverflowScrolling: 'touch',
+        }}>
+          {roles.map((r) => (
+            <span key={r} style={{
+              flexShrink: 0,
+              scrollSnapAlign: 'start',
+              display: 'inline-flex',
+              alignItems: 'center',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--p-radius-sm)',
+              padding: 'var(--p-space-1) var(--p-space-3)',
+              fontSize: 'var(--p-text-sm)',
+              color: 'var(--color-fg-secondary)',
+              whiteSpace: 'nowrap',
+            }}>
+              {r}
+            </span>
           ))}
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* CTA — single strong action (gpt-taste AIDA) */}
+      <section className="reveal" style={{
+        padding: 'clamp(48px, 8vw, 96px) 24px',
+        textAlign: 'center',
+        maxWidth: 600,
+        margin: '0 auto',
+      }}>
+        <h2 style={{
+          fontSize: 'clamp(1.5rem, 3vw, 2rem)',
+          fontWeight: 800,
+          letterSpacing: '-0.02em',
+          marginBottom: 'var(--p-space-3)',
+        }}>
+          Start hiring today
+        </h2>
+        <p style={{
+          fontSize: 'var(--p-text-base)',
+          color: 'var(--color-fg-secondary)',
+          marginBottom: 'var(--p-space-6)',
+        }}>
+          Create a free account. Post your first job in minutes.
+        </p>
+        <Link to="/register/company" className="btn" style={{ padding: '12px 28px', fontSize: 'var(--p-text-base)' }}>
+          Get Started <ArrowRight size={14} />
+        </Link>
+        <div style={{ marginTop: 'var(--p-space-4)', fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)' }}>
+          Already have an account?{' '}
+          <Link to="/login/company">Company Login</Link> or{' '}
+          <Link to="/login/candidate">Candidate Login</Link>
+        </div>
+      </section>
+    </main>
   )
 }

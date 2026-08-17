@@ -29,9 +29,12 @@ const ProfilePage   = lazy(() => import('./pages/Profile'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfile'))
 
 const Loading = () => (
-  <div style={{ padding: 60, textAlign: 'center', color: 'var(--text-muted)' }}>
-    <Brain size={36} className="spin" style={{ color: 'var(--color-primary)', marginBottom: 12 }} />
-    <div style={{ fontSize: 14, fontWeight: 600 }}>Loading AI Recruitment Intelligence...</div>
+  <div style={{ padding: 60, textAlign: 'center' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 300, margin: '0 auto' }}>
+      <div className="skeleton" style={{ height: 24, width: '60%', margin: '0 auto' }} />
+      <div className="skeleton" style={{ height: 14, width: '80%', margin: '0 auto' }} />
+      <div className="skeleton" style={{ height: 14, width: '40%', margin: '0 auto' }} />
+    </div>
   </div>
 )
 
@@ -52,6 +55,21 @@ export default function App() {
   const [userMenu, setUserMenu] = useState(false)
   const [userName, setUserName] = useState('')
   const [userAvatar, setUserAvatar] = useState('')
+
+  // Scroll-reveal: observe .reveal elements (design-taste-frontend 5.D — IntersectionObserver, not scroll listener)
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const name = localStorage.getItem('recruitai.name') || ''
