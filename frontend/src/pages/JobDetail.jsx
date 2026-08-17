@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
-import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode, c2Start, c2Submit } from '../api'
+import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode, c2Start, c2Submit, uResumeList, c0Applications, c0InterviewScores } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function JobDetail() {
@@ -28,7 +28,7 @@ export default function JobDetail() {
     try {
       // Candidates use public endpoint, companies use owned endpoint
       const r = role === 'company' ? await uJobsGet(id) : await uJobsPublic(id)
-      setJob(r.data)
+      setJob(r?.data)
       if (role === 'candidate') loadCandidateData()
       if (role === 'company') loadApplicants()
     } catch {
@@ -38,18 +38,18 @@ export default function JobDetail() {
 
   const loadCandidateData = async () => {
     try {
-      const { default: api } = await import('../api')
       const [r1, r2] = await Promise.all([
-        api.C0.get('/resume/'),
-        api.C0.get('/jobs/applications'),
+        uResumeList().catch(() => ({ data: [] })),
+        c0Applications().catch(() => ({ data: [] })),
       ])
-      setResumes(r1.data)
-      const apps = Array.isArray(r2.data) ? r2.data : r2.data.applications || []
+      const resumeList = Array.isArray(r1.data) ? r1.data : []
+      setResumes(resumeList)
+      const apps = Array.isArray(r2.data) ? r2.data : []
       setApplied(apps.some(a => a.job_id === id && a.status !== 'withdrawn'))
       // Check if candidate has completed interview for this job
       try {
         const candidateId = localStorage.getItem('recruitai.user_id')
-        const r3 = await api.C0.get(`/resume/interview-scores/${candidateId}`)
+        const r3 = await c0InterviewScores(candidateId).catch(() => ({ data: [] }))
         const scores = Array.isArray(r3.data) ? r3.data : []
         const jobRole = job?.job_role || job?.title || ''
         setInterviewDone(scores.some(s => s.job_role === jobRole))

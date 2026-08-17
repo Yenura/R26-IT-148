@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Users, Trophy, ArrowLeft, Loader, X, CheckCircle, Code, FileText } from 'lucide-react'
-import { C0, C3, uInterviewDetail } from '../api'
+import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail } from '../api'
 
 export default function ApplicantPipeline() {
   const navigate = useNavigate()
@@ -26,12 +26,13 @@ export default function ApplicantPipeline() {
     setBusy(true)
     try {
       const [jobRes, appsRes] = await Promise.all([
-        C0.get('/jobs/all'),
-        C0.get(`/jobs/${jobId}/applicants`)
+        c0JobsAll().catch(() => ({ data: [] })),
+        uJobsApplicants(jobId).catch(() => ({ data: [] })),
       ])
-      const j = jobRes.data.find(j => j.id === jobId)
+      const jobList = Array.isArray(jobRes.data) ? jobRes.data : []
+      const j = jobList.find(j => j.id === jobId)
       setJob(j)
-      const apps = Array.isArray(appsRes.data) ? appsRes.data : appsRes.data.applicants || []
+      const apps = Array.isArray(appsRes.data) ? appsRes.data : []
       setApplicants(apps)
     } catch (err) {
       toast.error('Failed to load data')
@@ -43,9 +44,9 @@ export default function ApplicantPipeline() {
   const runRanking = async () => {
     setRanking(true)
     try {
-      const r = await C3.get(`/rank/pipeline/${jobId}`)
-      setRankings(r.data.data || [])
-      toast.success(`Ranked ${r.data.data?.length || 0} applicants`)
+      const r = await c3Pipeline(jobId)
+      setRankings(r?.data?.data || [])
+      toast.success(`Ranked ${r?.data?.data?.length || 0} applicants`)
     } catch (err) {
       toast.error('Failed to run ranking')
     } finally {

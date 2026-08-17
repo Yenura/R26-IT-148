@@ -36,7 +36,7 @@ export default function Progress() {
     setPopBusy(true)
     try {
       const r = await c4ProgressPopulate({ candidate_id: candidateId })
-      toast.success(`Added ${r.data.populated} skills from your skill gap analysis!`)
+      toast.success(`Added ${r?.data?.populated || 0} skills from your skill gap analysis!`)
       loadData()
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'No skill gap report found. Run Skill Gap Analysis first.')

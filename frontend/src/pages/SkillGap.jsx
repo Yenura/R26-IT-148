@@ -53,7 +53,7 @@ export default function SkillGap() {
         experience_years: parseFloat(form.experience_years) || 0,
         education: form.education || 'B.Sc. Computer Science',
       })
-      const data = r.data.data || r.data
+      const data = r?.data?.data || r?.data || {}
       setResult(data)
       toast.success(`Skill Fit Score: ${(data.skill_match_pct || (data.gap_score * 100)).toFixed(0)}%`)
     } catch (err) {

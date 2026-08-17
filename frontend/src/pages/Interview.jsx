@@ -45,7 +45,7 @@ export default function Interview() {
   const loadRoles = async () => {
     try {
       const r = await c2Jobs()
-      setRoles(r.data.jobs || {})
+      setRoles(r?.data?.jobs || {})
     } catch { toast.error('Failed to load roles') }
   }
 
