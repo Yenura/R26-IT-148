@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  Target, CheckCircle2, AlertCircle, BookOpen, ExternalLink, Sparkles,
-  Zap, Award, TrendingUp, ChevronRight, Layers, Lightbulb
+  Target, CheckCircle2, AlertCircle, BookOpen, ExternalLink,
+  Zap, Layers, Lightbulb
 } from 'lucide-react'
 import { uResumeList, c4SkillGapRoles, c4SkillGapAnalyze, c4SkillGapSimulate } from '../api'
 

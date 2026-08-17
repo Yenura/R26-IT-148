@@ -5,6 +5,8 @@ import uuid
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from schemas import ResumeOut, ResumeUpdate, PredictionOut, InterviewScoresCreate
 from routers.auth import get_current_user, require_company, require_candidate
@@ -13,6 +15,7 @@ from services.semantic_matcher import SemanticMatcher
 from services.role_classifier import RoleClassifier
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 _matcher: SemanticMatcher | None = None
 _classifier: RoleClassifier | None = None
@@ -80,6 +83,7 @@ def _pred_out(doc: dict) -> PredictionOut:
     )
 
 
+@limiter.limit("10/minute")
 @router.post("", response_model=ResumeOut, status_code=201)
 @router.post("/", response_model=ResumeOut, status_code=201)
 @router.post("/upload", response_model=ResumeOut, status_code=201)
@@ -332,6 +336,7 @@ async def get_resume(resume_id: str, request: Request, user: dict = Depends(get_
     return _resume_out(doc)
 
 
+@limiter.limit("20/minute")
 @router.put("/{resume_id}", response_model=ResumeOut)
 async def update_resume(resume_id: str, payload: ResumeUpdate, request: Request, user: dict = Depends(get_current_user)):
     from bson import ObjectId
@@ -346,6 +351,7 @@ async def update_resume(resume_id: str, payload: ResumeUpdate, request: Request,
     return _resume_out(updated)
 
 
+@limiter.limit("10/minute")
 @router.delete("/{resume_id}", status_code=204)
 async def delete_resume(resume_id: str, request: Request, user: dict = Depends(get_current_user)):
     from bson import ObjectId
@@ -385,6 +391,7 @@ async def parse_resume_text(
     return _resume_out(doc)
 
 
+@limiter.limit("30/minute")
 @router.post("/interview-scores")
 async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(require_candidate)):
     db = request.app.state.db

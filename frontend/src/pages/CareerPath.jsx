@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Route, ArrowRight, ChevronRight } from 'lucide-react'
+import { Route } from 'lucide-react'
 import { c4CareerRoles, c4CareerPath } from '../api'
 
 export default function CareerPath() {

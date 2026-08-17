@@ -1,4 +1,15 @@
 import { useEffect, useState } from 'react'
+
+const toArr = (r) => {
+  const d = r?.data
+  if (Array.isArray(d)) return d
+  if (Array.isArray(d?.data)) return d.data
+  if (Array.isArray(d?.resumes)) return d.resumes
+  if (Array.isArray(d?.applications)) return d.applications
+  if (Array.isArray(d?.predictions)) return d.predictions
+  if (Array.isArray(d?.jobs)) return d.jobs
+  return []
+}
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Upload, Briefcase, MapPin, Clock, ChevronRight, Trash2, Edit3, X, Check } from 'lucide-react'
@@ -23,18 +34,33 @@ export default function CandidateDashboard() {
     loadData()
   }, [])
 
+  // Re-observe .reveal elements after data loads (observer in App.jsx runs before this page renders)
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [resumes, jobs])
+
   const loadData = async () => {
     try {
       const [r1, r2, r3, r4] = await Promise.all([
-        uResumeList(),
+        uResumeList().catch(() => ({ data: [] })),
         c0JobsAll().catch(() => ({ data: [] })),
         c0Predictions().catch(() => ({ data: [] })),
         c0Applications().catch(() => ({ data: [] })),
       ])
-      setResumes(r1.data)
-      setJobs(Array.isArray(r2.data) ? r2.data : r2?.data || [])
-      setPredictions(Array.isArray(r3.data) ? r3.data : r3?.data || [])
-      setApplications(Array.isArray(r4.data) ? r4.data : r4?.data?.applications || [])
+      setResumes(toArr(r1))
+      setJobs(toArr(r2))
+      setPredictions(toArr(r3))
+      setApplications(toArr(r4))
     } catch {
       toast.error('Failed to load dashboard data')
     }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Briefcase, MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
+import { MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
 import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode, c2Start, c2Submit } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
 

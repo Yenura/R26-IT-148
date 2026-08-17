@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Users, Trophy, ArrowLeft, Mail, Briefcase, Star, Loader, X, CheckCircle, XCircle, Code, FileText } from 'lucide-react'
+import { Users, Trophy, ArrowLeft, Loader, X, CheckCircle, Code, FileText } from 'lucide-react'
 import { C0, C3, uInterviewDetail } from '../api'
 
 export default function ApplicantPipeline() {

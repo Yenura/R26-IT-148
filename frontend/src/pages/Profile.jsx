@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { User, Mail, Lock, Upload, Save, FileText } from 'lucide-react'
+import { User, Lock, Upload, Save, FileText } from 'lucide-react'
 import { authGetProfile, authUpdateProfile, authChangePassword, authUploadAvatar, uResumeList } from '../api'
 
 export default function Profile() {

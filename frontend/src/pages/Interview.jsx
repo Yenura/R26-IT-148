@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { MessagesSquare, Play, CheckCircle, BarChart3, Code, FileText, Settings } from 'lucide-react'
+import { Play, CheckCircle, Code, FileText, Settings } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'

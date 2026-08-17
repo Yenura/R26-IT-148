@@ -10,7 +10,10 @@ load_dotenv()
 
 logger = logging.getLogger("component3")
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+MONGODB_URI = os.getenv("MONGODB_URI")
+if not MONGODB_URI:
+    logger.critical("MONGODB_URI not set — copy .env.example to .env and fill credentials")
+    raise SystemExit(1)
 DB_NAME = os.getenv("DB_NAME", "HR")
 
 

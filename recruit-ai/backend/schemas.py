@@ -95,20 +95,20 @@ class JobCreate(BaseModel):
 
 
 class JobUpdate(BaseModel):
-    title: str | None = None
-    job_role: str | None = None
-    job_level: str | None = None
-    department: str | None = None
-    employment_type: str | None = None
-    location: str | None = None
+    title: str | None = Field(default=None, max_length=300)
+    job_role: str | None = Field(default=None, max_length=200)
+    job_level: str | None = Field(default=None, max_length=100)
+    department: str | None = Field(default=None, max_length=200)
+    employment_type: str | None = Field(default=None, max_length=50)
+    location: str | None = Field(default=None, max_length=200)
     experience_required: int | None = None
-    education_required: str | None = None
+    education_required: str | None = Field(default=None, max_length=200)
     required_skills: list[str] | None = None
     preferred_skills: list[str] | None = None
-    description: str | None = None
-    responsibilities: str | None = None
-    salary_range: str | None = None
-    status: str | None = None
+    description: str | None = Field(default=None, max_length=10000)
+    responsibilities: str | None = Field(default=None, max_length=10000)
+    salary_range: str | None = Field(default=None, max_length=100)
+    status: str | None = Field(default=None, max_length=20)
     interview_required: bool | None = None
     interview_question_count: int | None = None
 

@@ -5,6 +5,15 @@ import { Briefcase, MapPin, Clock, Building2, Search, CheckCircle, MessageSquare
 import { c0JobsAll, uResumeList, c0Applications, c0InterviewScores, uJobsApply, uJobsWithdraw } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
 
+const toArr = (r) => {
+  const d = r?.data
+  if (Array.isArray(d)) return d
+  if (Array.isArray(d?.data)) return d.data
+  if (Array.isArray(d?.applications)) return d.applications
+  if (Array.isArray(d?.jobs)) return d.jobs
+  return []
+}
+
 export default function JobBoard() {
   const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
@@ -21,21 +30,36 @@ export default function JobBoard() {
     loadData()
   }, [])
 
+  // Re-observe .reveal elements after data loads
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [jobs, resumes])
+
   const loadData = async () => {
     try {
       const candidateId = localStorage.getItem('recruitai.user_id')
       const [r1, r2, r3, r4] = await Promise.all([
-        c0JobsAll(),
-        uResumeList(),
+        c0JobsAll().catch(() => ({ data: [] })),
+        uResumeList().catch(() => ({ data: [] })),
         c0Applications().catch(() => ({ data: [] })),
         candidateId ? c0InterviewScores(candidateId).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ])
-      setJobs(r1.data)
-      setResumes(r2.data)
-      const apps = Array.isArray(r3.data) ? r3.data : (r3.data?.applications || [])
+      setJobs(toArr(r1))
+      setResumes(toArr(r2))
+      const apps = toArr(r3)
       setAppliedIds(new Set(apps.filter(a => a.status !== 'withdrawn').map(a => a.job_id)))
-      const scores = Array.isArray(r4.data) ? r4.data : []
-      setInterviewDone(new Set(scores.map(s => s.job_role).filter(Boolean)))
+      const scores = toArr(r4)
+      setInterviewDone(new Set(scores.map(s => s.job_id || s.job_role).filter(Boolean)))
     } catch {
       toast.error('Failed to load jobs')
     }
@@ -45,7 +69,7 @@ export default function JobBoard() {
     e.stopPropagation()
     if (resumes.length === 0) { toast.error('Upload a resume first on the Dashboard'); return }
     const job = jobs.find(j => j.id === jobId)
-    if (job?.interview_required && !interviewDone.has(job.job_role || job.title)) {
+    if (job?.interview_required && !interviewDone.has(jobId) && !interviewDone.has(job.job_role || job.title)) {
       toast.error('Complete the interview first (open the job and click Start Interview)')
       return
     }

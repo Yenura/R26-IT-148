@@ -60,6 +60,21 @@ export default function CompanyDashboard() {
     loadJobs()
   }, [])
 
+  // Re-observe .reveal elements after data loads
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [jobs])
+
   const loadJobs = async () => {
     try {
       let r

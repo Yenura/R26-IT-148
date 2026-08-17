@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import toast from 'react-hot-toast'
-import { Building2, Mail, Lock, Upload, Save } from 'lucide-react'
+import { Building2, Lock, Upload, Save } from 'lucide-react'
 import { authGetProfile, authUpdateProfile, authChangePassword, authUploadAvatar } from '../api'
 
 export default function CompanyProfile() {

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Brain, Briefcase, User, ArrowRight, FileSearch, BarChart3, Target, CheckCircle } from 'lucide-react'
+import { Brain, Briefcase, User, ArrowRight, FileSearch, BarChart3 } from 'lucide-react'
 
 const features = [
   {

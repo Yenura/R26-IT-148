@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  TrendingUp, CheckCircle, Clock, AlertCircle, Download, Award, Sparkles,
-  Target, Rocket, BookOpen, Layers, Plus, Search, ChevronRight, Zap, ShieldCheck
+  TrendingUp, CheckCircle, Clock, AlertCircle, Download, Sparkles,
+  Rocket, Plus, Search, ChevronRight
 } from 'lucide-react'
 import { c4Progress, c4ProgressPopulate, c4ProgressUpdate } from '../api'
 

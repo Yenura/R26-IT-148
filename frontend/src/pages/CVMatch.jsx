@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  FileSearch, Upload, BarChart3, Trash2, Sparkles, CheckCircle2, AlertCircle,
+  Upload, BarChart3, Trash2, Sparkles, CheckCircle2, AlertCircle,
   ArrowRight, Briefcase, Zap, Target, Route as RouteIcon, BookOpen, Layers,
   ExternalLink, ChevronRight, TrendingUp
 } from 'lucide-react'

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { ListOrdered, Trophy, Users, Briefcase, Sparkles, Filter, CheckCircle2, AlertCircle, TrendingUp, Cpu, Award } from 'lucide-react'
-import { c3Roles, c0JobsAll, c3Pipeline } from '../api'
+import { ListOrdered, Trophy, Users, Briefcase, AlertCircle, Award } from 'lucide-react'
+import { c0JobsAll, c3Pipeline } from '../api'
 
 export default function Ranking() {
   const navigate = useNavigate()
@@ -30,11 +30,11 @@ export default function Ranking() {
 
   const computePipeline = async (targetJobId) => {
     const jobIdToUse = targetJobId || selectedJob
-    if (!jobIdToUse && !selectedRole) return toast.error('Please select a job or role')
+    if (!jobIdToUse) return toast.error('Please select a job')
     
     setBusy(true)
     try {
-      const r = await c3Pipeline(jobIdToUse || selectedRole)
+      const r = await c3Pipeline(jobIdToUse)
       setResult(r.data)
       toast.success('Multi-Criteria Candidate Ranking Complete!')
     } catch (err) {
@@ -92,31 +92,6 @@ export default function Ranking() {
               {jobs.map((j) => (
                 <option key={j.id} value={j.id}>
                   {j.title} {j.company_name ? `— ${j.company_name}` : ''}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Canonical Role Fallback */}
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>
-              Or Target IT Role
-            </label>
-            <select
-              value={selectedRole}
-              onChange={(e) => {
-                setSelectedRole(e.target.value)
-                if (e.target.value) {
-                  setSelectedJob('')
-                  computePipeline(e.target.value)
-                }
-              }}
-              style={{ width: '100%', padding: '12px 14px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14 }}
-            >
-              <option value="">All IT Roles...</option>
-              {Object.keys(roles).sort().map((r) => (
-                <option key={r} value={r}>
-                  {r.replace(/_/g, ' ')}
                 </option>
               ))}
             </select>
