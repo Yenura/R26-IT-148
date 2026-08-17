@@ -2,10 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, MapPin, Clock, ArrowLeft, FileSearch, MessagesSquare, Target, Users, Play, Settings } from 'lucide-react'
-import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode } from '../api'
+import { uJobsPublic, uJobsGet, uJobsApply, uJobsWithdraw, uJobsApplicants, c2RunCode, c2Start, c2Submit } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
-
-const C2 = import.meta.env.VITE_C2_URL || 'http://127.0.0.1:8002'
 
 export default function JobDetail() {
   const { id } = useParams()
@@ -56,14 +54,14 @@ export default function JobDetail() {
         const jobRole = job?.job_role || job?.title || ''
         setInterviewDone(scores.some(s => s.job_role === jobRole))
       } catch {}
-    } catch {}
+    } catch { toast.error('Failed to load job data') }
   }
 
   const loadApplicants = async () => {
     try {
       const r = await uJobsApplicants(id)
       setApplicants(Array.isArray(r.data) ? r.data : r.data.applicants || [])
-    } catch {}
+    } catch { toast.error('Failed to load applicants') }
   }
 
   const apply = async () => {
@@ -121,23 +119,14 @@ export default function JobDetail() {
       action: async () => {
         try {
           const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
-          const r = await fetch(`${C2}/api/v1/interview/start`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
-            },
-            body: JSON.stringify({
-              candidate_id: localStorage.getItem('recruitai.user_id'),
-              job_role: job.job_role || job.title,
-              job_level: job.job_level || 'Mid-Level',
-              required_skills: skills,
-              num_questions: job.interview_question_count || 10,
-            }),
+          const r = await c2Start({
+            candidate_id: localStorage.getItem('recruitai.user_id'),
+            job_role: job.job_role || job.title,
+            job_level: job.job_level || 'Mid-Level',
+            required_skills: skills,
+            num_questions: job.interview_question_count || 10,
           })
-          const data = await r.json()
-          if (!r.ok) throw new Error(data.detail || 'Failed to start interview')
-          setInterviewSession(data)
+          setInterviewSession(r.data)
           setInterviewStarted(true)
         } catch (err) {
           toast.error(err.message || 'Failed to start interview')
@@ -357,22 +346,13 @@ function InlineInterview({ session, job, onDone }) {
             }
             return { question_id: qq.id, answer_text: a || '' }
           })
-          const r = await fetch(`${C2}/api/v1/interview/submit`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('recruitai.token')}`,
-            },
-            body: JSON.stringify({
-              candidate_id: localStorage.getItem('recruitai.user_id'),
-              session_id: session.session_id,
-              job_role: job.job_role || job.title,
-              answers: formattedAnswers,
-            }),
+          const r = await c2Submit({
+            candidate_id: localStorage.getItem('recruitai.user_id'),
+            session_id: session.session_id,
+            job_role: job.job_role || job.title,
+            answers: formattedAnswers,
           })
-          const data = await r.json()
-          if (!r.ok) throw new Error(data.detail || 'Submit failed')
-          setResult(data)
+          setResult(r.data)
         } catch (err) {
           toast.error(err.message)
         } finally {

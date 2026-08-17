@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Upload, Briefcase, MapPin, Clock, ChevronRight, Trash2, Edit3, X, Check } from 'lucide-react'
-import { uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate } from '../api'
+import { uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate, c0JobsAll, c0Predictions, c0Applications } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function CandidateDashboard() {
@@ -25,19 +25,19 @@ export default function CandidateDashboard() {
 
   const loadData = async () => {
     try {
-      const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-      const authH = { headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } }
       const [r1, r2, r3, r4] = await Promise.all([
         uResumeList(),
-        fetch(`${API}/api/v1/jobs/all`, authH).then(r => r.json()).catch(() => []),
-        fetch(`${API}/api/v1/resume/predictions`, authH).then(r => r.json()).catch(() => []),
-        fetch(`${API}/api/v1/jobs/applications`, authH).then(r => r.json()).catch(() => []),
+        c0JobsAll().catch(() => ({ data: [] })),
+        c0Predictions().catch(() => ({ data: [] })),
+        c0Applications().catch(() => ({ data: [] })),
       ])
       setResumes(r1.data)
-      setJobs(Array.isArray(r2) ? r2 : r2?.data || [])
-      setPredictions(Array.isArray(r3) ? r3 : r3?.data || [])
-      setApplications(Array.isArray(r4) ? r4 : r4?.applications || [])
-    } catch {}
+      setJobs(Array.isArray(r2.data) ? r2.data : r2?.data || [])
+      setPredictions(Array.isArray(r3.data) ? r3.data : r3?.data || [])
+      setApplications(Array.isArray(r4.data) ? r4.data : r4?.data?.applications || [])
+    } catch {
+      toast.error('Failed to load dashboard data')
+    }
   }
 
   const upload = async (e) => {

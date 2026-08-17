@@ -6,14 +6,8 @@ import {
   ArrowRight, Briefcase, Zap, Target, Route as RouteIcon, BookOpen, Layers,
   ExternalLink, ChevronRight, TrendingUp
 } from 'lucide-react'
-import axios from 'axios'
-import { uResumeDelete, uResumeUpload } from '../api'
+import { uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch, c1Analyze, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
-
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const C1 = 'http://127.0.0.1:8001'
-const C4 = 'http://127.0.0.1:8004'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
 
 const CANONICAL_ROLES = [
   'Software Engineer',
@@ -78,13 +72,13 @@ export default function CVMatch() {
       const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
       const roleName = matchedJobDoc ? matchedJobDoc.title : selectedCanonicalRole
 
-      const simRes = await axios.post(`${C4}/api/v1/skill-gap/simulate`, {
+      const simRes = await c4SkillGapSimulate({
         current_skills: currentSkills,
         acquired_skills: nextSkills,
         target_role: roleName,
       })
       setSimulationResult(simRes.data)
-    } catch {}
+    } catch { toast.error('Simulation failed') }
   }
 
   useEffect(() => {
@@ -99,8 +93,8 @@ export default function CVMatch() {
   const loadData = async () => {
     try {
       const [r1, r2] = await Promise.all([
-        axios.get(`${API}/api/v1/resume/`, authHeader()),
-        axios.get(`${API}/api/v1/jobs/all`).catch(() => ({ data: [] })),
+        uResumeList(),
+        c0JobsAll().catch(() => ({ data: [] })),
       ])
       const resumeList = r1.data || []
       setResumes(resumeList)
@@ -158,31 +152,19 @@ export default function CVMatch() {
         : selectedCanonicalRole
 
       // 1. Fetch Component 0 Resume Match
-      let matchUrl = `${API}/api/v1/resume/match?resume_id=${resumeToUse}`
-      if (selectedJob) {
-        matchUrl += `&job_id=${selectedJob}`
-      } else if (selectedCanonicalRole) {
-        matchUrl += `&target_role=${encodeURIComponent(selectedCanonicalRole)}`
-      }
-      const matchRes = await axios.get(matchUrl, authHeader())
+      const matchParams = { resume_id: resumeToUse }
+      if (selectedJob) matchParams.job_id = selectedJob
+      else if (selectedCanonicalRole) matchParams.target_role = selectedCanonicalRole
+      const matchRes = await c0ResumeMatch(resumeToUse, matchParams)
       setMatchResult(matchRes.data)
 
       const finalRole = selectedCanonicalRole || matchRes.data.predicted_role || targetRoleName
 
       // 2. Parallel Fetch Component 4 Analysis (Skill Gap, Career Recommendations, Learning Path)
       const [gapRes, careerRes, pathRes] = await Promise.all([
-        axios.post(`${C4}/api/v1/skill-gap`, {
-          current_skills: candidateSkills,
-          target_role: finalRole
-        }).catch(() => null),
-        axios.post(`${C4}/api/v1/career-recommendation`, {
-          current_skills: candidateSkills,
-          current_role: finalRole
-        }).catch(() => null),
-        axios.post(`${C4}/api/v1/learning-path`, {
-          current_skills: candidateSkills,
-          target_role: finalRole
-        }).catch(() => null)
+        c4SkillGap({ current_skills: candidateSkills, target_role: finalRole }).catch(() => null),
+        c4CareerRec({ current_skills: candidateSkills, current_role: finalRole }).catch(() => null),
+        c4LearningPath({ current_skills: candidateSkills, target_role: finalRole }).catch(() => null),
       ])
 
       if (gapRes) setSkillGapResult(gapRes.data)
@@ -192,7 +174,7 @@ export default function CVMatch() {
       // 3. Optional C1 Deep Analysis if raw text exists
       if (targetResumeDoc.raw_text) {
         try {
-          const c1Res = await axios.post(`${C1}/api/v1/cv/analyze`, {
+          const c1Res = await c1Analyze({
             candidate_id: targetResumeDoc.candidate_id || resumeToUse,
             candidate_name: targetResumeDoc.candidate_name || 'Candidate',
             raw_text: targetResumeDoc.raw_text,

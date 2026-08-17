@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, MapPin, Clock, Building2, Search, CheckCircle, MessageSquare } from 'lucide-react'
-import axios from 'axios'
+import { c0JobsAll, uResumeList, c0Applications, c0InterviewScores, uJobsApply, uJobsWithdraw } from '../api'
 import ConfirmDialog from '../components/ConfirmDialog'
-
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
 
 export default function JobBoard() {
   const navigate = useNavigate()
@@ -28,10 +25,10 @@ export default function JobBoard() {
     try {
       const candidateId = localStorage.getItem('recruitai.user_id')
       const [r1, r2, r3, r4] = await Promise.all([
-        axios.get(`${API}/api/v1/jobs/all`),
-        axios.get(`${API}/api/v1/resume/`, authHeader()),
-        axios.get(`${API}/api/v1/jobs/applications`, authHeader()).catch(() => ({ data: [] })),
-        candidateId ? axios.get(`${API}/api/v1/resume/interview-scores/${candidateId}`, authHeader()).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
+        c0JobsAll(),
+        uResumeList(),
+        c0Applications().catch(() => ({ data: [] })),
+        candidateId ? c0InterviewScores(candidateId).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ])
       setJobs(r1.data)
       setResumes(r2.data)
@@ -39,7 +36,9 @@ export default function JobBoard() {
       setAppliedIds(new Set(apps.filter(a => a.status !== 'withdrawn').map(a => a.job_id)))
       const scores = Array.isArray(r4.data) ? r4.data : []
       setInterviewDone(new Set(scores.map(s => s.job_role).filter(Boolean)))
-    } catch {}
+    } catch {
+      toast.error('Failed to load jobs')
+    }
   }
 
   const apply = async (e, jobId) => {
@@ -58,11 +57,11 @@ export default function JobBoard() {
         try {
           const candidateId = localStorage.getItem('recruitai.user_id') || ''
           const candidateName = localStorage.getItem('recruitai.name') || ''
-          await axios.post(`${API}/api/v1/jobs/${jobId}/apply`, {
+          await uJobsApply(jobId, {
             candidate_id: candidateId,
             candidate_name: candidateName,
             resume_id: resumes[0].id,
-          }, authHeader())
+          })
           setAppliedIds((prev) => new Set([...prev, jobId]))
           toast.success('Applied successfully!')
         } catch (err) {
@@ -81,7 +80,7 @@ export default function JobBoard() {
       danger: true,
       action: async () => {
         try {
-          await axios.delete(`${API}/api/v1/jobs/${jobId}/apply`, authHeader())
+          await uJobsWithdraw(jobId)
           setAppliedIds((prev) => { const n = new Set(prev); n.delete(jobId); return n })
           toast.success('Application withdrawn')
         } catch (err) {

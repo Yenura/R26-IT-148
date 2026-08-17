@@ -218,9 +218,6 @@ export default function ApplicantPipeline() {
               <button className="btn btn-sm btn-ghost" onClick={() => openDetail(app.candidate_id)} disabled={detailBusy}>
                 <FileText size={14} /> Interview Details
               </button>
-              <button className="btn btn-sm" onClick={() => navigate(`/profile/${app.candidate_id}`)}>
-                <Star size={14} /> View
-              </button>
             </div>
           ))
         )}

@@ -25,7 +25,7 @@ export default function Ranking() {
       if (jobList.length > 0) {
         setSelectedJob(jobList[0].id)
       }
-    } catch {}
+    } catch { toast.error('Failed to load jobs') }
   }
 
   const computePipeline = async (targetJobId) => {

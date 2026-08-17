@@ -5,10 +5,7 @@ import {
   TrendingUp, CheckCircle, Clock, AlertCircle, Download, Award, Sparkles,
   Target, Rocket, BookOpen, Layers, Plus, Search, ChevronRight, Zap, ShieldCheck
 } from 'lucide-react'
-import axios from 'axios'
-
-const C4 = 'http://127.0.0.1:8004'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+import { c4Progress, c4ProgressPopulate, c4ProgressUpdate } from '../api'
 
 export default function Progress() {
   const navigate = useNavigate()
@@ -30,15 +27,15 @@ export default function Progress() {
 
   const loadData = async () => {
     try {
-      const r = await axios.get(`${C4}/api/v1/progress/${candidateId}`, authHeader())
+      const r = await c4Progress(candidateId)
       setData(r.data)
-    } catch {}
+    } catch { toast.error('Failed to load progress data') }
   }
 
   const populate = async () => {
     setPopBusy(true)
     try {
-      const r = await axios.post(`${C4}/api/v1/progress/populate`, { candidate_id: candidateId }, authHeader())
+      const r = await c4ProgressPopulate({ candidate_id: candidateId })
       toast.success(`Added ${r.data.populated} skills from your skill gap analysis!`)
       loadData()
     } catch (err) {
@@ -48,9 +45,9 @@ export default function Progress() {
 
   const updateStatus = async (skill, status) => {
     try {
-      await axios.post(`${C4}/api/v1/progress/update`, {
+      await c4ProgressUpdate({
         candidate_id: candidateId, skill, status, notes: ''
-      }, authHeader())
+      })
       const label = status === 'completed' ? 'Mastered 🎉' : status === 'in_progress' ? 'Learning 🚀' : 'Target Added'
       toast.success(`${skill}: ${label}`)
       loadData()
@@ -62,9 +59,9 @@ export default function Progress() {
     if (!newSkillInput.trim()) return
     setAddBusy(true)
     try {
-      await axios.post(`${C4}/api/v1/progress/update`, {
+      await c4ProgressUpdate({
         candidate_id: candidateId, skill: newSkillInput.trim(), status: 'in_progress', notes: 'Custom goal'
-      }, authHeader())
+      })
       toast.success(`Added "${newSkillInput.trim()}" to your learning matrix!`)
       setNewSkillInput('')
       loadData()

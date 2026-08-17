@@ -5,11 +5,7 @@ import {
   Target, CheckCircle2, AlertCircle, BookOpen, ExternalLink, Sparkles,
   Zap, Award, TrendingUp, ChevronRight, Layers, Lightbulb
 } from 'lucide-react'
-import axios from 'axios'
-
-const C4 = 'http://127.0.0.1:8004'
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+import { uResumeList, c4SkillGapRoles, c4SkillGapAnalyze, c4SkillGapSimulate } from '../api'
 
 export default function SkillGap() {
   const navigate = useNavigate()
@@ -21,13 +17,13 @@ export default function SkillGap() {
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     if (!token) { navigate('/login/candidate'); return }
-    axios.get(`${C4}/api/v1/skill-gap/roles`).then((r) => setRoles(r.data.roles || [])).catch(() => {})
+    c4SkillGapRoles().then((r) => setRoles(r.data.roles || [])).catch(() => {})
     loadResumeData()
   }, [])
 
   const loadResumeData = async () => {
     try {
-      const r = await axios.get(`${API}/api/v1/resume/`, authHeader())
+      const r = await uResumeList()
       const resumes = r.data || []
       if (resumes.length > 0) {
         const latest = resumes[0]
@@ -41,7 +37,7 @@ export default function SkillGap() {
       } else {
         setForm(f => ({ ...f, candidate_name: localStorage.getItem('recruitai.name') || 'Candidate' }))
       }
-    } catch {}
+    } catch { toast.error('Failed to load resume data') }
   }
 
   const analyze = async (e) => {
@@ -49,7 +45,7 @@ export default function SkillGap() {
     if (!form.candidate_name || !form.job_role || !form.skills) return toast.error('Please fill required fields')
     setBusy(true)
     try {
-      const r = await axios.post(`${C4}/api/v1/skill-gap/analyze`, {
+      const r = await c4SkillGapAnalyze({
         candidate_id: localStorage.getItem('recruitai.user_id'),
         candidate_name: form.candidate_name,
         job_role: form.job_role,

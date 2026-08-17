@@ -33,10 +33,8 @@ export default function Leaderboard() {
             <div
               key={c.candidate_id || i}
               className="card"
-              onClick={() => c.candidate_id && navigate(`/profile/${c.candidate_id}`)}
               style={{
                 padding: 16, background: bg(i), display: 'flex', alignItems: 'center', gap: 12,
-                cursor: c.candidate_id ? 'pointer' : 'default', transition: 'transform 0.15s ease'
               }}
             >
               {medal(i)}
