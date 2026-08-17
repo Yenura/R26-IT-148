@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight, MessageSquare, Sparkles } from 'lucide-react'
 import { C0 } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const STANDARD_ROLES = {
   'Software Engineer': 'Python, Java, Git, REST APIs, SQL, Data Structures',
@@ -47,6 +48,7 @@ export default function CompanyDashboard() {
   const [form, setForm] = useState(emptyForm)
   const [applicantCounts, setApplicantCounts] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -157,14 +159,21 @@ export default function CompanyDashboard() {
   }
 
   const deleteJob = async (id) => {
-    if (!confirm('Delete this job? This cannot be undone.')) return
-    try {
-      await C0.delete(`/jobs/${id}`)
-      toast.success('Deleted')
-      loadJobs()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed')
-    }
+    setConfirm({
+      open: true,
+      title: 'Delete this job?',
+      message: 'This action cannot be undone. All applicant data for this job will be removed.',
+      danger: true,
+      action: async () => {
+        try {
+          await C0.delete(`/jobs/${id}`)
+          toast.success('Deleted')
+          loadJobs()
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed')
+        }
+      }
+    })
   }
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -434,6 +443,15 @@ export default function CompanyDashboard() {
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel="Delete"
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

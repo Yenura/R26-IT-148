@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Upload, Briefcase, MapPin, Clock, ChevronRight, Trash2, Edit3, X, Check } from 'lucide-react'
 import { uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function CandidateDashboard() {
   const navigate = useNavigate()
@@ -13,6 +14,7 @@ export default function CandidateDashboard() {
   const [uploading, setUploading] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -54,14 +56,21 @@ export default function CandidateDashboard() {
   }
 
   const deleteResume = async (id) => {
-    if (!confirm('Delete this resume and all its match predictions?')) return
-    try {
-      await uResumeDelete(id)
-      toast.success('Resume deleted')
-      loadData()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Delete failed')
-    }
+    setConfirm({
+      open: true,
+      title: 'Delete resume?',
+      message: 'This will permanently remove the resume and all its match predictions.',
+      danger: true,
+      action: async () => {
+        try {
+          await uResumeDelete(id)
+          toast.success('Resume deleted')
+          loadData()
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Delete failed')
+        }
+      }
+    })
   }
 
   const startEdit = (resume) => {
@@ -263,6 +272,15 @@ export default function CandidateDashboard() {
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel="Delete"
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

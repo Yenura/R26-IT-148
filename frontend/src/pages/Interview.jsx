@@ -5,6 +5,7 @@ import { MessagesSquare, Play, CheckCircle, BarChart3, Code, FileText, Settings 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Interview() {
   const ct = getChartTheme()
@@ -25,6 +26,7 @@ export default function Interview() {
   const [busy, setBusy] = useState(false)
   const [runResults, setRunResults] = useState(null)
   const [running, setRunning] = useState(false)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -89,29 +91,35 @@ export default function Interview() {
   }
 
   const submitInterview = async () => {
-    if (!confirm('Submit your interview? You cannot change answers after submission.')) return
-    setBusy(true)
-    try {
-      const questions = session.questions || []
-      const payload = {
-        candidate_id: localStorage.getItem('recruitai.user_id'),
-        session_id: session.session_id,
-        job_role: selectedRole,
-        answers: questions.map((q) => {
-          const a = answers[q.id]
-          if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
-          if (q.question_type === 'Descriptive') return { question_id: q.id, answer_text: a || '' }
-          if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: 'Python' }
-          return { question_id: q.id, answer_text: a || '' }
-        }),
+    setConfirm({
+      open: true,
+      title: 'Submit interview?',
+      message: 'You cannot change answers after submission.',
+      action: async () => {
+        setBusy(true)
+        try {
+          const questions = session.questions || []
+          const payload = {
+            candidate_id: localStorage.getItem('recruitai.user_id'),
+            session_id: session.session_id,
+            job_role: selectedRole,
+            answers: questions.map((q) => {
+              const a = answers[q.id]
+              if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
+              if (q.question_type === 'Descriptive') return { question_id: q.id, answer_text: a || '' }
+              if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: 'Python' }
+              return { question_id: q.id, answer_text: a || '' }
+            }),
+          }
+          const r = await c2Submit(payload)
+          setResult(r.data)
+          setStep('result')
+          toast.success('Interview complete!')
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Submit failed')
+        } finally { setBusy(false) }
       }
-      const r = await c2Submit(payload)
-      setResult(r.data)
-      setStep('result')
-      toast.success('Interview complete!')
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Submit failed')
-    } finally { setBusy(false) }
+    })
   }
 
   const questions = session?.questions || []
@@ -281,6 +289,13 @@ export default function Interview() {
               <button className="btn btn-success" onClick={submitInterview} disabled={busy}>{busy ? 'Submitting...' : 'Submit Interview'}</button>
             )}
           </div>
+          <ConfirmDialog
+            open={confirm.open}
+            title={confirm.title}
+            message={confirm.message}
+            onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+            onCancel={() => setConfirm({ ...confirm, open: false })}
+          />
         </div>
       </div>
     )

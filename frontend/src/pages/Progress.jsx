@@ -80,10 +80,10 @@ export default function Progress() {
   const pct = stats.completion_pct || 0
 
   // Computed Career Tier
-  const careerTier = pct >= 85 ? { title: 'Principal Architect / Lead', level: 'Level 4 (Executive)', color: '#8b5cf6', badge: '👑 Master' }
-    : pct >= 60 ? { title: 'Senior Tech Specialist', level: 'Level 3 (Advanced)', color: '#22c55e', badge: '🚀 Senior' }
-    : pct >= 30 ? { title: 'Mid-Level Engineer', level: 'Level 2 (Intermediate)', color: '#3b82f6', badge: '⚡ Mid-Level' }
-    : { title: 'Junior / Associate Developer', level: 'Level 1 (Foundation)', color: '#f59e0b', badge: '🌱 Junior' }
+  const careerTier = pct >= 85 ? { title: 'Principal Architect / Lead', level: 'Level 4 (Executive)', color: 'var(--color-purple)', badge: '👑 Master' }
+    : pct >= 60 ? { title: 'Senior Tech Specialist', level: 'Level 3 (Advanced)', color: 'var(--color-success)', badge: '🚀 Senior' }
+    : pct >= 30 ? { title: 'Mid-Level Engineer', level: 'Level 2 (Intermediate)', color: 'var(--color-info)', badge: '⚡ Mid-Level' }
+    : { title: 'Junior / Associate Developer', level: 'Level 1 (Foundation)', color: 'var(--color-warning)', badge: '🌱 Junior' }
 
   // Computed Estimated Learning Hours
   const totalHours = (stats.completed || 0) * 20 + (stats.in_progress || 0) * 8
@@ -97,8 +97,8 @@ export default function Progress() {
     return matchesSearch
   })
 
-  const statusIcon = (s) => s === 'completed' ? <CheckCircle size={18} style={{ color: '#22c55e' }} />
-    : s === 'in_progress' ? <Clock size={18} style={{ color: '#3b82f6' }} />
+  const statusIcon = (s) => s === 'completed' ? <CheckCircle size={18} style={{ color: 'var(--color-success)' }} />
+    : s === 'in_progress' ? <Clock size={18} style={{ color: 'var(--color-info)' }} />
     : <AlertCircle size={18} style={{ color: 'var(--text-muted)' }} />
 
   return (
@@ -117,7 +117,7 @@ export default function Progress() {
           </p>
         </div>
 
-        <button className="btn" onClick={populate} disabled={popBusy} style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-primary)', color: '#fff' }}>
+        <button className="btn" onClick={populate} disabled={popBusy} style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}>
           <Download size={16} /> {popBusy ? 'Syncing...' : 'Sync from Skill Gap Analysis'}
         </button>
       </div>
@@ -157,16 +157,16 @@ export default function Progress() {
 
             {/* Career Stepper Bar */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, fontSize: 11, fontWeight: 700 }}>
-              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 0 ? 'rgba(245, 158, 11, 0.15)' : 'var(--bg)', color: pct >= 0 ? '#f59e0b' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 0 ? 'rgba(245, 158, 11, 0.15)' : 'var(--bg)', color: pct >= 0 ? 'var(--color-warning)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
                 🌱 Junior (0-30%)
               </div>
-              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 30 ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg)', color: pct >= 30 ? '#3b82f6' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 30 ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg)', color: pct >= 30 ? 'var(--color-info)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
                 ⚡ Mid (30-60%)
               </div>
-              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 60 ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg)', color: pct >= 60 ? '#22c55e' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 60 ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg)', color: pct >= 60 ? 'var(--color-success)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
                 🚀 Senior (60-85%)
               </div>
-              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 85 ? 'rgba(139, 92, 246, 0.15)' : 'var(--bg)', color: pct >= 85 ? '#8b5cf6' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 85 ? 'rgba(139, 92, 246, 0.15)' : 'var(--bg)', color: pct >= 85 ? 'var(--color-purple)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
                 👑 Lead (85%+)
               </div>
             </div>
@@ -178,19 +178,19 @@ export default function Progress() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
         <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Completed Skills</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#22c55e', marginTop: 4 }}>{stats.completed || 0}</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-success)', marginTop: 4 }}>{stats.completed || 0}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Verified Competencies</div>
         </div>
 
         <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Learning</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#3b82f6', marginTop: 4 }}>{stats.in_progress || 0}</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-info)', marginTop: 4 }}>{stats.in_progress || 0}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Skills in Progress</div>
         </div>
 
         <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Target Backlog</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: '#f59e0b', marginTop: 4 }}>{stats.not_started || 0}</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-warning)', marginTop: 4 }}>{stats.not_started || 0}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Skills to Acquire</div>
         </div>
 
@@ -220,7 +220,7 @@ export default function Progress() {
                   style={{
                     padding: '6px 12px', fontSize: 12, fontWeight: 700, borderRadius: 6, border: 'none', cursor: 'pointer',
                     background: activeTab === t.id ? 'var(--color-primary)' : 'transparent',
-                    color: activeTab === t.id ? '#fff' : 'var(--text-muted)',
+                    color: activeTab === t.id ? 'var(--color-on-primary)' : 'var(--text-muted)',
                     transition: 'all 0.2s'
                   }}
                 >
@@ -279,14 +279,14 @@ export default function Progress() {
                       <button
                         className={`btn btn-sm ${p.status === 'in_progress' ? 'btn-primary' : 'btn-ghost'}`}
                         onClick={() => updateStatus(p.skill, 'in_progress')}
-                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'in_progress' ? '#fff' : '#3b82f6' }}
+                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'in_progress' ? 'var(--color-on-primary)' : 'var(--color-info)' }}
                       >
                         Learning
                       </button>
                       <button
                         className={`btn btn-sm ${p.status === 'completed' ? 'btn-success' : 'btn-ghost'}`}
                         onClick={() => updateStatus(p.skill, 'completed')}
-                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'completed' ? '#fff' : '#22c55e' }}
+                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'completed' ? 'var(--color-on-primary)' : 'var(--color-success)' }}
                       >
                         Done ✓
                       </button>
@@ -329,7 +329,7 @@ export default function Progress() {
                 type="submit"
                 className="btn"
                 disabled={addBusy || !newSkillInput.trim()}
-                style={{ width: '100%', padding: 10, fontSize: 13, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                style={{ width: '100%', padding: 10, fontSize: 13, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 <Rocket size={15} /> Add to Growth Plan
               </button>

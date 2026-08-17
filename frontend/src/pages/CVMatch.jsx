@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import axios from 'axios'
 import { uResumeDelete, uResumeUpload } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const C1 = 'http://127.0.0.1:8001'
@@ -56,6 +57,7 @@ export default function CVMatch() {
   const [learningPathResult, setLearningPathResult] = useState(null)
   const [simulatedAcquiredSkills, setSimulatedAcquiredSkills] = useState([])
   const [simulationResult, setSimulationResult] = useState(null)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   const handleSimulateSkill = async (skillName) => {
     const isAcquired = simulatedAcquiredSkills.includes(skillName)
@@ -209,15 +211,22 @@ export default function CVMatch() {
   }
 
   const deleteResume = async (id) => {
-    if (!confirm('Delete this resume and its match predictions?')) return
-    try {
-      await uResumeDelete(id)
-      toast.success('Resume deleted')
-      if (selectedResume === id) setSelectedResume('')
-      loadData()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Delete failed')
-    }
+    setConfirm({
+      open: true,
+      title: 'Delete resume?',
+      message: 'This will permanently remove the resume and its match predictions.',
+      danger: true,
+      action: async () => {
+        try {
+          await uResumeDelete(id)
+          toast.success('Resume deleted')
+          if (selectedResume === id) setSelectedResume('')
+          loadData()
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Delete failed')
+        }
+      }
+    })
   }
 
   const matchedJobDoc = jobs.find(j => j.id === selectedJob)
@@ -331,7 +340,7 @@ export default function CVMatch() {
           className="btn"
           onClick={runUnifiedAnalysis}
           disabled={busy || (!selectedResume && resumes.length === 0)}
-          style={{ width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--color-primary)', color: '#fff' }}
+          style={{ width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}
         >
           <BarChart3 size={18} /> {busy ? 'Running AI Screening & Career Progression Analysis...' : 'Run AI CV Match & Unified Career Analysis'}
         </button>
@@ -406,7 +415,7 @@ export default function CVMatch() {
                       CV → Text & Entity Extraction → Job Requirement Engine → 3 Separate Feature Scores ($S_{`{skill}`}$, $S_{`{exp}`}$, $S_{`{edu}`}$) passed to Component 3.
                     </p>
                   </div>
-                  <span className="chip" style={{ background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 700, fontSize: 12 }}>
+                  <span className="chip" style={{ background: 'rgba(34, 197, 94, 0.15)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 700, fontSize: 12 }}>
                     ✓ Ready for Component 3
                   </span>
                 </div>
@@ -419,20 +428,20 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>1. SKILLS MATCH (S_skill)</span>
-                      <span style={{ fontSize: 18, fontWeight: 900, color: '#22c55e' }}>{matchResult.skill_score?.toFixed(0) || 0} / 100</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--color-success)' }}>{matchResult.skill_score?.toFixed(0) || 0} / 100</span>
                     </div>
                     <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
-                      <div style={{ width: `${Math.min(100, matchResult.skill_score || 0)}%`, height: '100%', background: '#22c55e', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                      <div style={{ width: `${Math.min(100, matchResult.skill_score || 0)}%`, height: '100%', background: 'var(--color-success)', borderRadius: 4, transition: 'width 0.5s ease' }} />
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       <strong>{matchResult.matched_skills?.length || 0}</strong> matched of <strong>{(matchResult.matched_skills?.length || 0) + (matchResult.missing_skills?.length || 0)}</strong> required skills.
                     </div>
                   </div>
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', marginBottom: 4 }}>MATCHED SKILLS:</div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-success)', marginBottom: 4 }}>MATCHED SKILLS:</div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: 60, overflowY: 'auto' }}>
                       {matchResult.matched_skills?.map((s) => (
-                        <span key={s} style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', borderRadius: 4, border: '1px solid rgba(34, 197, 94, 0.2)' }}>{s}</span>
+                        <span key={s} style={{ fontSize: 10, padding: '2px 6px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', borderRadius: 4, border: '1px solid rgba(34, 197, 94, 0.2)' }}>{s}</span>
                       ))}
                     </div>
                   </div>
@@ -443,10 +452,10 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>2. EXPERIENCE MATCH (S_exp)</span>
-                      <span style={{ fontSize: 18, fontWeight: 900, color: '#3b82f6' }}>{matchResult.experience_score?.toFixed(0) || 0} / 100</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--color-info)' }}>{matchResult.experience_score?.toFixed(0) || 0} / 100</span>
                     </div>
                     <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
-                      <div style={{ width: `${Math.min(100, matchResult.experience_score || 0)}%`, height: '100%', background: '#3b82f6', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                      <div style={{ width: `${Math.min(100, matchResult.experience_score || 0)}%`, height: '100%', background: 'var(--color-info)', borderRadius: 4, transition: 'width 0.5s ease' }} />
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       Ratio formula: min(Candidate Years / Required Years, 1.0) × 100
@@ -469,10 +478,10 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-muted)' }}>3. EDUCATION MATCH (S_edu)</span>
-                      <span style={{ fontSize: 18, fontWeight: 900, color: '#8b5cf6' }}>{(matchResult.education_score ?? 100).toFixed(0)} / 100</span>
+                      <span style={{ fontSize: 18, fontWeight: 900, color: 'var(--color-purple)' }}>{(matchResult.education_score ?? 100).toFixed(0)} / 100</span>
                     </div>
                     <div style={{ width: '100%', height: 8, background: 'var(--border)', borderRadius: 4, overflow: 'hidden', marginBottom: 12 }}>
-                      <div style={{ width: `${Math.min(100, matchResult.education_score ?? 100)}%`, height: '100%', background: '#8b5cf6', borderRadius: 4, transition: 'width 0.5s ease' }} />
+                      <div style={{ width: `${Math.min(100, matchResult.education_score ?? 100)}%`, height: '100%', background: 'var(--color-purple)', borderRadius: 4, transition: 'width 0.5s ease' }} />
                     </div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                       Level & Domain Relevance: <strong>{matchResult.education_score >= 80 ? 'Full Match (Degree Level)' : 'Partial / Related Match'}</strong>
@@ -521,12 +530,12 @@ export default function CVMatch() {
               {/* Matched vs Missing Skills breakdown */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
                 <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: '#22c55e' }}>
+                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
                     <CheckCircle2 size={16} /> Matched Skills ({matchResult.matched_skills?.length || 0})
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {matchResult.matched_skills?.map((s) => (
-                      <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                      <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
                         {s}
                       </span>
                     ))}
@@ -539,7 +548,7 @@ export default function CVMatch() {
                   </h4>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {matchResult.missing_skills?.map((s) => (
-                      <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
+                      <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.3)' }}>
                         {s}
                       </span>
                     ))}
@@ -570,7 +579,7 @@ export default function CVMatch() {
                     </div>
                     {skillGapResult.missing_skills.map((item, idx) => {
                       const isSimulated = simulatedAcquiredSkills.includes(item.skill)
-                      const pColor = item.priority === 'Critical' ? '#ef4444' : item.priority === 'High' ? '#f97316' : item.priority === 'Medium' ? '#eab308' : '#22c55e'
+                      const pColor = item.priority === 'Critical' ? 'var(--color-danger)' : item.priority === 'High' ? 'var(--color-orange)' : item.priority === 'Medium' ? 'var(--color-warning)' : 'var(--color-success)'
                       return (
                         <div
                           key={idx}
@@ -579,7 +588,7 @@ export default function CVMatch() {
                             padding: '12px 16px',
                             background: isSimulated ? 'rgba(34, 197, 94, 0.08)' : 'var(--bg-elevated)',
                             borderRadius: 8,
-                            border: isSimulated ? '1px solid #22c55e' : '1px solid var(--border)',
+                            border: isSimulated ? '1px solid var(--color-success)' : '1px solid var(--border)',
                             display: 'flex',
                             alignItems: 'center',
                             justify: 'space-between',
@@ -591,7 +600,7 @@ export default function CVMatch() {
                             <input type="checkbox" checked={isSimulated} onChange={() => {}} style={{ cursor: 'pointer' }} />
                             <div>
                               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
-                                {item.skill} {isSimulated && <span style={{ color: '#22c55e', fontSize: 12 }}>(Simulated Acquired)</span>}
+                                {item.skill} {isSimulated && <span style={{ color: 'var(--color-success)', fontSize: 12 }}>(Simulated Acquired)</span>}
                               </div>
                               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
                                 Priority Score: <strong>{item.priority_score}</strong> / 100
@@ -614,7 +623,7 @@ export default function CVMatch() {
               {simulationResult && (
                 <div style={{ padding: 20, background: 'rgba(34, 197, 94, 0.08)', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)', marginBottom: 20 }}>
                   <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Sparkles size={18} style={{ color: '#22c55e' }} /> Interactive What-If Simulation Result
+                    <Sparkles size={18} style={{ color: 'var(--color-success)' }} /> Interactive What-If Simulation Result
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                     <div>
@@ -623,11 +632,11 @@ export default function CVMatch() {
                     </div>
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Simulated Coverage</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>{simulationResult.simulated_coverage}%</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-success)' }}>{simulationResult.simulated_coverage}%</div>
                     </div>
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Boost Improvement</div>
-                      <div style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>+{simulationResult.coverage_improvement}%</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--color-success)' }}>+{simulationResult.coverage_improvement}%</div>
                     </div>
                   </div>
                 </div>
@@ -646,7 +655,7 @@ export default function CVMatch() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                   {(careerResult?.vertical_progression || ['Junior', 'Mid-Level', 'Senior', 'Lead', 'Principal']).map((level, i) => (
                     <div key={level} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span className="chip" style={{ padding: '8px 14px', fontSize: 13, fontWeight: 700, background: i === 1 ? 'var(--color-primary)' : 'var(--bg-elevated)', color: i === 1 ? '#fff' : 'var(--text)', border: '1px solid var(--border)' }}>
+                      <span className="chip" style={{ padding: '8px 14px', fontSize: 13, fontWeight: 700, background: i === 1 ? 'var(--color-primary)' : 'var(--bg-elevated)', color: i === 1 ? 'var(--color-on-primary)' : 'var(--text)', border: '1px solid var(--border)' }}>
                         {level}
                       </span>
                       {i < 4 && <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />}
@@ -691,13 +700,13 @@ export default function CVMatch() {
                     {learningPathResult.learning_path.map((stepItem) => (
                       <div key={stepItem.step} style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--color-primary)', color: 'var(--color-on-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
                             {stepItem.step}
                           </div>
                           <div>
                             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>{stepItem.skill}</div>
                             <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                              Priority: <strong style={{ color: stepItem.priority === 'Critical' ? '#ef4444' : '#f97316' }}>{stepItem.priority}</strong>
+                              Priority: <strong style={{ color: stepItem.priority === 'Critical' ? 'var(--color-danger)' : 'var(--color-orange)' }}>{stepItem.priority}</strong>
                             </div>
                           </div>
                         </div>
@@ -739,6 +748,15 @@ export default function CVMatch() {
           </div>
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel="Delete"
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

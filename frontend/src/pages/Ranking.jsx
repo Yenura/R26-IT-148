@@ -69,7 +69,7 @@ export default function Ranking() {
           <h3 style={{ fontSize: 16, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <Briefcase size={18} style={{ color: 'var(--accent)' }} /> Select Target Job Requirement
           </h3>
-          <span className="chip" style={{ fontSize: 12, padding: '4px 12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', fontWeight: 700 }}>
+          <span className="chip" style={{ fontSize: 12, padding: '4px 12px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-info)', border: '1px solid rgba(59, 130, 246, 0.3)', fontWeight: 700 }}>
             LambdaMART LTR Optimized
           </span>
         </div>
@@ -133,7 +133,7 @@ export default function Ranking() {
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                 <strong>Required Skills:</strong>
                 {selectedJobObj.required_skills?.map((s) => (
-                  <span key={s} style={{ fontSize: 11, padding: '1px 6px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', borderRadius: 4 }}>
+                  <span key={s} style={{ fontSize: 11, padding: '1px 6px', background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-info)', borderRadius: 4 }}>
                     {s}
                   </span>
                 ))}
@@ -150,7 +150,7 @@ export default function Ranking() {
           className="btn"
           onClick={() => computePipeline()}
           disabled={busy}
-          style={{ width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--color-primary)', color: '#fff' }}
+          style={{ width: '100%', padding: '14px', fontSize: 15, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}
         >
           <ListOrdered size={18} /> {busy ? 'Running Multi-Criteria LTR Ranking...' : 'Run Candidate Ranking & Blended Score Evaluation'}
         </button>
@@ -169,7 +169,7 @@ export default function Ranking() {
                 Sorted by CSS (Candidate Scoring System) & LambdaMART LTR scores.
               </p>
             </div>
-            <span className="chip" style={{ fontSize: 12, padding: '6px 14px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 700 }}>
+            <span className="chip" style={{ fontSize: 12, padding: '6px 14px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 700 }}>
               {(result.data || []).length} Candidates Evaluated
             </span>
           </div>
@@ -192,9 +192,9 @@ export default function Ranking() {
                     {/* Rank Pill */}
                     <div style={{
                       width: 40, height: 40, borderRadius: 10,
-                      background: !c.passed_hard_filter ? 'var(--border)' : i === 0 ? 'var(--accent)' : i === 1 ? '#3b82f6' : 'var(--border)',
+                      background: !c.passed_hard_filter ? 'var(--border)' : i === 0 ? 'var(--accent)' : i === 1 ? 'var(--color-info)' : 'var(--border)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontWeight: 900, fontSize: 16, color: c.passed_hard_filter && i < 2 ? '#fff' : 'var(--text)'
+                      fontWeight: 900, fontSize: 16, color: c.passed_hard_filter && i < 2 ? 'var(--color-on-primary)' : 'var(--text)'
                     }}>
                       {c.passed_hard_filter ? `#${c.rank}` : '✗'}
                     </div>
@@ -203,11 +203,11 @@ export default function Ranking() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{c.candidate_name}</span>
                         {c.passed_hard_filter ? (
-                          <span className="chip" style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 700 }}>
+                          <span className="chip" style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)', fontWeight: 700 }}>
                             ✓ Qualified
                           </span>
                         ) : (
-                          <span className="chip" style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 700 }}>
+                          <span className="chip" style={{ fontSize: 11, padding: '2px 8px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 700 }}>
                             {c.filter_fail_reason || 'Disqualified'}
                           </span>
                         )}
@@ -249,19 +249,19 @@ export default function Ranking() {
                   </div>
                   <div>
                     <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>C1: SKILL MATCH</span>
-                    <strong style={{ color: '#22c55e', fontSize: 13 }}>{((c.S_skill || 0) * 100).toFixed(0)}%</strong>
+                    <strong style={{ color: 'var(--color-success)', fontSize: 13 }}>{((c.S_skill || 0) * 100).toFixed(0)}%</strong>
                   </div>
                   <div>
                     <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>C2: MCQ SCORE</span>
-                    <strong style={{ color: '#3b82f6', fontSize: 13 }}>{((c.P_mcq || 0) * 100).toFixed(0)}%</strong>
+                    <strong style={{ color: 'var(--color-info)', fontSize: 13 }}>{((c.P_mcq || 0) * 100).toFixed(0)}%</strong>
                   </div>
                   <div>
                     <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>C2: DESCRIPTIVE</span>
-                    <strong style={{ color: '#8b5cf6', fontSize: 13 }}>{((c.P_desc || 0) * 100).toFixed(0)}%</strong>
+                    <strong style={{ color: 'var(--color-purple)', fontSize: 13 }}>{((c.P_desc || 0) * 100).toFixed(0)}%</strong>
                   </div>
                   <div>
                     <span style={{ display: 'block', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)' }}>C2: CODING</span>
-                    <strong style={{ color: '#f59e0b', fontSize: 13 }}>{((c.P_code || 0) * 100).toFixed(0)}%</strong>
+                    <strong style={{ color: 'var(--color-warning)', fontSize: 13 }}>{((c.P_code || 0) * 100).toFixed(0)}%</strong>
                   </div>
                 </div>
               </div>

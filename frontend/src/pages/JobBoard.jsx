@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, MapPin, Clock, Building2, Search, CheckCircle, MessageSquare } from 'lucide-react'
 import axios from 'axios'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
 const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
@@ -14,6 +15,7 @@ export default function JobBoard() {
   const [appliedIds, setAppliedIds] = useState(new Set())
   const [interviewDone, setInterviewDone] = useState(new Set())
   const [search, setSearch] = useState('')
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -48,32 +50,45 @@ export default function JobBoard() {
       toast.error('Complete the interview first (open the job and click Start Interview)')
       return
     }
-    if (!confirm('Apply to this job with your resume?')) return
-    try {
-      const candidateId = localStorage.getItem('recruitai.user_id') || ''
-      const candidateName = localStorage.getItem('recruitai.name') || ''
-      await axios.post(`${API}/api/v1/jobs/${jobId}/apply`, {
-        candidate_id: candidateId,
-        candidate_name: candidateName,
-        resume_id: resumes[0].id,
-      }, authHeader())
-      setAppliedIds((prev) => new Set([...prev, jobId]))
-      toast.success('Applied successfully!')
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to apply')
-    }
+    setConfirm({
+      open: true,
+      title: 'Apply to this job?',
+      message: 'Your resume will be submitted to the employer.',
+      action: async () => {
+        try {
+          const candidateId = localStorage.getItem('recruitai.user_id') || ''
+          const candidateName = localStorage.getItem('recruitai.name') || ''
+          await axios.post(`${API}/api/v1/jobs/${jobId}/apply`, {
+            candidate_id: candidateId,
+            candidate_name: candidateName,
+            resume_id: resumes[0].id,
+          }, authHeader())
+          setAppliedIds((prev) => new Set([...prev, jobId]))
+          toast.success('Applied successfully!')
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed to apply')
+        }
+      }
+    })
   }
 
   const withdraw = async (e, jobId) => {
     e.stopPropagation()
-    if (!confirm('Withdraw your application?')) return
-    try {
-      await axios.delete(`${API}/api/v1/jobs/${jobId}/apply`, authHeader())
-      setAppliedIds((prev) => { const n = new Set(prev); n.delete(jobId); return n })
-      toast.success('Application withdrawn')
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to withdraw')
-    }
+    setConfirm({
+      open: true,
+      title: 'Withdraw application?',
+      message: 'You can re-apply later if the position is still open.',
+      danger: true,
+      action: async () => {
+        try {
+          await axios.delete(`${API}/api/v1/jobs/${jobId}/apply`, authHeader())
+          setAppliedIds((prev) => { const n = new Set(prev); n.delete(jobId); return n })
+          toast.success('Application withdrawn')
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed to withdraw')
+        }
+      }
+    })
   }
 
   const filtered = jobs.filter((j) => {
@@ -168,6 +183,15 @@ export default function JobBoard() {
           })}
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel={confirm.danger ? 'Withdraw' : 'Apply'}
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }
