@@ -379,13 +379,13 @@ async def rank_pipeline(request: Request, job_id: str):
             job_obj, ranked = service.rank(
                 job_role, candidates,
                 w_cv=0.4, w_int=0.6, use_ltr=True)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
         except Exception:
             # Fallback to Software_Engineer role if job_role parsing failed
             job_obj, ranked = service.rank(
                 "Software_Engineer", candidates,
                 w_cv=0.4, w_int=0.6, use_ltr=True)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
         
         out = []
         for r in ranked:

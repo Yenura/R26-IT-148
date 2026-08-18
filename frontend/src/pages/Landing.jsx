@@ -29,6 +29,31 @@ const roles = [
 ]
 
 export default function Landing() {
+  const { theme, toggleTheme } = useTheme()
+
+  // Self-contained reveal observer (App.jsx observer runs before lazy page renders)
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const timer = setTimeout(() => {
+      const observer = new IntersectionObserver(
+        (entries) => entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible')
+            observer.unobserve(e.target)
+          }
+        }),
+        { threshold: 0.05 }
+      )
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+      return () => observer.disconnect()
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [])
+
   return (
     <main style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
       {/* Hero — stacked center, ambient gradient background */}

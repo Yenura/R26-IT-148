@@ -1,5 +1,5 @@
 import { useState, useEffect, Suspense, lazy } from 'react'
-import { Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom'
+import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
   Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,

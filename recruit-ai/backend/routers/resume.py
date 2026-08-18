@@ -249,7 +249,6 @@ async def match_resume(
     semantic_score = matcher.compute_similarity(resume_text, job_text) if job_text else 0
 
     # Skill matching: exact case-insensitive match
-    import re
     matched_original = []
     for orig, lower in zip(job_skills_original, job_skills_lower):
         if lower in resume_skills_lower:
