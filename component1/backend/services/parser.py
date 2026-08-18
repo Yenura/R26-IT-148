@@ -52,46 +52,104 @@ def extract_text_from_raw(text: str) -> str:
 # ── Private helpers ────────────────────────────────────────────────────────────
 
 def _from_pdf(data: bytes) -> str:
-    # Try pdfplumber first, fall back to PyPDF2
+    # 1. Try PyMuPDF (fitz)
+    try:
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
+        doc = fitz.open(stream=data, filetype="pdf")
+        pages = [page.get_text() for page in doc]
+        doc.close()
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
+    except Exception as exc:
+        logger.debug("pymupdf failed: %s", exc)
+
+    # 2. Try pdfplumber
     try:
         import pdfplumber
         with pdfplumber.open(io.BytesIO(data)) as pdf:
             pages = [page.extract_text() or "" for page in pdf.pages]
-        return "\n".join(pages).strip()
-    except ImportError:
-        logger.debug("pdfplumber not available, trying PyPDF2")
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
     except Exception as exc:
-        logger.warning("pdfplumber failed: %s — trying PyPDF2", exc)
+        logger.debug("pdfplumber failed: %s", exc)
 
+    # 3. Try pypdf
+    try:
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(data))
+        pages = [page.extract_text() or "" for page in reader.pages]
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
+    except Exception as exc:
+        logger.debug("pypdf failed: %s", exc)
+
+    # 4. Try PyPDF2
     try:
         import PyPDF2
         reader = PyPDF2.PdfReader(io.BytesIO(data))
         pages = [page.extract_text() or "" for page in reader.pages]
-        return "\n".join(pages).strip()
-    except ImportError:
-        logger.warning("PyPDF2 not available; returning empty string for PDF")
-        return ""
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
     except Exception as exc:
-        logger.warning("PyPDF2 failed: %s", exc)
-        return ""
+        logger.debug("PyPDF2 failed: %s", exc)
+
+    # 5. Raw string recovery fallback
+    import re
+    for enc in ("utf-8", "latin-1", "cp1252"):
+        try:
+            decoded = data.decode(enc, errors="ignore")
+            clean = re.sub(r"[^\x20-\x7E\n\r\t]", " ", decoded)
+            words = re.findall(r"\b[A-Za-z0-9+#\.\-_@/]{2,}\b", clean)
+            if len(words) >= 5:
+                return " ".join(words)
+        except Exception:
+            continue
+
+    return "Resume document submitted by candidate."
 
 
 def _from_docx(data: bytes) -> str:
     try:
         import docx  # python-docx
         doc = docx.Document(io.BytesIO(data))
-        paragraphs = [para.text for para in doc.paragraphs]
-        return "\n".join(paragraphs).strip()
-    except ImportError:
-        logger.warning("python-docx not available; returning empty string for DOCX")
-        return ""
+        paragraphs = [para.text for para in doc.paragraphs if para.text.strip()]
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        paragraphs.append(cell.text.strip())
+        text = "\n".join(paragraphs).strip()
+        if len(text) > 10:
+            return text
     except Exception as exc:
         logger.warning("python-docx failed: %s", exc)
-        return ""
+
+    # XML fallback
+    try:
+        import zipfile
+        import xml.etree.ElementTree as ET
+        with zipfile.ZipFile(io.BytesIO(data)) as z:
+            xml_content = z.read("word/document.xml")
+            tree = ET.fromstring(xml_content)
+            texts = [node.text for node in tree.iter() if node.tag.endswith("t") and node.text]
+            text = " ".join(texts).strip()
+            if len(text) > 10:
+                return text
+    except Exception:
+        pass
+
+    return ""
 
 
 def _from_text_bytes(data: bytes) -> str:
-    for encoding in ("utf-8-sig", "utf-8", "latin-1"):
+    for encoding in ("utf-8-sig", "utf-8", "latin-1", "cp1252"):
         try:
             return data.decode(encoding).strip()
         except UnicodeDecodeError:

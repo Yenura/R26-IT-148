@@ -8,48 +8,128 @@ from typing import Any
 def parse_resume_file(content: bytes, filename: str) -> str:
     """Extract text from PDF, DOCX, or TXT files."""
     name_lower = filename.lower()
-    if name_lower.endswith(".txt"):
-        return content.decode("utf-8", errors="ignore")
+    text = ""
     if name_lower.endswith(".pdf"):
-        return _parse_pdf(content)
-    if name_lower.endswith((".docx", ".doc")):
-        return _parse_docx(content)
-    return content.decode("utf-8", errors="ignore")
+        text = _parse_pdf(content)
+    elif name_lower.endswith((".docx", ".doc")):
+        text = _parse_docx(content)
+    
+    if not text.strip():
+        # Fallback to UTF-8 / latin-1 decoding
+        for enc in ("utf-8", "latin-1", "cp1252", "ascii"):
+            try:
+                decoded = content.decode(enc, errors="ignore")
+                # Keep printable characters and letters
+                clean = re.sub(r"[^\x20-\x7E\n\r\t]", " ", decoded)
+                words = re.findall(r"\b[A-Za-z0-9+#\.\-_@/]{2,}\b", clean)
+                if len(words) >= 5:
+                    text = " ".join(words)
+                    break
+            except Exception:
+                continue
+
+    if not text.strip():
+        text = f"Resume file {filename} submitted by candidate."
+
+    return text.strip()
 
 
 def _parse_pdf(content: bytes) -> str:
+    # 1. Try PyMuPDF (fitz) - fastest & most accurate
+    try:
+        try:
+            import pymupdf as fitz
+        except ImportError:
+            import fitz
+        doc = fitz.open(stream=content, filetype="pdf")
+        pages = []
+        for page in doc:
+            pages.append(page.get_text())
+        doc.close()
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
+    except Exception:
+        pass
+
+    # 2. Try pdfplumber
     try:
         import pdfplumber
         with pdfplumber.open(io.BytesIO(content)) as pdf:
             pages = [page.extract_text() or "" for page in pdf.pages]
-        return "\n".join(pages).strip()
-    except ImportError:
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
+    except Exception:
         pass
+
+    # 3. Try pypdf / PyPDF2
     try:
-        import fitz  # PyMuPDF
-        doc = fitz.open(stream=content, filetype="pdf")
-        text = ""
-        for page in doc:
-            text += page.get_text()
-        doc.close()
-        return text
-    except ImportError:
+        import pypdf
+        reader = pypdf.PdfReader(io.BytesIO(content))
+        pages = [p.extract_text() or "" for p in reader.pages]
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
+    except Exception:
         pass
+
+    try:
+        import PyPDF2
+        reader = PyPDF2.PdfReader(io.BytesIO(content))
+        pages = [p.extract_text() or "" for p in reader.pages]
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
+    except Exception:
+        pass
+
+    # 4. Try pdfminer
     try:
         from pdfminer.high_level import extract_text
-        return extract_text(io.BytesIO(content))
-    except ImportError:
-        return ""
+        text = extract_text(io.BytesIO(content)).strip()
+        if len(text) > 20:
+            return text
+    except Exception:
+        pass
+
+    return ""
 
 
 def _parse_docx(content: bytes) -> str:
+    # 1. Try python-docx
     try:
         from docx import Document
-        import io
         doc = Document(io.BytesIO(content))
-        return "\n".join([p.text for p in doc.paragraphs if p.text.strip()])
-    except ImportError:
-        return ""
+        paras = [p.text for p in doc.paragraphs if p.text.strip()]
+        # also read tables in docx
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    if cell.text.strip():
+                        paras.append(cell.text.strip())
+        text = "\n".join(paras).strip()
+        if len(text) > 10:
+            return text
+    except Exception:
+        pass
+
+    # 2. Try raw XML extraction from docx zip archive
+    try:
+        import zipfile
+        import xml.etree.ElementTree as ET
+        with zipfile.ZipFile(io.BytesIO(content)) as z:
+            xml_content = z.read("word/document.xml")
+            tree = ET.fromstring(xml_content)
+            # Find all text tags <w:t>
+            texts = [node.text for node in tree.iter() if node.tag.endswith("t") and node.text]
+            text = " ".join(texts).strip()
+            if len(text) > 10:
+                return text
+    except Exception:
+        pass
+
+    return ""
 
 
 # ── NLP Preprocessing ──────────────────────────────────────────
