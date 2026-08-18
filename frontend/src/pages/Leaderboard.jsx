@@ -1,11 +1,7 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import {
-  Award, Trophy, Medal, Search, Filter, Sparkles, UserCheck, Briefcase,
-  ExternalLink, CheckCircle2, Zap, ArrowRight, Star, RefreshCw, Send, Brain,
-  Clock, Code, FileText, Check, Cpu
-} from 'lucide-react'
+import { Award, Trophy, Medal } from 'lucide-react'
 import { c4Leaderboard } from '../api'
 
 export default function Leaderboard() {
@@ -19,8 +15,8 @@ export default function Leaderboard() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/'); return }
-    loadLeaderboard()
+    if (!token) { navigate('/login/candidate'); return }
+    c4Leaderboard(10).then((r) => setData(r?.data?.data || [])).catch(() => toast.error('Failed to load leaderboard'))
   }, [])
 
   const loadLeaderboard = async () => {

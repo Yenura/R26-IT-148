@@ -33,7 +33,10 @@ logger = logging.getLogger("component4")
 limiter = Limiter(key_func=get_remote_address)
 
 # ── Config ────────────────────────────────────────────────────────────────────
-MONGODB_URI     = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+MONGODB_URI     = os.getenv("MONGODB_URI")
+if not MONGODB_URI:
+    logger.critical("MONGODB_URI not set — copy .env.example to .env and fill credentials")
+    raise SystemExit(1)
 DB_NAME         = os.getenv("DB_NAME", "HR")
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177,http://localhost:5178"

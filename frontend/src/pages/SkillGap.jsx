@@ -2,17 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  Target, CheckCircle2, AlertCircle, BookOpen, ExternalLink, Sparkles,
-  Zap, Award, TrendingUp, ChevronRight, Layers, Lightbulb, Briefcase,
-  HelpCircle, MessageSquare, Code, Check, ArrowRight, RefreshCw, Plus,
-  Sliders, Search, Building2, MapPin
+  Target, CheckCircle2, AlertCircle, BookOpen, ExternalLink,
+  Zap, Layers, Lightbulb
 } from 'lucide-react'
-import axios from 'axios'
-import { c0JobsAll } from '../api'
-
-const C4 = import.meta.env.VITE_C4_URL || 'http://127.0.0.1:8004'
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+import { uResumeList, c4SkillGapRoles, c4SkillGapAnalyze, c4SkillGapSimulate } from '../api'
 
 export default function SkillGap() {
   const navigate = useNavigate()
@@ -42,39 +35,16 @@ export default function SkillGap() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/login/candidate'); return }
-    loadAppliedJobsAnalysis()
-    loadJobOpeningsAndProfile()
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
+    c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => toast.error('Failed to load roles'))
+    loadResumeData()
   }, [])
 
   const loadAppliedJobsAnalysis = async () => {
     setLoadingApplied(true)
     try {
-      const r = await axios.get(`${C4}/api/v1/skill-gap/applied-jobs/${candidateId}`)
-      const reports = r.data.reports || []
-      setAppliedReports(reports)
-      if (reports.length > 0 && !selectedJobId) {
-        setSelectedJobId(reports[0].job_id)
-      }
-    } catch (err) {
-      console.error('Failed to load applied jobs analysis:', err)
-    } finally {
-      setLoadingApplied(false)
-    }
-  }
-
-  const loadJobOpeningsAndProfile = async () => {
-    try {
-      // 1. Load real job openings with company names
-      const jobsRes = await c0JobsAll()
-      const rawJobs = jobsRes.data || []
-      setAvailableJobs(rawJobs)
-      if (rawJobs.length > 0) {
-        setSelectedOpeningId(rawJobs[0].id || rawJobs[0]._id)
-      }
-
-      // 2. Load candidate resume
-      const r = await axios.get(`${API}/api/v1/resume/`, authHeader())
+      const r = await uResumeList()
       const resumes = r.data || []
       if (resumes.length > 0) {
         const latest = resumes[0]
@@ -91,17 +61,23 @@ export default function SkillGap() {
           skills: ['Python', 'SQL', 'Git', 'FastAPI']
         }))
       }
-    } catch (err) {
-      console.error('Failed to load job openings:', err)
-    }
+    } catch { toast.error('Failed to load resume data') }
   }
 
   const syncToProgress = async () => {
     setSyncingProgress(true)
     try {
-      const r = await axios.post(`${C4}/api/v1/progress/sync-from-applied-interviews/${candidateId}`, {}, authHeader())
-      toast.success(`Successfully synced ${r.data.synced_count || 'all'} weak skill targets to your Progress Tracker!`)
-      navigate('/candidate/progress')
+      const r = await c4SkillGapAnalyze({
+        candidate_id: localStorage.getItem('recruitai.user_id'),
+        candidate_name: form.candidate_name,
+        job_role: form.job_role,
+        skills: form.skills.split(',').map((s) => s.trim()).filter(Boolean),
+        experience_years: parseFloat(form.experience_years) || 0,
+        education: form.education || 'B.Sc. Computer Science',
+      })
+      const data = r?.data?.data || r?.data || {}
+      setResult(data)
+      toast.success(`Skill Fit Score: ${(data.skill_match_pct || (data.gap_score * 100)).toFixed(0)}%`)
     } catch (err) {
       toast.error('Failed to sync to progress tracker')
     } finally {
@@ -211,46 +187,10 @@ export default function SkillGap() {
           </div>
         </div>
 
-        {/* View Switcher Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginTop: 18, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
-          <button
-            onClick={() => setActiveTab('applied')}
-            style={{
-              padding: '8px 16px',
-              fontSize: 13,
-              fontWeight: 700,
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-              background: activeTab === 'applied' ? 'var(--color-primary)' : 'transparent',
-              color: activeTab === 'applied' ? '#fff' : 'var(--text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            <Briefcase size={15} /> Applied Jobs & Interview Evaluation ({appliedReports.length})
-          </button>
-          <button
-            onClick={() => setActiveTab('explorer')}
-            style={{
-              padding: '8px 16px',
-              fontSize: 13,
-              fontWeight: 700,
-              borderRadius: 6,
-              border: 'none',
-              cursor: 'pointer',
-              background: activeTab === 'explorer' ? 'var(--color-primary)' : 'transparent',
-              color: activeTab === 'explorer' ? '#fff' : 'var(--text-muted)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8
-            }}
-          >
-            <Sparkles size={15} /> Openings Explorer & What-If Simulator
-          </button>
-        </div>
-      </div>
+        <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}>
+          <Target size={18} /> {busy ? 'Calculating Skill Coverage & Recommendations...' : 'Run Skill Gap Analysis'}
+        </button>
+      </form>
 
       {/* TAB 1: APPLIED JOBS & INTERVIEW REPORTS */}
       {activeTab === 'applied' && (
@@ -603,146 +543,38 @@ export default function SkillGap() {
                 })}
               </select>
             </div>
-
-            {/* Selected Job Profile Details */}
-            {currentOpening && (
-              <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
-                  <div>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase' }}>
-                      {currentOpening.company_name || 'Company'} • {currentOpening.department || 'Engineering'}
-                    </span>
-                    <h3 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: '2px 0 0' }}>
-                      {currentOpening.title}
-                    </h3>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2, display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span><MapPin size={12} style={{ display: 'inline', marginRight: 3 }} /> {currentOpening.location || 'Remote'}</span>
-                      <span>• {currentOpening.employment_type || 'Full-time'}</span>
-                      {currentOpening.salary_range && <span>• {currentOpening.salary_range}</span>}
-                    </div>
-                  </div>
-
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 24, fontWeight: 900, color: baselineMatchPct >= 70 ? '#22c55e' : '#f59e0b' }}>
-                      {baselineMatchPct}%
-                    </div>
-                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)' }}>Current CV Match</div>
-                  </div>
-                </div>
-
-                {/* Required skills breakdown */}
-                <div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
-                    Required Technical Skills ({openingRequiredSkills.length}):
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {openingRequiredSkills.map((req) => {
-                      const isMatched = matchedOpeningSkills.includes(req)
-                      return (
-                        <span
-                          key={req}
-                          className="chip"
-                          style={{
-                            fontSize: 12,
-                            padding: '4px 10px',
-                            fontWeight: 600,
-                            background: isMatched ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.1)',
-                            color: isMatched ? '#22c55e' : '#ef4444',
-                            border: isMatched ? '1px solid rgba(34, 197, 94, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4
-                          }}
-                        >
-                          {isMatched ? <Check size={12} /> : <AlertCircle size={12} />} {req}
-                        </span>
-                      )
-                    })}
-                  </div>
-                </div>
+            <div className="stat" style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <div className="stat-label" style={{ fontSize: 12 }}>Gap Severity</div>
+              <div className="stat-value" style={{ color: result.gap_severity === 'Low' ? 'var(--color-success)' : result.gap_severity === 'Medium' ? 'var(--color-warning)' : 'var(--color-danger)', fontSize: 22 }}>
+                {result.gap_severity}
               </div>
             )}
           </div>
 
-          {/* WHAT-IF SIMULATION ENGINE */}
-          {currentOpening && (
-            <div className="card" style={{ padding: 24, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <div>
-                  <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <Sliders size={18} style={{ color: 'var(--accent)' }} /> What-If Skill Acquisition Simulator
-                  </h3>
-                  <p className="muted" style={{ fontSize: 12, margin: '2px 0 0' }}>
-                    Simulate how acquiring new skills would improve your match score for <strong>{currentOpening.title} @ {currentOpening.company_name}</strong>.
-                  </p>
-                </div>
-              </div>
-
-              {/* Quick-Add Missing Skills from this Job Post */}
-              {missingOpeningSkills.length > 0 && (
-                <div style={{ marginBottom: 16, padding: 14, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8 }}>
-                    Click to simulate adding missing requirements for this job:
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {missingOpeningSkills.map((sk) => {
-                      const isAlreadyAdded = simulatedSkills.some(s => s.toLowerCase() === sk.toLowerCase())
-                      return (
-                        <button
-                          key={sk}
-                          onClick={() => isAlreadyAdded ? removeSimSkill(sk) : addSimSkill(sk)}
-                          style={{
-                            padding: '5px 10px',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            borderRadius: 6,
-                            border: isAlreadyAdded ? '1px solid var(--accent)' : '1px solid var(--border)',
-                            background: isAlreadyAdded ? 'var(--color-primary)' : 'var(--bg-elevated)',
-                            color: isAlreadyAdded ? '#fff' : 'var(--text)',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4
-                          }}
-                        >
-                          <Plus size={12} /> {sk} {isAlreadyAdded ? '✓' : ''}
-                        </button>
-                      )
-                    })}
-                  </div>
+          {/* Missing Required & Optional Skills */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+            <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--danger)' }}>
+                <AlertCircle size={16} /> Critical Missing Required Skills ({result.missing_required?.length || 0})
+              </h4>
+              {result.missing_required?.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {result.missing_required.map((s) => (
+                    <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 600 }}>
+                      {s}
+                    </span>
+                  ))}
                 </div>
               )}
 
-              {/* Custom Skill Input */}
-              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-                <input
-                  type="text"
-                  placeholder="Or type any other skill to simulate (e.g. AWS, Kubernetes, GraphQL)..."
-                  value={customSimSkill}
-                  onChange={(e) => setCustomSimSkill(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addSimSkill(customSimSkill) } }}
-                  style={{ height: 42, fontSize: 13, borderRadius: 8, flex: 1 }}
-                />
-                <button
-                  type="button"
-                  onClick={() => addSimSkill(customSimSkill)}
-                  className="btn btn-ghost"
-                  style={{ height: 42, padding: '0 16px', fontWeight: 700, fontSize: 13 }}
-                >
-                  + Add to Simulation
-                </button>
-              </div>
-
-              {/* Currently Simulated Skills List */}
-              {simulatedSkills.length > 0 && (
-                <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 6 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>Simulated Skills ({simulatedSkills.length}):</span>
-                  {simulatedSkills.map((s) => (
-                    <span
-                      key={s}
-                      className="chip"
-                      style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--accent)', border: '1px solid rgba(59, 130, 246, 0.3)', display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                    >
+            <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                <CheckCircle2 size={16} /> Present Verified Skills ({result.present_skills?.length || 0})
+              </h4>
+              {result.present_skills?.length > 0 ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {result.present_skills.map((s) => (
+                    <span key={s} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
                       {s}
                       <button onClick={() => removeSimSkill(s)} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: 0 }}>×</button>
                     </span>
@@ -760,15 +592,34 @@ export default function SkillGap() {
                 <Sparkles size={18} /> {simulating ? 'Calculating Impact...' : `Simulate Impact on ${currentOpening.title} @ ${currentOpening.company_name}`}
               </button>
 
-              {/* SIMULATION RESULTS COMPARISON */}
-              {simulationResult && (
-                <div className="fade-in" style={{ marginTop: 20, padding: 18, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
-                    <div>
-                      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)' }}>Simulation Projection</div>
-                      <h4 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: '2px 0 0' }}>
-                        Readiness for {simulationResult.job_title} @ {simulationResult.company_name}
-                      </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {result.resources.map((resItem, idx) => {
+                  const pColor = resItem.priority === 'Critical' ? 'var(--color-danger)' : resItem.priority === 'High' ? 'var(--color-orange)' : resItem.priority === 'Medium' ? 'var(--color-warning)' : 'var(--color-success)'
+                  return (
+                    <div key={idx} style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                          <span className="chip" style={{ fontSize: 11, padding: '2px 8px', background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}40`, fontWeight: 700 }}>
+                            {resItem.priority} Priority
+                          </span>
+                          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>
+                            {resItem.level || 'Beginner'} · {resItem.duration || '4 weeks'}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                          {resItem.skill}: <span style={{ color: 'var(--accent)' }}>{resItem.course}</span>
+                        </div>
+                      </div>
+
+                      <a
+                        href={resItem.url || `https://www.coursera.org/search?query=${encodeURIComponent(resItem.skill)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="btn btn-ghost btn-sm"
+                        style={{ marginTop: 12, fontSize: 12, border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}
+                      >
+                        Enroll / Explore Course <ExternalLink size={13} />
+                      </a>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <span className="chip" style={{ fontSize: 12, fontWeight: 800, background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e', padding: '4px 12px' }}>
@@ -777,13 +628,17 @@ export default function SkillGap() {
                     </div>
                   </div>
 
-                  {/* Before vs After Score Cards */}
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                    <div style={{ padding: 14, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'center' }}>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Current CV Match</div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text-muted)' }}>
-                        {simulationResult.original_coverage}%
-                      </div>
+          {/* Structured Learning Roadmap */}
+          {result.learning_plan?.length > 0 && (
+            <div style={{ marginBottom: 24, padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Layers size={20} style={{ color: 'var(--color-primary)' }} /> Structured Monthly Skill Acquisition Plan
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {result.learning_plan.map((planItem, i) => (
+                  <div key={i} style={{ padding: 14, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent)', color: 'var(--color-on-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14 }}>
+                      {planItem.phase || (i + 1)}
                     </div>
                     <div style={{ padding: 14, background: 'rgba(34, 197, 94, 0.08)', borderRadius: 8, border: '1px solid rgba(34, 197, 94, 0.3)', textAlign: 'center' }}>
                       <div style={{ fontSize: 11, color: '#22c55e', fontWeight: 700 }}>Simulated Match with New Skills</div>
@@ -793,27 +648,19 @@ export default function SkillGap() {
                     </div>
                   </div>
 
-                  {/* Remaining gaps */}
-                  {simulationResult.remaining_missing?.length > 0 ? (
-                    <div>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 6 }}>
-                        Remaining Skills to Full Match ({simulationResult.remaining_missing.length}):
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                        {simulationResult.remaining_missing.map((s) => (
-                          <span key={s} className="chip" style={{ fontSize: 11, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#22c55e', textAlign: 'center', padding: 8 }}>
-                      🎉 Perfect 100% Skill Coverage Achieved!
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* AI Improvement Suggestions */}
+          {result.improvement_suggestions?.length > 0 && (
+            <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
+              <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Lightbulb size={20} style={{ color: 'var(--color-warning)' }} /> Actionable AI Profile Recommendations
+              </h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {result.improvement_suggestions.map((s, i) => (
+                  <div key={i} style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ color: 'var(--color-warning)' }}>•</span> {s}
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

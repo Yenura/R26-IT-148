@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight, MessageSquare, Sparkles } from 'lucide-react'
-import { C0 } from '../api'
+import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicants } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 const STANDARD_ROLES = {
   'Software Engineer': 'Python, Java, Git, REST APIs, SQL, Data Structures',
@@ -47,6 +48,7 @@ export default function CompanyDashboard() {
   const [form, setForm] = useState(emptyForm)
   const [applicantCounts, setApplicantCounts] = useState({})
   const [submitting, setSubmitting] = useState(false)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -58,22 +60,32 @@ export default function CompanyDashboard() {
     loadJobs()
   }, [])
 
+  // Re-observe .reveal elements after data loads
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [jobs])
+
   const loadJobs = async () => {
     try {
-      let r
-      try {
-        r = await C0.get('/jobs')
-      } catch {
-        r = await C0.get('/jobs/')
-      }
+      const r = await uJobsMy().catch(() => ({ data: [] }))
       const jobList = Array.isArray(r.data) ? r.data : []
       setJobs(jobList)
 
       const counts = {}
       for (const job of jobList) {
         try {
-          const ar = await C0.get(`/jobs/${job.id}/applicants`)
-          const apps = Array.isArray(ar.data) ? ar.data : ar.data.applicants || []
+          const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
+          const apps = Array.isArray(ar.data) ? ar.data : []
           counts[job.id] = apps.length
         } catch {
           counts[job.id] = 0
@@ -127,16 +139,7 @@ export default function CompanyDashboard() {
 
     setSubmitting(true)
     try {
-      let r
-      try {
-        r = await C0.post('/jobs', payload)
-      } catch (err) {
-        if (err?.response?.status === 307 || err?.response?.status === 404) {
-          r = await C0.post('/jobs/', payload)
-        } else {
-          throw err
-        }
-      }
+      await uJobsCreate(payload)
       toast.success('Job posted successfully!')
       setShowForm(false)
       setForm(emptyForm)
@@ -157,14 +160,21 @@ export default function CompanyDashboard() {
   }
 
   const deleteJob = async (id) => {
-    if (!confirm('Delete this job? This cannot be undone.')) return
-    try {
-      await C0.delete(`/jobs/${id}`)
-      toast.success('Deleted')
-      loadJobs()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed')
-    }
+    setConfirm({
+      open: true,
+      title: 'Delete this job?',
+      message: 'This action cannot be undone. All applicant data for this job will be removed.',
+      danger: true,
+      action: async () => {
+        try {
+          await uJobsDelete(id)
+          toast.success('Deleted')
+          loadJobs()
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed')
+        }
+      }
+    })
   }
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
@@ -182,20 +192,20 @@ export default function CompanyDashboard() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-3" style={{ marginBottom: 20 }}>
+      <div className="grid grid-3 reveal" style={{ marginBottom: 20 }}>
         <div className="stat">
           <div className="stat-label">Posted Jobs</div>
-          <div className="stat-value">{jobs.length}</div>
+          <div className="stat-value" style={{ fontFamily: 'var(--p-font-mono)' }}>{jobs.length}</div>
         </div>
         <div className="stat">
           <div className="stat-label">Active</div>
-          <div className="stat-value" style={{ color: 'var(--color-success)' }}>
+          <div className="stat-value" style={{ color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>
             {jobs.filter((j) => j.status === 'open').length || jobs.length}
           </div>
         </div>
         <div className="stat">
           <div className="stat-label">Total Applicants</div>
-          <div className="stat-value" style={{ color: 'var(--color-primary)' }}>
+          <div className="stat-value" style={{ color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
             {Object.values(applicantCounts).reduce((a, b) => a + b, 0)}
           </div>
         </div>
@@ -205,7 +215,7 @@ export default function CompanyDashboard() {
       {showForm && (
         <form onSubmit={createJob} className="card" style={{ marginBottom: 24, padding: 24 }}>
           <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Plus size={18} style={{ color: 'var(--accent)' }} /> Post New Job Listing
+            <Plus size={18} style={{ color: 'var(--color-primary)' }} /> Post New Job Listing
           </h3>
 
           {/* Quick role selector */}
@@ -357,7 +367,7 @@ export default function CompanyDashboard() {
       {jobs.length === 0 ? (
         <div className="card">
           <div className="empty">
-            <div className="empty-icon">💼</div>
+            <Briefcase size={32} style={{ color: 'var(--color-fg-muted)', marginBottom: 12, opacity: 0.4 }} />
             <p>No jobs posted yet</p>
             <p style={{ fontSize: 13, marginTop: 8 }}>Click "Post New Job" to create your first listing.</p>
           </div>
@@ -434,6 +444,15 @@ export default function CompanyDashboard() {
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel="Delete"
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

@@ -6,7 +6,10 @@ import bcrypt
 from bson import ObjectId
 from pymongo import MongoClient
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+MONGODB_URI = os.getenv("MONGODB_URI")
+if not MONGODB_URI:
+    print("FATAL: MONGODB_URI not set. Copy .env.example to .env and fill credentials.", file=sys.stderr)
+    sys.exit(1)
 DB_NAME = os.getenv("DB_NAME", "HR")
 
 client = MongoClient(MONGODB_URI)

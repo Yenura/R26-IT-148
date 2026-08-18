@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Building2, Mail, Lock, Upload, Save } from 'lucide-react'
+import { Building2, Lock, Upload, Save } from 'lucide-react'
 import { authGetProfile, authUpdateProfile, authChangePassword, authUploadAvatar } from '../api'
 
 export default function CompanyProfile() {
+  const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [form, setForm] = useState({ full_name: '', company_name: '', industry: '', website: '' })
   const [pwForm, setPwForm] = useState({ current_password: '', new_password: '' })
@@ -12,6 +14,8 @@ export default function CompanyProfile() {
   const fileRef = useRef()
 
   useEffect(() => {
+    const token = localStorage.getItem('recruitai.token')
+    if (!token) { navigate('/'); return }
     authGetProfile().then(r => {
       setProfile(r.data)
       setForm({
@@ -20,7 +24,7 @@ export default function CompanyProfile() {
         industry: r.data.industry || '',
         website: r.data.website || '',
       })
-    }).catch(() => {})
+    }).catch(() => toast.error('Failed to load profile'))
   }, [])
 
   const saveProfile = async (e) => {

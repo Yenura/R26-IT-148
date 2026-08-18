@@ -1,12 +1,21 @@
 """Unified backend configuration."""
 import os
+import sys
 from dotenv import load_dotenv
 
 load_dotenv()
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+MONGODB_URI = os.getenv("MONGODB_URI")
+if not MONGODB_URI:
+    print("FATAL: MONGODB_URI not set. Copy .env.example to .env and fill in credentials.", file=sys.stderr)
+    sys.exit(1)
+
 DB_NAME = os.getenv("DB_NAME", "HR")
-JWT_SECRET = os.getenv("JWT_SECRET", "dev-insecure-secret-change-in-production")
+JWT_SECRET = os.getenv("JWT_SECRET")
+if not JWT_SECRET:
+    print("FATAL: JWT_SECRET not set. Copy .env.example to .env and set a secure secret.", file=sys.stderr)
+    sys.exit(1)
+
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 TOKEN_EXPIRE_MINUTES = int(os.getenv("TOKEN_EXPIRE_MINUTES", "1440"))
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177,http://localhost:5178").split(",")

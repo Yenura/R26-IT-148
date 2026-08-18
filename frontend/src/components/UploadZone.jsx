@@ -83,7 +83,7 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
                 Uploading...
               </span>
             ) : (
-              <span className="chip" style={{ fontSize: 12, background: 'rgba(34, 197, 94, 0.1)', color: '#22c55e', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span className="chip" style={{ fontSize: 12, background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <CheckCircle2 size={13} /> Uploaded
               </span>
             )}

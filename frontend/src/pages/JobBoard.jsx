@@ -2,17 +2,26 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Briefcase, MapPin, Clock, Building2, Search, CheckCircle, MessageSquare } from 'lucide-react'
-import axios from 'axios'
+import { c0JobsAll, uResumeList, c0Applications, c0InterviewScores, uJobsApply, uJobsWithdraw } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
-const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+const toArr = (r) => {
+  const d = r?.data
+  if (Array.isArray(d)) return d
+  if (Array.isArray(d?.data)) return d.data
+  if (Array.isArray(d?.applications)) return d.applications
+  if (Array.isArray(d?.jobs)) return d.jobs
+  return []
+}
 
 export default function JobBoard() {
   const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
   const [resumes, setResumes] = useState([])
   const [appliedIds, setAppliedIds] = useState(new Set())
+  const [interviewDone, setInterviewDone] = useState(new Set())
   const [search, setSearch] = useState('')
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -21,48 +30,88 @@ export default function JobBoard() {
     loadData()
   }, [])
 
+  // Re-observe .reveal elements after data loads
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [jobs, resumes])
+
   const loadData = async () => {
     try {
-      const [r1, r2, r3] = await Promise.all([
-        axios.get(`${API}/api/v1/jobs/all`),
-        axios.get(`${API}/api/v1/resume/`, authHeader()),
-        axios.get(`${API}/api/v1/jobs/applications`, authHeader()).catch(() => ({ data: [] })),
+      const candidateId = localStorage.getItem('recruitai.user_id')
+      const [r1, r2, r3, r4] = await Promise.all([
+        c0JobsAll().catch(() => ({ data: [] })),
+        uResumeList().catch(() => ({ data: [] })),
+        c0Applications().catch(() => ({ data: [] })),
+        candidateId ? c0InterviewScores(candidateId).catch(() => ({ data: [] })) : Promise.resolve({ data: [] }),
       ])
-      setJobs(r1.data)
-      setResumes(r2.data)
-      const apps = Array.isArray(r3.data) ? r3.data : (r3.data?.applications || [])
+      setJobs(toArr(r1))
+      setResumes(toArr(r2))
+      const apps = toArr(r3)
       setAppliedIds(new Set(apps.filter(a => a.status !== 'withdrawn').map(a => a.job_id)))
-    } catch {}
+      const scores = toArr(r4)
+      setInterviewDone(new Set(scores.map(s => s.job_id || s.job_role).filter(Boolean)))
+    } catch {
+      toast.error('Failed to load jobs')
+    }
   }
 
   const apply = async (e, jobId) => {
     e.stopPropagation()
     if (resumes.length === 0) { toast.error('Upload a resume first on the Dashboard'); return }
-    try {
-      const candidateId = localStorage.getItem('recruitai.user_id') || ''
-      const candidateName = localStorage.getItem('recruitai.name') || ''
-      await axios.post(`${API}/api/v1/jobs/${jobId}/apply`, {
-        candidate_id: candidateId,
-        candidate_name: candidateName,
-        resume_id: resumes[0].id,
-      }, authHeader())
-      setAppliedIds((prev) => new Set([...prev, jobId]))
-      toast.success('Applied successfully!')
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to apply')
+    const job = jobs.find(j => j.id === jobId)
+    if (job?.interview_required && !interviewDone.has(jobId) && !interviewDone.has(job.job_role || job.title)) {
+      toast.error('Complete the interview first (open the job and click Start Interview)')
+      return
     }
+    setConfirm({
+      open: true,
+      title: 'Apply to this job?',
+      message: 'Your resume will be submitted to the employer.',
+      action: async () => {
+        try {
+          const candidateId = localStorage.getItem('recruitai.user_id') || ''
+          const candidateName = localStorage.getItem('recruitai.name') || ''
+          await uJobsApply(jobId, {
+            candidate_id: candidateId,
+            candidate_name: candidateName,
+            resume_id: resumes[0].id,
+          })
+          setAppliedIds((prev) => new Set([...prev, jobId]))
+          toast.success('Applied successfully!')
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed to apply')
+        }
+      }
+    })
   }
 
   const withdraw = async (e, jobId) => {
     e.stopPropagation()
-    if (!confirm('Withdraw your application?')) return
-    try {
-      await axios.delete(`${API}/api/v1/jobs/${jobId}/apply`, authHeader())
-      setAppliedIds((prev) => { const n = new Set(prev); n.delete(jobId); return n })
-      toast.success('Application withdrawn')
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to withdraw')
-    }
+    setConfirm({
+      open: true,
+      title: 'Withdraw application?',
+      message: 'You can re-apply later if the position is still open.',
+      danger: true,
+      action: async () => {
+        try {
+          await uJobsWithdraw(jobId)
+          setAppliedIds((prev) => { const n = new Set(prev); n.delete(jobId); return n })
+          toast.success('Application withdrawn')
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Failed to withdraw')
+        }
+      }
+    })
   }
 
   const filtered = jobs.filter((j) => {
@@ -117,8 +166,8 @@ export default function JobBoard() {
                         </span>
                       )}
                       {job.interview_required && (
-                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--accent-2)', background: 'var(--color-accent2-bg, rgba(124,108,255,0.1))', padding: '2px 8px', borderRadius: 99 }}>
-                          <MessageSquare size={11} /> Interview
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 11, color: interviewDone.has(job.job_role || job.title) ? 'var(--color-success)' : 'var(--accent-2)', background: interviewDone.has(job.job_role || job.title) ? 'rgba(34,197,94,0.1)' : 'var(--color-accent2-bg, rgba(124,108,255,0.1))', padding: '2px 8px', borderRadius: 99 }}>
+                          <MessageSquare size={11} /> {interviewDone.has(job.job_role || job.title) ? 'Interview Done' : 'Interview'}
                         </span>
                       )}
                     </div>
@@ -157,6 +206,15 @@ export default function JobBoard() {
           })}
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel={confirm.danger ? 'Withdraw' : 'Apply'}
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

@@ -3,11 +3,14 @@ import re
 from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from schemas import JobCreate, JobUpdate, JobOut, ApplicationCreate, ApplicationOut
 from routers.auth import require_company, require_candidate, get_current_user
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 # Canonical interview roles (component2 interview supports exactly these 10).
 _INTERVIEW_ROLES = [
@@ -110,6 +113,7 @@ async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
     return doc
 
 
+@limiter.limit("10/minute")
 @router.post("", response_model=JobOut, status_code=201)
 @router.post("/", response_model=JobOut, status_code=201)
 async def create_job(payload: JobCreate, request: Request, company: dict = Depends(require_company)):
@@ -201,6 +205,7 @@ async def update_job(job_id: str, payload: JobUpdate, request: Request, company:
     return _job_out(await _get_owned_job(db, job_id, str(company["_id"])))
 
 
+@limiter.limit("10/minute")
 @router.delete("/{job_id}", status_code=204)
 async def delete_job(job_id: str, request: Request, company: dict = Depends(require_company)):
     db = request.app.state.db
@@ -210,6 +215,7 @@ async def delete_job(job_id: str, request: Request, company: dict = Depends(requ
     return None
 
 
+@limiter.limit("20/minute")
 @router.post("/{job_id}/apply", response_model=ApplicationOut, status_code=201)
 async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request, user: dict = Depends(require_candidate)):
     db = request.app.state.db
@@ -239,6 +245,7 @@ async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request
     return _app_out(doc)
 
 
+@limiter.limit("20/minute")
 @router.delete("/{job_id}/apply", status_code=204)
 async def withdraw_application(job_id: str, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db

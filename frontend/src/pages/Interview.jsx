@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { MessagesSquare, Play, CheckCircle, BarChart3, Code, FileText, Settings } from 'lucide-react'
+import { Play, CheckCircle, Code, FileText, Settings } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
-import { c2Start, c2Submit, c2Jobs } from '../api'
+import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Interview() {
   const ct = getChartTheme()
@@ -23,10 +24,14 @@ export default function Interview() {
   const [answers, setAnswers] = useState({})
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
+  const [runResults, setRunResults] = useState(null)
+  const [running, setRunning] = useState(false)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/login/candidate'); return }
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
     loadRoles()
   }, [])
 
@@ -34,10 +39,14 @@ export default function Interview() {
     if (jobRole) setSelectedRole(jobRole)
   }, [jobRole])
 
+  useEffect(() => {
+    setRunResults(null)
+  }, [currentQ])
+
   const loadRoles = async () => {
     try {
       const r = await c2Jobs()
-      setRoles(r.data.jobs || {})
+      setRoles(r?.data?.jobs || {})
     } catch { toast.error('Failed to load roles') }
   }
 
@@ -65,31 +74,53 @@ export default function Interview() {
 
   const answerQuestion = (questionId, value) => {
     setAnswers((a) => ({ ...a, [questionId]: value }))
+    setRunResults(null)
+  }
+
+  const runCode = async () => {
+    if (!q || q.question_type !== 'Coding') return
+    const code = answers[q.id] || ''
+    if (!code.trim()) return toast.error('Write some code first')
+    setRunning(true)
+    setRunResults(null)
+    try {
+      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [] })
+      setRunResults(r.data)
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Run failed')
+    } finally { setRunning(false) }
   }
 
   const submitInterview = async () => {
-    setBusy(true)
-    try {
-      const questions = session.questions || []
-      const payload = {
-        candidate_id: localStorage.getItem('recruitai.user_id'),
-        session_id: session.session_id,
-        job_role: selectedRole,
-        answers: questions.map((q) => {
-          const a = answers[q.id]
-          if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
-          if (q.question_type === 'Descriptive') return { question_id: q.id, answer_text: a || '' }
-          if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: 'Python' }
-          return { question_id: q.id, answer_text: a || '' }
-        }),
+    setConfirm({
+      open: true,
+      title: 'Submit interview?',
+      message: 'You cannot change answers after submission.',
+      action: async () => {
+        setBusy(true)
+        try {
+          const questions = session.questions || []
+          const payload = {
+            candidate_id: localStorage.getItem('recruitai.user_id'),
+            session_id: session.session_id,
+            job_role: selectedRole,
+            answers: questions.map((q) => {
+              const a = answers[q.id]
+              if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
+              if (q.question_type === 'Descriptive') return { question_id: q.id, answer_text: a || '' }
+              if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: 'Python' }
+              return { question_id: q.id, answer_text: a || '' }
+            }),
+          }
+          const r = await c2Submit(payload)
+          setResult(r.data)
+          setStep('result')
+          toast.success('Interview complete!')
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Submit failed')
+        } finally { setBusy(false) }
       }
-      const r = await c2Submit(payload)
-      setResult(r.data)
-      setStep('result')
-      toast.success('Interview complete!')
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Submit failed')
-    } finally { setBusy(false) }
+    })
   }
 
   const questions = session?.questions || []
@@ -214,13 +245,41 @@ export default function Interview() {
           )}
 
           {q.question_type === 'Coding' && (
-            <textarea
-              value={answers[q.id] || ''}
-              onChange={(e) => answerQuestion(q.id, e.target.value)}
-              placeholder="Write your code..."
-              rows={8}
-              style={{ width: '100%', padding: '12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, fontFamily: 'monospace', resize: 'vertical' }}
-            />
+            <>
+              <textarea
+                value={answers[q.id] || ''}
+                onChange={(e) => answerQuestion(q.id, e.target.value)}
+                placeholder="Write your code..."
+                rows={8}
+                style={{ width: '100%', padding: '12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, fontFamily: 'monospace', resize: 'vertical' }}
+              />
+              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                <button className="btn btn-ghost btn-sm" onClick={runCode} disabled={running} type="button">
+                  {running ? 'Running...' : 'Run Code'}
+                </button>
+              </div>
+              {runResults && (
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}>
+                  {!runResults.syntax_valid && (
+                    <div style={{ color: 'var(--danger)', fontWeight: 600, marginBottom: 6 }}>Syntax Error</div>
+                  )}
+                  {runResults.results?.length === 0 && runResults.syntax_valid && (
+                    <div className="muted">No testable cases for this question.</div>
+                  )}
+                  {runResults.results?.map((r, i) => (
+                    <div key={i} style={{ marginBottom: 8, padding: '8px 10px', background: r.passed ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${r.passed ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 6 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                        <span style={{ fontWeight: 600 }}>Test {i + 1}</span>
+                        <span style={{ color: r.passed ? 'var(--accent-2)' : 'var(--danger)', fontWeight: 600 }}>{r.passed ? 'PASS' : 'FAIL'}</span>
+                      </div>
+                      <div style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>Input: {JSON.stringify(r.input)}</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Expected: {r.expected}</div>
+                      <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Got: {r.output || '(no output)'}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
           )}
 
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
@@ -231,6 +290,13 @@ export default function Interview() {
               <button className="btn btn-success" onClick={submitInterview} disabled={busy}>{busy ? 'Submitting...' : 'Submit Interview'}</button>
             )}
           </div>
+          <ConfirmDialog
+            open={confirm.open}
+            title={confirm.title}
+            message={confirm.message}
+            onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+            onCancel={() => setConfirm({ ...confirm, open: false })}
+          />
         </div>
       </div>
     )

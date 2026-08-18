@@ -1,8 +1,20 @@
 import { useEffect, useState } from 'react'
+
+const toArr = (r) => {
+  const d = r?.data
+  if (Array.isArray(d)) return d
+  if (Array.isArray(d?.data)) return d.data
+  if (Array.isArray(d?.resumes)) return d.resumes
+  if (Array.isArray(d?.applications)) return d.applications
+  if (Array.isArray(d?.predictions)) return d.predictions
+  if (Array.isArray(d?.jobs)) return d.jobs
+  return []
+}
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Upload, Briefcase, MapPin, Clock, ChevronRight, Trash2, Edit3, X, Check } from 'lucide-react'
-import { uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate } from '../api'
+import { uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate, c0JobsAll, c0Predictions, c0Applications } from '../api'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function CandidateDashboard() {
   const navigate = useNavigate()
@@ -13,6 +25,7 @@ export default function CandidateDashboard() {
   const [uploading, setUploading] = useState(false)
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -21,21 +34,36 @@ export default function CandidateDashboard() {
     loadData()
   }, [])
 
+  // Re-observe .reveal elements after data loads (observer in App.jsx runs before this page renders)
+  useEffect(() => {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (prefersReduced) {
+      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'))
+      return
+    }
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [resumes, jobs])
+
   const loadData = async () => {
     try {
-      const API = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'
-      const authH = { headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } }
       const [r1, r2, r3, r4] = await Promise.all([
-        uResumeList(),
-        fetch(`${API}/api/v1/jobs/all`, authH).then(r => r.json()).catch(() => []),
-        fetch(`${API}/api/v1/resume/predictions`, authH).then(r => r.json()).catch(() => []),
-        fetch(`${API}/api/v1/jobs/applications`, authH).then(r => r.json()).catch(() => []),
+        uResumeList().catch(() => ({ data: [] })),
+        c0JobsAll().catch(() => ({ data: [] })),
+        c0Predictions().catch(() => ({ data: [] })),
+        c0Applications().catch(() => ({ data: [] })),
       ])
-      setResumes(r1.data)
-      setJobs(Array.isArray(r2) ? r2 : r2?.data || [])
-      setPredictions(Array.isArray(r3) ? r3 : r3?.data || [])
-      setApplications(Array.isArray(r4) ? r4 : r4?.applications || [])
-    } catch {}
+      setResumes(toArr(r1))
+      setJobs(toArr(r2))
+      setPredictions(toArr(r3))
+      setApplications(toArr(r4))
+    } catch {
+      toast.error('Failed to load dashboard data')
+    }
   }
 
   const upload = async (e) => {
@@ -57,14 +85,21 @@ export default function CandidateDashboard() {
   }
 
   const deleteResume = async (id) => {
-    if (!confirm('Delete this resume and all its match predictions?')) return
-    try {
-      await uResumeDelete(id)
-      toast.success('Resume deleted')
-      loadData()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Delete failed')
-    }
+    setConfirm({
+      open: true,
+      title: 'Delete resume?',
+      message: 'This will permanently remove the resume and all its match predictions.',
+      danger: true,
+      action: async () => {
+        try {
+          await uResumeDelete(id)
+          toast.success('Resume deleted')
+          loadData()
+        } catch (err) {
+          toast.error(err?.response?.data?.detail || 'Delete failed')
+        }
+      }
+    })
   }
 
   const startEdit = (resume) => {
@@ -107,15 +142,15 @@ export default function CandidateDashboard() {
       </div>
 
       {/* Stat Strip */}
-      <div className="grid grid-4" style={{ marginBottom: 20 }}>
-        <div className="stat"><div className="stat-label">Resumes</div><div className="stat-value">{resumes.length}</div></div>
-        <div className="stat"><div className="stat-label">Applied</div><div className="stat-value" style={{ color: 'var(--color-primary)' }}>{applications.filter(a => a.status !== 'withdrawn').length}</div></div>
-        <div className="stat"><div className="stat-label">Jobs Open</div><div className="stat-value" style={{ color: 'var(--color-success)' }}>{jobs.length}</div></div>
-        <div className="stat"><div className="stat-label">Matches</div><div className="stat-value" style={{ color: 'var(--color-info)' }}>{predictions.length}</div></div>
+      <div className="grid grid-4 reveal" style={{ marginBottom: 20 }}>
+        <div className="stat"><div className="stat-label">Resumes</div><div className="stat-value" style={{ fontFamily: 'var(--p-font-mono)' }}>{resumes.length}</div></div>
+        <div className="stat"><div className="stat-label">Applied</div><div className="stat-value" style={{ color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>{applications.filter(a => a.status !== 'withdrawn').length}</div></div>
+        <div className="stat"><div className="stat-label">Jobs Open</div><div className="stat-value" style={{ color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>{jobs.length}</div></div>
+        <div className="stat"><div className="stat-label">Matches</div><div className="stat-value" style={{ color: 'var(--color-info)', fontFamily: 'var(--p-font-mono)' }}>{predictions.length}</div></div>
       </div>
 
-      {/* Resumes List & Upload Zone */}
-      <div className="card" style={{ marginBottom: 20 }}>
+      {/* Resumes List */}
+      <div className="card reveal" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
           <h3><Upload size={16} /> My Resumes & CVs</h3>
           <label className="btn btn-primary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -234,7 +269,7 @@ export default function CandidateDashboard() {
       </div>
 
       {/* Jobs List */}
-      <div className="card">
+      <div className="card reveal">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <h3><Briefcase size={16} /> Open Positions</h3>
           <Link to="/candidate/jobs" className="btn btn-ghost btn-sm">View All</Link>
@@ -294,6 +329,15 @@ export default function CandidateDashboard() {
           ))}
         </div>
       )}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel="Delete"
+        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

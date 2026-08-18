@@ -2,14 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  TrendingUp, CheckCircle, Clock, AlertCircle, Download, Award, Sparkles,
-  Target, Rocket, BookOpen, Layers, Plus, Search, ChevronRight, Zap, ShieldCheck,
-  ExternalLink, Check, Briefcase, RefreshCw
+  TrendingUp, CheckCircle, Clock, AlertCircle, Download, Sparkles,
+  Rocket, Plus, Search, ChevronRight
 } from 'lucide-react'
-import axios from 'axios'
-
-const C4 = import.meta.env.VITE_C4_URL || 'http://127.0.0.1:8004'
-const authHeader = () => ({ headers: { Authorization: `Bearer ${localStorage.getItem('recruitai.token')}` } })
+import { c4Progress, c4ProgressPopulate, c4ProgressUpdate } from '../api'
 
 export default function Progress() {
   const navigate = useNavigate()
@@ -25,27 +21,25 @@ export default function Progress() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/login/candidate'); return }
+    const role = localStorage.getItem('recruitai.role')
+    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
     loadData()
   }, [])
 
   const loadData = async () => {
     setBusy(true)
     try {
-      const r = await axios.get(`${C4}/api/v1/progress/${candidateId}`, authHeader())
+      const r = await c4Progress(candidateId)
       setData(r.data)
-    } catch {
-    } finally {
-      setBusy(false)
-    }
+    } catch { toast.error('Failed to load progress data') }
   }
 
   const syncFromInterviews = async () => {
     setSyncBusy(true)
     try {
-      const r = await axios.post(`${C4}/api/v1/progress/sync-from-applied-interviews/${candidateId}`, {}, authHeader())
-      setData(r.data)
-      toast.success(`Synced ${r.data.synced_count || 0} weak skill targets from your applied jobs & interviews!`)
+      const r = await c4ProgressPopulate({ candidate_id: candidateId })
+      toast.success(`Added ${r?.data?.populated || 0} skills from your skill gap analysis!`)
+      loadData()
     } catch (err) {
       toast.error('Failed to sync from applied interviews')
     } finally {
@@ -55,12 +49,10 @@ export default function Progress() {
 
   const updateStatus = async (skill, status) => {
     try {
-      await axios.post(`${C4}/api/v1/progress/update`, {
-        candidate_id: candidateId,
-        skill,
-        status,
-      }, authHeader())
-      const label = status === 'completed' ? 'Mastered 🎉' : status === 'in_progress' ? 'In Progress 🚀' : 'Target Added'
+      await c4ProgressUpdate({
+        candidate_id: candidateId, skill, status, notes: ''
+      })
+      const label = status === 'completed' ? 'Mastered 🎉' : status === 'in_progress' ? 'Learning 🚀' : 'Target Added'
       toast.success(`${skill}: ${label}`)
       loadData()
     } catch {
@@ -73,12 +65,9 @@ export default function Progress() {
     if (!newSkillInput.trim()) return
     setAddBusy(true)
     try {
-      await axios.post(`${C4}/api/v1/progress/update`, {
-        candidate_id: candidateId,
-        skill: newSkillInput.trim(),
-        status: 'in_progress',
-        notes: 'Custom target',
-      }, authHeader())
+      await c4ProgressUpdate({
+        candidate_id: candidateId, skill: newSkillInput.trim(), status: 'in_progress', notes: 'Custom goal'
+      })
       toast.success(`Added "${newSkillInput.trim()}" to your learning matrix!`)
       setNewSkillInput('')
       loadData()
@@ -93,9 +82,14 @@ export default function Progress() {
   const skills = data?.skills || []
   const pct = stats.completion_pct || 0
 
-  const careerTier = pct >= 80 ? { title: 'Senior Tech Specialist / Lead', level: 'Tier 3 (Mastery)', color: '#22c55e', badge: '👑 Advanced' }
-    : pct >= 40 ? { title: 'Mid-Level Engineer', level: 'Tier 2 (Intermediate)', color: '#3b82f6', badge: '⚡ Mid-Level' }
-    : { title: 'Associate / Foundation Developer', level: 'Tier 1 (Foundation)', color: '#f59e0b', badge: '🌱 Foundation' }
+  // Computed Career Tier
+  const careerTier = pct >= 85 ? { title: 'Principal Architect / Lead', level: 'Level 4 (Executive)', color: 'var(--color-purple)', badge: '👑 Master' }
+    : pct >= 60 ? { title: 'Senior Tech Specialist', level: 'Level 3 (Advanced)', color: 'var(--color-success)', badge: '🚀 Senior' }
+    : pct >= 30 ? { title: 'Mid-Level Engineer', level: 'Level 2 (Intermediate)', color: 'var(--color-info)', badge: '⚡ Mid-Level' }
+    : { title: 'Junior / Associate Developer', level: 'Level 1 (Foundation)', color: 'var(--color-warning)', badge: '🌱 Junior' }
+
+  // Computed Estimated Learning Hours
+  const totalHours = (stats.completed || 0) * 20 + (stats.in_progress || 0) * 8
 
   const filteredSkills = skills.filter((s) => {
     const matchesSearch = s.skill?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -106,6 +100,10 @@ export default function Progress() {
     if (activeTab === 'not_started') return matchesSearch && s.status === 'not_started'
     return matchesSearch
   })
+
+  const statusIcon = (s) => s === 'completed' ? <CheckCircle size={18} style={{ color: 'var(--color-success)' }} />
+    : s === 'in_progress' ? <Clock size={18} style={{ color: 'var(--color-info)' }} />
+    : <AlertCircle size={18} style={{ color: 'var(--text-muted)' }} />
 
   return (
     <div className="fade-in" style={{ maxWidth: 1000, margin: '0 auto', padding: '24px 16px' }}>
@@ -123,23 +121,9 @@ export default function Progress() {
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={syncFromInterviews}
-            disabled={syncBusy}
-            style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
-          >
-            <Download size={14} /> {syncBusy ? 'Syncing...' : 'Sync from Applied Jobs & Interviews'}
-          </button>
-          <button
-            className="btn btn-ghost btn-sm"
-            onClick={loadData}
-            title="Refresh progress"
-          >
-            <RefreshCw size={14} className={busy ? 'spin' : ''} />
-          </button>
-        </div>
+        <button className="btn" onClick={populate} disabled={popBusy} style={{ padding: '10px 16px', fontSize: 13, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', gap: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}>
+          <Download size={16} /> {popBusy ? 'Syncing...' : 'Sync from Skill Gap Analysis'}
+        </button>
       </div>
 
       {/* Career Trajectory & Progress Banner */}
@@ -174,76 +158,54 @@ export default function Progress() {
 
           {/* Metrics summary */}
           <div>
-            <h3 style={{ fontSize: 15, fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Sparkles size={16} style={{ color: 'var(--accent)' }} /> Interview Improvement Overview
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
-              <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Target Deficits</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{stats.total || 0}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: careerTier.color, letterSpacing: 0.5 }}>
+              Current Career Tier: {careerTier.level}
+            </div>
+            <h2 style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)', margin: '4px 0 8px 0' }}>
+              {careerTier.title}
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 16px 0', lineHeight: 1.5 }}>
+              You have completed <strong>{stats.completed || 0}</strong> of <strong>{stats.total || 0}</strong> target skills. Completing remaining skill gaps unlocks senior market valuation (+25% earning potential).
+            </p>
+
+            {/* Career Stepper Bar */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, fontSize: 11, fontWeight: 700 }}>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 0 ? 'rgba(245, 158, 11, 0.15)' : 'var(--bg)', color: pct >= 0 ? 'var(--color-warning)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+                🌱 Junior (0-30%)
               </div>
-              <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: '#3b82f6' }}>In Progress</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#3b82f6' }}>{stats.in_progress || 0}</div>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 30 ? 'rgba(59, 130, 246, 0.15)' : 'var(--bg)', color: pct >= 30 ? 'var(--color-info)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+                ⚡ Mid (30-60%)
               </div>
-              <div style={{ padding: 12, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', textAlign: 'center' }}>
-                <div style={{ fontSize: 11, color: '#22c55e' }}>Mastered</div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: '#22c55e' }}>{stats.completed || 0}</div>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 60 ? 'rgba(34, 197, 94, 0.15)' : 'var(--bg)', color: pct >= 60 ? 'var(--color-success)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+                🚀 Senior (60-85%)
+              </div>
+              <div style={{ padding: '6px 8px', borderRadius: 6, background: pct >= 85 ? 'rgba(139, 92, 246, 0.15)' : 'var(--bg)', color: pct >= 85 ? 'var(--color-purple)' : 'var(--text-muted)', border: '1px solid var(--border)', textAlign: 'center' }}>
+                👑 Lead (85%+)
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Filter Tabs & Search */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, marginBottom: 16 }}>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {[
-            { id: 'all', label: `All Targets (${skills.length})` },
-            { id: 'not_started', label: `Not Started (${stats.not_started || 0})` },
-            { id: 'in_progress', label: `In Progress (${stats.in_progress || 0})` },
-            { id: 'completed', label: `Mastered (${stats.completed || 0})` },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className="btn btn-sm"
-              style={{
-                background: activeTab === tab.id ? 'var(--color-primary)' : 'var(--bg-elevated)',
-                color: activeTab === tab.id ? '#fff' : 'var(--text-muted)',
-                border: '1px solid var(--border)',
-                fontWeight: 600,
-                fontSize: 12,
-              }}
-            >
-              {tab.label}
-            </button>
-          ))}
+      {/* Career Impact Stat Strip */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Completed Skills</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-success)', marginTop: 4 }}>{stats.completed || 0}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Verified Competencies</div>
         </div>
 
-        <div style={{ position: 'relative', minWidth: 220 }}>
-          <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            placeholder="Search skill, role or company..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ height: 34, paddingLeft: 30, fontSize: 12, borderRadius: 6, width: '100%' }}
-          />
+        <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Active Learning</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-info)', marginTop: 4 }}>{stats.in_progress || 0}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Skills in Progress</div>
         </div>
       </div>
 
-      {/* Tracked Skills List */}
-      {filteredSkills.length === 0 ? (
-        <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-          <Zap size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 12px' }} />
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4 }}>No Skills in this Filter</h3>
-          <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>
-            Click below to sync deficits from the jobs you applied for and the technical interviews you faced.
-          </p>
-          <button onClick={syncFromInterviews} className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-            <Download size={14} /> Sync Deficits from Interviews
-          </button>
+        <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Target Backlog</div>
+          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-warning)', marginTop: 4 }}>{stats.not_started || 0}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Skills to Acquire</div>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -283,12 +245,33 @@ export default function Progress() {
                       )}
                     </div>
 
-                    {/* Source context */}
-                    {item.source_role && (
-                      <div style={{ fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <Briefcase size={12} /> Target: {item.source_role} {item.source_company ? `(${item.source_company})` : ''}
-                      </div>
-                    )}
+      {/* Main Skill Matrix & Actions Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
+        {/* Left Column: Skill Matrix */}
+        <div>
+          {/* Controls Header: Tabs + Search */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 12 }}>
+            <div style={{ display: 'flex', gap: 6, background: 'var(--bg-elevated)', padding: 4, borderRadius: 8, border: '1px solid var(--border)' }}>
+              {[
+                { id: 'all', label: `All (${skills.length})` },
+                { id: 'in_progress', label: `Learning (${stats.in_progress || 0})` },
+                { id: 'completed', label: `Done (${stats.completed || 0})` },
+                { id: 'not_started', label: `New (${stats.not_started || 0})` },
+              ].map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setActiveTab(t.id)}
+                  style={{
+                    padding: '6px 12px', fontSize: 12, fontWeight: 700, borderRadius: 6, border: 'none', cursor: 'pointer',
+                    background: activeTab === t.id ? 'var(--color-primary)' : 'transparent',
+                    color: activeTab === t.id ? 'var(--color-on-primary)' : 'var(--text-muted)',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
 
                     {item.deficit_reason && (
                       <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
@@ -324,32 +307,16 @@ export default function Progress() {
                         Not Started
                       </button>
                       <button
-                        onClick={() => updateStatus(item.skill, 'in_progress')}
-                        style={{
-                          padding: '4px 10px',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          border: 'none',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          background: item.status === 'in_progress' ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                          color: item.status === 'in_progress' ? '#3b82f6' : 'var(--text-muted)'
-                        }}
+                        className={`btn btn-sm ${p.status === 'in_progress' ? 'btn-primary' : 'btn-ghost'}`}
+                        onClick={() => updateStatus(p.skill, 'in_progress')}
+                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'in_progress' ? 'var(--color-on-primary)' : 'var(--color-info)' }}
                       >
                         Learning 🚀
                       </button>
                       <button
-                        onClick={() => updateStatus(item.skill, 'completed')}
-                        style={{
-                          padding: '4px 10px',
-                          fontSize: 11,
-                          fontWeight: 600,
-                          border: 'none',
-                          borderRadius: 4,
-                          cursor: 'pointer',
-                          background: item.status === 'completed' ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
-                          color: item.status === 'completed' ? '#22c55e' : 'var(--text-muted)'
-                        }}
+                        className={`btn btn-sm ${p.status === 'completed' ? 'btn-success' : 'btn-ghost'}`}
+                        onClick={() => updateStatus(p.skill, 'completed')}
+                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'completed' ? 'var(--color-on-primary)' : 'var(--color-success)' }}
                       >
                         Mastered ✓
                       </button>
@@ -373,7 +340,63 @@ export default function Progress() {
             )
           })}
         </div>
-      )}
+
+        {/* Right Column: Custom Skill Adder & AI Advisor */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {/* Add Custom Skill Card */}
+          <div className="card" style={{ padding: 20, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, margin: '0 0 12px 0', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text)' }}>
+              <Plus size={16} style={{ color: 'var(--accent)' }} /> Add Target Custom Skill
+            </h3>
+            <form onSubmit={addCustomSkill}>
+              <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
+                Add any personal learning goal (e.g. <em>GraphQL, System Architecture, PyTorch</em>) to track in your matrix.
+              </p>
+              <input
+                type="text"
+                placeholder="e.g. AWS Solutions Architect"
+                value={newSkillInput}
+                onChange={(e) => setNewSkillInput(e.target.value)}
+                maxLength={60}
+                style={{ width: '100%', padding: '10px 12px', fontSize: 13, borderRadius: 8, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)', marginBottom: 10 }}
+              />
+              <button
+                type="submit"
+                className="btn"
+                disabled={addBusy || !newSkillInput.trim()}
+                style={{ width: '100%', padding: 10, fontSize: 13, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <Rocket size={15} /> Add to Growth Plan
+              </button>
+            </form>
+          </div>
+
+          {/* AI Lifetime Career Advisor Card */}
+          <div className="card" style={{ padding: 20, borderRadius: 12, border: '1px dashed var(--accent)', background: 'rgba(59, 130, 246, 0.03)' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 800, margin: '0 0 10px 0', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--accent)' }}>
+              <Sparkles size={16} /> Strategic Growth Advice
+            </h3>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: 16 }}>
+              {pct < 30 ? (
+                'Focus on foundational programming languages and Git version control before moving into advanced cloud architectures.'
+              ) : pct < 70 ? (
+                'Great progress! Prioritize microservices design, containerization (Docker/K8s), and cloud deployments to unlock Senior Engineer roles.'
+              ) : (
+                'Outstanding mastery! You are well-positioned for Lead Architect & Principal Engineer roles. Focus on system scalability and team mentoring.'
+              )}
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <Link to="/pipeline/skill-gap" className="btn btn-ghost btn-sm" style={{ justifyContent: 'space-between', fontSize: 12, border: '1px solid var(--border)' }}>
+                <span>Run Skill Gap Analysis</span> <ChevronRight size={14} />
+              </Link>
+              <Link to="/pipeline/cv-match" className="btn btn-ghost btn-sm" style={{ justifyContent: 'space-between', fontSize: 12, border: '1px solid var(--border)' }}>
+                <span>Analyze Resume Match</span> <ChevronRight size={14} />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
