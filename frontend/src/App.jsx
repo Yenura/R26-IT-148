@@ -56,25 +56,20 @@ export default function App() {
   const [userName, setUserName] = useState('')
   const [userAvatar, setUserAvatar] = useState('')
 
-  // Scroll-reveal: observe .reveal elements (re-runs on route change for lazy-loaded pages)
-  const location = useLocation()
+  // Scroll-reveal: observe .reveal elements (design-taste-frontend 5.D — IntersectionObserver, not scroll listener)
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReduced) {
       document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'))
       return
     }
-    // Small delay to let lazy pages render
-    const timer = setTimeout(() => {
-      const observer = new IntersectionObserver(
-        (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
-        { threshold: 0.1 }
-      )
-      document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
-      return () => observer.disconnect()
-    }, 100)
-    return () => clearTimeout(timer)
-  }, [location.pathname])
+    const observer = new IntersectionObserver(
+      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
+      { threshold: 0.15 }
+    )
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const name = localStorage.getItem('recruitai.name') || ''

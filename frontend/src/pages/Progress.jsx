@@ -9,15 +9,15 @@ import { c4Progress, c4ProgressPopulate, c4ProgressUpdate } from '../api'
 
 export default function Progress() {
   const navigate = useNavigate()
+  const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
+
   const [data, setData] = useState(null)
   const [busy, setBusy] = useState(false)
-  const [popBusy, setPopBusy] = useState(false)
+  const [syncBusy, setSyncBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('all') // 'all', 'in_progress', 'completed', 'not_started'
   const [searchTerm, setSearchTerm] = useState('')
   const [newSkillInput, setNewSkillInput] = useState('')
   const [addBusy, setAddBusy] = useState(false)
-  
-  const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -27,21 +27,24 @@ export default function Progress() {
   }, [])
 
   const loadData = async () => {
+    setBusy(true)
     try {
       const r = await c4Progress(candidateId)
       setData(r.data)
     } catch { toast.error('Failed to load progress data') }
   }
 
-  const populate = async () => {
-    setPopBusy(true)
+  const syncFromInterviews = async () => {
+    setSyncBusy(true)
     try {
       const r = await c4ProgressPopulate({ candidate_id: candidateId })
       toast.success(`Added ${r?.data?.populated || 0} skills from your skill gap analysis!`)
       loadData()
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'No skill gap report found. Run Skill Gap Analysis first.')
-    } finally { setPopBusy(false) }
+      toast.error('Failed to sync from applied interviews')
+    } finally {
+      setSyncBusy(false)
+    }
   }
 
   const updateStatus = async (skill, status) => {
@@ -52,7 +55,9 @@ export default function Progress() {
       const label = status === 'completed' ? 'Mastered 🎉' : status === 'in_progress' ? 'Learning 🚀' : 'Target Added'
       toast.success(`${skill}: ${label}`)
       loadData()
-    } catch { toast.error('Failed to update progress') }
+    } catch {
+      toast.error('Failed to update progress')
+    }
   }
 
   const addCustomSkill = async (e) => {
@@ -86,9 +91,10 @@ export default function Progress() {
   // Computed Estimated Learning Hours
   const totalHours = (stats.completed || 0) * 20 + (stats.in_progress || 0) * 8
 
-  // Filtered skills
   const filteredSkills = skills.filter((s) => {
-    const matchesSearch = s.skill.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = s.skill?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.source_role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.source_company?.toLowerCase().includes(searchTerm.toLowerCase())
     if (activeTab === 'in_progress') return matchesSearch && s.status === 'in_progress'
     if (activeTab === 'completed') return matchesSearch && s.status === 'completed'
     if (activeTab === 'not_started') return matchesSearch && s.status === 'not_started'
@@ -101,17 +107,17 @@ export default function Progress() {
 
   return (
     <div className="fade-in" style={{ maxWidth: 1000, margin: '0 auto', padding: '24px 16px' }}>
-      {/* Header */}
+      {/* Page Header */}
       <div className="page-head" style={{ marginBottom: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
         <div>
-          <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: 1, marginBottom: 4 }}>
-            Lifetime Career Growth Engine
+          <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: 1.2, marginBottom: 4 }}>
+            Component 4 · Career Improvement Matrix
           </div>
           <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-            <TrendingUp size={30} style={{ color: 'var(--accent)' }} /> Career Skill Mastery & Growth Matrix
+            <TrendingUp size={28} style={{ color: 'var(--accent)' }} /> Targeted Skill Progress & Interview Mastery
           </h1>
           <p className="muted" style={{ fontSize: 13, marginTop: 4, margin: 0 }}>
-            Track continuous skill acquisition, unlock career progression tiers, and build a lifetime professional advantage.
+            Personalized improvement pathways strictly derived from the jobs you applied for, your interview question scores, and technical deficits.
           </p>
         </div>
 
@@ -120,28 +126,37 @@ export default function Progress() {
         </button>
       </div>
 
-      {/* Career Trajectory & Level Banner */}
-      <div className="card" style={{ padding: 24, marginBottom: 24, borderRadius: 12, border: '1px solid var(--border)', background: 'linear-gradient(135deg, var(--bg-elevated) 0%, var(--bg) 100%)', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+      {/* Career Trajectory & Progress Banner */}
+      <div className="card" style={{ padding: 24, marginBottom: 24, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 24, alignItems: 'center' }}>
-          {/* Gauge & Level */}
+          {/* Gauge */}
           <div style={{ textAlign: 'center', paddingRight: 24, borderRight: '1px solid var(--border)' }}>
-            <div style={{ position: 'relative', width: 100, height: 100, margin: '0 auto 12px' }}>
-              <svg width="100" height="100" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="42" fill="none" stroke="var(--border)" strokeWidth="8" />
-                <circle cx="50" cy="50" r="42" fill="none" stroke={careerTier.color} strokeWidth="8"
-                  strokeDasharray={`${pct * 2.64} 264`} strokeLinecap="round" transform="rotate(-90 50 50)" style={{ transition: 'stroke-dasharray 1s ease' }} />
+            <div style={{ position: 'relative', width: 90, height: 90, margin: '0 auto 10px' }}>
+              <svg width="90" height="90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" strokeWidth="8" />
+                <circle
+                  cx="50"
+                  cy="50"
+                  r="40"
+                  fill="none"
+                  stroke={careerTier.color}
+                  strokeWidth="8"
+                  strokeDasharray={`${pct * 2.51} 251`}
+                  strokeLinecap="round"
+                  transform="rotate(-90 50 50)"
+                  style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                />
               </svg>
               <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                <span style={{ fontSize: 22, fontWeight: 900, color: 'var(--text)', lineHeight: 1 }}>{pct.toFixed(0)}%</span>
-                <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', marginTop: 2 }}>MASTERY</span>
+                <span style={{ fontSize: 20, fontWeight: 900, color: 'var(--text)' }}>{pct.toFixed(0)}%</span>
+                <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)' }}>CLOSED</span>
               </div>
             </div>
-            <span className="chip" style={{ fontSize: 11, padding: '4px 10px', background: `${careerTier.color}20`, color: careerTier.color, border: `1px solid ${careerTier.color}40`, fontWeight: 800 }}>
-              {careerTier.badge}
-            </span>
+            <div style={{ fontSize: 13, fontWeight: 800, color: careerTier.color }}>{careerTier.title}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{careerTier.level}</div>
           </div>
 
-          {/* Trajectory Details */}
+          {/* Metrics summary */}
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: careerTier.color, letterSpacing: 0.5 }}>
               Current Career Tier: {careerTier.level}
@@ -185,19 +200,50 @@ export default function Progress() {
           <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-info)', marginTop: 4 }}>{stats.in_progress || 0}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Skills in Progress</div>
         </div>
+      </div>
 
         <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Target Backlog</div>
           <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--color-warning)', marginTop: 4 }}>{stats.not_started || 0}</div>
           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Skills to Acquire</div>
         </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {filteredSkills.map((item, idx) => {
+            const isCompleted = item.status === 'completed'
+            const isInProgress = item.status === 'in_progress'
 
-        <div className="card" style={{ padding: 16, borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg-elevated)', textAlign: 'center' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Learning Hours</div>
-          <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent)', marginTop: 4 }}>~{totalHours} hrs</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Career Investment</div>
-        </div>
-      </div>
+            return (
+              <div
+                key={idx}
+                className="card"
+                style={{
+                  padding: 18,
+                  borderRadius: 10,
+                  border: isCompleted ? '1px solid rgba(34, 197, 94, 0.4)' : isInProgress ? '1px solid rgba(59, 130, 246, 0.4)' : '1px solid var(--border)',
+                  background: 'var(--bg-elevated)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 260 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                      <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0 }}>
+                        {item.skill}
+                      </h3>
+                      {item.priority && (
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          padding: '2px 6px',
+                          borderRadius: 4,
+                          background: item.priority === 'Critical' || item.priority === 'High' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                          color: item.priority === 'Critical' || item.priority === 'High' ? '#ef4444' : '#f59e0b'
+                        }}>
+                          {item.priority} Priority
+                        </span>
+                      )}
+                    </div>
 
       {/* Main Skill Matrix & Actions Grid */}
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 24 }}>
@@ -227,81 +273,72 @@ export default function Progress() {
               ))}
             </div>
 
-            {/* Quick Search */}
-            <div style={{ position: 'relative', width: 200 }}>
-              <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-              <input
-                type="text"
-                placeholder="Search skills..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '100%', paddingLeft: 30, height: 34, fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--input-bg)', color: 'var(--text)' }}
-              />
-            </div>
-          </div>
-
-          {/* Skill List Card */}
-          <div className="card" style={{ padding: 20, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
-            {filteredSkills.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {filteredSkills.map((p) => (
-                  <div
-                    key={p.skill}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
-                      padding: '12px 14px', borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)',
-                      transition: 'border-color 0.2s'
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
-                      {statusIcon(p.status)}
-                      <div>
-                        <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', display: 'block' }}>
-                          {p.skill}
-                        </span>
-                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                          {p.status === 'completed' ? 'Mastered Competency' : p.status === 'in_progress' ? 'Currently Learning' : 'Target Skill Goal'}
-                        </span>
+                    {item.deficit_reason && (
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
+                        {item.deficit_reason}
                       </div>
-                    </div>
+                    )}
 
-                    {/* Status Action Buttons */}
-                    <div style={{ display: 'flex', gap: 4 }}>
+                    {/* Improvement tip */}
+                    {item.improvement_tips && (
+                      <div style={{ fontSize: 12, color: 'var(--text)', background: 'var(--bg)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', marginBottom: 8 }}>
+                        💡 <strong>Improvement Focus:</strong> {item.improvement_tips}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right side: Course Link & Status Controls */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 10 }}>
+                    {/* Status Toggle Buttons */}
+                    <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', padding: 3, borderRadius: 6, border: '1px solid var(--border)' }}>
                       <button
-                        className={`btn btn-sm ${p.status === 'not_started' ? 'btn-primary' : 'btn-ghost'}`}
-                        onClick={() => updateStatus(p.skill, 'not_started')}
-                        style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600 }}
+                        onClick={() => updateStatus(item.skill, 'not_started')}
+                        style={{
+                          padding: '4px 10px',
+                          fontSize: 11,
+                          fontWeight: 600,
+                          border: 'none',
+                          borderRadius: 4,
+                          cursor: 'pointer',
+                          background: item.status === 'not_started' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+                          color: item.status === 'not_started' ? '#f59e0b' : 'var(--text-muted)'
+                        }}
                       >
-                        New
+                        Not Started
                       </button>
                       <button
                         className={`btn btn-sm ${p.status === 'in_progress' ? 'btn-primary' : 'btn-ghost'}`}
                         onClick={() => updateStatus(p.skill, 'in_progress')}
                         style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'in_progress' ? 'var(--color-on-primary)' : 'var(--color-info)' }}
                       >
-                        Learning
+                        Learning 🚀
                       </button>
                       <button
                         className={`btn btn-sm ${p.status === 'completed' ? 'btn-success' : 'btn-ghost'}`}
                         onClick={() => updateStatus(p.skill, 'completed')}
                         style={{ fontSize: 11, padding: '4px 10px', borderRadius: 6, fontWeight: 600, color: p.status === 'completed' ? 'var(--color-on-primary)' : 'var(--color-success)' }}
                       >
-                        Done ✓
+                        Mastered ✓
                       </button>
                     </div>
+
+                    {/* Course Link */}
+                    {item.course_url && (
+                      <a
+                        href={item.course_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-ghost btn-sm"
+                        style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent)' }}
+                      >
+                        <BookOpen size={12} /> {item.course_name || 'Practice Course'} <ExternalLink size={10} />
+                      </a>
+                    )}
                   </div>
-                ))}
+                </div>
               </div>
-            ) : (
-              <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-muted)' }}>
-                <AlertCircle size={28} style={{ marginBottom: 8, color: 'var(--text-muted)' }} />
-                <div style={{ fontSize: 14, fontWeight: 700 }}>No skills found</div>
-                <p style={{ fontSize: 12, marginTop: 4 }}>
-                  {skills.length === 0 ? 'Click "Sync from Skill Gap Analysis" above or add a custom skill to get started.' : 'Try adjusting your search filter.'}
-                </p>
-              </div>
-            )}
-          </div>
+            )
+          })}
         </div>
 
         {/* Right Column: Custom Skill Adder & AI Advisor */}
@@ -363,4 +400,3 @@ export default function Progress() {
     </div>
   )
 }
-

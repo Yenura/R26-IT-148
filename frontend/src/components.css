@@ -415,7 +415,7 @@ code { background: var(--color-primary-muted); padding: 2px 7px; border-radius: 
   padding: var(--card-padding);
   margin-bottom: var(--p-space-4);
   box-shadow: var(--card-shadow);
-  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card:hover {
   border-color: var(--card-border-hover);
@@ -502,7 +502,7 @@ code { background: var(--color-primary-muted); padding: 2px 7px; border-radius: 
   font-weight: var(--btn-font-weight);
   font-size: var(--btn-font-size);
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
   position: relative;
   overflow: hidden;
@@ -1172,5 +1172,31 @@ pre {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SCROLL REVEAL (IntersectionObserver-driven, no window.addEventListener)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 80ms; }
+.reveal-delay-2 { transition-delay: 160ms; }
+.reveal-delay-3 { transition-delay: 240ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
   }
 }

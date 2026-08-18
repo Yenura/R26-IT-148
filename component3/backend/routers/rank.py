@@ -389,22 +389,87 @@ async def rank_pipeline(request: Request, job_id: str):
         
         out = []
         for r in ranked:
+            css = round(r["CSS"], 4)
+            s_cv = round(r["S_cv"], 4)
+            s_int = round(r["S_int"], 4)
+            s_edu = round(r.get("S_edu", 0), 4)
+            s_exp = round(r.get("S_exp", 0), 4)
+            s_skill = round(r.get("S_skill", 0), 4)
+            p_mcq = round(r.get("P_mcq", 0), 4)
+            p_desc = round(r.get("P_desc", 0), 4)
+            p_code = round(r.get("P_code", 0), 4)
+            
+            # Generate AI Candidate Evaluation & Why Good/Bad
+            strengths = []
+            weaknesses = []
+            
+            if s_skill >= 0.75:
+                strengths.append(f"Strong CV skill match ({s_skill*100:.0f}%)")
+            elif s_skill < 0.50:
+                weaknesses.append(f"Low CV skill alignment ({s_skill*100:.0f}%)")
+                
+            if s_exp >= 0.75:
+                strengths.append("Solid years of relevant experience")
+            elif s_exp < 0.40:
+                weaknesses.append("Limited industry experience")
+                
+            if p_code >= 0.80:
+                strengths.append(f"Top-tier live coding & unit test pass rate ({p_code*100:.0f}%)")
+            elif p_code < 0.50:
+                weaknesses.append(f"Failed live coding test cases ({p_code*100:.0f}%)")
+                
+            if p_mcq >= 0.80:
+                strengths.append(f"High conceptual MCQ score ({p_mcq*100:.0f}%)")
+            elif p_mcq < 0.50:
+                weaknesses.append(f"Low conceptual MCQ marks ({p_mcq*100:.0f}%)")
+                
+            if p_desc >= 0.80:
+                strengths.append(f"Clear architectural & descriptive explanations ({p_desc*100:.0f}%)")
+            elif p_desc < 0.50:
+                weaknesses.append(f"Weak descriptive theory answers ({p_desc*100:.0f}%)")
+                
+            if not r["passed_hard_filter"]:
+                verdict = "Disqualified (Filter Failed)"
+                badge_color = "#ef4444"
+                reasoning = f"Failed mandatory role filter: {r.get('filter_fail_reason', 'Did not meet prerequisites')}."
+            elif css >= 0.80:
+                verdict = "Highly Recommended"
+                badge_color = "#22c55e"
+                reasoning = f"Top-ranked candidate with {s_int*100:.0f}% interview performance and {s_cv*100:.0f}% CV fit. Excellent coding and conceptual marks."
+            elif css >= 0.65:
+                verdict = "Recommended"
+                badge_color = "#3b82f6"
+                reasoning = f"Strong contender with {s_int*100:.0f}% interview score. Good alignment across technical criteria with minor gaps."
+            elif css >= 0.50:
+                verdict = "Potential Match"
+                badge_color = "#f59e0b"
+                reasoning = f"Moderate fit ({css*100:.0f}% Composite). Demonstrates foundation but requires upskilling in: {', '.join(weaknesses[:2]) if weaknesses else 'key areas'}."
+            else:
+                verdict = "Not Recommended"
+                badge_color = "#ef4444"
+                reasoning = f"Low composite score ({css*100:.0f}%). Significant deficits in technical interview marks and required CV skills."
+            
             out.append({
                 "rank": r["rank"],
                 "candidate_id": r["candidate_id"],
                 "candidate_name": r["candidate_name"],
-                "CSS": round(r["CSS"], 4),
-                "S_cv": round(r["S_cv"], 4),
-                "S_int": round(r["S_int"], 4),
-                "S_edu": round(r.get("S_edu", 0), 4),
-                "S_exp": round(r.get("S_exp", 0), 4),
-                "S_skill": round(r.get("S_skill", 0), 4),
-                "P_mcq": round(r.get("P_mcq", 0), 4),
-                "P_desc": round(r.get("P_desc", 0), 4),
-                "P_code": round(r.get("P_code", 0), 4),
+                "CSS": css,
+                "S_cv": s_cv,
+                "S_int": s_int,
+                "S_edu": s_edu,
+                "S_exp": s_exp,
+                "S_skill": s_skill,
+                "P_mcq": p_mcq,
+                "P_desc": p_desc,
+                "P_code": p_code,
                 "ltr_score": r.get("ltr_score"),
                 "passed_hard_filter": r["passed_hard_filter"],
                 "filter_fail_reason": r.get("filter_fail_reason", ""),
+                "verdict": verdict,
+                "badge_color": badge_color,
+                "reasoning": reasoning,
+                "strengths": strengths if strengths else ["Basic profile compatibility"],
+                "weaknesses": weaknesses if weaknesses else ["No critical deficits detected"],
             })
         
         return {"success": True, "job_id": job_id, "job_role": job_role, "data": out}

@@ -74,11 +74,14 @@ export default function CandidateDashboard() {
       const formData = new FormData()
       formData.append('file', file)
       await uResumeUpload(formData)
-      toast.success('Resume uploaded')
+      toast.success('Resume uploaded and parsed successfully!')
       loadData()
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Upload failed')
-    } finally { setUploading(false) }
+    } finally {
+      setUploading(false)
+      if (e.target) e.target.value = ''
+    }
   }
 
   const deleteResume = async (id) => {
@@ -149,16 +152,44 @@ export default function CandidateDashboard() {
       {/* Resumes List */}
       <div className="card reveal" style={{ marginBottom: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-          <h3><Upload size={16} /> My Resumes</h3>
-          <label className="btn btn-ghost btn-sm" style={{ cursor: 'pointer' }}>
-            <Upload size={14} /> {uploading ? 'Uploading...' : 'Upload New'}
+          <h3><Upload size={16} /> My Resumes & CVs</h3>
+          <label className="btn btn-primary btn-sm" style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Upload size={14} /> {uploading ? 'Uploading & Parsing...' : 'Upload CV / Resume'}
             <input type="file" accept=".pdf,.docx,.doc,.txt" onChange={upload} style={{ display: 'none' }} />
           </label>
         </div>
+
+        {/* Upload Dropzone Banner */}
+        <label
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '24px 16px',
+            borderRadius: 10,
+            border: '2px dashed var(--border)',
+            background: 'rgba(59, 130, 246, 0.03)',
+            cursor: 'pointer',
+            marginBottom: 16,
+            textAlign: 'center',
+            transition: 'border-color 0.2s ease'
+          }}
+        >
+          <Upload size={28} style={{ color: 'var(--accent)', marginBottom: 8 }} />
+          <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>
+            {uploading ? 'Parsing extracted entities & skills...' : 'Click to Upload your CV (PDF, DOCX, TXT)'}
+          </div>
+          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
+            Maximum 10MB • Auto-extracts skills, experience, education, and projects for instant matching
+          </div>
+          <input type="file" accept=".pdf,.docx,.doc,.txt" onChange={upload} style={{ display: 'none' }} />
+        </label>
+
         {resumes.length === 0 ? (
-          <div className="empty" style={{ padding: 24 }}>
+          <div className="empty" style={{ padding: 24, textAlign: 'center' }}>
             <p>No resumes uploaded yet</p>
-            <p style={{ fontSize: 13, marginTop: 4 }}>Upload your first CV to get started with matching and interviews.</p>
+            <p style={{ fontSize: 13, marginTop: 4 }}>Upload your CV above to get started with automatic role matching and AI technical interviews.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

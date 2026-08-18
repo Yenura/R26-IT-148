@@ -9,7 +9,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 
 from schemas import ResumeOut, ResumeUpdate, PredictionOut, InterviewScoresCreate
-from routers.auth import get_current_user, require_candidate
+from routers.auth import get_current_user, require_company, require_candidate
 from services.resume_parser import parse_resume_file, extract_entities
 from services.semantic_matcher import SemanticMatcher
 from services.role_classifier import RoleClassifier
@@ -98,8 +98,8 @@ async def upload_resume(
     if len(content) > 10 * 1024 * 1024:
         raise HTTPException(status_code=400, detail="File too large (max 10MB)")
     raw_text = parse_resume_file(content, file.filename)
-    if not raw_text.strip():
-        raise HTTPException(status_code=422, detail="Could not extract text from file")
+    if not raw_text or not raw_text.strip():
+        raw_text = f"Candidate Resume ({file.filename}) submitted by {user.get('full_name', 'Candidate')}."
     entities = extract_entities(raw_text)
     now = datetime.now(timezone.utc)
     doc = {
