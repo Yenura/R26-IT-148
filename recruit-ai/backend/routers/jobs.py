@@ -170,7 +170,7 @@ async def list_all_jobs(request: Request):
 
 @router.get("/public/{job_id}", response_model=JobOut)
 async def get_job_public(job_id: str, request: Request):
-    """Public endpoint — any authenticated user can view a job."""
+    """Public endpoint — no auth required, used by landing page."""
     db = request.app.state.db
     try:
         oid = ObjectId(job_id)
