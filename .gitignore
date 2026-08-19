@@ -1,33 +1,12 @@
-# Byte-compiled / optimized / DLL files
+# ── Python ──────────────────────────────────────────────
 __pycache__/
 *.py[codz]
 *$py.class
-
-# Large model/data files
-component2/models/qg_model_t5/
-component2/models/qg_model_v2/
-component2/models/qg_model_v2_old/
-component2/models/_archive/
-component2/models/qg_dataset_raigs.json
-component2/models/qg_dataset_v2.json
-component2/models/qg_evaluation_results_t5.json
-component2/models/qg_evaluation_results_v2.json
-
-# Server logs
-server_logs/
-
-# Node
-node_modules/
-package-lock.json
-
-# Environment
-.env
-uploads/
-
-# C extensions
 *.so
-
-# Distribution / packaging
+*.egg
+*.egg-info/
+*.manifest
+*.spec
 .Python
 build/
 develop-eggs/
@@ -42,22 +21,82 @@ sdist/
 var/
 wheels/
 share/python-wheels/
-*.egg-info/
 .installed.cfg
-*.egg
 MANIFEST
-
-# PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
-*.manifest
-*.spec
-
-# Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# ── Virtual environments ────────────────────────────────
+.env
+.envrc
+.venv*/
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# ── Node ────────────────────────────────────────────────
+node_modules/
+package-lock.json
+
+# ── Secrets & credentials ──────────────────────────────
+**/.env
+*.pem
+*.key
+
+# ── ML model binaries (reproducible from training code) ─
+*.pkl
+*.pt
+*.pth
+*.onnx
+*.h5
+*.hdf5
+component1/models/*.pkl
+component2/models/*.pkl
+component2/models/*.pt
+component3/models/*.pkl
+component4/models/*.pkl
+recruit-ai/backend/models/*.pkl
+
+# ── Large data files ────────────────────────────────────
+Data_set/
+*.csv
+component3/datasets/
+component3/results/
+component4/reports/
+component4/results/
+component1/results/
+component2/models/qg_model_t5/
+component2/models/qg_model_v2/
+component2/models/qg_model_v2_old/
+component2/models/_archive/
+
+# ── Server logs ─────────────────────────────────────────
+server_logs/
+*.log
+
+# ── Uploads ─────────────────────────────────────────────
+uploads/
+
+# ── IDE / Editor ────────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+.classpath
+
+# ── OS ──────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+Desktop.ini
+ehthumbs.db
+
+# ── Testing / Coverage ─────────────────────────────────
 htmlcov/
 .tox/
 .nox/
@@ -72,434 +111,74 @@ coverage.xml
 .pytest_cache/
 cover/
 
-# Translations
+# ── Type checkers ──────────────────────────────────────
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+cython_debug/
+.ruff_cache/
+
+# ── Jupyter / IPython ──────────────────────────────────
+.ipynb_checkpoints
+profile_default/
+ipython_config.py
+
+# ── Packaging ───────────────────────────────────────────
 *.mo
 *.pot
-
-# Django stuff:
 *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-
-# Flask stuff:
 instance/
 .webassets-cache
-
-# Scrapy stuff:
 .scrapy
-
-# Sphinx documentation
 docs/_build/
-
-# PyBuilder
 .pybuilder/
 target/
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# IPython
-profile_default/
-ipython_config.py
-
-# pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
-
-# pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
-
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
-
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
-#poetry.toml
-
-# pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
-.pdm-python
-.pdm-build/
-
-# pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
-.pixi
-
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
 __pypackages__/
-
-# Celery stuff
 celerybeat-schedule
 celerybeat.pid
-
-# SageMath parsed files
 *.sage.py
-
-# Environments
-.env
-.envrc
-.venv*/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Node
-node_modules/
-
-# Spyder project settings
-.spyderproject
-.spyproject
-
-# Rope project settings
-.ropeproject
-
-# mkdocs documentation
-/site
-
-# mypy
-.mypy_cache/
-.dmypy.json
-dmypy.json
-
-# Pyre type checker
-.pyre/
-
-# pytype static type analyzer
-.pytype/
-
-# Cython debug symbols
-cython_debug/
-
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
-
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
-
-# Ruff stuff:
-.ruff_cache/
-
-# PyPI configuration file
+.pdm-python
+.pdm-build/
+.pixi
 .pypirc
+.abstra/
+.marimo/
 
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
+# ── OpenCode skills & plugins (auto-generated) ─────────
+.opencode/skills/impeccable/
+.opencode/skills/design-system/
+.opencode/skills/design/
+.opencode/skills/banner-design/
+.opencode/skills/brand/
+.opencode/skills/find-skills/
+.opencode/skills/frontend-design/
+.opencode/skills/ponytail/
+.opencode/skills/ponytail-audit/
+.opencode/skills/ponytail-debt/
+.opencode/skills/ponytail-gain/
+.opencode/skills/ponytail-help/
+.opencode/skills/ponytail-review/
+.opencode/skills/slides/
+.opencode/skills/ui-styling/
+.opencode/skills/ui-ux-pro-max/
+.opencode/skills/web-design-guidelines/
+.opencode/command/
+.opencode/plugins/
+skills-lock.json
 
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
-.opencode/skills/design-system/references/states-and-variants.md
-.opencode/skills/design-system/references/tailwind-integration.md
-.opencode/skills/design-system/references/token-architecture.md
-.opencode/skills/design-system/scripts/embed-tokens.cjs
-.opencode/skills/design-system/scripts/fetch-background.py
-.opencode/skills/design-system/scripts/generate-slide.py
-.opencode/skills/design-system/scripts/generate-tokens.cjs
-.opencode/skills/design-system/scripts/html-token-validator.py
-.opencode/skills/design-system/scripts/search-slides.py
-.opencode/skills/design-system/scripts/slide-token-validator.py
-.opencode/skills/design-system/scripts/slide_search_core.py
-.opencode/skills/design-system/scripts/tests/test_validate_tokens.py
-.opencode/skills/design-system/scripts/validate-tokens.cjs
-.opencode/skills/design-system/SKILL.md
-.opencode/skills/design-system/templates/design-tokens-starter.json
-.opencode/skills/design/data/cip/deliverables.csv
-.opencode/skills/design/data/cip/industries.csv
-.opencode/skills/design/data/cip/mockup-contexts.csv
-.opencode/skills/design/data/cip/styles.csv
-.opencode/skills/design/data/icon/styles.csv
-.opencode/skills/design/data/logo/colors.csv
-.opencode/skills/design/data/logo/industries.csv
-.opencode/skills/design/data/logo/styles.csv
-.opencode/skills/design/references/banner-sizes-and-styles.md
-.opencode/skills/design/references/cip-deliverable-guide.md
-.opencode/skills/design/references/cip-design.md
-.opencode/skills/design/references/cip-prompt-engineering.md
-.opencode/skills/design/references/cip-style-guide.md
-.opencode/skills/design/references/design-routing.md
-.opencode/skills/design/references/icon-design.md
-.opencode/skills/design/references/logo-color-psychology.md
-.opencode/skills/design/references/logo-design.md
-.opencode/skills/design/references/logo-prompt-engineering.md
-.opencode/skills/design/references/logo-style-guide.md
-.opencode/skills/design/references/slides-copywriting-formulas.md
-.opencode/skills/design/references/slides-create.md
-.opencode/skills/design/references/slides-html-template.md
-.opencode/skills/design/references/slides-layout-patterns.md
-.opencode/skills/design/references/slides-strategies.md
-.opencode/skills/design/references/slides.md
-.opencode/skills/design/references/social-photos-design.md
-.opencode/skills/design/scripts/cip/core.py
-.opencode/skills/design/scripts/cip/generate.py
-.opencode/skills/design/scripts/cip/render-html.py
-.opencode/skills/design/scripts/cip/search.py
-.opencode/skills/design/scripts/icon/generate.py
-.opencode/skills/design/scripts/logo/core.py
-.opencode/skills/design/scripts/logo/generate.py
-.opencode/skills/design/scripts/logo/search.py
-.opencode/skills/design/SKILL.md
-.opencode/skills/find-skills/SKILL.md
-.opencode/skills/frontend-design/SKILL.md
-.opencode/skills/ponytail-audit/SKILL.md
-.opencode/skills/ponytail-debt/SKILL.md
-.opencode/skills/ponytail-gain/SKILL.md
-.opencode/skills/ponytail-help/SKILL.md
-.opencode/skills/ponytail-review/SKILL.md
-.opencode/skills/ponytail/SKILL.md
-.opencode/skills/slides/references/copywriting-formulas.md
-.opencode/skills/slides/references/create.md
-.opencode/skills/slides/references/html-template.md
-.opencode/skills/slides/references/layout-patterns.md
-.opencode/command/ponytail-audit.md
-.opencode/command/ponytail-debt.md
-.opencode/command/ponytail-gain.md
-.opencode/command/ponytail-help.md
-.opencode/command/ponytail-review.md
-.opencode/command/ponytail.md
-.opencode/plugins/ponytail-frontmatter.cjs
-.opencode/plugins/ponytail.mjs
-.opencode/skills/banner-design/references/banner-sizes-and-styles.md
-.opencode/skills/banner-design/SKILL.md
-.opencode/skills/brand/references/approval-checklist.md
-.opencode/skills/brand/references/asset-organization.md
-.opencode/skills/brand/references/brand-guideline-template.md
-.opencode/skills/brand/references/color-palette-management.md
-.opencode/skills/brand/references/consistency-checklist.md
-.opencode/skills/brand/references/logo-usage-rules.md
-.opencode/skills/brand/references/messaging-framework.md
-.opencode/skills/brand/references/typography-specifications.md
-.opencode/skills/brand/references/update.md
-.opencode/skills/brand/references/visual-identity.md
-.opencode/skills/brand/references/voice-framework.md
-.opencode/skills/brand/scripts/extract-colors.cjs
-.opencode/skills/brand/scripts/inject-brand-context.cjs
-.opencode/skills/brand/scripts/sync-brand-to-tokens.cjs
-.opencode/skills/brand/scripts/tests/test_sync_brand_to_tokens.py
-.opencode/skills/brand/scripts/validate-asset.cjs
-.opencode/skills/brand/SKILL.md
-.opencode/skills/brand/templates/brand-guidelines-starter.md
-.opencode/skills/design-system/data/slide-backgrounds.csv
-.opencode/skills/design-system/data/slide-charts.csv
-.opencode/skills/design-system/data/slide-color-logic.csv
-.opencode/skills/design-system/data/slide-copy.csv
-.opencode/skills/design-system/data/slide-layout-logic.csv
-.opencode/skills/design-system/data/slide-layouts.csv
-.opencode/skills/design-system/data/slide-strategies.csv
-.opencode/skills/design-system/data/slide-typography.csv
-.opencode/skills/design-system/references/component-specs.md
-.opencode/skills/design-system/references/component-tokens.md
-.opencode/skills/design-system/references/primitive-tokens.md
-.opencode/skills/design-system/references/semantic-tokens.md
-.opencode/skills/slides/references/slide-strategies.md
-.opencode/skills/slides/SKILL.md
-.opencode/skills/ui-styling/LICENSE.txt
-.opencode/skills/ui-styling/references/canvas-design-system.md
-.opencode/skills/ui-styling/references/shadcn-accessibility.md
-.opencode/skills/ui-styling/references/shadcn-components.md
-.opencode/skills/ui-styling/references/shadcn-theming.md
-.opencode/skills/ui-styling/references/tailwind-customization.md
-.opencode/skills/ui-styling/references/tailwind-responsive.md
-.opencode/skills/ui-styling/references/tailwind-utilities.md
-.opencode/skills/ui-styling/scripts/requirements.txt
-.opencode/skills/ui-styling/scripts/shadcn_add.py
-.opencode/skills/ui-styling/scripts/tailwind_config_gen.py
-.opencode/skills/ui-styling/scripts/tests/coverage-ui.json
-.opencode/skills/ui-styling/scripts/tests/requirements.txt
-.opencode/skills/ui-styling/scripts/tests/test_shadcn_add.py
-.opencode/skills/ui-styling/scripts/tests/test_tailwind_config_gen.py
-.opencode/skills/ui-styling/SKILL.md
-.opencode/skills/ui-ux-pro-max/data/app-interface.csv
-.opencode/skills/ui-ux-pro-max/data/charts.csv
-.opencode/skills/ui-ux-pro-max/data/colors.csv
-.opencode/skills/ui-ux-pro-max/data/google-fonts.csv
-.opencode/skills/ui-ux-pro-max/data/icons.csv
-.opencode/skills/ui-ux-pro-max/data/landing.csv
-.opencode/skills/ui-ux-pro-max/data/motion.csv
-.opencode/skills/ui-ux-pro-max/data/products.csv
-.opencode/skills/ui-ux-pro-max/data/react-performance.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/angular.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/astro.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/avalonia.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/flutter.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/html-tailwind.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/javafx.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/jetpack-compose.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/laravel.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/nextjs.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/nuxt-ui.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/nuxtjs.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/react-native.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/react.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/shadcn.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/svelte.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/swiftui.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/threejs.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/uno.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/uwp.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/vue.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/winui.csv
-.opencode/skills/ui-ux-pro-max/data/stacks/wpf.csv
-.opencode/skills/ui-ux-pro-max/data/styles.csv
-.opencode/skills/ui-ux-pro-max/data/typography.csv
-.opencode/skills/ui-ux-pro-max/data/ui-reasoning.csv
-.opencode/skills/ui-ux-pro-max/data/ux-guidelines.csv
-.opencode/skills/ui-ux-pro-max/scripts/core.py
-.opencode/skills/ui-ux-pro-max/scripts/design_system.py
-.opencode/skills/ui-ux-pro-max/scripts/search.py
-.opencode/skills/ui-ux-pro-max/scripts/tests/test_core.py
-.opencode/skills/ui-ux-pro-max/scripts/tests/test_design_system_mode.py
-.opencode/skills/ui-ux-pro-max/scripts/validate_data.py
-.opencode/skills/ui-ux-pro-max/SKILL.md
-AGENTS.md
-opencode.json
-Viva_Document.md
-*.md
-hooks/claude-codex-hooks.json
-hooks/copilot-hooks.json
-hooks/ponytail-activate.js
-hooks/ponytail-config.js
-hooks/ponytail-instructions.js
-hooks/ponytail-mode-tracker.js
-hooks/ponytail-runtime.js
-hooks/ponytail-statusline.ps1
-hooks/ponytail-statusline.sh
-hooks/ponytail-subagent.js
-hooks/qoder-hooks.json
+# ── Project-specific ignores ────────────────────────────
+hooks/
 scripts/run_integration.py
 scripts/run_user_test.py
 scripts/start_backends.py
 scripts/user_ability_test.py
 scripts/integration_test.py
-skills-lock.json
-.opencode/skills/impeccable/scripts/live/svelte-component.mjs
-.opencode/skills/impeccable/scripts/command-metadata.json
-.opencode/skills/impeccable/scripts/concept-seed.mjs
-.opencode/skills/impeccable/scripts/context-signals.mjs
-.opencode/skills/impeccable/scripts/context.mjs
-.opencode/skills/impeccable/scripts/critique-storage.mjs
-.opencode/skills/impeccable/scripts/detect-csp.mjs
-.opencode/skills/impeccable/scripts/detect.mjs
-.opencode/skills/impeccable/scripts/detector/browser/injected/index.mjs
-.opencode/skills/impeccable/scripts/detector/cli/main.mjs
-.opencode/skills/impeccable/scripts/detector/design-system.mjs
-.opencode/skills/impeccable/scripts/detector/detect-antipatterns-browser.js
-.opencode/skills/impeccable/scripts/detector/detect-antipatterns.mjs
-.opencode/skills/impeccable/scripts/detector/engines/browser/detect-url.mjs
-.opencode/skills/impeccable/scripts/detector/engines/regex/detect-text.mjs
-.opencode/skills/impeccable/scripts/detector/engines/static-html/css-cascade.mjs
-.opencode/skills/impeccable/scripts/detector/engines/static-html/detect-html.mjs
-.opencode/skills/impeccable/scripts/detector/engines/visual/screenshot-contrast.mjs
-.opencode/skills/impeccable/scripts/detector/findings.mjs
-.opencode/skills/impeccable/scripts/detector/node/file-system.mjs
-.opencode/skills/impeccable/scripts/detector/profile/profiler.mjs
-.opencode/skills/impeccable/scripts/detector/registry/antipatterns.mjs
-.opencode/skills/impeccable/scripts/detector/rules/checks.mjs
-.opencode/skills/impeccable/scripts/detector/shared/color.mjs
-.opencode/skills/impeccable/scripts/detector/shared/constants.mjs
-.opencode/skills/impeccable/scripts/detector/shared/fonts.mjs
-.opencode/skills/impeccable/scripts/detector/shared/inline-ignores.mjs
-.opencode/skills/impeccable/scripts/detector/shared/page.mjs
-.opencode/skills/impeccable/scripts/doctor.mjs
-.opencode/skills/impeccable/scripts/embed-prompt.mjs
-.opencode/skills/impeccable/scripts/generate-image.mjs
-.opencode/skills/impeccable/scripts/hook-admin.mjs
-.opencode/skills/impeccable/scripts/hook-before-edit.mjs
-.opencode/skills/impeccable/scripts/hook-lib.mjs
-.opencode/skills/impeccable/scripts/hook.mjs
-.opencode/skills/impeccable/scripts/live-accept.mjs
-.opencode/skills/impeccable/scripts/live-browser-dom.js
-.opencode/skills/impeccable/scripts/live-browser-session.js
-.opencode/skills/impeccable/scripts/live-browser.js
-.opencode/skills/impeccable/scripts/live-commit-manual-edits.mjs
-.opencode/skills/impeccable/scripts/live-complete.mjs
-.opencode/skills/impeccable/scripts/live-copy-edit-agent.mjs
-.opencode/skills/impeccable/scripts/live-discard-manual-edits.mjs
-.opencode/skills/impeccable/scripts/live-inject.mjs
-.opencode/skills/impeccable/scripts/live-insert.mjs
-.opencode/skills/impeccable/scripts/live-manual-edit-evidence.mjs
-.opencode/skills/impeccable/scripts/live-poll.mjs
-.opencode/skills/impeccable/scripts/live-resume.mjs
-.opencode/skills/impeccable/scripts/live-server.mjs
-.opencode/skills/impeccable/scripts/live-status.mjs
-.opencode/skills/impeccable/scripts/live-target.mjs
-.opencode/skills/impeccable/scripts/live-wrap.mjs
-.opencode/skills/impeccable/scripts/live.mjs
-.opencode/skills/impeccable/scripts/live/accept-css.mjs
-.opencode/skills/impeccable/scripts/live/accept-verify.mjs
-.opencode/skills/impeccable/scripts/live/browser-script-parts.mjs
-.opencode/skills/impeccable/scripts/live/completion.mjs
-.opencode/skills/impeccable/scripts/live/event-validation.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/astro.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/detect-utils.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/index.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/journal.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/nextjs.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/nuxt.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/script-src.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/static-html.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/sveltekit.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/tag-strategy.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/tanstack-start.mjs
-.opencode/skills/impeccable/scripts/live/frameworks/vite-generic.mjs
-.opencode/skills/impeccable/scripts/live/generation-preflight.mjs
-.opencode/skills/impeccable/scripts/live/insert-ui.mjs
-.opencode/skills/impeccable/scripts/live/instructions.mjs
-.opencode/skills/impeccable/scripts/live/manual-apply.mjs
-.opencode/skills/impeccable/scripts/live/manual-edit-routes.mjs
-.opencode/skills/impeccable/scripts/live/manual-edits-buffer.mjs
-.opencode/skills/impeccable/scripts/live/poll-lanes.mjs
-.opencode/skills/impeccable/scripts/live/roots.mjs
-.opencode/skills/impeccable/scripts/live/session-store.mjs
-.opencode/skills/impeccable/scripts/live/source-lock.mjs
-.opencode/skills/impeccable/scripts/live/source-search.mjs
-.opencode/skills/impeccable/scripts/live/svelte-ast.mjs
-.opencode/skills/impeccable/scripts/live/sveltekit-adapter.mjs
-.opencode/skills/impeccable/scripts/live/tanstack-adapter.mjs
-.opencode/skills/impeccable/scripts/live/ui-surfaces.mjs
-.opencode/skills/impeccable/scripts/live/vocabulary.mjs
-.opencode/skills/impeccable/scripts/modern-screenshot.umd.js
-.opencode/skills/impeccable/scripts/palette.mjs
-.opencode/skills/impeccable/scripts/pin.mjs
-.opencode/skills/impeccable/scripts/serve-question.mjs
-.opencode/skills/impeccable/scripts/surface-brief.mjs
+component2/models/qg_dataset_raigs.json
+component2/models/qg_dataset_v2.json
+component2/models/qg_evaluation_results_t5.json
+component2/models/qg_evaluation_results_v2.json

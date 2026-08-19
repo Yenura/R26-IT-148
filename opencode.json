@@ -1,0 +1,11 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "9router/kr/claude-sonnet-4.5",
+  "plugin": ["./.opencode/plugins/ponytail.mjs"],
+  "provider": {
+    "9router": {
+      "endpoint": "http://localhost:20127/v1",
+      "apiKey": ""
+    }
+  }
+}
