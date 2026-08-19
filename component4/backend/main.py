@@ -13,7 +13,7 @@ import os
 import logging
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
@@ -109,6 +109,25 @@ app.add_middleware(
     allow_methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
+
+# ── JWT Auth Middleware ────────────────────────────────────────────────────────
+JWT_SECRET_C4 = os.getenv("JWT_SECRET", "")
+JWT_ALG_C4 = os.getenv("JWT_ALGORITHM", "HS256")
+_PUBLIC_PATHS_C4 = {"/", "/health", "/docs", "/redoc", "/openapi.json"}
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    if request.url.path in _PUBLIC_PATHS_C4 or request.url.path.startswith("/docs") or request.url.path.startswith("/openapi"):
+        return await call_next(request)
+    auth = request.headers.get("authorization", "")
+    if not auth.startswith("Bearer ") or not JWT_SECRET_C4:
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Unauthorized"})
+    try:
+        from jose import jwt as _jwt
+        _jwt.decode(auth[7:], JWT_SECRET_C4, algorithms=[JWT_ALG_C4])
+    except Exception:
+        return JSONResponse(status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Invalid token"})
+    return await call_next(request)
 
 # ── Routers ────────────────────────────────────────────────────────────────────
 from routers import skill_gap, career, progress, analytics  # noqa: E402

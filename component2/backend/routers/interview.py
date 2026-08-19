@@ -54,19 +54,53 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
     """Execute candidate code with injected inputs in a subprocess sandbox.
 
     Returns the stripped stdout of the run ("" on syntax/fatal errors).
-    Injection mirrors scoring: inputs become variables the code reads,
-    candidates print() the result.
+    Uses a whitelist of safe builtins and blocks all network/filesystem imports.
     """
     inject = "".join(f"{k} = {v}\n" for k, v in inp.items())
+    # ponytail: whitelist-only builtins, no open/exec/eval/compile/import
+    # Upgrade path: Docker-based sandbox or gVisor for true isolation
     sandbox_wrapper = (
         "import sys as _sys\n"
         "from io import StringIO\n"
-        "_blocked = {'os','subprocess','shutil','socket','pathlib','ctypes','multiprocessing','threading','signal','inspect','importlib'}\n"
-        "_real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__\n"
+        "_SAFE_BUILTINS = {\n"
+        "    'abs': abs, 'all': all, 'any': any, 'bool': bool,\n"
+        "    'chr': chr, 'dict': dict, 'dir': dir, 'divmod': divmod,\n"
+        "    'enumerate': enumerate, 'filter': filter, 'float': float,\n"
+        "    'format': format, 'frozenset': frozenset, 'getattr': getattr,\n"
+        "    'hasattr': hasattr, 'hash': hash, 'hex': hex, 'id': id,\n"
+        "    'int': int, 'isinstance': isinstance, 'issubclass': issubclass,\n"
+        "    'iter': iter, 'len': len, 'list': list, 'map': map,\n"
+        "    'max': max, 'min': min, 'next': next, 'oct': oct,\n"
+        "    'ord': ord, 'pow': pow, 'print': print, 'property': property,\n"
+        "    'range': range, 'repr': repr, 'reversed': reversed,\n"
+        "    'round': round, 'set': set, 'slice': slice, 'sorted': sorted,\n"
+        "    'str': str, 'sum': sum, 'super': super, 'tuple': tuple,\n"
+        "    'type': type, 'zip': zip,\n"
+        "    '__name__': '__main__', '__import__': None,\n"
+        "}\n"
+        "import builtins as _builtins_mod\n"
+        "_original_builtins = vars(_builtins_mod).copy()\n"
+        "for _k in list(_original_builtins.keys()):\n"
+        "    if _k not in _SAFE_BUILTINS and not _k.startswith('_'):\n"
+        "        delattr(_builtins_mod, _k)\n"
+        "for _k, _v in _SAFE_BUILTINS.items():\n"
+        "    if _v is not None:\n"
+        "        setattr(_builtins_mod, _k, _v)\n"
+        "_blocked_modules = frozenset({\n"
+        "    'os', 'sys', 'subprocess', 'shutil', 'socket', 'pathlib',\n"
+        "    'ctypes', 'multiprocessing', 'threading', 'signal', 'inspect',\n"
+        "    'importlib', 'io', 'codecs', 'http', 'urllib', 'requests',\n"
+        "    'aiohttp', 'ssl', 'email', 'ftplib', 'smtplib', 'xmlrpc',\n"
+        "    'pickle', 'shelve', 'dbm', 'sqlite3', 'json', 'csv',\n"
+        "    'tempfile', 'glob', 'fnmatch', 'fileinput',\n"
+        "    'platform', 'pdb', 'profile', 'cProfile', 'timeit',\n"
+        "    'zipfile', 'tarfile', 'gzip', 'bz2', 'lzma',\n"
+        "})\n"
         "def _safe_import(name, *a, **kw):\n"
-        "    if name in _blocked: raise ImportError(f'Blocked: {name}')\n"
-        "    return _real_import(name, *a, **kw)\n"
-        "__builtins__.__import__ = _safe_import\n"
+        "    if name in _blocked_modules or name.partition('.')[0] in _blocked_modules:\n"
+        "        raise ImportError(f'Blocked: {name}')\n"
+        "    raise ImportError(f'Blocked: {name}')\n"
+        "setattr(_builtins_mod, '__import__', _safe_import)\n"
         "_stdout = _sys.stdout\n"
         "_sys.stdout = StringIO()\n"
         "try:\n"
@@ -77,6 +111,8 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
         "    _output = ''\n"
         "finally:\n"
         "    _sys.stdout = _stdout\n"
+        "    for _k, _v in _original_builtins.items():\n"
+        "        setattr(_builtins_mod, _k, _v)\n"
         "print(_output)\n"
     )
     tmp = None
