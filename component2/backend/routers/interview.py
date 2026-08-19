@@ -388,7 +388,10 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
             req = urllib.request.Request(
                 f"{c0_url}/api/v1/resume/interview-scores",
                 data=payload,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    "X-Internal-Key": os.environ.get("INTERNAL_API_KEY", ""),
+                },
                 method="POST"
             )
             urllib.request.urlopen(req, timeout=5)

@@ -61,11 +61,14 @@ app.add_middleware(
 # ── JWT Auth Middleware ────────────────────────────────────────────────────────
 JWT_SECRET_C3 = os.getenv("JWT_SECRET", "")
 JWT_ALG_C3 = os.getenv("JWT_ALGORITHM", "HS256")
+INTERNAL_KEY_C3 = os.getenv("INTERNAL_API_KEY", "")
 _PUBLIC_PATHS_C3 = {"/", "/health", "/docs", "/redoc", "/openapi.json"}
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
     if request.url.path in _PUBLIC_PATHS_C3 or request.url.path.startswith("/docs") or request.url.path.startswith("/openapi"):
+        return await call_next(request)
+    if request.headers.get("x-internal-key") == INTERNAL_KEY_C3 and INTERNAL_KEY_C3:
         return await call_next(request)
     auth = request.headers.get("authorization", "")
     if not auth.startswith("Bearer ") or not JWT_SECRET_C3:

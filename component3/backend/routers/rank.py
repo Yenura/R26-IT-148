@@ -51,6 +51,7 @@ def _skill_gap_report(c: CandidateInput, job_role: str):
             "weak_topics": [],
             "failed_mcq_topics": [],
         },
+        headers={"X-Internal-Key": os.getenv("INTERNAL_API_KEY", "")},
         timeout=15,
     )
     resp.raise_for_status()

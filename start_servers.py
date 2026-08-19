@@ -85,7 +85,8 @@ env = {
     "PYTHONUNBUFFERED": "1",
     "MONGODB_URI": "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR",
     "DB_NAME": "HR",
-    "JWT_SECRET": "recruitai-dev-secret-key-change-in-prod"
+    "JWT_SECRET": "recruitai-dev-secret-key-change-in-prod",
+    "INTERNAL_API_KEY": "recruitai-internal-key-dev",
 }
 
 def main():
