@@ -45,6 +45,7 @@ const roles = [
 export default function Landing() {
   const { theme, toggleTheme } = useTheme()
 
+  // Self-contained reveal observer (App.jsx observer runs before lazy page renders)
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReduced) {
@@ -54,7 +55,10 @@ export default function Landing() {
     const timer = setTimeout(() => {
       const observer = new IntersectionObserver(
         (entries) => entries.forEach(e => {
-          if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) }
+          if (e.isIntersecting) {
+            e.target.classList.add('visible')
+            observer.unobserve(e.target)
+          }
         }),
         { threshold: 0.05 }
       )
