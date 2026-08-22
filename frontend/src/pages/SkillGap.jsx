@@ -73,9 +73,11 @@ export default function SkillGap() {
     try {
       const r = await c4SkillGapSimulate({
         candidate_id: candidateId,
-        job_role: currentOpening.title,
+        job_role: currentOpening.job_role || currentOpening.title,
         company: currentOpening.company_name,
-        skills: simulatedSkills
+        required_skills: openingRequiredSkills,
+        skills: simulatedSkills,
+        acquired_skills: simulatedSkills,
       })
       const data = r?.data?.data || r?.data || {}
       setSimulationResult({
@@ -383,15 +385,33 @@ export default function SkillGap() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                 <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
                   <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
-                    <AlertCircle size={16} /> Missing Required Skills ({openingRequiredSkills.length})
+                    <AlertCircle size={16} /> Job Required Skills ({openingRequiredSkills.length})
                   </h4>
+                  <p className="muted" style={{ fontSize: 11, marginBottom: 8 }}>Click any required skill below to add it to your simulation:</p>
                   {openingRequiredSkills.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {openingRequiredSkills.map((s, i) => (
-                        <span key={i} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', border: '1px solid rgba(239, 68, 68, 0.3)', fontWeight: 600 }}>{s}</span>
-                      ))}
+                      {openingRequiredSkills.map((s, i) => {
+                        const isAdded = simulatedSkills.some(x => x.toLowerCase() === s.toLowerCase())
+                        return (
+                          <span
+                            key={i}
+                            className="chip"
+                            onClick={() => addSimSkill(s)}
+                            style={{
+                              fontSize: 12, padding: '4px 10px',
+                              background: isAdded ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+                              color: isAdded ? 'var(--color-success)' : 'var(--color-danger)',
+                              border: `1px solid ${isAdded ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.3)'}`,
+                              fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4
+                            }}
+                            title={isAdded ? 'Already added to simulation' : 'Click to simulate acquiring this skill'}
+                          >
+                            {isAdded ? '✓' : '+'} {s}
+                          </span>
+                        )
+                      })}
                     </div>
-                  ) : <p className="muted" style={{ fontSize: 13 }}>All required skills present.</p>}
+                  ) : <p className="muted" style={{ fontSize: 13 }}>No explicit required skills listed.</p>}
                 </div>
 
                 {/* Present Verified Skills + Add Input */}
