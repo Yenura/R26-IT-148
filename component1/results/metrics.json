@@ -4,14 +4,14 @@
     "accuracy": 1.0,
     "macro_f1": 1.0,
     "weighted_f1": 1.0,
-    "training_time_sec": 0.879690408706665
+    "training_time_sec": 0.6969902515411377
   },
   "baseline_model": {
     "model_file": "tfidf_baseline.pkl",
     "accuracy": 1.0,
     "macro_f1": 1.0,
     "weighted_f1": 1.0,
-    "training_time_sec": 0.2947821617126465
+    "training_time_sec": 0.4967520236968994
   },
   "num_test_samples": 600,
   "num_classes": 20

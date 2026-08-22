@@ -77,11 +77,44 @@ def check_health(url: str, timeout: float = 1.5) -> bool:
     except Exception:
         return False
 
+def _preflight_check():
+    """Verify all service directories and entry points exist before launching."""
+    ok = True
+    for s in SERVICES:
+        if s["type"] == "backend":
+            main_py = os.path.join(s["dir"], "main.py")
+            if not os.path.isdir(s["dir"]):
+                print(f"  [ERROR] Service directory not found: {s['dir']}")
+                ok = False
+            elif not os.path.isfile(main_py):
+                print(f"  [ERROR] main.py not found for {s['name']}: {main_py}")
+                ok = False
+            else:
+                print(f"  [OK]    {s['name']:<24} -> {s['dir']}")
+        elif s["type"] == "frontend":
+            pkg = os.path.join(s["dir"], "package.json")
+            nm  = os.path.join(s["dir"], "node_modules")
+            if not os.path.isfile(pkg):
+                print(f"  [ERROR] package.json not found: {pkg}")
+                ok = False
+            elif not os.path.isdir(nm):
+                print(f"  [WARN]  node_modules missing — run: cd frontend && npm install")
+            else:
+                print(f"  [OK]    {s['name']:<24} -> {s['dir']}")
+    return ok
+
+
 def main():
     print_banner()
 
     log_dir = os.path.join(ROOT, "server_logs")
     os.makedirs(log_dir, exist_ok=True)
+
+    print("[0/3] Pre-flight checks...")
+    if not _preflight_check():
+        print("\n[FATAL] Pre-flight check failed — fix the errors above and retry.\n")
+        sys.exit(1)
+    print()
 
     procs = []
 
@@ -104,21 +137,25 @@ def main():
     procs.append((fe_service, fe_proc, fe_log_file))
     print(f"  -> Started {fe_service['name']:<24} (PID {fe_proc.pid:>5}) on port {fe_service['port']}")
 
-    print("\n[3/3] Verifying ecosystem health checks...")
+    # Extended to 90s — SBERT model loading on first boot can take 30-60s
+    HEALTH_CHECK_TIMEOUT = 90
+    print(f"\n[3/3] Verifying ecosystem health checks (up to {HEALTH_CHECK_TIMEOUT}s)...")
     start_time = time.time()
     ready = set()
     total_services = len(SERVICES)
 
-    while len(ready) < total_services and (time.time() - start_time) < 30:
+    while len(ready) < total_services and (time.time() - start_time) < HEALTH_CHECK_TIMEOUT:
         for s, p, lf in procs:
             if s["id"] in ready:
                 continue
             if p.poll() is not None:
                 print(f"  [-] {s['name']} exited unexpectedly (code {p.returncode})")
+                print(f"      Check log: {os.path.join(log_dir, s['id'].upper() + '.log')}")
                 ready.add(s["id"])
                 continue
             if check_health(s["health"]):
-                print(f"  [+] {s['name']:<24} [ONLINE & HEALTHY] -> {s['health']}")
+                elapsed = round(time.time() - start_time, 1)
+                print(f"  [+] {s['name']:<24} [ONLINE & HEALTHY] -> {s['health']}  ({elapsed}s)")
                 ready.add(s["id"])
         time.sleep(1.0)
 
