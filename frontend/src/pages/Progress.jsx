@@ -5,7 +5,7 @@ import {
   TrendingUp, CheckCircle, Clock, AlertCircle, Download, Sparkles,
   Rocket, Plus, Search, ChevronRight, BookOpen, ExternalLink
 } from 'lucide-react'
-import { c4Progress, c4ProgressPopulate, c4ProgressUpdate } from '../api'
+import { c4Progress, c4ProgressPopulate, c4ProgressSync, c4ProgressUpdate } from '../api'
 
 export default function Progress() {
   const navigate = useNavigate()
@@ -38,8 +38,14 @@ export default function Progress() {
   const syncFromInterviews = async () => {
     setSyncBusy(true)
     try {
-      const r = await c4ProgressPopulate({ candidate_id: candidateId })
-      toast.success(`Added ${r?.data?.populated || 0} skills from your skill gap analysis!`)
+      let r = null
+      try {
+        r = await c4ProgressSync(candidateId)
+      } catch {
+        r = await c4ProgressPopulate({ candidate_id: candidateId })
+      }
+      const count = r?.data?.synced_count ?? r?.data?.populated ?? 0
+      toast.success(`Synced ${count} target skills from your interview & application history!`)
       loadData()
     } catch {
       toast.error('Failed to sync from applied interviews')

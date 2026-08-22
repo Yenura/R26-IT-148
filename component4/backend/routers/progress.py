@@ -258,12 +258,26 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
 @router.post("/populate", summary="Auto-populate progress from latest skill gap report")
 async def populate_progress(request: Request):
     db = request.app.state.db
+    candidate_id = "web-user"
+    try:
+        body = await request.json()
+        if isinstance(body, dict) and body.get("candidate_id"):
+            candidate_id = str(body["candidate_id"]).strip()
+    except Exception:
+        pass
+
     report = await db.skill_gap_reports.find_one(
+        {"candidate_id": candidate_id} if candidate_id != "web-user" else {},
         sort=[("created_at", -1)],
     )
     if not report:
-        raise HTTPException(404, "No skill gap reports found. Run a skill gap analysis first.")
-    candidate_id = report.get("candidate_id", "web-user")
+        # Fallback to syncing from applied interviews
+        try:
+            sync_res = await sync_progress_from_applied_interviews(candidate_id, request)
+            return {"success": True, "populated": sync_res.get("synced_count", 0), "candidate_id": candidate_id}
+        except Exception:
+            return {"success": True, "populated": 0, "candidate_id": candidate_id, "message": "No skill gap reports or applied jobs found yet."}
+
     skills = report.get("missing_required", []) + report.get("missing_optional", [])
     existing = {
         doc["skill"] async for doc in db.progress_tracking.find(

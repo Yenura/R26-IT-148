@@ -132,19 +132,48 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
     try:
         interview_service = services["interview_service"]
         
-        # Validate job role
+        # Validate job role with robust fallback
         available_jobs = interview_service.get_available_jobs()
-        if interview_request.job_role not in available_jobs:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Invalid job role. Available: {', '.join(available_jobs)}"
-            )
+        job_role = interview_request.job_role or "Software Engineer"
+        if job_role not in available_jobs:
+            clean_role = job_role.replace("_", " ").strip()
+            matched_role = None
+            for aj in available_jobs:
+                if aj.lower() == clean_role.lower():
+                    matched_role = aj
+                    break
+            if not matched_role:
+                for aj in available_jobs:
+                    if aj.lower() in clean_role.lower() or clean_role.lower() in aj.lower():
+                        matched_role = aj
+                        break
+            if not matched_role:
+                cl = clean_role.lower()
+                if any(k in cl for k in ["python", "java", "backend", "node", "django", "fastapi", "golang", "c++", "c#", ".net", "api"]):
+                    matched_role = "Backend Developer"
+                elif any(k in cl for k in ["frontend", "react", "vue", "angular", "ui", "web", "css", "html"]):
+                    matched_role = "Frontend Developer"
+                elif any(k in cl for k in ["data", "analytics", "bi", "sql", "tableau", "power bi"]):
+                    matched_role = "Data Scientist"
+                elif any(k in cl for k in ["ml", "ai", "machine learning", "deep learning", "nlp", "llm", "computer vision"]):
+                    matched_role = "Machine Learning Engineer"
+                elif any(k in cl for k in ["devops", "cloud", "aws", "azure", "gcp", "docker", "k8s", "kubernetes", "sre", "ci/cd"]):
+                    matched_role = "DevOps Engineer"
+                elif any(k in cl for k in ["security", "cyber", "infosec", "soc"]):
+                    matched_role = "Cybersecurity Analyst"
+                elif any(k in cl for k in ["mobile", "android", "ios", "flutter", "react native", "swift", "kotlin"]):
+                    matched_role = "Mobile App Developer"
+                elif any(k in cl for k in ["database", "dba", "postgres", "mongodb", "mysql"]):
+                    matched_role = "Database Administrator"
+                else:
+                    matched_role = "Software Engineer"
+            job_role = matched_role
         
         # Create session (CPU-bound: question generation + filtering)
         session = await run_in_threadpool(
             interview_service.create_interview_session,
             candidate_id=interview_request.candidate_id,
-            job_role=interview_request.job_role,
+            job_role=job_role,
             num_questions=interview_request.num_questions,
             employer_skills=interview_request.required_skills or None,
             job_level=interview_request.job_level or "Mid-Level",

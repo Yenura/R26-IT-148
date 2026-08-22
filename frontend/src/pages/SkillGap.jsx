@@ -6,7 +6,7 @@ import {
   Code, Building2, Sparkles, AlertCircle, CheckCircle2,
   ExternalLink, Layers, Lightbulb
 } from 'lucide-react'
-import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapSimulate, c4SkillGapRoles } from '../api'
+import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync } from '../api'
 
 export default function SkillGap() {
   const navigate = useNavigate()
@@ -39,7 +39,7 @@ export default function SkillGap() {
   const loadAppliedJobsAnalysis = async () => {
     setLoadingApplied(true)
     try {
-      const r = await c4SkillGapAnalyze({ candidate_id: candidateId })
+      const r = await c4SkillGapApplied(candidateId)
       const data = r?.data?.data || r?.data || {}
       const reports = data.reports || []
       setAppliedReports(Array.isArray(reports) ? reports : [])
@@ -61,7 +61,7 @@ export default function SkillGap() {
   const syncToProgress = async () => {
     setSyncingProgress(true)
     try {
-      await c4SkillGapAnalyze({ candidate_id: candidateId, sync_progress: true })
+      await c4ProgressSync(candidateId)
       toast.success('Weaknesses synced to Progress Tracker')
     } catch { toast.error('Failed to sync to progress tracker') }
     finally { setSyncingProgress(false) }

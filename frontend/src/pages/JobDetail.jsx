@@ -120,7 +120,7 @@ export default function JobDetail() {
         try {
           const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
           const r = await c2Start({
-            candidate_id: localStorage.getItem('recruitai.user_id'),
+            candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
             job_role: job.job_role || job.title,
             job_level: job.job_level || 'Mid-Level',
             required_skills: skills,
@@ -129,7 +129,7 @@ export default function JobDetail() {
           setInterviewSession(r.data)
           setInterviewStarted(true)
         } catch (err) {
-          toast.error(err.message || 'Failed to start interview')
+          toast.error(err?.response?.data?.detail || err.message || 'Failed to start interview')
         }
       }
     })
@@ -347,14 +347,15 @@ function InlineInterview({ session, job, onDone }) {
             return { question_id: qq.id, answer_text: a || '' }
           })
           const r = await c2Submit({
-            candidate_id: localStorage.getItem('recruitai.user_id'),
+            candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
             session_id: session.session_id,
             job_role: job.job_role || job.title,
+            job_id: job.id || job._id,
             answers: formattedAnswers,
           })
           setResult(r.data)
         } catch (err) {
-          toast.error(err.message)
+          toast.error(err?.response?.data?.detail || err.message || 'Failed to submit interview')
         } finally {
           setSubmitting(false)
         }
