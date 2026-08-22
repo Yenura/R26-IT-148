@@ -54,10 +54,14 @@ async def lifespan(app: FastAPI):
     if connected:
         try:
             await db.users.create_index("email", unique=True)
+            await db.users.create_index("role")
             await db.jobs.create_index([("company_id", 1), ("created_at", -1)])
-            await db.resumes.create_index("candidate_id")
-            await db.predictions.create_index("candidate_id")
+            await db.jobs.create_index([("status", 1), ("created_at", -1)])
+            await db.resumes.create_index([("candidate_id", 1), ("created_at", -1)])
+            await db.predictions.create_index([("candidate_id", 1), ("created_at", -1)])
+            await db.predictions.create_index([("resume_id", 1), ("job_id", 1)])
             await db.applications.create_index([("job_id", 1), ("candidate_id", 1)], unique=True)
+            await db.applications.create_index([("candidate_id", 1), ("applied_at", -1)])
         except Exception as idx_exc:
             logger.warning(f"Index creation warning: {idx_exc}")
 

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, Building2, ArrowLeft } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft, Globe } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyRegister() {
@@ -11,8 +11,12 @@ export default function CompanyRegister() {
 
   const register = async (e) => {
     e.preventDefault()
-    if (!form.company_name || !form.email || !form.password) return toast.error('Fill required fields')
-    if (form.password.length < 6) return toast.error('Password must be 6+ characters')
+    if (!form.company_name.trim() || !form.email.trim() || !form.password) {
+      return toast.error('Please fill in required fields')
+    }
+    if (form.password.length < 6) {
+      return toast.error('Password must be at least 6 characters')
+    }
     setBusy(true)
     try {
       const r = await C0.post('/auth/register/company', form)
@@ -24,7 +28,7 @@ export default function CompanyRegister() {
         localStorage.setItem('recruitai.name', me.data.name || '')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Company registered!')
+      toast.success('Company account created!')
       navigate('/company/dashboard')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Registration failed')
@@ -36,33 +40,103 @@ export default function CompanyRegister() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ width: 440, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 16, alignSelf: 'flex-start' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
+      <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div className="sidebar-logo" style={{ margin: '0 auto 12px', width: 48, height: 48 }}><Brain size={24} /></div>
-          <h1 style={{ fontSize: 24, fontWeight: 800 }}>Company Registration</h1>
-          <p className="muted" style={{ fontSize: 13 }}>Create your company account</p>
+
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{
+            margin: '0 auto 12px',
+            width: 48,
+            height: 48,
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, var(--color-purple), #6366f1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff'
+          }}>
+            <Building2 size={24} />
+          </div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+            Register Organization
+          </h1>
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+            Create an employer account to publish jobs and screen applicants.
+          </p>
         </div>
-        <form onSubmit={register} className="card" style={{ padding: 28 }}>
-          <label>Company Name *</label>
-          <input type="text" value={form.company_name} onChange={set('company_name')} placeholder="Acme Corp" />
-          <label>Email *</label>
-          <input type="email" value={form.email} onChange={set('email')} placeholder="hr@acme.com" />
-          <label>Password *</label>
-          <input type="password" value={form.password} onChange={set('password')} placeholder="Min 6 characters" />
-          <label>Industry</label>
-          <input type="text" value={form.industry} onChange={set('industry')} placeholder="Technology" />
-          <label>Website</label>
-          <input type="text" value={form.website} onChange={set('website')} placeholder="https://acme.com" />
-          <button className="btn btn-success" type="submit" disabled={busy} style={{ width: '100%', marginTop: 16 }}>
-            <Building2 size={16} /> {busy ? 'Creating…' : 'Create Company Account'}
+
+        <form onSubmit={register} className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Company Name *</label>
+            <input
+              type="text"
+              value={form.company_name}
+              onChange={set('company_name')}
+              placeholder="e.g. Acme Tech Inc."
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Work Email *</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={set('email')}
+              placeholder="recruiter@acme.com"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Password *</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={set('password')}
+              placeholder="Minimum 6 characters"
+              required
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Industry</label>
+              <input
+                type="text"
+                value={form.industry}
+                onChange={set('industry')}
+                placeholder="e.g. SaaS"
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Website</label>
+              <input
+                type="text"
+                value={form.website}
+                onChange={set('website')}
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={busy}
+            style={{ width: '100%', padding: '11px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700, background: 'var(--color-purple)', borderColor: 'var(--color-purple)' }}
+          >
+            <Building2 size={15} /> {busy ? 'Registering...' : 'Create Employer Account'}
           </button>
-          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13 }}>
-            <span className="muted">Have an account? </span>
-            <Link to="/login/company">Login</Link>
+
+          <div style={{ textAlign: 'center', marginTop: 18, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+            <span>Already have an employer account? </span>
+            <Link to="/login/company" style={{ color: 'var(--color-purple)', fontWeight: 700 }}>
+              Sign In
+            </Link>
           </div>
         </form>
       </div>

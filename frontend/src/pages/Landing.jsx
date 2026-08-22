@@ -75,17 +75,35 @@ export default function Landing() {
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '12px 24px',
-        background: 'color-mix(in srgb, var(--color-bg) 70%, transparent)',
+        background: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
         backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
         borderBottom: '1px solid var(--color-border-subtle)',
       }}>
-        <div style={{ fontWeight: 800, fontSize: 'var(--p-text-lg)', letterSpacing: '-0.3px' }} className="gradient-text-shimmer">
-          RecruitAI
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 6,
+            background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
+          }}>
+            <Brain size={16} />
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 'var(--p-text-lg)', letterSpacing: '-0.3px', color: 'var(--color-fg)' }}>
+            RecruitAI
+          </div>
         </div>
-        <button onClick={toggleTheme} className="btn-ghost btn-sm" style={{ padding: '8px 10px' }}
-          title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
-          {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-        </button>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Link to="/login/candidate" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
+            Candidate Sign In
+          </Link>
+          <Link to="/login/company" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
+            Employer Sign In
+          </Link>
+          <button onClick={toggleTheme} className="btn-ghost btn-sm" style={{ padding: '6px 8px' }}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+        </div>
       </div>
 
       {/* Hero */}

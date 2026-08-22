@@ -300,11 +300,20 @@ async def match_resume(
         career_suggestions.append("Consider pursuing a higher degree")
     career_suggestions.append(f"Best suited role: {predicted_role}")
 
+    # Check if a recent prediction already exists for this exact resume and job/role match
+    match_target_key = job_id or target_role or ""
+    existing_pred = await db.predictions.find_one(
+        {"resume_id": str(resume_doc["_id"]), "job_id": match_target_key},
+        sort=[("created_at", -1)]
+    )
+    if existing_pred:
+        return _pred_out(existing_pred)
+
     now = datetime.now(timezone.utc)
     doc = {
         "resume_id": str(resume_doc["_id"]),
         "candidate_id": str(user["_id"]),
-        "job_id": job_id,
+        "job_id": match_target_key,
         "predicted_role": predicted_role,
         "role_confidence": round(confidence, 4),
         "semantic_score": round(semantic_score, 2),
