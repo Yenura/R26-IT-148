@@ -174,59 +174,47 @@ async def leaderboard(request: Request, limit: int = 50):
     db = request.app.state.db
     from bson import ObjectId
 
-    # Get cached LambdaMART model instance
-    ltr_model = _get_cached_ltr_model()
+    # Load LambdaMART model from Component 3
+    ltr_model = None
+    c3_root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "component3"))
+    pkl_path = os.path.join(c3_root, "models", "lambdamart_model.pkl")
+    if os.path.exists(pkl_path):
+        try:
+            with open(pkl_path, "rb") as f:
+                ltr_model = pickle.load(f)
+        except Exception:
+            pass
 
-    # Fetch candidate users with projection
-    cand_users = await db.users.find(
-        {"role": "candidate"},
-        {"_id": 1, "full_name": 1, "email": 1, "role": 1}
-    ).to_list(length=100)
-
+    # Fetch all candidate users
+    cand_users = await db.users.find({"role": "candidate"}).to_list(length=100)
+    candidates_ranked = []
     if not cand_users:
-        res = {"success": True, "count": 0, "candidates": []}
-        _LEADERBOARD_CACHE["data"] = res
-        _LEADERBOARD_CACHE["expires_at"] = now_ts + 30.0
-        _LEADERBOARD_CACHE["limit"] = limit
-        return res
+        return {"success": True, "count": 0, "candidates": []}
 
     candidate_ids = [str(u["_id"]) for u in cand_users]
     obj_ids = [u["_id"] for u in cand_users if ObjectId.is_valid(u["_id"])]
-    query_cand_match = {"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}
 
-    # Batch fetch in 4 queries with lean projections
+    # Batch fetch in 4 queries
     resumes_map = {}
-    async for r in db.resumes.find(
-        query_cand_match,
-        {"candidate_id": 1, "skills": 1, "experience_years": 1, "education": 1, "created_at": 1}
-    ).sort("created_at", -1):
+    async for r in db.resumes.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
         cid = str(r.get("candidate_id", ""))
         if cid not in resumes_map:
             resumes_map[cid] = r
 
     preds_map = {}
-    async for p in db.predictions.find(
-        query_cand_match,
-        {"candidate_id": 1, "predicted_role": 1, "overall_score": 1, "skill_score": 1, "experience_score": 1, "education_score": 1, "created_at": 1}
-    ).sort("created_at", -1):
+    async for p in db.predictions.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
         cid = str(p.get("candidate_id", ""))
         if cid not in preds_map:
             preds_map[cid] = p
 
     results_map = {}
-    async for res in db.results.find(
-        query_cand_match,
-        {"candidate_id": 1, "total_score": 1, "mcq_score": 1, "descriptive_score": 1, "code_score": 1, "created_at": 1}
-    ).sort("created_at", -1):
+    async for res in db.results.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
         cid = str(res.get("candidate_id", ""))
         if cid not in results_map:
             results_map[cid] = res
 
     scores_map = {}
-    async for sc in db.interview_scores.find(
-        query_cand_match,
-        {"candidate_id": 1, "total_score": 1, "mcq_score": 1, "descriptive_score": 1, "code_score": 1, "created_at": 1}
-    ).sort("created_at", -1):
+    async for sc in db.interview_scores.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
         cid = str(sc.get("candidate_id", ""))
         if cid not in scores_map:
             scores_map[cid] = sc

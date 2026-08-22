@@ -5,13 +5,7 @@ import {
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Sparkles,
   Rocket, Plus, Search, ChevronRight, BookOpen, ExternalLink, Award, Check
 } from 'lucide-react'
-import {
-  c4Progress, c4ProgressPopulate, c4ProgressSync, c4ProgressUpdate
-} from '../api'
-import PageHeader from '../components/PageHeader'
-import StatCard from '../components/StatCard'
-import EmptyState from '../components/EmptyState'
-import SkeletonLoader from '../components/SkeletonLoader'
+import { c4Progress, c4ProgressPopulate, c4ProgressSync, c4ProgressUpdate } from '../api'
 
 export default function Progress() {
   const navigate = useNavigate()
@@ -57,7 +51,7 @@ export default function Progress() {
         r = await c4ProgressPopulate({ candidate_id: candidateId })
       }
       const count = r?.data?.synced_count ?? r?.data?.populated ?? 0
-      toast.success(`Synced ${count} target skills from your interview and application history!`)
+      toast.success(`Synced ${count} target skills from your interview & application history!`)
       loadData()
     } catch {
       toast.error('Failed to sync from applied interviews')

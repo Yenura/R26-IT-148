@@ -6,15 +6,7 @@ import {
   Code, Building2, Sparkles, AlertCircle, CheckCircle2,
   ExternalLink, Layers, Lightbulb, ArrowRight, Plus, X
 } from 'lucide-react'
-import {
-  c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied,
-  c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync
-} from '../api'
-import PageHeader from '../components/PageHeader'
-import ScoreMeter from '../components/ScoreMeter'
-import ScoreBadge from '../components/ScoreBadge'
-import EmptyState from '../components/EmptyState'
-import SkeletonLoader from '../components/SkeletonLoader'
+import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync } from '../api'
 
 export default function SkillGap() {
   const navigate = useNavigate()
@@ -78,12 +70,9 @@ export default function SkillGap() {
     setSyncingProgress(true)
     try {
       await c4ProgressSync(candidateId)
-      toast.success('Skill gap goals synced to Progress Tracker!')
-    } catch {
-      toast.error('Failed to sync to progress tracker')
-    } finally {
-      setSyncingProgress(false)
-    }
+      toast.success('Weaknesses synced to Progress Tracker')
+    } catch { toast.error('Failed to sync to progress tracker') }
+    finally { setSyncingProgress(false) }
   }
 
   const runSimulation = async () => {
@@ -296,23 +285,6 @@ export default function SkillGap() {
             </p>
           </div>
 
-<<<<<<< HEAD
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <div>
-              <label style={{ fontSize: '11px', marginTop: 0 }}>Target Position</label>
-              <select
-                value={selectedOpeningId}
-                onChange={(e) => setSelectedOpeningId(e.target.value)}
-                style={{ fontSize: 'var(--p-text-sm)' }}
-              >
-                {availableJobs.map((j) => (
-                  <option key={j.id || j._id} value={j.id || j._id}>
-                    {j.title} {j.company_name ? `· ${j.company_name}` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-=======
           {currentOpening && (
             <>
               {/* Missing Required Skills */}
@@ -347,7 +319,6 @@ export default function SkillGap() {
                     </div>
                   ) : <p className="muted" style={{ fontSize: 13 }}>No explicit required skills listed.</p>}
                 </div>
->>>>>>> aa767b9e2a9a7cb46786d00c06bcc14e47f6b502
 
             <div>
               <label style={{ fontSize: '11px', marginTop: 0 }}>Add Custom Skill</label>
