@@ -123,6 +123,8 @@ _PUBLIC_PREFIXES_C2 = ("/docs", "/openapi", "/api/v1/interview/jobs", "/api/v1/i
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
     if request.url.path in _PUBLIC_PATHS_C2 or any(request.url.path.startswith(p) for p in _PUBLIC_PREFIXES_C2):
         return await call_next(request)
     if request.headers.get("x-internal-key") == INTERNAL_KEY_C2 and INTERNAL_KEY_C2:

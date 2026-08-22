@@ -118,6 +118,8 @@ _PUBLIC_PATHS_C4 = {"/", "/health", "/docs", "/redoc", "/openapi.json"}
 
 @app.middleware("http")
 async def auth_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
     if request.url.path in _PUBLIC_PATHS_C4 or request.url.path.startswith("/docs") or request.url.path.startswith("/openapi"):
         return await call_next(request)
     if request.headers.get("x-internal-key") == INTERNAL_KEY_C4 and INTERNAL_KEY_C4:
