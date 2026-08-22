@@ -392,7 +392,7 @@ async def parse_resume_text(
 
 @limiter.limit("30/minute")
 @router.post("/interview-scores")
-async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(require_candidate)):
+async def save_interview_scores(payload: InterviewScoresCreate, request: Request):
     db = request.app.state.db
     doc = {
         "candidate_id": payload.candidate_id,
