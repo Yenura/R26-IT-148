@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -46,10 +46,19 @@ class RoleAlternative(BaseModel):
 
 class CVTextRequest(BaseModel):
     """Analyze a CV supplied as raw text."""
-    text:             str  = Field(..., min_length=10, description="Raw resume/CV text")
+    text:             str  = Field(default="", min_length=10, description="Raw resume/CV text")
+    resume_text:      Optional[str] = Field(None, description="Alternative field name for raw resume text")
     candidate_id:     Optional[str] = Field(None, max_length=50)
     candidate_name:   Optional[str] = Field(None, max_length=100)
     job_description:  Optional[str] = Field(None, description="Job posting text for JD-matching")
+
+    @model_validator(mode="before")
+    @classmethod
+    def resolve_text_field(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if not data.get("text") and data.get("resume_text"):
+                data["text"] = data["resume_text"]
+        return data
 
     @field_validator("candidate_id")
     @classmethod

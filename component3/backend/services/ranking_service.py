@@ -46,6 +46,24 @@ class RankingService:
     def roles(self):
         return {r: ROLE_DISPLAY_NAMES.get(r, r) for r in ROLES}
 
+    def _normalize_role(self, role_str: str) -> str:
+        if not role_str:
+            return "Software_Engineer"
+        if role_str in ROLES:
+            return role_str
+        formatted = role_str.strip().replace(" ", "_")
+        if formatted in ROLES:
+            return formatted
+        for r in ROLES:
+            if (r.lower() == formatted.lower() or
+                r.lower() == role_str.lower() or
+                r.replace("_", "").lower() == role_str.replace(" ", "").replace("_", "").lower()):
+                return r
+        for r in ROLES:
+            if r.lower() in role_str.lower() or role_str.lower() in r.lower():
+                return r
+        return role_str
+
     def _build_features(self, c, job):
         if c.S_edu is not None and c.S_exp is not None and c.S_skill is not None:
             s_edu, s_exp, s_skill = c.S_edu, c.S_exp, c.S_skill
@@ -57,6 +75,7 @@ class RankingService:
         return s_edu, s_exp, s_skill
 
     def rank(self, job_role, candidates, w_cv=0.40, w_int=0.60, use_ltr=True):
+        job_role = self._normalize_role(job_role)
         if job_role not in ROLES:
             raise ValueError(
                 f"Invalid job_role. Available: {sorted(ROLES)}")

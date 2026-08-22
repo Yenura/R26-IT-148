@@ -161,34 +161,58 @@ async def leaderboard(request: Request, limit: int = 50):
     # Fetch all candidate users
     cand_users = await db.users.find({"role": "candidate"}).to_list(length=100)
     candidates_ranked = []
+    if not cand_users:
+        return {"success": True, "count": 0, "candidates": []}
+
+    candidate_ids = [str(u["_id"]) for u in cand_users]
+    obj_ids = [u["_id"] for u in cand_users if ObjectId.is_valid(u["_id"])]
+
+    # Batch fetch in 4 queries
+    resumes_map = {}
+    async for r in db.resumes.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+        cid = str(r.get("candidate_id", ""))
+        if cid not in resumes_map:
+            resumes_map[cid] = r
+
+    preds_map = {}
+    async for p in db.predictions.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+        cid = str(p.get("candidate_id", ""))
+        if cid not in preds_map:
+            preds_map[cid] = p
+
+    results_map = {}
+    async for res in db.results.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+        cid = str(res.get("candidate_id", ""))
+        if cid not in results_map:
+            results_map[cid] = res
+
+    scores_map = {}
+    async for sc in db.interview_scores.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+        cid = str(sc.get("candidate_id", ""))
+        if cid not in scores_map:
+            scores_map[cid] = sc
 
     for u in cand_users:
         cid = str(u["_id"])
         cand_name = u.get("full_name", u.get("email", "Candidate"))
 
-        # 1. Fetch Real CV from db.resumes
-        resume = await db.resumes.find_one({"candidate_id": cid}, sort=[("created_at", -1)])
-        if not resume:
-            try:
-                resume = await db.resumes.find_one({"candidate_id": ObjectId(cid)}, sort=[("created_at", -1)])
-            except Exception:
-                pass
-
+        # 1. Fetch Real CV from batch map
+        resume = resumes_map.get(cid)
         has_cv = resume is not None
         skills = resume.get("skills", []) if resume else []
         exp_years = resume.get("experience_years", 0) if resume else 0
         edu = resume.get("education", "Bachelor Degree") if resume else "None"
 
-        # 2. Fetch Real CV Prediction & Match Score from db.predictions
-        pred = await db.predictions.find_one({"candidate_id": cid}, sort=[("created_at", -1)])
+        # 2. Fetch Real CV Prediction & Match Score from batch map
+        pred = preds_map.get(cid)
         target_role = pred.get("predicted_role", "Software Engineer") if pred else "Software Engineer"
         cv_match_score = pred.get("overall_score") if pred else (pred.get("skill_score") if pred else None)
         if cv_match_score is None and has_cv:
             cv_match_score = min(100.0, 50.0 + len(skills) * 5.0)
 
-        # 3. Fetch Real Interview Evaluation from db.results or db.interview_scores
-        interview_res = await db.results.find_one({"candidate_id": cid}, sort=[("created_at", -1)])
-        score_doc = await db.interview_scores.find_one({"candidate_id": cid}, sort=[("created_at", -1)])
+        # 3. Fetch Real Interview Evaluation from batch maps
+        interview_res = results_map.get(cid)
+        score_doc = scores_map.get(cid)
 
         interview_completed = False
         interview_score = None
