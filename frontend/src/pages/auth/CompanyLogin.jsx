@@ -12,10 +12,10 @@ export default function CompanyLogin() {
 
   const handleLogin = async (e) => {
     e?.preventDefault()
-    if (!email || !password) return toast.error('Fill in all fields')
+    if (!email || !password) return toast.error('Please enter work email and password')
     setBusy(true)
     try {
-      const r = await C0.post('/auth/login/company', { email: email, password: password })
+      const r = await C0.post('/auth/login/company', { email: email.trim(), password })
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'company')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -27,73 +27,98 @@ export default function CompanyLogin() {
       toast.success('Welcome back!')
       navigate('/company/dashboard')
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Login failed')
+      toast.error(err?.response?.data?.detail || 'Invalid company credentials')
     } finally {
       setBusy(false)
     }
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', border: '1px solid var(--border)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
+      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
-        
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div className="sidebar-logo" style={{ margin: '0 auto 14px', width: 52, height: 52, borderRadius: 14 }}>
-            <Brain size={28} />
+
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{
+            margin: '0 auto 12px',
+            width: 48,
+            height: 48,
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, var(--color-purple), #6366f1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff'
+          }}>
+            <Building2 size={24} />
           </div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>Company Sign In</h1>
-          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>Post jobs, screen candidates & view rankings</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+            Employer Sign In
+          </h1>
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+            Post engineering roles, monitor pipelines, and compute LambdaMART rankings.
+          </p>
         </div>
 
-        <div className="card" style={{ padding: 32, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--bg-elevated)', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
+        <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
           <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Work Email</label>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Work Email</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <Mail size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
                   id="company-email"
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  maxLength={100}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="company@techcorp.com"
-                  style={{ paddingLeft: 40, height: 44, fontSize: 14, borderRadius: 8 }}
+                  placeholder="recruiter@techcorp.com"
+                  style={{ paddingLeft: 36 }}
+                  required
                 />
               </div>
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Password</label>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Password</label>
               <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
                   id="company-password"
-                  name="password"
                   type="password"
                   autoComplete="current-password"
-                  maxLength={100}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{ paddingLeft: 40, height: 44, fontSize: 14, borderRadius: 8 }}
+                  style={{ paddingLeft: 36 }}
+                  required
                 />
               </div>
             </div>
 
-            <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}>
-              <Building2 size={16} /> {busy ? 'Signing in...' : 'Sign In as Company'}
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={busy}
+              style={{ width: '100%', padding: '11px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700, background: 'var(--color-purple)', borderColor: 'var(--color-purple)' }}
+            >
+              <Building2 size={15} /> {busy ? 'Signing in...' : 'Sign In as Employer'}
             </button>
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13 }}>
-            <span className="muted">Don't have a company account? </span>
-            <Link to="/register/company" style={{ color: 'var(--accent)', fontWeight: 600 }}>Register Company</Link>
+          <div style={{ textAlign: 'center', marginTop: 18, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+            <span>Don't have an employer account? </span>
+            <Link to="/register/company" style={{ color: 'var(--color-purple)', fontWeight: 700 }}>
+              Register Company
+            </Link>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 10, fontSize: 'var(--p-text-xs)' }}>
+            <Link to="/login/candidate" style={{ color: 'var(--color-fg-muted)' }}>
+              Looking for a job? Candidate sign in →
+            </Link>
           </div>
         </div>
       </div>

@@ -1,11 +1,15 @@
-"""Router: Analytics & Dashboard summary endpoints with Real Data & LambdaMART LTR"""
-
 import os
 import sys
 import asyncio
 import pickle
 import numpy as np
 from datetime import datetime, timezone
+
+# Ensure component4/backend is on sys.path
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _BACKEND_DIR not in sys.path:
+    sys.path.insert(0, _BACKEND_DIR)
+
 from fastapi import APIRouter, Request
 from starlette.concurrency import run_in_threadpool
 from services.ml_engine import run_skill_gap_analysis
@@ -137,6 +141,24 @@ async def analytics_summary(request: Request):
     }
 
 
+# Pre-loaded LTR model singleton & TTL cache
+_CACHED_LTR_MODEL = None
+_LEADERBOARD_CACHE = {"data": None, "expires_at": 0, "limit": 0}
+
+def _get_cached_ltr_model():
+    global _CACHED_LTR_MODEL
+    if _CACHED_LTR_MODEL is None:
+        c3_root = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "component3"))
+        pkl_path = os.path.join(c3_root, "models", "lambdamart_model.pkl")
+        if os.path.exists(pkl_path):
+            try:
+                with open(pkl_path, "rb") as f:
+                    _CACHED_LTR_MODEL = pickle.load(f)
+            except Exception:
+                pass
+    return _CACHED_LTR_MODEL
+
+
 @router.get("/leaderboard", summary="Top unique candidates by real CV & Interview marks using LambdaMART LTR")
 async def leaderboard(request: Request, limit: int = 50):
     """
@@ -144,6 +166,11 @@ async def leaderboard(request: Request, limit: int = 50):
     Evaluates real candidates from MongoDB who have uploaded a CV and completed technical interviews.
     Computes true feature vectors [S_edu, S_exp, S_skill, P_mcq, P_desc, P_code] and scores them via LambdaMART.
     """
+    import time
+    now_ts = time.time()
+    if _LEADERBOARD_CACHE["data"] is not None and now_ts < _LEADERBOARD_CACHE["expires_at"] and _LEADERBOARD_CACHE["limit"] == limit:
+        return _LEADERBOARD_CACHE["data"]
+
     db = request.app.state.db
     from bson import ObjectId
 
@@ -192,6 +219,7 @@ async def leaderboard(request: Request, limit: int = 50):
         if cid not in scores_map:
             scores_map[cid] = sc
 
+    candidates_ranked = []
     for u in cand_users:
         cid = str(u["_id"])
         cand_name = u.get("full_name", u.get("email", "Candidate"))
@@ -223,20 +251,28 @@ async def leaderboard(request: Request, limit: int = 50):
 
         if interview_res:
             interview_completed = True
-            interview_score = float(interview_res.get("interview_score", 0))
-            mcq_score = float(interview_res.get("mcq_score", 0))
-            descriptive_score = float(interview_res.get("descriptive_score", 0))
-            coding_score = float(interview_res.get("coding_score", 0))
-            grade = interview_res.get("grade", "Average")
+            total = interview_res.get("total_score") or interview_res.get("interview_score")
+            interview_score = float(total) if total is not None else 0.0
+            mcq = interview_res.get("mcq_score")
+            mcq_score = float(mcq) if mcq is not None else 0.0
+            desc = interview_res.get("descriptive_score")
+            descriptive_score = float(desc) if desc is not None else 0.0
+            code = interview_res.get("coding_score") or interview_res.get("code_score")
+            coding_score = float(code) if code is not None else 0.0
+            grade = interview_res.get("grade", "Average") or "Average"
             if interview_res.get("job_role"):
                 target_role = interview_res["job_role"]
         elif score_doc:
             interview_completed = True
-            interview_score = float(score_doc.get("interview_score", 0))
-            mcq_score = float(score_doc.get("mcq_score", 0))
-            descriptive_score = float(score_doc.get("descriptive_score", 0))
-            coding_score = float(score_doc.get("coding_score", 0))
-            grade = score_doc.get("grade", "Average")
+            total = score_doc.get("total_score") or score_doc.get("interview_score")
+            interview_score = float(total) if total is not None else 0.0
+            mcq = score_doc.get("mcq_score")
+            mcq_score = float(mcq) if mcq is not None else 0.0
+            desc = score_doc.get("descriptive_score")
+            descriptive_score = float(desc) if desc is not None else 0.0
+            code = score_doc.get("coding_score") or score_doc.get("code_score")
+            coding_score = float(code) if code is not None else 0.0
+            grade = score_doc.get("grade", "Average") or "Average"
             if score_doc.get("job_role"):
                 target_role = score_doc["job_role"]
 
@@ -306,9 +342,9 @@ async def leaderboard(request: Request, limit: int = 50):
     # Sort strictly by: 1) Completed Interview + CV, 2) LambdaMART LTR Score, 3) Hire Probability
     candidates_ranked.sort(
         key=lambda x: (
-            1 if (x["has_cv"] and x["interview_completed"]) else 0,
-            x["ltr_score"],
-            x["hire_probability"]
+            1 if (x.get("has_cv") and x.get("interview_completed")) else 0,
+            float(x.get("ltr_score") or 0.0),
+            float(x.get("hire_probability") or 0.0)
         ),
         reverse=True
     )
@@ -317,12 +353,16 @@ async def leaderboard(request: Request, limit: int = 50):
     for idx, c in enumerate(candidates_ranked, start=1):
         c["rank"] = idx
 
-    return {
+    res = {
         "success": True,
         "total_evaluated": len(candidates_ranked),
         "model": "LightGBM LambdaMART (Learning-to-Rank LTR)",
         "data": candidates_ranked[:limit]
     }
+    _LEADERBOARD_CACHE["data"] = res
+    _LEADERBOARD_CACHE["expires_at"] = now_ts + 45.0
+    _LEADERBOARD_CACHE["limit"] = limit
+    return res
 
 
 @router.get("/role-insights/{job_role}", summary="Analytics for a specific job role")

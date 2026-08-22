@@ -133,29 +133,43 @@ def _parse_docx(content: bytes) -> str:
 
 
 # ── NLP Preprocessing ──────────────────────────────────────────
-STOPWORDS = set("a an the and or but in on at to for of with is it its this that was were be been "
-                "being have has had do does did will would could should may might can shall from "
-                "by as into through during before after above below between out off over under "
-                "again further then once here there when where why how all each every both few "
-                "more most other some such no nor not only own same so than too very s t just "
-                "don now d ll m o re ve y ain aren couldn didn doesn hadn hasn haven isn ma "
-                "mightn mustn needn shan shouldn wasn weren won wouldn".split())
+STOPWORDS = frozenset("a an the and or but in on at to for of with is it its this that was were be been "
+                      "being have has had do does did will would could should may might can shall from "
+                      "by as into through during before after above below between out off over under "
+                      "again further then once here there when where why how all each every both few "
+                      "more most other some such no nor not only own same so than too very s t just "
+                      "don now d ll m o re ve y ain aren couldn didn doesn hadn hasn haven isn ma "
+                      "mightn mustn needn shan shouldn wasn weren won wouldn".split())
+
+_CLEAN_RE = re.compile(r"[^a-z0-9\s#+./]")
+_SPACE_RE = re.compile(r"\s+")
+_lemmatizer = None
+
+def _get_lemmatizer():
+    global _lemmatizer
+    if _lemmatizer is None:
+        try:
+            from nltk.stem import WordNetLemmatizer
+            _lemmatizer = WordNetLemmatizer()
+        except (ImportError, LookupError):
+            _lemmatizer = False
+    return _lemmatizer if _lemmatizer is not False else None
 
 
 def preprocess_text(text: str) -> str:
     """Lowercase, remove punctuation, remove stopwords, tokenize, lemmatize."""
-    text = text.lower()
-    text = re.sub(r"[^a-z0-9\s#+./]", " ", text)
-    text = re.sub(r"\s+", " ", text).strip()
-    tokens = text.split()
+    if not text:
+        return ""
+    text_clean = _CLEAN_RE.sub(" ", text.lower())
+    text_clean = _SPACE_RE.sub(" ", text_clean).strip()
+    tokens = text_clean.split()
     tokens = [t for t in tokens if t not in STOPWORDS and len(t) > 1]
-    try:
-        import nltk
-        from nltk.stem import WordNetLemmatizer
-        lemmatizer = WordNetLemmatizer()
-        tokens = [lemmatizer.lemmatize(t) for t in tokens]
-    except (ImportError, LookupError):
-        pass
+    lemmatizer = _get_lemmatizer()
+    if lemmatizer:
+        try:
+            tokens = [lemmatizer.lemmatize(t) for t in tokens]
+        except Exception:
+            pass
     return " ".join(tokens)
 
 

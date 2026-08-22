@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight, MessageSquare, Sparkles } from 'lucide-react'
+import {
+  Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight,
+  MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered
+} from 'lucide-react'
 import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicants } from '../api'
+import PageHeader from '../components/PageHeader'
+import StatCard from '../components/StatCard'
+import Modal from '../components/Modal'
 import ConfirmDialog from '../components/ConfirmDialog'
+import EmptyState from '../components/EmptyState'
+import SkeletonLoader from '../components/SkeletonLoader'
 
 const STANDARD_ROLES = {
   'Software Engineer': 'Python, Java, Git, REST APIs, SQL, Data Structures',
@@ -43,12 +51,15 @@ const emptyForm = {
 
 export default function CompanyDashboard() {
   const navigate = useNavigate()
+  const companyName = localStorage.getItem('recruitai.name') || 'Employer'
+
   const [jobs, setJobs] = useState([])
-  const [showForm, setShowForm] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [showModal, setShowModal] = useState(false)
   const [form, setForm] = useState(emptyForm)
   const [applicantCounts, setApplicantCounts] = useState({})
   const [submitting, setSubmitting] = useState(false)
-  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -60,22 +71,8 @@ export default function CompanyDashboard() {
     loadJobs()
   }, [])
 
-  // Re-observe .reveal elements after data loads
-  useEffect(() => {
-    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    if (prefersReduced) {
-      document.querySelectorAll('.reveal:not(.visible)').forEach(el => el.classList.add('visible'))
-      return
-    }
-    const observer = new IntersectionObserver(
-      (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target) } }),
-      { threshold: 0.15 }
-    )
-    document.querySelectorAll('.reveal:not(.visible)').forEach(el => observer.observe(el))
-    return () => observer.disconnect()
-  }, [jobs])
-
   const loadJobs = async () => {
+    setLoading(true)
     try {
       const r = await uJobsMy().catch(() => ({ data: [] }))
       const jobList = Array.isArray(r.data) ? r.data : []
@@ -92,8 +89,10 @@ export default function CompanyDashboard() {
         }
       }
       setApplicantCounts(counts)
-    } catch (err) {
+    } catch {
       toast.error('Failed to load jobs')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -140,317 +139,404 @@ export default function CompanyDashboard() {
     setSubmitting(true)
     try {
       await uJobsCreate(payload)
-      toast.success('Job posted successfully!')
-      setShowForm(false)
+      toast.success('Job posting created successfully!')
+      setShowModal(false)
       setForm(emptyForm)
-      await loadJobs()
+      loadJobs()
     } catch (err) {
-      console.error('Job creation error:', err)
-      const detail = err?.response?.data?.detail
-      if (Array.isArray(detail)) {
-        toast.error(detail.map((d) => d.msg || d.message).join(', '))
-      } else if (typeof detail === 'string') {
-        toast.error(detail)
-      } else {
-        toast.error('Failed to create job post. Check backend server.')
-      }
+      toast.error(err?.response?.data?.detail || 'Failed to create job')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const deleteJob = async (id) => {
+  const deleteJob = (jobId) => {
     setConfirm({
       open: true,
-      title: 'Delete this job?',
-      message: 'This action cannot be undone. All applicant data for this job will be removed.',
+      title: 'Delete this job opening?',
+      message: 'This will permanently remove the job and all associated applicant rankings.',
       danger: true,
       action: async () => {
         try {
-          await uJobsDelete(id)
-          toast.success('Deleted')
+          await uJobsDelete(jobId)
+          toast.success('Job deleted')
           loadJobs()
         } catch (err) {
-          toast.error(err?.response?.data?.detail || 'Failed')
+          toast.error(err?.response?.data?.detail || 'Delete failed')
         }
       }
     })
   }
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const totalApplicants = Object.values(applicantCounts).reduce((a, b) => a + b, 0)
+  const interviewRequiredCount = jobs.filter((j) => j.interview_required).length
 
   return (
-    <div className="fade-in" style={{ maxWidth: 900, margin: '0 auto', paddingBottom: 40 }}>
-      <div className="page-head" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <div>
-          <h1>Company Dashboard</h1>
-          <p>Post jobs, configure interview criteria, and manage candidate ranking</p>
+    <div className="fade-in" style={{ maxWidth: 1180, margin: '0 auto' }}>
+      {/* Header & Primary CTAs */}
+      <PageHeader
+        badge="Employer Console"
+        title={`Recruitment Overview · ${companyName}`}
+        description="Post new technical roles, monitor incoming applicants, and rank candidates with LambdaMART Learning-to-Rank."
+        actions={
+          <>
+            <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>
+              <Plus size={15} /> Post New Job
+            </button>
+            <Link to="/pipeline/ranking" className="btn btn-ghost btn-sm">
+              <Trophy size={15} /> Candidate Ranking
+            </Link>
+          </>
+        }
+      />
+
+      {/* KPI Metrics Strip */}
+      {loading ? (
+        <SkeletonLoader type="stat" count={4} />
+      ) : (
+        <div className="grid grid-4" style={{ gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-6)' }}>
+          <StatCard
+            label="Active Positions"
+            value={jobs.length}
+            icon={Briefcase}
+            color="primary"
+            helperText="Open for applications"
+          />
+          <StatCard
+            label="Total Applicants"
+            value={totalApplicants}
+            icon={Users}
+            color="purple"
+            helperText="Across all postings"
+          />
+          <StatCard
+            label="AI Interview Active"
+            value={interviewRequiredCount}
+            icon={MessageSquare}
+            color="info"
+            helperText="Automated tech screening"
+          />
+          <StatCard
+            label="Ranking Pipeline"
+            value="Active"
+            icon={ListOrdered}
+            color="success"
+            helperText="LambdaMART LTR Ready"
+          />
         </div>
-        <button className="btn btn-success" onClick={() => setShowForm(!showForm)}>
-          <Plus size={16} /> {showForm ? 'Cancel' : 'Post New Job'}
-        </button>
+      )}
+
+      {/* Active Jobs Data Table */}
+      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h3 style={{ margin: 0, fontSize: 'var(--p-text-lg)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Briefcase size={18} style={{ color: 'var(--color-primary)' }} /> Active Job Postings ({jobs.length})
+            </h3>
+            <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '2px 0 0 0' }}>
+              Manage your company's posted roles and inspect applicant pipelines.
+            </p>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>
+            <Plus size={14} /> Add Role
+          </button>
+        </div>
+
+        {loading ? (
+          <SkeletonLoader type="table" rows={4} cols={5} />
+        ) : jobs.length === 0 ? (
+          <div style={{ padding: 'var(--p-space-6)' }}>
+            <EmptyState
+              title="No jobs posted yet"
+              description="Create your first technical job posting to start receiving CVs, AI screening scores, and applicant rankings."
+              actionLabel="Create Job Opening"
+              icon={Briefcase}
+              onAction={() => setShowModal(true)}
+            />
+          </div>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Job Title & Details</th>
+                  <th>Department / Location</th>
+                  <th>Required Skills</th>
+                  <th>Applicants</th>
+                  <th>AI Interview</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map((job) => {
+                  const count = applicantCounts[job.id] || 0
+                  return (
+                    <tr key={job.id}>
+                      <td style={{ fontWeight: 600 }}>
+                        <div style={{ color: 'var(--color-fg)', fontSize: 'var(--p-text-base)' }}>{job.title}</div>
+                        <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                          {job.employment_type || 'Full-time'} · {job.experience_required || 0}+ yrs exp · {job.education_required || 'Degree'}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>{job.department || 'Engineering'}</div>
+                        <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={11} /> {job.location || 'Remote'}
+                        </div>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 260 }}>
+                          {(job.required_skills || []).slice(0, 3).map((s) => (
+                            <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                              {s}
+                            </span>
+                          ))}
+                          {(job.required_skills || []).length > 3 && (
+                            <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>
+                              +{(job.required_skills || []).length - 3}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          fontSize: 'var(--p-text-xs)',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-full)',
+                          background: count > 0 ? 'var(--color-primary-muted)' : 'var(--color-border-subtle)',
+                          color: count > 0 ? 'var(--color-primary)' : 'var(--color-fg-muted)'
+                        }}>
+                          <Users size={12} /> {count} candidate{count !== 1 ? 's' : ''}
+                        </span>
+                      </td>
+                      <td>
+                        {job.interview_required ? (
+                          <span style={{
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: 'var(--color-success)',
+                            background: 'var(--color-success-muted)',
+                            padding: '2px 8px',
+                            borderRadius: 'var(--radius-full)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 4
+                          }}>
+                            <CheckCircle2 size={12} /> Active ({job.interview_question_count || 10} Qs)
+                          </span>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>Optional</span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: 6 }}>
+                          <button
+                            className="btn btn-primary btn-sm"
+                            onClick={() => navigate(`/company/pipeline/${job.id}`)}
+                            title="View candidate pipeline and rank"
+                            style={{ fontSize: '12px', padding: '4px 10px' }}
+                          >
+                            <Trophy size={13} /> Pipeline
+                          </button>
+                          <button
+                            className="btn-ghost btn-sm"
+                            onClick={() => navigate(`/company/jobs/${job.id}`)}
+                            title="Inspect job preview"
+                            style={{ padding: '6px 8px' }}
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            className="btn-ghost btn-sm"
+                            onClick={() => deleteJob(job.id)}
+                            title="Delete job"
+                            style={{ padding: '6px 8px', color: 'var(--color-danger)' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-3 reveal" style={{ marginBottom: 20 }}>
-        <div className="stat">
-          <div className="stat-label">Posted Jobs</div>
-          <div className="stat-value" style={{ fontFamily: 'var(--p-font-mono)' }}>{jobs.length}</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Active</div>
-          <div className="stat-value" style={{ color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>
-            {jobs.filter((j) => j.status === 'open').length || jobs.length}
-          </div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Total Applicants</div>
-          <div className="stat-value" style={{ color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-            {Object.values(applicantCounts).reduce((a, b) => a + b, 0)}
-          </div>
-        </div>
-      </div>
-
-      {/* Create Job Form */}
-      {showForm && (
-        <form onSubmit={createJob} className="card" style={{ marginBottom: 24, padding: 24 }}>
-          <h3 style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Plus size={18} style={{ color: 'var(--color-primary)' }} /> Post New Job Listing
-          </h3>
-
-          {/* Quick role selector */}
-          <div style={{ marginBottom: 16, padding: 12, background: 'var(--bg)', borderRadius: 8 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-              <Sparkles size={14} style={{ color: 'var(--accent)' }} /> Quick Fill by Standard 20 IT Roles:
-            </label>
+      {/* Create Job Modal */}
+      <Modal
+        open={showModal}
+        onClose={() => setShowModal(false)}
+        title="Post New Technical Position"
+        subtitle="Specify role requirements, required skills, and AI technical screening parameters."
+        icon={Briefcase}
+        maxWidth={640}
+      >
+        <form onSubmit={createJob}>
+          {/* Quick canonical role filler */}
+          <div style={{ marginBottom: 'var(--p-space-3)' }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Auto-Fill Standard IT Role (Optional)</label>
             <select
               onChange={(e) => handleRoleSelect(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '8px 12px',
-                background: 'var(--input-bg)',
-                border: '1px solid var(--border)',
-                borderRadius: 6,
-                fontSize: 13,
-              }}
+              defaultValue=""
+              style={{ fontSize: 'var(--p-text-sm)' }}
             >
-              <option value="">Select a standard role to auto-fill...</option>
+              <option value="" disabled>Select a canonical IT role...</option>
               {Object.keys(STANDARD_ROLES).map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
+                <option key={r} value={r}>{r}</option>
               ))}
             </select>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label>Job Title *</label>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Job Title *</label>
               <input
                 type="text"
+                placeholder="e.g. Senior Full Stack Engineer"
                 value={form.title}
-                onChange={set('title')}
-                placeholder="Software Engineer"
+                onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
               />
             </div>
             <div>
-              <label>Department</label>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Department</label>
               <input
                 type="text"
+                placeholder="e.g. Core Platform"
                 value={form.department}
-                onChange={set('department')}
-                placeholder="Engineering"
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
               />
             </div>
             <div>
-              <label>Location</label>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Location</label>
               <input
                 type="text"
+                placeholder="e.g. Remote, New York, London"
                 value={form.location}
-                onChange={set('location')}
-                placeholder="Remote / Colombo / Hybrid"
+                onChange={(e) => setForm({ ...form, location: e.target.value })}
               />
             </div>
             <div>
-              <label>Employment Type</label>
-              <select value={form.employment_type} onChange={set('employment_type')}>
-                <option>Full-time</option>
-                <option>Part-time</option>
-                <option>Contract</option>
-                <option>Internship</option>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Employment Type</label>
+              <select
+                value={form.employment_type}
+                onChange={(e) => setForm({ ...form, employment_type: e.target.value })}
+              >
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
               </select>
             </div>
             <div>
-              <label>Experience Required (years)</label>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Min Experience (Years)</label>
               <input
                 type="number"
                 min={0}
-                max={30}
+                max={40}
                 value={form.experience_required}
-                onChange={set('experience_required')}
+                onChange={(e) => setForm({ ...form, experience_required: e.target.value })}
               />
             </div>
             <div>
-              <label>Education Required</label>
-              <select value={form.education_required} onChange={set('education_required')}>
-                <option>Bachelor Degree</option>
-                <option>Master Degree</option>
-                <option>Diploma</option>
-                <option>PhD</option>
-                <option>Any Education</option>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Education Level</label>
+              <select
+                value={form.education_required}
+                onChange={(e) => setForm({ ...form, education_required: e.target.value })}
+              >
+                <option value="High School">High School</option>
+                <option value="Associate Degree">Associate Degree</option>
+                <option value="Bachelor Degree">Bachelor Degree</option>
+                <option value="Master Degree">Master Degree</option>
+                <option value="PhD">PhD</option>
               </select>
             </div>
           </div>
 
-          <div style={{ marginTop: 14 }}>
-            <label>Required Skills (comma-separated)</label>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Required Technical Skills (Comma Separated) *</label>
             <input
               type="text"
+              placeholder="e.g. React, Node.js, TypeScript, PostgreSQL, Docker"
               value={form.required_skills}
-              onChange={set('required_skills')}
-              placeholder="Python, React, SQL, Docker, AWS"
+              onChange={(e) => setForm({ ...form, required_skills: e.target.value })}
+              required
             />
           </div>
 
-          <div style={{ marginTop: 14, padding: 12, background: 'var(--bg)', borderRadius: 8 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontWeight: 600 }}>
-              <input
-                type="checkbox"
-                checked={form.interview_required}
-                onChange={(e) => setForm((f) => ({ ...f, interview_required: e.target.checked }))}
-                style={{ width: 'auto' }}
-              />
-              Require Component 2 AI Interview Assessment
-            </label>
-            {form.interview_required && (
-              <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 12 }}>Number of Questions (3 - 30)</label>
-                  <input
-                    type="number"
-                    min={3}
-                    max={30}
-                    value={form.interview_question_count}
-                    onChange={set('interview_question_count')}
-                  />
-                </div>
-                <div style={{ fontSize: 12, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
-                  Questions will evaluate MCQ ($P_{`{mcq}`}$), Descriptive ($P_{`{desc}`}$), and Coding ($P_{`{code}`}$) skills.
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <label>Job Description</label>
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Job Description & Responsibilities</label>
             <textarea
+              placeholder="Describe the mission, technical stack, and responsibilities for this role..."
               value={form.description}
-              onChange={set('description')}
-              placeholder="Provide a detailed job description..."
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
             />
           </div>
 
-          <div style={{ marginTop: 16, display: 'flex', gap: 10 }}>
-            <button className="btn btn-success" type="submit" disabled={submitting}>
-              <Plus size={16} /> {submitting ? 'Posting Job...' : 'Publish Job Listing'}
-            </button>
-            <button className="btn btn-ghost" type="button" onClick={() => setShowForm(false)}>
+          {/* AI Interview Settings */}
+          <div style={{ marginTop: 16, padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                  Require AI Technical Interview
+                </div>
+                <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                  Candidates complete automated MCQs, technical theory, and coding sandbox.
+                </div>
+              </div>
+              <input
+                type="checkbox"
+                checked={form.interview_required}
+                onChange={(e) => setForm({ ...form, interview_required: e.target.checked })}
+                style={{ width: 18, height: 18, cursor: 'pointer' }}
+              />
+            </div>
+
+            {form.interview_required && (
+              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+                <label style={{ fontSize: '12px', margin: 0 }}>Question Count:</label>
+                <input
+                  type="number"
+                  min={3}
+                  max={30}
+                  value={form.interview_question_count}
+                  onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })}
+                  style={{ width: 80, padding: '4px 8px' }}
+                />
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+            <button type="button" className="btn btn-ghost" onClick={() => setShowModal(false)}>
               Cancel
+            </button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Creating Posting...' : 'Publish Job Posting'}
             </button>
           </div>
         </form>
-      )}
+      </Modal>
 
-      {/* Jobs List */}
-      {jobs.length === 0 ? (
-        <div className="card">
-          <div className="empty">
-            <Briefcase size={32} style={{ color: 'var(--color-fg-muted)', marginBottom: 12, opacity: 0.4 }} />
-            <p>No jobs posted yet</p>
-            <p style={{ fontSize: 13, marginTop: 8 }}>Click "Post New Job" to create your first listing.</p>
-          </div>
-        </div>
-      ) : (
-        <div className="card" style={{ padding: 16 }}>
-          <h3 style={{ marginBottom: 12 }}><Briefcase size={16} /> Posted Job Listings ({jobs.length})</h3>
-          {jobs.map((job) => (
-            <div
-              key={job.id}
-              onClick={() => navigate(`/company/pipeline/${job.id}`)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 10px',
-                borderBottom: '1px solid var(--color-border)',
-                cursor: 'pointer',
-                borderRadius: 6,
-                transition: 'background 0.15s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--bg)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)' }}>{job.title}</div>
-                <div className="muted" style={{ fontSize: 12, display: 'flex', gap: 14, marginTop: 4 }}>
-                  {job.location && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <MapPin size={12} /> {job.location}
-                    </span>
-                  )}
-                  {job.employment_type && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <Clock size={12} /> {job.employment_type}
-                    </span>
-                  )}
-                  {job.interview_required && (
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--accent-2)' }}>
-                      <MessageSquare size={12} /> AI Interview Required
-                    </span>
-                  )}
-                </div>
-                {job.required_skills?.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
-                    {job.required_skills.slice(0, 6).map((s) => (
-                      <span key={s} className="chip" style={{ fontSize: 10 }}>
-                        {s}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg)', padding: '6px 12px', borderRadius: 8 }}>
-                  <Users size={14} style={{ color: 'var(--color-primary)' }} />
-                  <span style={{ fontWeight: 700, fontSize: 14 }}>{applicantCounts[job.id] || 0}</span>
-                  <span className="muted" style={{ fontSize: 11 }}>Applicants</span>
-                </div>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  style={{ color: 'var(--color-danger)' }}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    deleteJob(job.id)
-                  }}
-                  title="Delete Job"
-                >
-                  <Trash2 size={14} />
-                </button>
-                <ChevronRight size={16} style={{ color: 'var(--color-fg-muted)' }} />
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+      {/* Confirmation Dialog */}
       <ConfirmDialog
         open={confirm.open}
         title={confirm.title}
         message={confirm.message}
         danger={confirm.danger}
         confirmLabel="Delete"
-        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
+        onConfirm={async () => {
+          await confirm.action()
+          setConfirm({ ...confirm, open: false })
+        }}
         onCancel={() => setConfirm({ ...confirm, open: false })}
       />
     </div>

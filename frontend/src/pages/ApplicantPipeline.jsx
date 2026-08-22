@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Users, Trophy, ArrowLeft, Loader, X, CheckCircle, Code, FileText } from 'lucide-react'
+import {
+  Users, Trophy, ArrowLeft, Loader, X, CheckCircle2, Code, FileText,
+  Building2, MapPin, Sparkles, Eye, AlertCircle
+} from 'lucide-react'
 import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail } from '../api'
+import PageHeader from '../components/PageHeader'
+import Modal from '../components/Modal'
+import ScoreMeter from '../components/ScoreMeter'
+import ScoreBadge from '../components/ScoreBadge'
+import EmptyState from '../components/EmptyState'
+import SkeletonLoader from '../components/SkeletonLoader'
 
 export default function ApplicantPipeline() {
   const navigate = useNavigate()
@@ -13,12 +22,16 @@ export default function ApplicantPipeline() {
   const [busy, setBusy] = useState(true)
   const [ranking, setRanking] = useState(false)
   const [detail, setDetail] = useState(null)
+  const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [detailBusy, setDetailBusy] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'company') { navigate('/login/company'); return }
+    if (!token || role !== 'company') {
+      navigate('/login/company')
+      return
+    }
     loadData()
   }, [jobId])
 
@@ -30,12 +43,12 @@ export default function ApplicantPipeline() {
         uJobsApplicants(jobId).catch(() => ({ data: [] })),
       ])
       const jobList = Array.isArray(jobRes.data) ? jobRes.data : []
-      const j = jobList.find(j => j.id === jobId)
+      const j = jobList.find((x) => x.id === jobId)
       setJob(j)
       const apps = Array.isArray(appsRes.data) ? appsRes.data : []
       setApplicants(apps)
     } catch (err) {
-      toast.error('Failed to load data')
+      toast.error('Failed to load applicant pipeline')
     } finally {
       setBusy(false)
     }
@@ -46,9 +59,9 @@ export default function ApplicantPipeline() {
     try {
       const r = await c3Pipeline(jobId)
       setRankings(r?.data?.data || [])
-      toast.success(`Ranked ${r?.data?.data?.length || 0} applicants`)
+      toast.success(`Evaluated & ranked ${r?.data?.data?.length || 0} applicants`)
     } catch (err) {
-      toast.error('Failed to run ranking')
+      toast.error('Failed to run candidate ranking')
     } finally {
       setRanking(false)
     }
@@ -59,295 +72,275 @@ export default function ApplicantPipeline() {
     try {
       const r = await uInterviewDetail(candidateId)
       setDetail(r.data?.[0] || null)
+      setDetailModalOpen(true)
     } catch (err) {
-      toast.error('No interview data found')
+      toast.error('No detailed interview data found for this candidate')
     } finally {
       setDetailBusy(false)
     }
   }
 
-  if (busy) return (
-    <div className="fade-in" style={{ padding: 28, textAlign: 'center', paddingTop: 80 }}>
-      <Loader size={32} className="spin" style={{ color: 'var(--accent)' }} />
-      <p style={{ marginTop: 12 }}>Loading applicants...</p>
-    </div>
-  )
+  if (busy) {
+    return (
+      <div style={{ maxWidth: 1040, margin: '0 auto' }}>
+        <SkeletonLoader type="table" rows={4} cols={4} />
+      </div>
+    )
+  }
 
   return (
-    <div className="fade-in" style={{ maxWidth: 900, margin: '0 auto' }}>
-      <button className="btn btn-ghost" onClick={() => navigate('/company/dashboard')} style={{ marginBottom: 16 }}>
-        <ArrowLeft size={16} /> Back to Dashboard
+    <div className="fade-in" style={{ maxWidth: 1100, margin: '0 auto' }}>
+      {/* Back to Dashboard */}
+      <button
+        className="btn btn-ghost btn-sm"
+        onClick={() => navigate('/company/dashboard')}
+        style={{ marginBottom: 'var(--p-space-4)' }}
+      >
+        <ArrowLeft size={14} /> Back to Dashboard
       </button>
 
-      <div className="page-head">
-        <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, marginBottom: 4 }}>
-            <Users size={20} style={{ verticalAlign: -4, color: 'var(--accent)' }} /> {job?.title || 'Job'}
-          </h1>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            {applicants.length} applicant(s) · {job?.location || 'N/A'}
-          </p>
-        </div>
-        <button className="btn" onClick={runRanking} disabled={ranking}>
-          <Trophy size={16} /> {ranking ? 'Ranking...' : 'Run Ranking'}
-        </button>
-      </div>
+      {/* Header */}
+      <PageHeader
+        badge="Applicant Pipeline"
+        title={job?.title || 'Job Pipeline'}
+        description={`${applicants.length} Total Applicant(s) · ${job?.location || 'Remote'} · ${job?.employment_type || 'Full-time'}`}
+        icon={Users}
+        actions={
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={runRanking}
+            disabled={ranking || applicants.length === 0}
+          >
+            <Trophy size={14} /> {ranking ? 'Ranking Candidates...' : 'Run LambdaMART LTR Ranking'}
+          </button>
+        }
+      />
 
-      {/* Stats */}
-      <div className="grid grid-3" style={{ margin: '20px 0' }}>
-        <div className="stat">
-          <div className="stat-label">Applicants</div>
-          <div className="stat-value" style={{ color: 'var(--accent)' }}>{applicants.length}</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Ranked</div>
-          <div className="stat-value" style={{ color: 'var(--accent-2)' }}>{rankings.filter(r => r.rank > 0).length}</div>
-        </div>
-        <div className="stat">
-          <div className="stat-label">Interview Required</div>
-          <div className="stat-value" style={{ color: job?.interview_required ? 'var(--accent-2)' : 'var(--text-muted)' }}>
-            {job?.interview_required ? 'Yes' : 'No'}
+      {/* Applicant Rankings or Raw List */}
+      {rankings.length > 0 ? (
+        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--p-space-6)' }}>
+          <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Trophy size={18} style={{ color: 'var(--color-primary)' }} /> Ranked Applicant Standings
+            </h3>
+            <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+              LightGBM LambdaMART LTR
+            </span>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th style={{ width: 60 }}>Rank</th>
+                  <th>Candidate</th>
+                  <th>Blended Score</th>
+                  <th>Skills (S_skill)</th>
+                  <th>Exp (S_exp)</th>
+                  <th>Interview (P_int)</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rankings.map((r, i) => (
+                  <tr key={r.candidate_id || i} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
+                    <td>
+                      <div style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 'var(--radius-sm)',
+                        background: r.passed_hard_filter ? (i < 3 ? 'var(--color-primary)' : 'var(--color-border-subtle)') : 'var(--color-danger-muted)',
+                        color: r.passed_hard_filter ? (i < 3 ? '#fff' : 'var(--color-fg)') : 'var(--color-danger)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '12px'
+                      }}>
+                        {r.passed_hard_filter ? `#${r.rank || i + 1}` : '✗'}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{r.candidate_name || 'Candidate'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>ID: {r.candidate_id?.slice(0, 8)}</div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                        {(r.final_score || r.blended_score || 0).toFixed(1)}%
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)' }}>
+                        {(r.skill_score || 0).toFixed(0)}%
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)' }}>
+                        {(r.experience_score || 0).toFixed(0)}%
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontWeight: 700 }}>
+                        {(r.interview_score || 0).toFixed(0)}%
+                      </div>
+                    </td>
+                    <td>
+                      {r.passed_hard_filter ? (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                          Qualified
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-danger)', background: 'var(--color-danger-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                          {r.filter_fail_reason || 'Disqualified'}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => openDetail(r.candidate_id)}
+                        disabled={detailBusy}
+                        style={{ fontSize: 'var(--p-text-xs)' }}
+                      >
+                        <Eye size={13} /> Assessment Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      ) : applicants.length > 0 ? (
+        /* Unranked Applicants List */
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <Users size={18} style={{ color: 'var(--color-primary)' }} /> Applicants in Pipeline ({applicants.length})
+            </h3>
+            <button className="btn btn-primary btn-sm" onClick={runRanking}>
+              <Trophy size={14} /> Run LTR Ranking
+            </button>
+          </div>
 
-      {/* Rankings Table */}
-      {rankings.length > 0 && (
-        <div className="card" style={{ marginBottom: 20 }}>
-          <h3 style={{ marginBottom: 16 }}><Trophy size={16} style={{ color: 'var(--accent)' }} /> Candidate Rankings & Score Distribution</h3>
-          {rankings.map((r, i) => (
-            <div key={r.candidate_id || i} style={{
-              padding: '16px 0', borderBottom: '1px solid var(--border)',
-              opacity: r.passed_hard_filter ? 1 : 0.65
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{
-                  width: 34, height: 34, borderRadius: 8,
-                  background: !r.passed_hard_filter ? 'var(--border)' : i === 0 ? 'var(--accent)' : i === 1 ? 'var(--accent-2)' : 'var(--border)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 14, color: r.passed_hard_filter && i < 2 ? 'var(--color-on-primary)' : 'var(--text)'
-                }}>{r.passed_hard_filter ? r.rank : '✗'}</div>
-                
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontWeight: 600, fontSize: 15 }}>{r.candidate_name}</span>
-                    {r.passed_hard_filter ? (
-                      <span className="chip" style={{ fontSize: 10, background: 'rgba(34,197,94,0.12)', color: 'var(--color-success)', borderColor: 'rgba(34,197,94,0.3)' }}>Qualified</span>
-                    ) : (
-                      <span className="chip" style={{ fontSize: 10, background: 'rgba(239,68,68,0.12)', color: 'var(--color-danger)', borderColor: 'rgba(239,68,68,0.3)' }}>
-                        {r.filter_fail_reason || 'Disqualified'}
+          <div style={{ overflowX: 'auto' }}>
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Candidate Name</th>
+                  <th>Candidate ID</th>
+                  <th>Application Date</th>
+                  <th>Status</th>
+                  <th style={{ textAlign: 'right' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {applicants.map((app, idx) => (
+                  <tr key={app.id || idx}>
+                    <td style={{ fontWeight: 700, color: 'var(--color-fg)' }}>
+                      {app.candidate_name || 'Verified Applicant'}
+                    </td>
+                    <td style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                      {app.candidate_id?.slice(0, 12) || '—'}
+                    </td>
+                    <td style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)' }}>
+                      {app.created_at ? new Date(app.created_at).toLocaleDateString() : 'Recent'}
+                    </td>
+                    <td>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)', background: 'var(--color-primary-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                        {app.status || 'Applied'}
                       </span>
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => openDetail(app.candidate_id)}
+                        disabled={detailBusy}
+                      >
+                        <Eye size={13} /> View Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <EmptyState
+          title="No applicants yet for this opening"
+          description="When candidates apply to this position, their CV extractions and technical assessment scores will be evaluated here."
+          icon={Users}
+        />
+      )}
+
+      {/* Candidate Assessment Detail Modal */}
+      <Modal
+        open={detailModalOpen}
+        onClose={() => setDetailModalOpen(false)}
+        title="Candidate Assessment Transcript"
+        subtitle={`Detailed review of technical interview responses and sandbox execution.`}
+        icon={FileText}
+        maxWidth={720}
+      >
+        {detail ? (
+          <div>
+            <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, textAlign: 'center' }}>
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>MCQ Accuracy</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                    {(detail.mcq_score || 0).toFixed(0)}%
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Theory Cosine</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-info)' }}>
+                    {(detail.descriptive_score || 0).toFixed(0)}%
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Coding Sandbox</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-purple)' }}>
+                    {(detail.code_score || 0).toFixed(0)}%
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Answer items */}
+            {detail.answers?.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {detail.answers.map((ans, idx) => (
+                  <div key={idx} style={{ padding: 12, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
+                    <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 4 }}>
+                      Question #{idx + 1}
+                    </div>
+                    {ans.code_text ? (
+                      <pre style={{ margin: 0, padding: 8, background: 'var(--color-bg)', borderRadius: 4, fontFamily: 'var(--p-font-mono)', fontSize: '12px', overflowX: 'auto' }}>
+                        {ans.code_text}
+                      </pre>
+                    ) : (
+                      <p style={{ margin: 0, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
+                        {ans.answer_text || `Selected option: ${ans.selected_option}`}
+                      </p>
                     )}
                   </div>
-                  <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                    Candidate ID: {r.candidate_id}
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: r.passed_hard_filter ? 'var(--accent)' : 'var(--text-muted)' }}>
-                    {((r.CSS || 0) * 100).toFixed(1)}%
-                  </div>
-                  <div className="muted" style={{ fontSize: 11 }}>
-                    CSS Score {r.ltr_score != null && `· LTR: ${(r.ltr_score * 100).toFixed(1)}%`}
-                  </div>
-                </div>
+                ))}
               </div>
-
-              {/* 6 Marks Distribution (C1 & C2) */}
-              <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
-                gap: 8, marginTop: 12, padding: '10px 12px', background: 'var(--bg)', borderRadius: 8, fontSize: 12
-              }}>
-                <div>
-                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C1: EDUCATION</span>
-                  <strong>{((r.S_edu || 0) * 100).toFixed(0)}%</strong>
-                </div>
-                <div>
-                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C1: EXPERIENCE</span>
-                  <strong>{((r.S_exp || 0) * 100).toFixed(0)}%</strong>
-                </div>
-                <div>
-                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C1: SKILL MATCH</span>
-                  <strong>{((r.S_skill || 0) * 100).toFixed(0)}%</strong>
-                </div>
-                <div>
-                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C2: MCQ SCORE</span>
-                  <strong>{((r.P_mcq || 0) * 100).toFixed(0)}%</strong>
-                </div>
-                <div>
-                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C2: DESCRIPTIVE</span>
-                  <strong>{((r.P_desc || 0) * 100).toFixed(0)}%</strong>
-                </div>
-                <div>
-                  <span className="muted" style={{ display: 'block', fontSize: 10, fontWeight: 600 }}>C2: CODING</span>
-                  <strong>{((r.P_code || 0) * 100).toFixed(0)}%</strong>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Applicant List */}
-      <div className="card">
-        <h3 style={{ marginBottom: 16 }}><Users size={16} /> Applicants</h3>
-        {applicants.length === 0 ? (
-          <div className="empty">
-            <div className="empty-icon">👥</div>
-            <p>No applicants yet</p>
+            ) : (
+              <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', textAlign: 'center' }}>
+                Summary score attached without raw question transcript.
+              </p>
+            )}
           </div>
         ) : (
-          applicants.map((app) => (
-            <div key={app.candidate_id} style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              padding: '12px 0', borderBottom: '1px solid var(--border)'
-            }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontWeight: 700, fontSize: 14, color: 'var(--color-on-primary)'
-              }}>
-                {(app.candidate_name || '?')[0]?.toUpperCase()}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>{app.candidate_name || 'Unknown'}</div>
-                <div className="muted" style={{ fontSize: 12 }}>
-                  Applied {app.applied_at ? new Date(app.applied_at).toLocaleDateString() : 'N/A'}
-                </div>
-              </div>
-              <button className="btn btn-sm btn-ghost" onClick={() => openDetail(app.candidate_id)} disabled={detailBusy}>
-                <FileText size={14} /> Interview Details
-              </button>
-            </div>
-          ))
+          <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', textAlign: 'center' }}>
+            No assessment data loaded.
+          </p>
         )}
-      </div>
-
-      {/* Interview Detail Modal */}
-      {detail && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000,
-          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20
-        }} onClick={() => setDetail(null)}>
-          <div style={{
-            background: 'var(--bg-elevated)', borderRadius: 16, maxWidth: 700, width: '100%',
-            maxHeight: '85vh', overflow: 'auto', padding: 28, border: '1px solid var(--border)'
-          }} onClick={e => e.stopPropagation()}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-              <div>
-                <h2 style={{ fontSize: 20, fontWeight: 800, marginBottom: 2 }}>Interview Results</h2>
-                <p className="muted" style={{ fontSize: 13 }}>
-                  {detail.candidate_id} · {detail.job_role || 'N/A'} · {detail.grade || 'N/A'}
-                </p>
-              </div>
-              <button className="btn btn-ghost btn-sm" onClick={() => setDetail(null)} style={{ padding: 6 }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Score Summary */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
-              {[
-                { label: 'Overall', value: detail.interview_score, color: 'var(--accent)' },
-                { label: 'MCQ', value: detail.mcq_score, color: 'var(--accent-2)' },
-                { label: 'Descriptive', value: detail.descriptive_score, color: 'var(--color-warning)' },
-                { label: 'Coding', value: detail.coding_score, color: 'var(--color-purple)' },
-              ].map(s => (
-                <div key={s.label} style={{ textAlign: 'center', padding: 12, background: 'var(--bg)', borderRadius: 8 }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: s.color }}>{(s.value || 0).toFixed(1)}%</div>
-                  <div className="muted" style={{ fontSize: 11 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Weak Topics */}
-            {detail.weak_topics?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>Weak Areas</h3>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                  {detail.weak_topics.map((t, i) => (
-                    <span key={i} className="chip" style={{ fontSize: 11, borderColor: 'var(--danger)', color: 'var(--danger)' }}>{t}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* MCQ Details */}
-            {detail.mcq_details?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-                  <CheckCircle size={14} style={{ verticalAlign: -2, color: 'var(--accent-2)' }} /> MCQ Questions ({detail.mcq_correct || 0}/{detail.mcq_total || 0} correct)
-                </h3>
-                {detail.mcq_details.map((d, i) => (
-                  <div key={i} style={{
-                    padding: '8px 10px', marginBottom: 4, borderRadius: 6,
-                    background: d.is_correct ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)',
-                    border: `1px solid ${d.is_correct ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)'}`,
-                    fontSize: 13
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Q{i + 1}: {d.question_id}</span>
-                      <span style={{ fontWeight: 600, color: d.is_correct ? 'var(--accent-2)' : 'var(--danger)' }}>
-                        {d.is_correct ? 'Correct' : 'Wrong'}
-                      </span>
-                    </div>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                      Selected: option {d.candidate_option} · Correct: option {d.correct_option}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Descriptive Details */}
-            {detail.descriptive_details?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-                  <FileText size={14} style={{ verticalAlign: -2, color: 'var(--color-warning)' }} /> Descriptive Questions
-                </h3>
-                {detail.descriptive_details.map((d, i) => (
-                  <div key={i} style={{
-                    padding: '8px 10px', marginBottom: 4, borderRadius: 6,
-                    background: 'var(--bg)', fontSize: 13
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Q{i + 1}: {d.question_id}</span>
-                      <span style={{ fontWeight: 600 }}>{(d.final_score || 0).toFixed(1)}%</span>
-                    </div>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                      Similarity: {((d.cosine_similarity || 0) * 100).toFixed(0)}% · Keywords: {((d.keyword_coverage || 0) * 100).toFixed(0)}%
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Coding Details */}
-            {detail.coding_details?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <h3 style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>
-                  <Code size={14} style={{ verticalAlign: -2, color: 'var(--color-purple)' }} /> Coding Questions
-                </h3>
-                {detail.coding_details.map((d, i) => (
-                  <div key={i} style={{
-                    padding: '8px 10px', marginBottom: 4, borderRadius: 6,
-                    background: 'var(--bg)', fontSize: 13
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Q{i + 1}: {d.question_id}</span>
-                      <span style={{ fontWeight: 600 }}>{(d.code_score || 0).toFixed(1)}%</span>
-                    </div>
-                    <div className="muted" style={{ fontSize: 12, marginTop: 2 }}>
-                      Tests: {d.tests_passed || 0}/{d.total_tests || 0} passed · Syntax: {d.syntax_valid ? 'Valid' : 'Invalid'}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      </Modal>
     </div>
   )
 }

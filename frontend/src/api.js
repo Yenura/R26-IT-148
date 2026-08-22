@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+const inFlightGetRequests = new Map()
+
 const mk = (url) => {
   const instance = axios.create({
     baseURL: `${url}/api/v1`,
@@ -11,6 +13,23 @@ const mk = (url) => {
     if (token) cfg.headers.Authorization = `Bearer ${token}`
     return cfg
   })
+
+  // Deduplicate identical in-flight GET requests
+  const originalGet = instance.get.bind(instance)
+  instance.get = (requestUrl, config = {}) => {
+    const key = `${url}:${requestUrl}:${JSON.stringify(config.params || {})}`
+    if (inFlightGetRequests.has(key)) {
+      return inFlightGetRequests.get(key)
+    }
+    const promise = originalGet(requestUrl, config)
+      .finally(() => {
+        // Clear in-flight cache shortly after resolution
+        setTimeout(() => inFlightGetRequests.delete(key), 500)
+      })
+    inFlightGetRequests.set(key, promise)
+    return promise
+  }
+
   return instance
 }
 

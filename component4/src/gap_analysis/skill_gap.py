@@ -9,7 +9,7 @@ Computes:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from src.preprocessing.skill_normalizer import normalize_skill, normalize_skills
 from src.gap_analysis.priority import compute_priority_score
@@ -26,27 +26,41 @@ def load_job_requirements() -> dict:
     return {}
 
 
-def analyze_skill_gap(current_skills: List[str], target_role: str) -> Dict[str, Any]:
+def analyze_skill_gap(
+    current_skills: List[str],
+    target_role: str,
+    custom_required: Optional[List[str]] = None,
+    custom_optional: Optional[List[str]] = None
+) -> Dict[str, Any]:
     """
     Main Skill Gap Engine function.
-    Given current_skills and target_role:
+    Given current_skills and target_role (or custom job skills):
       - Normalizes skills
-      - Fetches required skills for target_role
+      - Fetches required skills for target_role (or uses custom job opening skills)
       - Performs set difference for missing skills
-      - Computes skill_coverage (0.0 - 1.0) and skill_coverage_percentage
+      - Computes skill_coverage (0.0 – 1.0) and skill_coverage_percentage
       - Computes explainable priority_score for each missing skill
     """
     norm_curr = normalize_skills(current_skills)
     curr_set = {s.lower() for s in norm_curr}
 
     job_reqs = load_job_requirements()
-    role_info = job_reqs.get(target_role, {})
+    role_info = job_reqs.get(target_role)
+    if not role_info:
+        for k, v in job_reqs.items():
+            if k.lower() == target_role.lower() or k.lower() in target_role.lower() or target_role.lower() in k.lower():
+                role_info = v
+                break
+    role_info = role_info or {}
 
-    raw_req_skills = role_info.get("required", [])
-    raw_opt_skills = role_info.get("optional", [])
+    if custom_required and len(custom_required) > 0:
+        raw_req_skills = custom_required
+        raw_opt_skills = custom_optional or role_info.get("optional", [])
+    else:
+        raw_req_skills = role_info.get("required", [])
+        raw_opt_skills = role_info.get("optional", [])
 
     if not raw_req_skills and not raw_opt_skills:
-        # Fallback default required skills for unknown roles
         raw_req_skills = ["Python", "SQL", "Git"]
 
     norm_req_skills = normalize_skills(raw_req_skills)

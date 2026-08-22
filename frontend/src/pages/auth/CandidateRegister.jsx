@@ -11,8 +11,12 @@ export default function CandidateRegister() {
 
   const register = async (e) => {
     e.preventDefault()
-    if (!form.full_name || !form.email || !form.password) return toast.error('Fill required fields')
-    if (form.password.length < 6) return toast.error('Password must be 6+ characters')
+    if (!form.full_name.trim() || !form.email.trim() || !form.password) {
+      return toast.error('Please fill in all required fields')
+    }
+    if (form.password.length < 6) {
+      return toast.error('Password must be at least 6 characters')
+    }
     setBusy(true)
     try {
       const r = await C0.post('/auth/register/candidate', form)
@@ -24,7 +28,7 @@ export default function CandidateRegister() {
         localStorage.setItem('recruitai.name', me.data.name || '')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Account created!')
+      toast.success('Candidate account created!')
       navigate('/candidate/dashboard')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Registration failed')
@@ -36,29 +40,82 @@ export default function CandidateRegister() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)' }}>
-      <div style={{ width: 440, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 16, alignSelf: 'flex-start' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
+      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div className="sidebar-logo" style={{ margin: '0 auto 12px', width: 48, height: 48 }}><Brain size={24} /></div>
-          <h1 style={{ fontSize: 24, fontWeight: 800 }}>Candidate Registration</h1>
-          <p className="muted" style={{ fontSize: 13 }}>Create your candidate account</p>
+
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{
+            margin: '0 auto 12px',
+            width: 48,
+            height: 48,
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff'
+          }}>
+            <Brain size={24} />
+          </div>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+            Create Candidate Account
+          </h1>
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+            Join RecruitAI to analyze your CV and discover matching roles.
+          </p>
         </div>
-        <form onSubmit={register} className="card" style={{ padding: 28 }}>
-          <label>Full Name *</label>
-          <input type="text" value={form.full_name} onChange={set('full_name')} placeholder="John Doe" />
-          <label>Email *</label>
-          <input type="email" value={form.email} onChange={set('email')} placeholder="john@example.com" />
-          <label>Password *</label>
-          <input type="password" value={form.password} onChange={set('password')} placeholder="Min 6 characters" />
-          <button className="btn btn-success" type="submit" disabled={busy} style={{ width: '100%', marginTop: 16 }}>
-            <User size={16} /> {busy ? 'Creating…' : 'Create Candidate Account'}
+
+        <form onSubmit={register} className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Full Name *</label>
+            <input
+              type="text"
+              value={form.full_name}
+              onChange={set('full_name')}
+              placeholder="e.g. Alex Morgan"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Email Address *</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={set('email')}
+              placeholder="alex@example.com"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Password *</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={set('password')}
+              placeholder="Minimum 6 characters"
+              required
+            />
+          </div>
+
+          <button
+            className="btn btn-primary"
+            type="submit"
+            disabled={busy}
+            style={{ width: '100%', padding: '11px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700 }}
+          >
+            <User size={15} /> {busy ? 'Creating Account...' : 'Create Candidate Account'}
           </button>
-          <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13 }}>
-            <span className="muted">Have an account? </span>
-            <Link to="/login/candidate">Login</Link>
+
+          <div style={{ textAlign: 'center', marginTop: 18, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+            <span>Already have an account? </span>
+            <Link to="/login/candidate" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
+              Sign In
+            </Link>
           </div>
         </form>
       </div>

@@ -66,27 +66,72 @@ async def simple_skill_gap(payload: Dict[str, Any]):
 
 
 @router.post("/simulate", summary="Run 'What-If' skill acquisition simulation")
-async def simulate_skill_acquisition(payload: Dict[str, Any]):
-    current_skills = payload.get("current_skills") or []
-    acquired_skills = payload.get("acquired_skills") or []
-    target_role = payload.get("target_role") or "Data Scientist"
+async def simulate_skill_acquisition(payload: Dict[str, Any], request: Request = None):
+    db = getattr(request.app.state, "db", None) if request else None
+
+    candidate_id = payload.get("candidate_id")
+    target_role = payload.get("target_role") or payload.get("job_role") or payload.get("role") or "Software Engineer"
+    acquired_skills = payload.get("acquired_skills") or payload.get("skills") or payload.get("simulated_skills") or []
+    current_skills = payload.get("current_skills")
+    custom_required = payload.get("required_skills") or payload.get("opening_required_skills")
+
+    # If current_skills not explicitly provided, load candidate's real CV skills from db
+    if current_skills is None and candidate_id and db is not None:
+        from bson import ObjectId
+        resume = await db.resumes.find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
+        if not resume:
+            try:
+                resume = await db.resumes.find_one({"candidate_id": ObjectId(candidate_id)}, sort=[("created_at", -1)])
+            except Exception:
+                pass
+        if resume:
+            current_skills = resume.get("skills", [])
+        else:
+            current_skills = []
+    elif current_skills is None:
+        current_skills = []
 
     combined_skills = list(set(current_skills + acquired_skills))
 
-    res_orig = analyze_skill_gap(current_skills=current_skills, target_role=target_role)
-    res_sim = analyze_skill_gap(current_skills=combined_skills, target_role=target_role)
+    res_orig = analyze_skill_gap(current_skills=current_skills, target_role=target_role, custom_required=custom_required)
+    res_sim = analyze_skill_gap(current_skills=combined_skills, target_role=target_role, custom_required=custom_required)
 
     orig_pct = res_orig["skill_coverage_percentage"]
     sim_pct = res_sim["skill_coverage_percentage"]
+    diff = round(max(0.0, sim_pct - orig_pct), 2)
 
-    return {
+    remaining_missing = [m["skill"] for m in res_sim["missing_skills"]]
+    resources = []
+    try:
+        from services.ml_engine import RESOURCES as _RESOURCES
+    except Exception:
+        _RESOURCES = {}
+    for sk in remaining_missing:
+        r = _RESOURCES.get(sk) or {
+            "course": f"{sk} Fundamentals & Mastery",
+            "url": f"https://www.coursera.org/search?query={sk.replace(' ', '+')}",
+            "duration": "3-4 weeks",
+            "level": "Intermediate"
+        }
+        resources.append({"skill": sk, **r})
+
+    data_dict = {
         "target_role": target_role,
         "original_coverage": orig_pct,
         "simulated_coverage": sim_pct,
-        "coverage_improvement": round(sim_pct - orig_pct, 2),
+        "coverage_improvement": diff,
+        "simulated_matched": res_sim["matched_skills"],
         "matched_skills": res_sim["matched_skills"],
-        "remaining_missing_skills": [m["skill"] for m in res_sim["missing_skills"]]
+        "remaining_missing": remaining_missing,
+        "remaining_missing_skills": remaining_missing,
+        "resources": resources,
+        "learning_plan": [
+            {"step": i + 1, "skill": sk, "action": f"Acquire {sk} to unlock higher job match"}
+            for i, sk in enumerate(remaining_missing)
+        ],
     }
+
+    return {"success": True, **data_dict, "data": data_dict}
 
 
 @router.get("/graph", summary="Get skill dependency DAG graph")
