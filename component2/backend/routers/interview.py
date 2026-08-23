@@ -179,6 +179,12 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             job_level=interview_request.job_level or "Mid-Level",
         )
         
+        # Store time limits from employer config
+        session["mcq_time"] = interview_request.mcq_time or 60
+        session["desc_time"] = interview_request.desc_time or 300
+        session["coding_time"] = interview_request.coding_time or 600
+        session["total_time"] = interview_request.total_time or 60
+        
         # Persist interview session to MongoDB
         await save_session(session)
         
@@ -207,6 +213,10 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             questions=questions,
             question_count=session["question_count"],
             total_questions=session["total_questions"],
+            mcq_time=session["mcq_time"],
+            desc_time=session["desc_time"],
+            coding_time=session["coding_time"],
+            total_time=session["total_time"],
             created_at=session["created_at"],
             status=session["status"]
         )
