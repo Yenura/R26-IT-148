@@ -48,17 +48,6 @@ def print_accuracy_banner():
       - Mean Average Precision (MAP): 0.9772 (97.72%)
       - Spearman Rank Correlation   : 0.6807
 
-  • Feature Weights & Scoring Split:
-      - W_CV (CV Credentials Weight) : 40% (Education, Experience, Skill Match)
-      - W_INT (AI Interview Weight)  : 60% (MCQ, Descriptive, Live Coding)
-
-  ⚖️ FAIRNESS & ETHICAL AI METRICS:
-  ------------------------------------------------------------------------------
-  • Demographic Parity Difference (DP) : 0.0124 (Threshold limit: < 0.05) [PASS]
-  • Equalized Odds Difference (EOD)    : 0.0089 (Threshold limit: < 0.05) [PASS]
-  • Top-3 Ranking Stability            : 1.0000 (100% stable across weight perturbation)
-  • Tested Candidate Cohort            : 10,000 Candidates across 20 IT Technical Roles
-
   🚀 SERVICE RUNNING ON: http://127.0.0.1:{PORT} (Swagger Docs: http://127.0.0.1:{PORT}/docs)
 ================================================================================
 """
