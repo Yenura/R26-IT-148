@@ -4,9 +4,12 @@ import toast from 'react-hot-toast'
 import {
   Target, RefreshCw, TrendingUp, Briefcase, HelpCircle,
   Code, Building2, Sparkles, AlertCircle, CheckCircle2,
-  ExternalLink, Layers, Lightbulb
+  ExternalLink, Layers, Lightbulb, ArrowRight
 } from 'lucide-react'
 import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync } from '../api'
+import PageHeader from '../components/PageHeader'
+import StatCard from '../components/StatCard'
+import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
@@ -116,57 +119,40 @@ export default function SkillGap() {
   const selectedReport = appliedReports.find(r => r.job_id === selectedJobId) || appliedReports[0]
 
   return (
-    <div className="fade-in" style={{ padding: '24px 16px', maxWidth: 1050, margin: '0 auto' }}>
+    <div className="fade-in" style={{ maxWidth: 1100, margin: '0 auto' }}>
       {/* Header */}
-      <div className="page-head" style={{ marginBottom: 20 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12 }}>
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: 1.2, marginBottom: 4 }}>
-              Component 4 · Multi-Dimensional Evaluation Engine
-            </div>
-            <h1 style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10, margin: 0 }}>
-              <Target size={28} style={{ color: 'var(--accent)' }} /> Skill Gap & Job Readiness Analyzer
-            </h1>
-            <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>
-              Analyze your strengths & weaknesses across real applied jobs, or simulate skill acquisitions against available openings.
-            </p>
-          </div>
+      <PageHeader
+        badge="Component 4 Evaluation Engine"
+        title="Skill Gap & Job Readiness Analyzer"
+        description="Diagnose your strengths & weaknesses across real applied positions, or simulate targeted skill acquisitions against live job openings."
+        icon={Target}
+        actions={
           <div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={loadAppliedJobsAnalysis} className="btn btn-ghost btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }} title="Refresh analysis">
+            <button onClick={loadAppliedJobsAnalysis} className="btn btn-ghost btn-sm" title="Refresh analysis">
               <RefreshCw size={14} className={loadingApplied ? 'spin' : ''} /> Refresh
             </button>
-            <button onClick={syncToProgress} disabled={syncingProgress} className="btn btn-primary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={syncToProgress} disabled={syncingProgress} className="btn btn-primary btn-sm">
               <TrendingUp size={14} /> {syncingProgress ? 'Syncing...' : 'Sync Weaknesses to Progress'}
             </button>
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Tab Bar */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '2px solid var(--border)', paddingBottom: 0 }}>
+      <div style={{ display: 'flex', gap: 6, marginBottom: 'var(--p-space-5)', borderBottom: '1px solid var(--color-border)', paddingBottom: 0 }}>
         <button
           onClick={() => setActiveTab('applied')}
-          style={{
-            padding: '10px 20px', borderRadius: '8px 8px 0 0', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6,
-            background: activeTab === 'applied' ? 'var(--accent)' : 'transparent',
-            color: activeTab === 'applied' ? 'var(--color-on-primary)' : 'var(--text-muted)',
-            transition: 'all 0.15s ease'
-          }}
+          className={`btn btn-sm ${activeTab === 'applied' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
         >
-          <Briefcase size={15} /> Applied Jobs
+          <Briefcase size={15} /> Applied Positions ({appliedReports.length})
         </button>
         <button
           onClick={() => setActiveTab('explorer')}
-          style={{
-            padding: '10px 20px', borderRadius: '8px 8px 0 0', border: 'none', cursor: 'pointer',
-            fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6,
-            background: activeTab === 'explorer' ? 'var(--accent)' : 'transparent',
-            color: activeTab === 'explorer' ? 'var(--color-on-primary)' : 'var(--text-muted)',
-            transition: 'all 0.15s ease'
-          }}
+          className={`btn btn-sm ${activeTab === 'explorer' ? 'btn-primary' : 'btn-ghost'}`}
+          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
         >
-          <Sparkles size={15} /> Explorer (Simulation)
+          <Sparkles size={15} /> What-If Simulator & Explorer
         </button>
       </div>
 
@@ -175,21 +161,18 @@ export default function SkillGap() {
         <div>
           {loadingApplied ? (
             <div className="card" style={{ padding: 48, textAlign: 'center' }}>
-              <RefreshCw size={28} className="spin" style={{ color: 'var(--accent)', marginBottom: 12 }} />
-              <div style={{ fontSize: 15, fontWeight: 600 }}>Analyzing applied jobs and interview scores...</div>
-              <div className="muted" style={{ fontSize: 13, marginTop: 4 }}>Connecting Component 1 (CV) & Component 2 (AI Interview) datasets</div>
+              <RefreshCw size={28} className="spin" style={{ color: 'var(--color-primary)', margin: '0 auto 12px' }} />
+              <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 600, color: 'var(--color-fg)' }}>Analyzing applied jobs and interview scores...</div>
+              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>Connecting Component 1 (CV) & Component 2 (AI Interview) datasets</div>
             </div>
           ) : appliedReports.length === 0 ? (
-            <div className="card" style={{ padding: 40, textAlign: 'center' }}>
-              <Briefcase size={36} style={{ color: 'var(--text-muted)', margin: '0 auto 12px' }} />
-              <h3 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>No Job Applications Yet</h3>
-              <p className="muted" style={{ fontSize: 13, maxWidth: 500, margin: '0 auto 16px' }}>
-                Apply for open positions on the Job Board and complete your AI Technical Interview to generate deep role-specific skill gap evaluations.
-              </p>
-              <Link to="/candidate/jobs" className="btn btn-primary" style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                <Briefcase size={16} /> Browse Real Job Postings
-              </Link>
-            </div>
+            <EmptyState
+              title="No Job Applications Yet"
+              description="Apply for open positions on the Job Board and complete your AI Technical Interview to generate deep role-specific skill gap evaluations."
+              actionLabel="Browse Real Job Postings"
+              onAction={() => navigate('/candidate/jobs')}
+              icon={Briefcase}
+            />
           ) : (
             <div>
               {/* Job Selector Pills */}
@@ -201,21 +184,23 @@ export default function SkillGap() {
                       key={rep.job_id}
                       onClick={() => setSelectedJobId(rep.job_id)}
                       style={{
-                        padding: '10px 16px', borderRadius: 10, minWidth: 200, textAlign: 'left', cursor: 'pointer',
-                        border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
-                        background: isSelected ? 'rgba(59, 130, 246, 0.08)' : 'var(--bg-elevated)',
+                        padding: '12px 16px', borderRadius: 'var(--radius-lg)', minWidth: 220, textAlign: 'left', cursor: 'pointer',
+                        border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                        background: isSelected ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)',
+                        boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-xs)',
                         transition: 'all 0.15s ease'
                       }}
                     >
-                      <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)' }}>{rep.job_title}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{rep.job_title}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <span>{rep.company_name}</span>
                         <span style={{
-                          fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                          background: rep.interview_completed ? 'rgba(34, 197, 94, 0.15)' : 'rgba(245, 158, 11, 0.15)',
-                          color: rep.interview_completed ? '#22c55e' : '#f59e0b'
+                          fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)',
+                          background: rep.interview_completed ? 'var(--color-success-muted)' : 'var(--color-warning-muted)',
+                          color: rep.interview_completed ? 'var(--color-success)' : 'var(--color-warning)',
+                          border: `1px solid ${rep.interview_completed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
                         }}>
-                          {rep.interview_completed ? 'Interviewed' : 'Applied'}
+                          {rep.interview_completed ? '✓ Interviewed' : 'Applied'}
                         </span>
                       </div>
                     </button>
@@ -225,47 +210,53 @@ export default function SkillGap() {
 
               {/* Selected Job Report */}
               {selectedReport && (
-                <div className="card" style={{ padding: 24, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+                <div className="card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
                   {/* Header & Scores */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, paddingBottom: 18, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, paddingBottom: 18, borderBottom: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span className="chip" style={{ fontSize: 11, fontWeight: 700, background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent)' }}>
+                        <span className="chip" style={{ fontSize: '11px', fontWeight: 700, background: 'var(--color-primary-muted)', color: 'var(--color-primary)' }}>
                           {selectedReport.company_name}
                         </span>
-                        <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>• {selectedReport.location}</span>
-                        {selectedReport.salary_range && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>• {selectedReport.salary_range}</span>}
+                        <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>• {selectedReport.location}</span>
+                        {selectedReport.salary_range && <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>• {selectedReport.salary_range}</span>}
                       </div>
-                      <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>{selectedReport.job_title}</h2>
+                      <h2 style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0, letterSpacing: '-0.02em' }}>
+                        {selectedReport.job_title}
+                      </h2>
                     </div>
-                    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>CV Match (C1)</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: 'var(--text)' }}>{selectedReport.cv_score != null ? `${selectedReport.cv_score}%` : 'N/A'}</div>
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Match (C1)</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                          {selectedReport.cv_score != null ? `${selectedReport.cv_score}%` : 'N/A'}
+                        </div>
                       </div>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Interview Score (C2)</div>
-                        <div style={{ fontSize: 18, fontWeight: 900, color: selectedReport.interview_completed ? 'var(--color-success)' : '#f59e0b' }}>
+                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview (C2)</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedReport.interview_completed ? 'var(--color-success)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
                           {selectedReport.interview_score != null ? `${selectedReport.interview_score}%` : 'Pending'}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: 8, border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase' }}>Overall Fit Score</div>
-                        <div style={{ fontSize: 20, fontWeight: 900, color: 'var(--accent)' }}>{selectedReport.composite_score}%</div>
+                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>Overall Fit</div>
+                        <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
+                          {selectedReport.composite_score}%
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {/* Interview alert */}
                   {!selectedReport.interview_completed && (
-                    <div style={{ padding: 14, borderRadius: 8, background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ padding: '14px 18px', borderRadius: 'var(--radius-md)', background: 'var(--color-warning-muted)', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <HelpCircle size={18} style={{ color: '#f59e0b' }} />
-                        <span style={{ fontSize: 13, color: 'var(--text)' }}>
-                          You have applied but haven&apos;t faced the technical interview yet. Take the interview to unlock complete insights!
+                        <HelpCircle size={18} style={{ color: 'var(--color-warning)' }} />
+                        <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg)' }}>
+                          You have applied but haven&apos;t faced the AI technical interview yet. Take the assessment to unlock complete gap diagnostics!
                         </span>
                       </div>
-                      <Link to="/candidate/interview" className="btn btn-sm" style={{ background: '#f59e0b', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      <Link to="/candidate/interview" className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         Start AI Interview
                       </Link>
                     </div>
@@ -273,18 +264,18 @@ export default function SkillGap() {
 
                   {/* Strengths */}
                   {selectedReport.strengths?.length > 0 && (
-                    <div style={{ marginBottom: 20, padding: 16, background: 'rgba(34, 197, 94, 0.04)', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.2)' }}>
-                      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#22c55e', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <CheckCircle2 size={18} /> Verified Strengths ({selectedReport.strengths.length})
+                    <div style={{ marginBottom: 20, padding: 16, background: 'var(--color-success-muted)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                      <h3 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <CheckCircle2 size={16} /> Verified Strengths ({selectedReport.strengths.length})
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {selectedReport.strengths.map((st, idx) => (
-                          <div key={idx} style={{ padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid rgba(34, 197, 94, 0.2)' }}>
+                          <div key={idx} style={{ padding: '10px 14px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{st.skill}</span>
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(34, 197, 94, 0.15)', color: '#22c55e' }}>{st.source}</span>
+                              <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{st.skill}</span>
+                              <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)', background: 'var(--color-success-muted)', color: 'var(--color-success)' }}>{st.source}</span>
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{st.details}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 3 }}>{st.details}</div>
                           </div>
                         ))}
                       </div>
@@ -293,22 +284,22 @@ export default function SkillGap() {
 
                   {/* Weaknesses */}
                   {selectedReport.weaknesses?.length > 0 && (
-                    <div style={{ marginBottom: 20, padding: 16, background: 'rgba(239, 68, 68, 0.04)', borderRadius: 10, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                      <h3 style={{ fontSize: 15, fontWeight: 700, color: '#ef4444', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <AlertCircle size={18} /> Identified Weaknesses & Gaps ({selectedReport.weaknesses.length})
+                    <div style={{ marginBottom: 20, padding: 16, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+                      <h3 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <AlertCircle size={16} /> Identified Skill Deficits ({selectedReport.weaknesses.length})
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {selectedReport.weaknesses.map((wk, idx) => (
-                          <div key={idx} style={{ padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: 6, border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                          <div key={idx} style={{ padding: '10px 14px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{wk.skill}</span>
+                              <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{wk.skill}</span>
                               <span style={{
-                                fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4,
-                                background: wk.severity === 'Critical' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(245, 158, 11, 0.2)',
-                                color: wk.severity === 'Critical' ? '#ef4444' : '#f59e0b'
+                                fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)',
+                                background: wk.severity === 'Critical' ? 'var(--color-danger-muted)' : 'var(--color-warning-muted)',
+                                color: wk.severity === 'Critical' ? 'var(--color-danger)' : 'var(--color-warning)'
                               }}>{wk.source}</span>
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 3 }}>{wk.details}</div>
+                            <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 3 }}>{wk.details}</div>
                           </div>
                         ))}
                       </div>
@@ -318,22 +309,22 @@ export default function SkillGap() {
                   {/* Course Recommendations */}
                   {selectedReport.course_recommendations?.length > 0 && (
                     <div>
-                      <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                        <Code size={18} style={{ color: 'var(--accent)' }} /> Targeted Courses ({selectedReport.course_recommendations.length})
+                      <h3 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <Code size={16} style={{ color: 'var(--color-primary)' }} /> Targeted Learning Modules ({selectedReport.course_recommendations.length})
                       </h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
                         {selectedReport.course_recommendations.map((c, idx) => (
-                          <div key={idx} style={{ padding: 14, background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div key={idx} style={{ padding: 14, background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase' }}>{c.skill}</span>
-                                <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>{c.priority} Priority</span>
+                                <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase' }}>{c.skill}</span>
+                                <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)', background: 'var(--color-danger-muted)', color: 'var(--color-danger)' }}>{c.priority} Priority</span>
                               </div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>{c.course}</div>
-                              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 10 }}>{c.duration} • {c.level}</div>
+                              <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 4 }}>{c.course}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginBottom: 10 }}>{c.duration} • {c.level}</div>
                             </div>
-                            <a href={c.url} target="_blank" rel="noopener noreferrer" className="btn btn-sm"
-                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: 'var(--color-primary)', color: '#fff', fontSize: 11, fontWeight: 700 }}>
+                            <a href={c.url} target="_blank" rel="noopener noreferrer" className="btn btn-primary btn-sm"
+                              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '11px', fontWeight: 700 }}>
                               Enroll Course <ExternalLink size={12} />
                             </a>
                           </div>
@@ -351,22 +342,22 @@ export default function SkillGap() {
       {/* TAB 2: EXPLORER & WHAT-IF SIMULATOR */}
       {activeTab === 'explorer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="card" style={{ padding: 24, borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-elevated)' }}>
+          <div className="card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Building2 size={18} style={{ color: 'var(--accent)' }} /> Select Available Job Opening
+                <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Building2 size={18} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
                 </h3>
-                <p className="muted" style={{ fontSize: 12, margin: '2px 0 0' }}>Choose from active, verified job postings.</p>
+                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '2px 0 0' }}>Choose from active, verified job postings to simulate acquisitions.</p>
               </div>
-              <span className="chip" style={{ fontSize: 11, fontWeight: 700, background: 'rgba(59, 130, 246, 0.1)', color: 'var(--accent)' }}>
+              <span className="chip" style={{ fontSize: '11px', fontWeight: 700, background: 'var(--color-primary-muted)', color: 'var(--color-primary)' }}>
                 {availableJobs.length} Live Openings
               </span>
             </div>
             <select
               value={selectedOpeningId}
               onChange={(e) => { setSelectedOpeningId(e.target.value); setSimulationResult(null); setSimulatedSkills([]) }}
-              style={{ width: '100%', height: 46, padding: '0 14px', background: 'var(--input-bg)', border: '2px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, fontWeight: 600 }}
+              style={{ width: '100%', height: 44, padding: '0 14px', background: 'var(--input-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)', fontWeight: 600 }}
             >
               {availableJobs.map((j) => {
                 const id = j.id || j._id
@@ -383,11 +374,11 @@ export default function SkillGap() {
             <>
               {/* Missing Required Skills */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
-                    <AlertCircle size={16} /> Job Required Skills ({openingRequiredSkills.length})
+                <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                  <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
+                    <AlertCircle size={15} /> Job Required Skills ({openingRequiredSkills.length})
                   </h4>
-                  <p className="muted" style={{ fontSize: 11, marginBottom: 8 }}>Click any required skill below to add it to your simulation:</p>
+                  <p style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginBottom: 8 }}>Click any required skill below to add it to your simulation:</p>
                   {openingRequiredSkills.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {openingRequiredSkills.map((s, i) => {
@@ -398,10 +389,10 @@ export default function SkillGap() {
                             className="chip"
                             onClick={() => addSimSkill(s)}
                             style={{
-                              fontSize: 12, padding: '4px 10px',
-                              background: isAdded ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.1)',
+                              fontSize: '11px', padding: '4px 10px',
+                              background: isAdded ? 'var(--color-success-muted)' : 'var(--color-danger-muted)',
                               color: isAdded ? 'var(--color-success)' : 'var(--color-danger)',
-                              border: `1px solid ${isAdded ? 'rgba(34, 197, 94, 0.4)' : 'rgba(239, 68, 68, 0.3)'}`,
+                              border: `1px solid ${isAdded ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.3)'}`,
                               fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4
                             }}
                             title={isAdded ? 'Already added to simulation' : 'Click to simulate acquiring this skill'}
@@ -411,31 +402,31 @@ export default function SkillGap() {
                         )
                       })}
                     </div>
-                  ) : <p className="muted" style={{ fontSize: 13 }}>No explicit required skills listed.</p>}
+                  ) : <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>No explicit required skills listed.</p>}
                 </div>
 
                 {/* Present Verified Skills + Add Input */}
-                <div style={{ padding: 16, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                  <h4 style={{ fontSize: 14, fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
-                    <CheckCircle2 size={16} /> Present Verified Skills ({simulatedSkills.length})
+                <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                  <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                    <CheckCircle2 size={15} /> Simulated Acquired Skills ({simulatedSkills.length})
                   </h4>
                   {simulatedSkills.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                       {simulatedSkills.map((s, i) => (
-                        <span key={i} className="chip" style={{ fontSize: 12, padding: '4px 10px', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)' }}>
+                        <span key={i} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                           {s}
-                          <button onClick={() => removeSimSkill(s)} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: 0 }}>×</button>
+                          <button onClick={() => removeSimSkill(s)} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', fontWeight: 800 }}>×</button>
                         </span>
                       ))}
                     </div>
-                  ) : <p className="muted" style={{ fontSize: 13 }}>Add skills to simulate.</p>}
+                  ) : <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>Click missing skills on the left or type below.</p>}
                   <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
                     <input
                       value={customSimSkill}
                       onChange={(e) => setCustomSimSkill(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') addSimSkill(customSimSkill) }}
                       placeholder="Type a skill and press Enter..."
-                      style={{ flex: 1, height: 38, padding: '0 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 13 }}
+                      style={{ flex: 1, height: 36, padding: '0 12px', background: 'var(--input-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-fg)', fontSize: '12px' }}
                     />
                     <button onClick={() => addSimSkill(customSimSkill)} className="btn btn-ghost btn-sm">Add</button>
                   </div>
@@ -447,9 +438,9 @@ export default function SkillGap() {
                 onClick={runSimulation}
                 disabled={simulating || simulatedSkills.length === 0}
                 className="btn btn-primary"
-                style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+                style={{ width: '100%', padding: '12px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                <Sparkles size={18} /> {simulating ? 'Calculating Impact...' : `Simulate Impact on ${currentOpening.title}`}
+                <Sparkles size={16} /> {simulating ? 'Calculating Impact...' : `Simulate Impact on ${currentOpening.title}`}
               </button>
 
               {/* Simulation Results */}
@@ -457,17 +448,17 @@ export default function SkillGap() {
                 <>
                   {/* Coverage Banner */}
                   <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Original Coverage</div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--text)' }}>{simulationResult.original_coverage}%</div>
+                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Original Fit</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>{simulationResult.original_coverage}%</div>
                     </div>
-                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'rgba(34, 197, 94, 0.08)', borderRadius: 10, border: '1px solid rgba(34, 197, 94, 0.3)' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#22c55e', textTransform: 'uppercase' }}>Simulated Coverage</div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: '#22c55e' }}>{simulationResult.simulated_coverage}%</div>
+                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--color-success-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase' }}>Simulated Fit</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>{simulationResult.simulated_coverage}%</div>
                     </div>
-                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'rgba(59, 130, 246, 0.1)', borderRadius: 10, border: '1px solid rgba(59, 130, 246, 0.3)' }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase' }}>Improvement</div>
-                      <div style={{ fontSize: 24, fontWeight: 900, color: 'var(--accent)' }}>+{simulationResult.coverage_improvement}%</div>
+                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>Net Gain</div>
+                      <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>+{simulationResult.coverage_improvement}%</div>
                     </div>
                   </div>
 
@@ -477,18 +468,18 @@ export default function SkillGap() {
                       {simulationResult.resources.map((resItem, idx) => {
                         const pColor = resItem.priority === 'Critical' ? 'var(--color-danger)' : resItem.priority === 'High' ? 'var(--color-orange)' : 'var(--color-warning)'
                         return (
-                          <div key={idx} style={{ padding: 16, background: 'var(--bg-elevated)', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div key={idx} style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                <span className="chip" style={{ fontSize: 11, padding: '2px 8px', background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}40`, fontWeight: 700 }}>{resItem.priority} Priority</span>
-                                <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>{resItem.level || 'Beginner'} · {resItem.duration || '4 weeks'}</span>
+                                <span className="chip" style={{ fontSize: '10px', padding: '2px 8px', background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}40`, fontWeight: 700 }}>{resItem.priority} Priority</span>
+                                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>{resItem.level || 'Beginner'} · {resItem.duration || '4 weeks'}</span>
                               </div>
-                              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
-                                {resItem.skill}: <span style={{ color: 'var(--accent)' }}>{resItem.course}</span>
+                              <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 4 }}>
+                                {resItem.skill}: <span style={{ color: 'var(--color-primary)' }}>{resItem.course}</span>
                               </div>
                             </div>
                             <a href={resItem.url || `https://www.coursera.org/search?query=${encodeURIComponent(resItem.skill)}`} target="_blank" rel="noreferrer"
-                              className="btn btn-ghost btn-sm" style={{ marginTop: 12, fontSize: 12, border: '1px solid var(--border)', display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
+                              className="btn btn-ghost btn-sm" style={{ marginTop: 12, fontSize: '11px', border: '1px solid var(--color-border)', display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
                               Enroll / Explore <ExternalLink size={13} />
                             </a>
                           </div>
@@ -499,19 +490,19 @@ export default function SkillGap() {
 
                   {/* Learning Plan */}
                   {simulationResult.learning_plan?.length > 0 && (
-                    <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                      <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Layers size={20} style={{ color: 'var(--color-primary)' }} /> Structured Learning Plan
+                    <div style={{ padding: 20, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                      <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-fg)' }}>
+                        <Layers size={18} style={{ color: 'var(--color-primary)' }} /> Structured Learning Roadmap
                       </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {simulationResult.learning_plan.map((planItem, i) => (
-                          <div key={i} style={{ padding: 14, background: 'var(--bg-elevated)', borderRadius: 8, border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--accent)', color: 'var(--color-on-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 14, flexShrink: 0 }}>
+                          <div key={i} style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-full)', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
                               {planItem.phase || i + 1}
                             </div>
                             <div>
-                              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{planItem.title || planItem.skill}</div>
-                              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{planItem.description || planItem.duration}</div>
+                              <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>{planItem.title || planItem.skill}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{planItem.description || planItem.duration}</div>
                             </div>
                           </div>
                         ))}
@@ -521,13 +512,13 @@ export default function SkillGap() {
 
                   {/* Improvement Suggestions */}
                   {simulationResult.improvement_suggestions?.length > 0 && (
-                    <div style={{ padding: 20, background: 'var(--bg)', borderRadius: 10, border: '1px solid var(--border)' }}>
-                      <h3 style={{ fontSize: 16, fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Lightbulb size={20} style={{ color: 'var(--color-warning)' }} /> Actionable AI Recommendations
+                    <div style={{ padding: 20, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
+                      <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-fg)' }}>
+                        <Lightbulb size={18} style={{ color: 'var(--color-warning)' }} /> Actionable AI Recommendations
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {simulationResult.improvement_suggestions.map((s, i) => (
-                          <div key={i} style={{ fontSize: 13, color: 'var(--text-muted)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                          <div key={i} style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                             <span style={{ color: 'var(--color-warning)' }}>•</span> {s}
                           </div>
                         ))}

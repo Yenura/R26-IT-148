@@ -36,23 +36,36 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
           style={{
-            border: `2px dashed ${dragOver ? 'var(--color-primary)' : 'var(--border)'}`,
-            background: dragOver ? 'var(--color-primary-muted)' : 'var(--bg-elevated)',
-            borderRadius: 14,
-            padding: '36px 24px',
+            border: `2px dashed ${dragOver ? 'var(--color-primary)' : 'var(--color-border)'}`,
+            background: dragOver ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)',
+            borderRadius: 'var(--radius-xl)',
+            padding: 'var(--p-space-8) var(--p-space-6)',
             textAlign: 'center',
-            transition: 'all 0.2s ease',
-            cursor: 'pointer'
+            transition: 'all var(--duration-normal) var(--ease)',
+            cursor: 'pointer',
+            boxShadow: dragOver ? '0 0 24px rgba(99, 102, 241, 0.2)' : 'var(--shadow-sm)'
           }}
           onClick={() => document.getElementById('resume-file-input')?.click()}
         >
-          <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--color-primary-muted)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+          <div style={{
+            width: 58,
+            height: 58,
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--color-primary-muted)',
+            color: 'var(--color-primary)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            margin: '0 auto var(--p-space-4)',
+            border: '1px solid rgba(99, 102, 241, 0.25)',
+            boxShadow: '0 4px 16px rgba(99, 102, 241, 0.2)'
+          }}>
             <Upload size={26} />
           </div>
-          <h4 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>
+          <h4 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 6 }}>
             Drop candidate resume here or <span style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>Browse Files</span>
           </h4>
-          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
             Supports PDF, DOCX, TXT (Maximum file size: 10MB)
           </p>
           <input
@@ -64,35 +77,56 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
           />
         </div>
       ) : (
-        <div style={{ padding: 18, background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{
+          padding: 'var(--p-space-4) var(--p-space-5)',
+          background: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          boxShadow: 'var(--shadow-sm)'
+        }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 42, height: 42, borderRadius: 10, background: 'rgba(59, 130, 246, 0.1)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{
+              width: 44,
+              height: 44,
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-primary-muted)',
+              color: 'var(--color-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px solid rgba(99, 102, 241, 0.25)'
+            }}>
               <FileText size={22} />
             </div>
             <div>
-              <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{selectedFile.name}</div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
-                {(selectedFile.size / 1024).toFixed(1)} KB · {uploading ? 'Processing File...' : 'Ready for AI Screening'}
+              <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                {selectedFile.name}
+              </div>
+              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                {(selectedFile.size / 1024).toFixed(1)} KB · {uploading ? 'Processing AI feature vectors...' : 'Ready for AI Screening'}
               </div>
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             {uploading ? (
-              <span className="chip" style={{ fontSize: 12, background: 'var(--color-primary-muted)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
-                Uploading...
+              <span className="chip" style={{ fontSize: '11px', background: 'var(--color-primary-muted)', color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+                Parsing & Extracting...
               </span>
             ) : (
-              <span className="chip" style={{ fontSize: 12, background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', border: '1px solid rgba(34, 197, 94, 0.3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span className="chip" style={{ fontSize: '11px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <CheckCircle2 size={13} /> Uploaded
               </span>
             )}
             {onRemoveFile && (
               <button
                 type="button"
-                className="btn btn-ghost btn-sm"
+                className="btn-ghost btn-sm"
                 onClick={onRemoveFile}
-                style={{ padding: 6, color: 'var(--danger)' }}
+                style={{ padding: 6, color: 'var(--color-danger)', borderRadius: 'var(--radius-sm)' }}
                 title="Remove file"
               >
                 <X size={16} />
@@ -103,8 +137,8 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
       )}
 
       {fileError && (
-        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 6 }}>
-          <AlertCircle size={15} /> {fileError}
+        <div style={{ marginTop: 10, fontSize: 'var(--p-text-xs)', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 6 }}>
+          <AlertCircle size={14} /> {fileError}
         </div>
       )}
     </div>
