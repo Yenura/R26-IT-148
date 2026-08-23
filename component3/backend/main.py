@@ -1,8 +1,15 @@
 """Component 3 — Interview-Driven Candidate Ranking API (port 8003)."""
 
 import os
+import sys
 import logging
 from contextlib import asynccontextmanager
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
