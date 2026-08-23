@@ -323,9 +323,11 @@ export default function Interview() {
 
         {/* Question Card */}
         <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1.4, color: 'var(--color-fg)', margin: '0 0 20px 0' }}>
-            {q.question_text || q.question}
-          </h2>
+          <div style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 8, marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.6, color: 'var(--color-fg)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {q.question_text || q.question}
+            </h2>
+          </div>
 
           {/* MCQ Mode */}
           {q.question_type === 'MCQ' && (
@@ -364,7 +366,7 @@ export default function Interview() {
                       {String.fromCharCode(65 + idx)}
                     </div>
                     <span style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
-                      {opt}
+                      {typeof opt === 'string' ? opt : opt.text}
                     </span>
                   </div>
                 )
@@ -388,18 +390,80 @@ export default function Interview() {
           {/* Coding Sandbox Mode */}
           {q.question_type === 'Coding' && (
             <div>
+              {/* Test Cases / Examples */}
+              {q.test_cases?.length > 0 && (
+                <div style={{ marginBottom: 16, padding: 14, background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '0.05em' }}>
+                    Examples / Test Cases
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {q.test_cases.filter(tc => {
+                      const exp = String(tc.expected_output || '').trim().toLowerCase()
+                      return exp && exp !== 'see answer' && exp !== 'result'
+                    }).map((tc, i) => (
+                      <div key={i} style={{ fontSize: '12px', fontFamily: 'var(--p-font-mono)', lineHeight: 1.6 }}>
+                        <div style={{ color: 'var(--color-fg-muted)' }}>
+                          <span style={{ fontWeight: 700 }}>Input:</span>{' '}
+                          {Object.entries(tc.input || {}).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ')}
+                        </div>
+                        <div style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                          Expected Output: {JSON.stringify(tc.expected_output)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginBottom: 12 }}>
                 <textarea
                   placeholder="# Write your Python solution here...&#10;def solution():&#10;    pass"
                   value={answers[q.id] || ''}
                   onChange={(e) => answerQuestion(q.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Tab') {
+                      e.preventDefault()
+                      const ta = e.target
+                      const start = ta.selectionStart
+                      const end = ta.selectionEnd
+                      const val = ta.value
+                      if (e.shiftKey) {
+                        const lineStart = val.lastIndexOf('\n', start - 1) + 1
+                        const lineText = val.substring(lineStart, start)
+                        const spaces = lineText.match(/^ {1,4}/)
+                        if (spaces) {
+                          const removeLen = spaces[0].length
+                          answerQuestion(q.id, val.substring(0, lineStart) + val.substring(lineStart + removeLen))
+                          setTimeout(() => { ta.selectionStart = ta.selectionEnd = start - removeLen }, 0)
+                        }
+                      } else {
+                        const newVal = val.substring(0, start) + '    ' + val.substring(end)
+                        answerQuestion(q.id, newVal)
+                        setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 4 }, 0)
+                      }
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const ta = e.target
+                      const start = ta.selectionStart
+                      const val = ta.value
+                      const lineStart = val.lastIndexOf('\n', start - 1) + 1
+                      const lineText = val.substring(lineStart, start)
+                      const indent = lineText.match(/^(\s*)/)[1]
+                      const extra = lineText.trimEnd().endsWith(':') ? '    ' : ''
+                      const newVal = val.substring(0, start) + '\n' + indent + extra + val.substring(ta.selectionEnd)
+                      answerQuestion(q.id, newVal)
+                      setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 1 + indent.length + extra.length }, 0)
+                    }
+                  }}
                   rows={10}
+                  spellCheck={false}
                   style={{
                     fontFamily: 'var(--p-font-mono)',
                     fontSize: '13px',
                     lineHeight: 1.5,
                     background: 'var(--color-bg)',
-                    color: 'var(--color-fg)'
+                    color: 'var(--color-fg)',
+                    tabSize: 4
                   }}
                 />
               </div>
@@ -422,20 +486,48 @@ export default function Interview() {
                   padding: 14,
                   background: 'var(--color-bg)',
                   borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--color-border-subtle)',
+                  border: `1px solid ${runResults.syntax_valid === false ? 'rgba(244,63,94,0.4)' : 'var(--color-border-subtle)'}`,
                   fontFamily: 'var(--p-font-mono)',
                   fontSize: '12px'
                 }}>
-                  <div style={{
-                    fontWeight: 700,
-                    marginBottom: 6,
-                    color: runResults.all_passed ? 'var(--color-success)' : 'var(--color-danger)'
-                  }}>
-                    {runResults.all_passed ? '✓ All Test Cases Passed' : '✗ Some Test Cases Failed'}
-                  </div>
-                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'var(--color-fg-secondary)' }}>
-                    {runResults.output || JSON.stringify(runResults, null, 2)}
-                  </pre>
+                  {/* Syntax error */}
+                  {runResults.syntax_valid === false && (
+                    <div style={{ padding: '8px 12px', marginBottom: 10, borderRadius: 'var(--radius-sm)', background: 'var(--color-danger-muted)', color: 'var(--color-danger)', fontWeight: 700 }}>
+                      ✗ Syntax Error — your code won&apos;t run. Fix the error and try again.
+                    </div>
+                  )}
+
+                  {/* Per-test-case results */}
+                  {runResults.results?.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {runResults.results.map((r, i) => (
+                        <div key={i} style={{
+                          padding: '8px 12px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: `1px solid ${r.passed ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'}`,
+                          background: r.passed ? 'rgba(16,185,129,0.06)' : 'rgba(244,63,94,0.06)'
+                        }}>
+                          <div style={{ fontWeight: 700, marginBottom: 4, color: r.passed ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                            {r.passed ? '✓' : '✗'} Test Case {i + 1}
+                          </div>
+                          <div style={{ color: 'var(--color-fg-muted)' }}>
+                            <span style={{ fontWeight: 600 }}>Input:</span>{' '}
+                            {Object.entries(r.input || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(', ')}
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}>Expected:</span>{' '}
+                            <span style={{ color: 'var(--color-success)' }}>{r.expected}</span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}>Your Output:</span>{' '}
+                            <span style={{ color: r.passed ? 'var(--color-success)' : 'var(--color-danger)' }}>{r.output || '(no output)'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--color-fg-muted)' }}>No test cases were executed.</div>
+                  )}
                 </div>
               )}
             </div>
@@ -562,16 +654,6 @@ export default function Interview() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
-
-        {/* Navigation CTAs */}
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-          <Link to="/candidate/jobs" className="btn btn-ghost">
-            Browse Jobs
-          </Link>
-          <Link to="/candidate/dashboard" className="btn btn-primary">
-            Back to Dashboard
-          </Link>
         </div>
       </div>
     )
