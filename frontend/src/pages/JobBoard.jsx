@@ -45,7 +45,7 @@ export default function JobBoard() {
   }, [])
 
   const loadData = async () => {
-    setLoading(true)
+    if (jobs.length === 0) setLoading(true)
     try {
       const candidateId = localStorage.getItem('recruitai.user_id')
       const [r1, r2, r3, r4] = await Promise.all([

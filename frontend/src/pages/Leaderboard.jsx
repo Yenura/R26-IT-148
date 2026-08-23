@@ -32,7 +32,7 @@ export default function Leaderboard() {
   }, [])
 
   const loadData = async () => {
-    setLoading(true)
+    if (data.length === 0) setLoading(true)
     try {
       if (userRole === 'company') {
         // Company view: fetch ONLY applicants who applied to this company's jobs
