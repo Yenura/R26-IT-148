@@ -254,9 +254,30 @@
   --chart-axis: var(--p-zinc-500);
   --chart-grid: var(--p-zinc-800);
 
-  /* Scrollbar */
-  --scrollbar-track: #07090e;
-  --scrollbar-thumb: #1e293b;
+  /* ── Direct Linear/Vercel Variable Compatibility ────────────────── */
+  --bg-primary: #06060a;
+  --bg-card: rgba(15, 15, 25, 0.6);
+  --border-subtle: rgba(255, 255, 255, 0.06);
+  --border-default: rgba(255, 255, 255, 0.1);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --primary-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  --success-500: #10b981;
+  --warning-500: #f59e0b;
+  --error-500: #ef4444;
+
+  /* Spacing system */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
 
   /* Input */
   --input-bg: #0f1422;
@@ -336,6 +357,31 @@
   --glass-bg: rgba(255, 255, 255, 0.92);
   --glass-blur: blur(16px);
   --glass-border: rgba(226, 232, 240, 0.9);
+
+  /* ── Direct Linear/Vercel Variable Compatibility (Light Mode) ────── */
+  --bg-primary: #f8fafc;
+  --bg-card: rgba(255, 255, 255, 0.85);
+  --border-subtle: rgba(0, 0, 0, 0.06);
+  --border-default: rgba(0, 0, 0, 0.12);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  --success-500: #059669;
+  --warning-500: #d97706;
+  --error-500: #dc2626;
+
+  /* Spacing system */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
