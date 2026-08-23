@@ -620,53 +620,48 @@ code {
   opacity: 1;
 }
 
-[data-theme="light"] .card::after,
-[data-theme="light"] .premium-card::after,
-[data-theme="light"] .stat::after,
-[data-theme="light"] .goal-item::after,
-[data-theme="light"] .skill-gap-card::after,
-[data-theme="light"] .navbar-dropdown::after,
-[data-theme="light"] .filter-tabs::after {
-  background: radial-gradient(
-    420px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
-    rgba(99, 102, 241, 0.10),
-    rgba(168, 85, 247, 0.04) 40%,
-    transparent 70%
-  );
-}
-
-/* 3. Small Box, Badge, and Nav Highlight Effects */
-.navbar-link, .nav-link, .filter-tab, .chip, .badge, .role-badge, .score-badge {
-  position: relative;
-  overflow: hidden;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.navbar-link:hover, .nav-link:hover, .filter-tab:hover, .chip:hover, .role-badge:hover {
-  box-shadow: 0 0 16px -2px rgba(99, 102, 241, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
-  border-color: rgba(99, 102, 241, 0.5);
-  transform: translateY(-1px);
-}
-
-[data-theme="light"] .navbar-link:hover,
-[data-theme="light"] .nav-link:hover,
-[data-theme="light"] .filter-tab:hover,
-[data-theme="light"] .chip:hover,
-[data-theme="light"] .role-badge:hover {
-  box-shadow: 0 0 14px -2px rgba(99, 102, 241, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
-  border-color: rgba(99, 102, 241, 0.4);
-}
-
 /* ═══════════════════════════════════════════════════════════════════
    DYNAMIC TEXT COLOR SHIFT & RADIANT GRADIENT SUITE (HOVER DYNAMICS)
    ═══════════════════════════════════════════════════════════════════ */
 
-/* 1. Navigation Panel Link & Icon Color Shift */
-.navbar-link, .nav-link, .nav-item {
+/* 1. All Headings, Titles & Card Titles Dynamic Aurora Color Shift */
+h1, h2, h3, h4, h5, h6,
+.title, .page-title, .section-title, .card-title, .goal-title, .hero-title,
+.card h1, .card h2, .card h3, .card h4, .card .card-title,
+.premium-card h1, .premium-card h2, .premium-card h3, .premium-card h4, .premium-card .card-title,
+.goal-item .goal-title, .skill-gap-card h3, .skill-gap-card h4 {
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.navbar-link:hover, .nav-link:hover, .nav-item:hover {
+h1:hover, h2:hover, h3:hover, h4:hover, h5:hover, h6:hover,
+.title:hover, .page-title:hover, .section-title:hover, .card-title:hover, .goal-title:hover,
+.card:hover h1, .card:hover h2, .card:hover h3, .card:hover h4, .card:hover .card-title,
+.premium-card:hover h1, .premium-card:hover h2, .premium-card:hover h3, .premium-card:hover h4, .premium-card:hover .card-title,
+.goal-item:hover .goal-title, .skill-gap-card:hover h3, .skill-gap-card:hover h4 {
+  background: linear-gradient(135deg, #ffffff 0%, #38bdf8 40%, #c084fc 75%, #f43f5e 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.6)) !important;
+  transform: translateX(2px) !important;
+}
+
+[data-theme="light"] h1:hover, [data-theme="light"] h2:hover, [data-theme="light"] h3:hover, [data-theme="light"] h4:hover,
+[data-theme="light"] .card:hover h1, [data-theme="light"] .card:hover h2, [data-theme="light"] .card:hover h3, [data-theme="light"] .card:hover h4, [data-theme="light"] .card:hover .card-title,
+[data-theme="light"] .premium-card:hover h1, [data-theme="light"] .premium-card:hover h2, [data-theme="light"] .premium-card:hover h3, [data-theme="light"] .premium-card:hover h4, [data-theme="light"] .premium-card:hover .card-title,
+[data-theme="light"] .goal-item:hover .goal-title, [data-theme="light"] .skill-gap-card:hover h3, [data-theme="light"] .skill-gap-card:hover h4 {
+  background: linear-gradient(135deg, #0f172a 0%, #312e81 40%, #0284c7 80%, #6d28d9 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.25)) !important;
+  transform: translateX(2px) !important;
+}
+
+/* 2. Navigation Panel Links, Buttons & Interactive Anchor Tags */
+a, .navbar-link, .nav-link, .nav-item, .filter-tab {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+a:hover, .navbar-link:hover, .nav-link:hover, .nav-item:hover {
   background: linear-gradient(135deg, #c7d2fe 0%, #38bdf8 50%, #e879f9 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
@@ -680,6 +675,7 @@ code {
   transform: translateY(-1px) scale(1.1) !important;
 }
 
+[data-theme="light"] a:hover,
 [data-theme="light"] .navbar-link:hover,
 [data-theme="light"] .nav-link:hover,
 [data-theme="light"] .nav-item:hover {
@@ -696,81 +692,99 @@ code {
   filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.4)) !important;
 }
 
-/* 2. Interactive Headings & Card Titles Dynamic Aurora Color Shift */
-.card h1, .card h2, .card h3, .card h4, .card .card-title,
-.premium-card h1, .premium-card h2, .premium-card h3, .premium-card h4, .premium-card .card-title,
-.goal-item .goal-title, .skill-gap-card h3, .skill-gap-card h4 {
+/* 3. Small Boxes, Chips, Badges, Tags, Pills, and Mini Metric Boxes */
+.badge, .chip, .role-badge, .score-badge, .gap-badge, .badge-learning, .badge-mastered,
+.tag, .pill, .stat-compact, .mini-stat, .count-badge, .status-badge, .score-meter,
+.filter-tab, .navbar-dropdown a, .dropdown-item {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.badge:hover, .chip:hover, .role-badge:hover, .score-badge:hover, .gap-badge:hover,
+.tag:hover, .pill:hover, .stat-compact:hover, .mini-stat:hover, .count-badge:hover,
+.filter-tab:hover, .navbar-dropdown a:hover, .dropdown-item:hover,
+.card:hover .badge, .card:hover .chip, .card:hover .tag {
+  background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 50%, #38bdf8 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.7)) !important;
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+[data-theme="light"] .badge:hover,
+[data-theme="light"] .chip:hover,
+[data-theme="light"] .role-badge:hover,
+[data-theme="light"] .score-badge:hover,
+[data-theme="light"] .gap-badge:hover,
+[data-theme="light"] .filter-tab:hover,
+[data-theme="light"] .tag:hover,
+[data-theme="light"] .pill:hover,
+[data-theme="light"] .navbar-dropdown a:hover,
+[data-theme="light"] .dropdown-item:hover,
+[data-theme="light"] .card:hover .badge {
+  background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #0284c7 100%) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.3)) !important;
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+/* 4. Stat Numbers / Counters Radiant Chrome Shift */
+.stat-number, .stat-value, .metric-value, .score-val, .count-val {
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
-.card:hover h1, .card:hover h2, .card:hover h3, .card:hover h4, .card:hover .card-title,
-.premium-card:hover h1, .premium-card:hover h2, .premium-card:hover h3, .premium-card:hover h4, .premium-card:hover .card-title,
-.goal-item:hover .goal-title, .skill-gap-card:hover h3, .skill-gap-card:hover h4 {
-  background: linear-gradient(135deg, #ffffff 0%, #bae6fd 35%, #c4b5fd 70%, #f472b6 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  filter: drop-shadow(0 0 14px rgba(99, 102, 241, 0.45)) !important;
-  transform: translateX(2px) !important;
-}
-
-[data-theme="light"] .card:hover h1, [data-theme="light"] .card:hover h2, [data-theme="light"] .card:hover h3, [data-theme="light"] .card:hover h4, [data-theme="light"] .card:hover .card-title,
-[data-theme="light"] .premium-card:hover h1, [data-theme="light"] .premium-card:hover h2, [data-theme="light"] .premium-card:hover h3, [data-theme="light"] .premium-card:hover h4, [data-theme="light"] .premium-card:hover .card-title,
-[data-theme="light"] .goal-item:hover .goal-title, [data-theme="light"] .skill-gap-card:hover h3, [data-theme="light"] .skill-gap-card:hover h4 {
-  background: linear-gradient(135deg, #0f172a 0%, #312e81 40%, #0284c7 80%, #6d28d9 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  filter: drop-shadow(0 0 10px rgba(99, 102, 241, 0.25)) !important;
-  transform: translateX(2px) !important;
-}
-
-/* 3. Stat Numbers / Counters Radiant Chrome Shift */
-.stat .stat-number, .stats-card .stat-number, .stat-value {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.stat:hover .stat-number, .stats-card:hover .stat-number, .stat:hover .stat-value {
+.stat-number:hover, .stat-value:hover, .stat:hover .stat-number, .stats-card:hover .stat-number, .card:hover .stat-number {
   background: linear-gradient(135deg, #ffffff 0%, #38bdf8 45%, #a855f7 90%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
-  filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.5)) !important;
-  transform: scale(1.03) !important;
+  filter: drop-shadow(0 0 18px rgba(56, 189, 248, 0.65)) !important;
+  transform: scale(1.04) !important;
 }
 
-[data-theme="light"] .stat:hover .stat-number, [data-theme="light"] .stats-card:hover .stat-number, [data-theme="light"] .stat:hover .stat-value {
+[data-theme="light"] .stat-number:hover, [data-theme="light"] .stat-value:hover,
+[data-theme="light"] .stat:hover .stat-number, [data-theme="light"] .stats-card:hover .stat-number, [data-theme="light"] .card:hover .stat-number {
   background: linear-gradient(135deg, #1e1b4b 0%, #0369a1 50%, #6d28d9 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
   filter: drop-shadow(0 0 12px rgba(99, 102, 241, 0.3)) !important;
-  transform: scale(1.03) !important;
+  transform: scale(1.04) !important;
 }
 
-/* 4. Secondary & Subtitle Text Soft Ice-Blue / Crisp Shift */
-.card p, .card .secondary-text, .card .label, .card .text-muted,
-.premium-card p, .premium-card .secondary-text, .premium-card .label, .premium-card .text-muted,
-.goal-item .goal-subtitle, .skill-gap-card p {
+/* 5. Paragraphs, Spans, Descriptions & Subtitles */
+p, span, label, li, td, .secondary-text, .goal-subtitle {
   transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
 }
 
-.card:hover p, .card:hover .secondary-text, .card:hover .label, .card:hover .text-muted,
-.premium-card:hover p, .premium-card:hover .secondary-text, .premium-card:hover .label, .premium-card:hover .text-muted,
-.goal-item:hover .goal-subtitle, .skill-gap-card:hover p {
+p:hover, span:hover, label:hover, li:hover, td:hover,
+.card:hover p, .card:hover .secondary-text, .card:hover .label,
+.premium-card:hover p, .premium-card:hover .secondary-text,
+.goal-item:hover .goal-subtitle, .skill-gap-card p {
   color: #e0e7ff !important;
+  text-shadow: 0 0 8px rgba(165, 180, 252, 0.35) !important;
 }
 
-[data-theme="light"] .card:hover p,
-[data-theme="light"] .card:hover .secondary-text,
-[data-theme="light"] .card:hover .label,
-[data-theme="light"] .card:hover .text-muted,
-[data-theme="light"] .premium-card:hover p,
-[data-theme="light"] .premium-card:hover .secondary-text,
-[data-theme="light"] .premium-card:hover .label,
-[data-theme="light"] .premium-card:hover .text-muted,
-[data-theme="light"] .goal-item:hover .goal-subtitle,
-[data-theme="light"] .skill-gap-card:hover p {
+[data-theme="light"] p:hover, [data-theme="light"] span:hover, [data-theme="light"] label:hover, [data-theme="light"] li:hover, [data-theme="light"] td:hover,
+[data-theme="light"] .card:hover p, [data-theme="light"] .card:hover .secondary-text,
+[data-theme="light"] .premium-card:hover p, [data-theme="light"] .premium-card:hover .secondary-text,
+[data-theme="light"] .goal-item:hover .goal-subtitle, [data-theme="light"] .skill-gap-card p {
   color: #1e293b !important;
+  text-shadow: 0 0 6px rgba(99, 102, 241, 0.15) !important;
 }
 
-/* 5. Table Row Text Shift on Hover */
+/* 6. Form Labels & Input Group Text Highlight */
+.form-group:hover label, .input-group:hover label, .field:hover label {
+  color: #a5b4fc !important;
+  text-shadow: 0 0 10px rgba(99, 102, 241, 0.4) !important;
+}
+
+[data-theme="light"] .form-group:hover label,
+[data-theme="light"] .input-group:hover label,
+[data-theme="light"] .field:hover label {
+  color: #4338ca !important;
+  text-shadow: 0 0 8px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* 7. Table Row Text Shift on Hover */
 .table tbody tr {
   transition: background 0.2s ease, box-shadow 0.2s ease;
 }
@@ -799,15 +813,7 @@ code {
   color: #0f172a !important;
   text-shadow: 0 0 8px rgba(99, 102, 241, 0.15) !important;
 }
-
-/* 6. Small Boxes, Badges, Chips, and Filter Tabs Dynamic Text Shift */
-.badge, .chip, .role-badge, .score-badge, .gap-badge, .badge-learning, .badge-mastered,
-.filter-tab, .tag, .pill, .stat-compact, .mini-stat, .navbar-dropdown a, .dropdown-item {
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
-}
-
-.badge:hover, .chip:hover, .role-badge:hover, .score-badge:hover, .gap-badge:hover,
-.filter-tab:hover, .tag:hover, .pill:hover, .navbar-dropdown a:hover, .dropdown-item:hover {
+ .dropdown-item:hover {
   background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 50%, #38bdf8 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;

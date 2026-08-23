@@ -2,7 +2,7 @@ import axios from 'axios'
 
 const inFlightGetRequests = new Map()
 const responseCache = new Map()
-const CACHE_TTL_MS = 4000 // 4 seconds instant tab switching cache
+const CACHE_TTL_MS = 15000 // 15 seconds instant memory cache for ultra-fast navigation
 
 export const clearApiCache = () => {
   responseCache.clear()

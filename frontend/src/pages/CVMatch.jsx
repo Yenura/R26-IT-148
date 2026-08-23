@@ -142,29 +142,25 @@ export default function CVMatch() {
 
       const finalRole = selectedCanonicalRole || matchRes.data.predicted_role || targetRoleName
 
-      // 2. Parallel Fetch Component 4 Analysis
-      const [gapRes, careerRes, pathRes] = await Promise.all([
+      // 2. Parallel Fetch All AI Analysis Endpoints Concurrently
+      const [gapRes, careerRes, pathRes, c1Res] = await Promise.all([
         c4SkillGap({ current_skills: candidateSkills, target_role: finalRole }).catch(() => null),
         c4CareerRec({ current_skills: candidateSkills, current_role: finalRole }).catch(() => null),
         c4LearningPath({ current_skills: candidateSkills, target_role: finalRole }).catch(() => null),
+        targetResumeDoc.raw_text
+          ? c1Analyze({
+              candidate_id: targetResumeDoc.candidate_id || resumeToUse,
+              candidate_name: targetResumeDoc.candidate_name || 'Candidate',
+              raw_text: targetResumeDoc.raw_text,
+              target_role: finalRole,
+            }).catch(() => null)
+          : Promise.resolve(null),
       ])
 
       if (gapRes) setSkillGapResult(gapRes.data)
       if (careerRes) setCareerResult(careerRes.data)
       if (pathRes) setLearningPathResult(pathRes.data)
-
-      // 3. Optional C1 Deep Analysis if raw text exists
-      if (targetResumeDoc.raw_text) {
-        try {
-          const c1Res = await c1Analyze({
-            candidate_id: targetResumeDoc.candidate_id || resumeToUse,
-            candidate_name: targetResumeDoc.candidate_name || 'Candidate',
-            raw_text: targetResumeDoc.raw_text,
-            target_role: finalRole
-          })
-          if (c1Res.data) setC1Result(c1Res.data)
-        } catch {}
-      }
+      if (c1Res?.data) setC1Result(c1Res.data)
 
       toast.success(`Analysis complete! Overall fit: ${matchRes.data.overall_score.toFixed(1)}%`)
     } catch (err) {
