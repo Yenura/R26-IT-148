@@ -1,12 +1,13 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, Building2, ArrowLeft } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft, Sparkles, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
@@ -21,16 +22,22 @@ export default function CompanyLogin() {
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
       try {
         const me = await C0.get('/auth/me')
-        localStorage.setItem('recruitai.name', me.data.name || '')
+        localStorage.setItem('recruitai.name', me.data.name || me.data.company_name || 'Tech Recruiter')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Welcome back!')
+      toast.success('Welcome back, Recruiter!')
       navigate('/company/dashboard')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Invalid company credentials')
     } finally {
       setBusy(false)
     }
+  }
+
+  const fillDemo = () => {
+    setEmail('company@techcorp.com')
+    setPassword('company123')
+    toast.success('Demo employer credentials loaded')
   }
 
   return (
@@ -95,6 +102,24 @@ export default function CompanyLogin() {
                   style={{ paddingLeft: 36 }}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--color-fg-muted)',
+                    padding: 0
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
             </div>
 

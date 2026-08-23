@@ -118,3 +118,4 @@ export const c4ProgressPopulate= (payload)    => C4.post('/progress/populate', p
 export const c4ProgressSync    = (candidateId)=> C4.post(`/progress/sync-from-applied-interviews/${candidateId}`)
 export const c4ProgressUpdate  = (payload)    => C4.post('/progress/update', payload)
 export const c4ProgressDelete  = (candidateId)=> C4.delete(`/progress/${candidateId}`)
+export const c4ProgressDeleteSkill = (candidateId, skill) => C4.delete(`/progress/${candidateId}/${encodeURIComponent(skill)}`)

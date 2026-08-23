@@ -8,7 +8,7 @@ Target Roles (20): AI/NLP Engineer, Backend Developer, Blockchain Developer, Bus
 Accuracy      : 1.0000
 Macro F1      : 1.0000
 Weighted F1   : 1.0000
-Training Time : 0.88 seconds
+Training Time : 0.70 seconds
 
 Classification Report:
                              precision    recall  f1-score   support
@@ -44,7 +44,7 @@ QA/Test Automation Engineer       1.00      1.00      1.00        30
 Accuracy      : 1.0000
 Macro F1      : 1.0000
 Weighted F1   : 1.0000
-Training Time : 0.29 seconds
+Training Time : 0.50 seconds
 
 Classification Report:
                              precision    recall  f1-score   support

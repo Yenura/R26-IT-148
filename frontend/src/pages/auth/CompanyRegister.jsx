@@ -5,7 +5,8 @@ import { Brain, Mail, Lock, Building2, ArrowLeft, Globe } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyRegister() {
-  const [form, setForm] = useState({ company_name: '', email: '', password: '', industry: '', website: '' })
+  const [form, setForm] = useState({ company_name: '', email: '', password: '' })
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
@@ -25,7 +26,7 @@ export default function CompanyRegister() {
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
       try {
         const me = await C0.get('/auth/me')
-        localStorage.setItem('recruitai.name', me.data.name || '')
+        localStorage.setItem('recruitai.name', me.data.name || form.company_name)
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
       toast.success('Company account created!')

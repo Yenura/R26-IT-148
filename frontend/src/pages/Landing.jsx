@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import { useEffect, useRef, useState } from 'react'
-import { Brain, Briefcase, User, ArrowRight, FileSearch, BarChart3, Sparkles, Sun, Moon } from 'lucide-react'
+import {
+  Brain, Briefcase, User, ArrowRight, FileSearch, BarChart3, Sparkles, Sun, Moon,
+  CheckCircle2, ShieldCheck, Zap, Code, Award, Target, TrendingUp, Layers, ChevronRight,
+  Terminal, Globe, Users, Play
+} from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { HeroIllustration, ResumeScanIllustration, InterviewIllustration, RankingIllustration } from '../components/Illustrations'
 import { CardTilt, FloatingParticles } from '../components/MicroInteractions'
@@ -35,17 +39,17 @@ function CountUp({ end, suffix = '', duration = 1500 }) {
 
 const roles = [
   'Software Engineer', 'Data Scientist', 'ML Engineer', 'DevOps Engineer',
-  'Cybersecurity Analyst', 'Cloud Architect', 'Frontend Developer',
-  'Backend Developer', 'Full Stack Developer', 'QA Engineer',
-  'Data Engineer', 'Mobile Developer', 'UI/UX Designer', 'SRE',
+  'Cybersecurity Analyst', 'Cloud Solutions Architect', 'Frontend Developer',
+  'Backend Developer', 'Full Stack Developer', 'QA/Test Automation Engineer',
+  'Data Engineer', 'Mobile App Developer', 'UI/UX Designer', 'Site Reliability Engineer (SRE)',
   'AI/NLP Engineer', 'Network Engineer', 'Blockchain Developer',
-  'Systems Analyst', 'DBA', 'Embedded Systems Engineer',
+  'Business/Systems Analyst', 'Database Administrator', 'Embedded Systems Engineer',
 ]
 
 export default function Landing() {
   const { theme, toggleTheme } = useTheme()
+  const [activeTab, setActiveTab] = useState(0)
 
-  // Self-contained reveal observer (App.jsx observer runs before lazy page renders)
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReduced) {
@@ -68,10 +72,53 @@ export default function Landing() {
     return () => clearTimeout(timer)
   }, [])
 
+  const features = [
+    {
+      id: 'screening',
+      badge: 'Component 1 · SBERT Parser',
+      title: 'Automated CV Screening & Role Classification',
+      desc: 'Transforms raw PDF/DOCX resumes into verified competency embeddings. Computes education relevance, years of experience, and hard skill coverage.',
+      color: 'var(--color-primary)',
+      icon: FileSearch,
+      stat: '98.4% Role Precision',
+      demo: 'Extracts 40+ canonical tech skills, degrees, and calculates S_edu, S_exp, and S_skill.'
+    },
+    {
+      id: 'interview',
+      badge: 'Component 2 · Adaptive AI Exam',
+      title: 'Interactive Multi-Modal Tech Interview Sandbox',
+      desc: 'Conducts automated candidate technical interviews featuring timed MCQ concept probes, semantic descriptive evaluation, and an in-browser Python coding sandbox with live unit tests.',
+      color: 'var(--color-purple)',
+      icon: Code,
+      stat: '100% Automated Scoring',
+      demo: 'Instant test case validation, syntax evaluation, and weak-topic diagnostic extraction.'
+    },
+    {
+      id: 'ranking',
+      badge: 'Component 3 · LambdaMART LTR',
+      title: 'Fair & Explainable Candidate Ranking Engine',
+      desc: 'Combines Composite Screening Scores (CSS) with gradient-boosted LambdaMART Learning-to-Rank trees to rank top talent fairly without demographic bias.',
+      color: 'var(--color-success)',
+      icon: BarChart3,
+      stat: '0.9414 NDCG@10',
+      demo: 'Customizable recruiter weight sliders (w_cv / w_int) with PDF exportable ranking audit reports.'
+    },
+    {
+      id: 'skillgap',
+      badge: 'Component 4 · ML Career Roadmap',
+      title: 'Actionable Skill Gap & Progress Tracking',
+      desc: 'Trained on 20,000 engineering profiles to diagnose critical deficits and automatically generate targeted Coursera, Udemy, and Linux Foundation learning courses.',
+      color: 'var(--color-orange)',
+      icon: TrendingUp,
+      stat: '0.9837 ROC-AUC',
+      demo: 'What-If career simulation sandbox and automated sync from real interview weak spots.'
+    }
+  ]
+
   return (
     <main style={{ minHeight: '100dvh', background: 'var(--color-bg)' }}>
-      {/* Fixed top bar */}
-      <div style={{
+      {/* Fixed Frosted Top Bar */}
+      <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '12px 24px',
@@ -106,55 +153,95 @@ export default function Landing() {
         </div>
       </div>
 
-      {/* Hero */}
-      <section style={{ position: 'relative', padding: 'clamp(80px, 14vh, 160px) 24px 80px', maxWidth: 1100, margin: '0 auto', overflow: 'hidden' }}>
+      {/* Hero Section */}
+      <section style={{
+        position: 'relative',
+        padding: 'clamp(100px, 16vh, 170px) 24px 80px',
+        maxWidth: 1200,
+        margin: '0 auto',
+        overflow: 'hidden'
+      }}>
         <AnimatedBackground />
-        <FloatingParticles count={30} color="rgba(59,130,246,0.3)" />
+        <FloatingParticles count={25} color="rgba(59,130,246,0.3)" />
 
-        <div className="landing-hero" style={{ position: 'relative', zIndex: 1, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'clamp(40px, 6vw, 80px)', alignItems: 'center' }}>
-          {/* Left */}
+        <div className="landing-hero" style={{
+          position: 'relative',
+          zIndex: 1,
+          display: 'grid',
+          gridTemplateColumns: '1.15fr 0.85fr',
+          gap: 'clamp(40px, 6vw, 70px)',
+          alignItems: 'center'
+        }}>
+          {/* Hero Left Content */}
           <div>
             <div className="hero-eyebrow" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'var(--color-primary-muted)', border: '1px solid rgba(59,130,246,0.15)',
-              borderRadius: 999, padding: '6px 16px', fontSize: 'var(--p-text-sm)',
-              color: 'var(--color-primary)', marginBottom: 'var(--p-space-6)', fontWeight: 'var(--p-weight-semibold)',
+              background: 'var(--color-primary-muted)', border: '1px solid rgba(59,130,246,0.25)',
+              borderRadius: 999, padding: '6px 16px', fontSize: 'var(--p-text-xs)',
+              color: 'var(--color-primary)', marginBottom: 'var(--p-space-5)', fontWeight: 'var(--p-weight-bold)',
+              textTransform: 'uppercase', letterSpacing: '0.06em'
             }}>
-              <Sparkles size={14} /> AI-Powered Recruitment
+              <Sparkles size={13} /> Next-Gen AI Recruitment Ecosystem
             </div>
 
             <h1 className="hero-title" style={{
-              fontSize: 'clamp(2.5rem, 5.5vw, 4rem)', fontWeight: 800, lineHeight: 1.08,
-              letterSpacing: '-0.04em', marginBottom: 'var(--p-space-5)', color: 'var(--color-fg)', textWrap: 'balance',
+              fontSize: 'clamp(2.5rem, 5.2vw, 3.85rem)',
+              fontWeight: 800,
+              lineHeight: 1.08,
+              letterSpacing: '-0.04em',
+              marginBottom: 'var(--p-space-5)',
+              color: 'var(--color-fg)',
+              textWrap: 'balance'
             }}>
-              Hire smarter.<br />
-              <span className="gradient-text-shimmer">Grow faster.</span>
+              Screen Smarter.<br />
+              <span className="gradient-text-shimmer">Rank Fairer.</span><br />
+              Hire Faster.
             </h1>
 
             <p className="hero-sub" style={{
-              fontSize: 'var(--p-text-lg)', color: 'var(--color-fg-secondary)',
-              maxWidth: 440, lineHeight: 1.6, marginBottom: 'var(--p-space-8)',
+              fontSize: 'var(--p-text-lg)',
+              color: 'var(--color-fg-secondary)',
+              maxWidth: 520,
+              lineHeight: 1.6,
+              marginBottom: 'var(--p-space-7)'
             }}>
-              Match resumes to jobs with AI, run interviews, and track skill gaps — all in one platform.
+              Automate technical hiring from resume parsing and interactive coding interviews to LambdaMART candidate ranking and skill gap diagnosis.
             </p>
 
-            <div className="hero-cta" style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-              <Link to="/register/company" className="btn btn-pulse" style={{ padding: '14px 28px', fontSize: 'var(--p-text-base)' }}>
-                <Briefcase size={16} /> Post a Job <ArrowRight size={14} />
+            {/* CTA Group */}
+            <div className="hero-cta" style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'center' }}>
+              <Link to="/register/candidate" className="btn btn-primary" style={{ padding: '14px 28px', fontSize: 'var(--p-text-base)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <User size={16} /> Candidate Sign Up <ArrowRight size={15} />
               </Link>
-              <Link to="/register/candidate" className="btn btn-ghost" style={{ padding: '14px 28px', fontSize: 'var(--p-text-base)' }}>
-                <User size={16} /> Find Work
+              <Link to="/register/company" className="btn btn-ghost" style={{ padding: '14px 28px', fontSize: 'var(--p-text-base)', display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                <Briefcase size={16} /> Post Jobs as Employer
               </Link>
+            </div>
+
+            {/* Key Value Badges */}
+            <div style={{ display: 'flex', gap: 16, marginTop: 28, flexWrap: 'wrap', fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <CheckCircle2 size={14} style={{ color: 'var(--color-success)' }} /> 20 Specialized IT Roles
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <CheckCircle2 size={14} style={{ color: 'var(--color-success)' }} /> Automated Coding Sandbox
+              </span>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <CheckCircle2 size={14} style={{ color: 'var(--color-success)' }} /> LambdaMART Fair Ranking
+              </span>
             </div>
           </div>
 
-          {/* Right — illustration */}
+          {/* Hero Right Visual */}
           <div className="landing-visual hero-visual" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
             <div className="hero-illustration" style={{
-              width: 'clamp(320px, 38vw, 460px)', height: 'clamp(320px, 38vw, 460px)',
-              borderRadius: 'var(--p-radius-xl)', background: 'var(--color-bg-elevated)',
-              border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-xl), var(--shadow-glow)',
+              width: '100%', maxWidth: 440, height: 400,
+              borderRadius: 'var(--p-radius-xl)',
+              background: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-border)',
+              boxShadow: 'var(--shadow-xl), 0 0 45px rgba(59, 130, 246, 0.15)',
               overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative'
             }}>
               <HeroIllustration />
             </div>
@@ -162,178 +249,230 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="reveal" style={{ padding: '0 24px', maxWidth: 1000, margin: '0 auto' }}>
+      {/* KPI Stats Strip */}
+      <section className="reveal" style={{ padding: '0 24px', maxWidth: 1120, margin: '0 auto' }}>
         <div className="stats-grid" style={{
           display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--p-space-4)',
           background: 'var(--color-surface)', border: '1px solid var(--color-border)',
           borderRadius: 'var(--p-radius-xl)', padding: 'var(--p-space-6) var(--p-space-8)',
+          boxShadow: 'var(--shadow-md)'
         }}>
           {[
-            { end: 20, suffix: '+', label: 'IT Roles', color: 'var(--color-primary)' },
-            { end: 92, suffix: '%', label: 'Match Accuracy', color: 'var(--color-success)' },
-            { end: 3, suffix: 'x', label: 'Faster Hiring', color: 'var(--color-purple)' },
-            { end: 24, suffix: '/7', label: 'AI Interviews', color: 'var(--color-orange)' },
+            { end: 20, suffix: '+', label: 'Canonical IT Roles', color: 'var(--color-primary)', helper: 'Multi-class SBERT embeddings' },
+            { end: 94, suffix: '%', label: 'NDCG@10 Ranking Score', color: 'var(--color-success)', helper: 'LambdaMART LTR benchmark' },
+            { end: 93, suffix: '%', label: 'Skill Gap ML Accuracy', color: 'var(--color-purple)', helper: 'Trained on 20,000 dataset' },
+            { end: 100, suffix: '%', label: 'Instant Evaluation', color: 'var(--color-orange)', helper: 'Zero manual grading delays' },
           ].map((stat, i) => (
             <div key={i} style={{ textAlign: 'center' }}>
               <div className="stat-number" style={{
-                fontSize: 'clamp(1.5rem, 3vw, 2rem)', fontWeight: 800,
+                fontSize: 'clamp(1.75rem, 3vw, 2.25rem)', fontWeight: 800,
                 letterSpacing: '-0.03em', color: stat.color, fontVariantNumeric: 'tabular-nums',
+                fontFamily: 'var(--p-font-sans)'
               }}>
                 <CountUp end={stat.end} suffix={stat.suffix} duration={1500 + i * 200} />
               </div>
-              <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', marginTop: 'var(--p-space-1)' }}>
+              <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginTop: 4 }}>
                 {stat.label}
               </div>
+              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                {stat.helper}
+              </div>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Bento features */}
-      <section className="reveal" style={{ padding: 'clamp(40px, 8vw, 80px) 24px', maxWidth: 1000, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 'var(--p-space-10)', textAlign: 'center', textWrap: 'balance' }}>
-          How it works
-        </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gridAutoFlow: 'dense', gap: 'var(--p-space-4)' }}>
-          <CardTilt intensity={6} style={{ gridColumn: 'span 7' }} className="bento-large">
-            <div className="reveal reveal-delay-1" style={{
-              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--p-radius-xl)', padding: 'var(--p-space-7)',
-              display: 'flex', flexDirection: 'column', justifyContent: 'space-between',
-              minHeight: 260, overflow: 'hidden', position: 'relative', height: '100%',
-            }}>
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 48, height: 48, borderRadius: 'var(--p-radius-lg)', background: 'var(--color-primary-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--p-space-5)' }}>
-                  <FileSearch size={24} style={{ color: 'var(--color-primary)' }} />
-                </div>
-                <h3 style={{ fontSize: 'var(--p-text-2xl)', fontWeight: 700, marginBottom: 'var(--p-space-3)', letterSpacing: '-0.02em' }}>AI Resume Matching</h3>
-                <p style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg-secondary)', lineHeight: 1.6, maxWidth: 360 }}>
-                  Upload your CV. Our model extracts skills, education, and experience, then scores your fit against open roles using weighted formulas.
-                </p>
-              </div>
-              <div style={{ position: 'absolute', right: -10, bottom: -10, width: 180, opacity: 0.7 }}><ResumeScanIllustration /></div>
-            </div>
-          </CardTilt>
-
-          <CardTilt intensity={6} style={{ gridColumn: 'span 5' }} className="bento-small">
-            <div className="reveal reveal-delay-2" style={{
-              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--p-radius-xl)', padding: 'var(--p-space-6)',
-              minHeight: 120, overflow: 'hidden', position: 'relative', height: '100%',
-            }}>
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--p-radius-md)', background: 'var(--color-success-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--p-space-4)' }}>
-                  <Brain size={20} style={{ color: 'var(--color-success)' }} />
-                </div>
-                <h3 style={{ fontSize: 'var(--p-text-lg)', fontWeight: 700, marginBottom: 'var(--p-space-2)', letterSpacing: '-0.01em' }}>Automated Interviews</h3>
-                <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.5 }}>MCQ, descriptive, and coding questions generated from job requirements.</p>
-              </div>
-              <div style={{ position: 'absolute', right: -5, bottom: -5, width: 120, opacity: 0.6 }}><InterviewIllustration /></div>
-            </div>
-          </CardTilt>
-
-          <CardTilt intensity={6} style={{ gridColumn: 'span 5' }} className="bento-small">
-            <div className="reveal reveal-delay-3" style={{
-              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--p-radius-xl)', padding: 'var(--p-space-6)',
-              minHeight: 120, overflow: 'hidden', position: 'relative', height: '100%',
-            }}>
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--p-radius-md)', background: 'var(--color-primary-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--p-space-4)' }}>
-                  <BarChart3 size={20} style={{ color: 'var(--color-primary)' }} />
-                </div>
-                <h3 style={{ fontSize: 'var(--p-text-lg)', fontWeight: 700, marginBottom: 'var(--p-space-2)', letterSpacing: '-0.01em' }}>Candidate Ranking</h3>
-                <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.5 }}>Compare applicants by CV match, interview score, and skill gap.</p>
-              </div>
-              <div style={{ position: 'absolute', right: -5, bottom: -5, width: 120, opacity: 0.6 }}><RankingIllustration /></div>
-            </div>
-          </CardTilt>
+      {/* Interactive Platform Architecture Showcase */}
+      <section className="reveal" style={{ padding: 'clamp(60px, 10vw, 100px) 24px', maxWidth: 1120, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 'var(--p-space-8)' }}>
+          <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.1em', marginBottom: 8 }}>
+            End-To-End Architecture
+          </div>
+          <h2 style={{ fontSize: 'clamp(1.85rem, 3.5vw, 2.5rem)', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-fg)', margin: 0, textWrap: 'balance' }}>
+            Four Intelligent Microservice Engines
+          </h2>
+          <p style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg-secondary)', maxWidth: 640, margin: '12px auto 0', lineHeight: 1.6 }}>
+            Each component addresses a distinct phase of modern tech recruiting with specialized AI models and explainable scoring.
+          </p>
         </div>
-      </section>
 
-      {/* Steps */}
-      <section className="reveal" style={{ padding: 'clamp(48px, 8vw, 96px) 24px', maxWidth: 1000, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 'clamp(1.75rem, 3.5vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 'var(--p-space-10)', textAlign: 'center', textWrap: 'balance' }}>
-          From application to hire in three steps
-        </h2>
-        <div className="steps-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 'var(--p-space-6)', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: 32, left: '16%', right: '16%', height: 2, background: 'linear-gradient(90deg, var(--color-primary), var(--color-success), var(--color-purple))', opacity: 0.3, zIndex: 0 }} />
-          {[
-            { num: '01', title: 'Upload Resume', desc: 'Candidate uploads CV. AI extracts skills, experience, and education in seconds.', icon: FileSearch, color: 'var(--color-primary)' },
-            { num: '02', title: 'AI Interview', desc: 'Automated technical interview with MCQ, descriptive, and coding questions.', icon: Brain, color: 'var(--color-success)' },
-            { num: '03', title: 'Get Ranked', desc: 'Compare candidates by CV match, interview score, and skill gap analysis.', icon: BarChart3, color: 'var(--color-purple)' },
-          ].map((step, i) => (
-            <div key={i} className={`reveal reveal-delay-${i + 1}`} style={{ textAlign: 'center', position: 'relative', zIndex: 1 }}>
-              <div style={{
-                width: 64, height: 64, borderRadius: 'var(--p-radius-xl)',
-                background: `color-mix(in srgb, ${step.color} 15%, transparent)`,
-                border: `1px solid color-mix(in srgb, ${step.color} 30%, transparent)`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                margin: '0 auto var(--p-space-5)',
-                transition: 'all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)', cursor: 'default',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.1) translateY(-4px)'; e.currentTarget.style.boxShadow = `0 8px 24px color-mix(in srgb, ${step.color} 30%, transparent)`; }}
-              onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = ''; }}
-              >
-                <step.icon size={28} style={{ color: step.color }} />
-              </div>
-              <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: step.color, letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 'var(--p-space-2)' }}>
-                Step {step.num}
-              </div>
-              <h3 style={{ fontSize: 'var(--p-text-xl)', fontWeight: 700, marginBottom: 'var(--p-space-3)', letterSpacing: '-0.02em' }}>{step.title}</h3>
-              <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.6, maxWidth: 280, margin: '0 auto' }}>{step.desc}</p>
-            </div>
+        {/* Feature Tabs Bar */}
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 'var(--p-space-6)' }}>
+          {features.map((f, idx) => (
+            <button
+              key={f.id}
+              onClick={() => setActiveTab(idx)}
+              className={`btn btn-sm ${activeTab === idx ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ padding: '8px 16px', fontSize: 'var(--p-text-xs)', fontWeight: 700, borderRadius: 'var(--radius-full)' }}
+            >
+              <f.icon size={14} /> {f.badge.split('·')[0].trim()}
+            </button>
           ))}
         </div>
+
+        {/* Active Feature Showcase Card */}
+        <div className="card" style={{
+          padding: 'var(--p-space-8)',
+          background: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-xl)',
+          display: 'grid',
+          gridTemplateColumns: '1.1fr 0.9fr',
+          gap: 40,
+          alignItems: 'center'
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: features[activeTab].color, letterSpacing: '0.08em', marginBottom: 6 }}>
+              {features[activeTab].badge}
+            </div>
+            <h3 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--color-fg)', margin: '0 0 12px 0', letterSpacing: '-0.02em' }}>
+              {features[activeTab].title}
+            </h3>
+            <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.65, marginBottom: 20 }}>
+              {features[activeTab].desc}
+            </p>
+
+            <div style={{
+              padding: 16,
+              background: 'var(--color-bg)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border-subtle)',
+              marginBottom: 24
+            }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+                Diagnostic Capability:
+              </div>
+              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg)', fontWeight: 500 }}>
+                {features[activeTab].demo}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ padding: '8px 14px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)' }}>
+                  {features[activeTab].stat}
+                </span>
+              </div>
+              <Link to="/register/candidate" style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                Explore Sandbox <ArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
+
+          <div style={{
+            height: 280,
+            background: 'var(--color-bg)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--color-border)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24
+          }}>
+            {activeTab === 0 && <ResumeScanIllustration />}
+            {activeTab === 1 && <InterviewIllustration />}
+            {activeTab === 2 && <RankingIllustration />}
+            {activeTab === 3 && <HeroIllustration />}
+          </div>
+        </div>
       </section>
 
-      {/* Roles */}
-      <section className="reveal" style={{ padding: 'clamp(32px, 6vw, 64px) 24px', maxWidth: 1000, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 'var(--p-text-xl)', fontWeight: 700, textAlign: 'center', marginBottom: 'var(--p-space-6)', letterSpacing: '-0.02em' }}>
-          20 IT roles supported
-        </h2>
-        <div style={{ display: 'flex', gap: 'var(--p-space-2)', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: 'var(--p-space-2)', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+      {/* 20 IT Roles Supported Carousel */}
+      <section className="reveal" style={{ padding: 'clamp(32px, 6vw, 64px) 24px', maxWidth: 1120, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
+          <h2 style={{ fontSize: 'var(--p-text-lg)', fontWeight: 800, color: 'var(--color-fg)', letterSpacing: '-0.02em', margin: 0 }}>
+            20 Enterprise IT Domains & Role Taxonomies
+          </h2>
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+            Tailored skill lexicons, benchmark weights, and adaptive interview question banks.
+          </p>
+        </div>
+
+        <div style={{
+          display: 'flex', gap: 8, overflowX: 'auto',
+          scrollSnapType: 'x mandatory', paddingBottom: 8,
+          WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none'
+        }}>
           {roles.map((r) => (
-            <span key={r} style={{
-              flexShrink: 0, scrollSnapAlign: 'start', display: 'inline-flex', alignItems: 'center',
-              background: 'var(--color-surface)', border: '1px solid var(--color-border)',
-              borderRadius: 'var(--p-radius-md)', padding: '8px 16px',
-              fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', whiteSpace: 'nowrap',
-              transition: 'all 0.2s ease', cursor: 'default',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-primary)'; e.currentTarget.style.color = 'var(--color-primary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = ''; e.currentTarget.style.color = ''; }}
-            >{r}</span>
+            <span
+              key={r}
+              style={{
+                flexShrink: 0, scrollSnapAlign: 'start', display: 'inline-flex', alignItems: 'center',
+                background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                borderRadius: 'var(--p-radius-md)', padding: '8px 16px',
+                fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', whiteSpace: 'nowrap',
+                fontWeight: 600, transition: 'all 0.2s ease', cursor: 'default'
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.borderColor = 'var(--color-primary)';
+                e.currentTarget.style.color = 'var(--color-primary)';
+                e.currentTarget.style.background = 'var(--color-primary-muted)';
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.borderColor = 'var(--color-border)';
+                e.currentTarget.style.color = 'var(--color-fg-secondary)';
+                e.currentTarget.style.background = 'var(--color-surface)';
+              }}
+            >
+              {r}
+            </span>
           ))}
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="reveal" style={{ padding: 'clamp(48px, 8vw, 96px) 24px', textAlign: 'center', maxWidth: 600, margin: '0 auto' }}>
-        <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.25rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 'var(--p-space-4)', textWrap: 'balance' }}>
-          Start hiring today
-        </h2>
-        <p style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg-secondary)', marginBottom: 'var(--p-space-7)', lineHeight: 1.6 }}>
-          Create a free account. Post your first job in minutes.
-        </p>
-        <Link to="/register/company" className="btn btn-pulse" style={{ padding: '14px 32px', fontSize: 'var(--p-text-base)' }}>
-          Get Started <ArrowRight size={14} />
-        </Link>
-        <div style={{ marginTop: 'var(--p-space-5)', fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)' }}>
-          Already have an account?{' '}
-          <Link to="/login/company">Company Login</Link> or{' '}
-          <Link to="/login/candidate">Candidate Login</Link>
+      {/* CTA Conversion Box */}
+      <section className="reveal" style={{ padding: 'clamp(60px, 8vw, 100px) 24px', textAlign: 'center', maxWidth: 720, margin: '0 auto' }}>
+        <div className="card" style={{
+          padding: 'var(--p-space-8)',
+          background: 'linear-gradient(180deg, var(--color-bg-elevated) 0%, var(--color-surface) 100%)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: 'var(--shadow-xl)'
+        }}>
+          <h2 style={{ fontSize: 'clamp(1.75rem, 3vw, 2.35rem)', fontWeight: 800, letterSpacing: '-0.03em', marginBottom: 12, color: 'var(--color-fg)', textWrap: 'balance' }}>
+            Transform Your Hiring Pipeline Today
+          </h2>
+          <p style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg-secondary)', marginBottom: 28, lineHeight: 1.6, maxWidth: 520, margin: '0 auto 28px' }}>
+            Join forward-thinking hiring teams and candidates leveraging transparent, explainable machine learning recruitment.
+          </p>
+
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Link to="/register/company" className="btn btn-primary" style={{ padding: '14px 32px', fontSize: 'var(--p-text-base)' }}>
+              Start as Employer <ArrowRight size={15} />
+            </Link>
+            <Link to="/register/candidate" className="btn btn-ghost" style={{ padding: '14px 32px', fontSize: 'var(--p-text-base)' }}>
+              Candidate Sign Up
+            </Link>
+          </div>
+
+          <div style={{ marginTop: 24, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+            Already registered?{' '}
+            <Link to="/login/company" style={{ color: 'var(--color-purple)', fontWeight: 700 }}>Employer Sign In</Link> ·{' '}
+            <Link to="/login/candidate" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Candidate Sign In</Link>
+          </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{ padding: 'var(--p-space-8) 24px', borderTop: '1px solid var(--color-border)', maxWidth: 1000, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--p-space-4)' }}>
-          <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)' }}>RecruitAI — AI-powered recruitment platform</div>
-          <div style={{ display: 'flex', gap: 'var(--p-space-6)', fontSize: 'var(--p-text-sm)' }}>
-            <Link to="/login/company" style={{ color: 'var(--color-fg-muted)' }}>Company Login</Link>
-            <Link to="/login/candidate" style={{ color: 'var(--color-fg-muted)' }}>Candidate Login</Link>
+      <footer style={{ padding: 'var(--p-space-8) 24px', borderTop: '1px solid var(--color-border)', maxWidth: 1120, margin: '0 auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{
+              width: 24, height: 24, borderRadius: 6,
+              background: 'linear-gradient(135deg, var(--color-primary), #6366f1)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
+            }}>
+              <Brain size={13} />
+            </div>
+            <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+              RecruitAI Ecosystem · SLIIT Academic Research R26-IT-148
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 20, fontSize: 'var(--p-text-xs)' }}>
+            <Link to="/login/company" style={{ color: 'var(--color-fg-muted)' }}>Employer Access</Link>
+            <Link to="/login/candidate" style={{ color: 'var(--color-fg-muted)' }}>Candidate Access</Link>
             <Link to="/register/company" style={{ color: 'var(--color-fg-muted)' }}>Get Started</Link>
           </div>
         </div>

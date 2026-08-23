@@ -1,102 +1,321 @@
 {
-  "Software Engineer": {
-    "required": ["System Design", "REST APIs", "Git", "Data Structures & Algorithms", "Docker"],
-    "optional": ["RabbitMQ", "Event Sourcing", "Kafka", "C#"],
-    "min_experience": 5
-  },
-  "Data Scientist": {
-    "required": ["Python", "SQL", "Machine Learning", "Statistics", "Feature Engineering"],
-    "optional": ["BigQuery", "Databricks", "Looker", "PyTorch"],
-    "min_experience": 5
-  },
-  "Machine Learning Engineer": {
-    "required": ["Python", "PyTorch/TensorFlow", "MLOps", "Model Deployment", "Feature Engineering"],
-    "optional": ["Model Quantization", "Git", "MLflow", "Docker"],
-    "min_experience": 5
-  },
-  "DevOps Engineer": {
-    "required": ["Docker", "Kubernetes", "Terraform", "CI/CD", "Linux"],
-    "optional": ["Nginx", "Azure", "Grafana", "Jenkins"],
-    "min_experience": 5
-  },
-  "Cybersecurity Analyst": {
-    "required": ["SIEM", "Penetration Testing", "Incident Response", "Python", "MITRE ATT&CK"],
-    "optional": ["CrowdStrike", "AWS Security", "Zero Trust", "Microsoft Sentinel"],
-    "min_experience": 5
-  },
-  "Cloud Solutions Architect": {
-    "required": ["AWS/Azure/GCP", "Terraform", "Cloud Security", "Architecture Design", "Networking"],
-    "optional": ["Pulumi", "Disaster Recovery", "Cost Optimization", "SD-WAN"],
-    "min_experience": 5
-  },
-  "Database Administrator": {
-    "required": ["PostgreSQL/Oracle", "Query Optimization", "Backup & Recovery", "High Availability", "SQL"],
-    "optional": ["Oracle DB", "TimescaleDB", "Flyway", "SQL Server"],
-    "min_experience": 5
-  },
-  "Frontend Developer": {
-    "required": ["React", "TypeScript", "HTML/CSS", "Web Performance", "Accessibility"],
-    "optional": ["Edge Runtime", "WebSockets", "WebGL", "Cypress"],
-    "min_experience": 5
-  },
-  "Backend Developer": {
-    "required": ["Python/Go/Java", "PostgreSQL", "REST APIs", "Microservices", "Docker"],
-    "optional": ["Go", "Event Sourcing", "NATS", "Rate Limiting"],
-    "min_experience": 5
-  },
-  "Mobile App Developer": {
-    "required": ["Swift/Kotlin or Flutter", "REST APIs", "MVVM/Clean Architecture", "Unit Testing", "CI/CD"],
-    "optional": ["MVI", "Sentry", "Unit & UI Testing", "Jetpack Compose"],
-    "min_experience": 5
-  },
-  "Full Stack Developer": {
-    "required": ["React", "Node.js", "Python", "SQL", "Docker"],
-    "optional": ["TypeScript", "GraphQL", "Redis", "Microservices"],
+  "AI/NLP Engineer": {
+    "required": [
+      "Python",
+      "Transformers/LLMs",
+      "NLP Fundamentals",
+      "PyTorch",
+      "Prompt/RAG Engineering"
+    ],
+    "optional": [
+      "Guardrails",
+      "LLM Fine-Tuning",
+      "Semantic Search",
+      "Prompt Engineering"
+    ],
     "min_experience": 4
   },
-  "QA/Test Automation Engineer": {
-    "required": ["Selenium", "Pytest", "Jest", "API Testing", "CI/CD"],
-    "optional": ["Cypress", "Postman", "Test Strategy", "Performance Testing"],
+  "Backend Developer": {
+    "required": [
+      "Python/Go/Java",
+      "PostgreSQL",
+      "REST APIs",
+      "Microservices",
+      "Docker"
+    ],
+    "optional": [
+      "GraphQL",
+      "Caching Strategies",
+      "Rust"
+    ],
+    "min_experience": 4
+  },
+  "Blockchain Developer": {
+    "required": [
+      "Solidity",
+      "Smart Contract Security",
+      "Web3.js/Ethers.js",
+      "Consensus Mechanisms",
+      "Testing (Hardhat/Truffle)"
+    ],
+    "optional": [
+      "Layer 2 Scaling",
+      "Gas Optimization",
+      "NFT Standards (ERC-721)",
+      "DeFi Protocols"
+    ],
+    "min_experience": 4
+  },
+  "Business/Systems Analyst": {
+    "required": [
+      "Requirements Analysis",
+      "SQL",
+      "Stakeholder Management",
+      "Process Mapping",
+      "Documentation"
+    ],
+    "optional": [
+      "Change Management",
+      "Business Process Modeling",
+      "Requirements Gathering",
+      "UAT Coordination"
+    ],
+    "min_experience": 4
+  },
+  "Cloud Solutions Architect": {
+    "required": [
+      "AWS/Azure/GCP",
+      "Terraform",
+      "Cloud Security",
+      "Architecture Design",
+      "Networking"
+    ],
+    "optional": [
+      "Cloud Migration",
+      "PrivateLink",
+      "API Gateway",
+      "Event-Driven Architecture"
+    ],
+    "min_experience": 4
+  },
+  "Cybersecurity Analyst": {
+    "required": [
+      "SIEM",
+      "Penetration Testing",
+      "Incident Response",
+      "Python",
+      "MITRE ATT&CK"
+    ],
+    "optional": [
+      "IAM",
+      "Zero Trust",
+      "Kali Linux",
+      "NIST CSF"
+    ],
     "min_experience": 4
   },
   "Data Engineer": {
-    "required": ["Python", "SQL", "Spark", "Kafka", "Airflow"],
-    "optional": ["ETL", "Data Modeling", "Hadoop", "dbt"],
-    "min_experience": 5
+    "required": [
+      "Python/SQL",
+      "ETL/ELT",
+      "Spark",
+      "Data Warehousing",
+      "Airflow"
+    ],
+    "optional": [
+      "Data Quality",
+      "Kafka",
+      "ETL Pipelines",
+      "Parquet"
+    ],
+    "min_experience": 4
   },
-  "Site Reliability Engineer (SRE)": {
-    "required": ["Linux", "Kubernetes", "Prometheus", "Terraform", "Python"],
-    "optional": ["Go", "Grafana", "Incident Response", "SLI/SLO"],
-    "min_experience": 5
+  "Data Scientist": {
+    "required": [
+      "Python",
+      "SQL",
+      "Machine Learning",
+      "Statistics",
+      "Feature Engineering"
+    ],
+    "optional": [
+      "Looker",
+      "XGBoost",
+      "Power BI",
+      "Spark"
+    ],
+    "min_experience": 3
   },
-  "UI/UX Designer": {
-    "required": ["Figma", "Sketch", "Prototyping", "User Research", "Wireframing"],
-    "optional": ["Adobe XD", "CSS", "Accessibility", "Design Systems"],
+  "Database Administrator": {
+    "required": [
+      "PostgreSQL/Oracle",
+      "Query Optimization",
+      "Backup & Recovery",
+      "High Availability",
+      "SQL"
+    ],
+    "optional": [
+      "Monitoring",
+      "RMAN",
+      "Partitioning",
+      "Database Migration"
+    ],
+    "min_experience": 4
+  },
+  "DevOps Engineer": {
+    "required": [
+      "Linux",
+      "CI/CD",
+      "Docker/Kubernetes",
+      "Terraform",
+      "Cloud Platforms (AWS/GCP/Azure)"
+    ],
+    "optional": [
+      "Vault",
+      "Blue-Green Deployments",
+      "Infrastructure as Code",
+      "CI/CD Pipelines"
+    ],
+    "min_experience": 4
+  },
+  "Embedded Systems Engineer": {
+    "required": [
+      "C/C++",
+      "RTOS",
+      "Microcontrollers",
+      "Hardware Interfaces (SPI/I2C/UART)",
+      "Debugging Tools (JTAG)"
+    ],
+    "optional": [
+      "Signal Processing",
+      "PCB Bring-Up",
+      "Firmware OTA Updates",
+      "CAN Bus"
+    ],
+    "min_experience": 4
+  },
+  "Frontend Developer": {
+    "required": [
+      "React",
+      "TypeScript",
+      "HTML/CSS",
+      "Web Performance",
+      "Accessibility"
+    ],
+    "optional": [
+      "CSS3",
+      "Vue.js",
+      "Zustand",
+      "Styled-Components"
+    ],
+    "min_experience": 4
+  },
+  "Full Stack Developer": {
+    "required": [
+      "JavaScript/TypeScript",
+      "React or Vue",
+      "Node.js",
+      "SQL/NoSQL",
+      "REST APIs"
+    ],
+    "optional": [
+      "Redis",
+      "Prisma",
+      "GraphQL",
+      "Next.js"
+    ],
+    "min_experience": 4
+  },
+  "Machine Learning Engineer": {
+    "required": [
+      "Python",
+      "PyTorch/TensorFlow",
+      "MLOps",
+      "Model Deployment",
+      "Feature Engineering"
+    ],
+    "optional": [
+      "RLHF",
+      "TorchServe",
+      "Vector DBs",
+      "Dask"
+    ],
+    "min_experience": 4
+  },
+  "Mobile App Developer": {
+    "required": [
+      "Swift/Kotlin or Flutter",
+      "REST APIs",
+      "MVVM/Clean Architecture",
+      "Unit Testing",
+      "CI/CD"
+    ],
+    "optional": [
+      "Kotlin Multiplatform",
+      "Jetpack Compose",
+      "Crashlytics",
+      "In-App Purchases"
+    ],
     "min_experience": 3
   },
   "Network Engineer": {
-    "required": ["TCP/IP", "Cisco", "Routing", "Firewalls", "VPN"],
-    "optional": ["DNS", "Linux", "Python", "Network Automation"],
-    "min_experience": 5
-  },
-  "Business/Systems Analyst": {
-    "required": ["SQL", "Requirements Gathering", "UML", "Agile", "JIRA"],
-    "optional": ["BPMN", "Stakeholder Management", "Data Analysis", "Process Modeling"],
+    "required": [
+      "TCP/IP",
+      "Routing & Switching",
+      "Firewalls/VPN",
+      "Network Monitoring",
+      "Network Security"
+    ],
+    "optional": [
+      "Network Automation (Ansible)",
+      "VPN",
+      "Firewalls",
+      "QoS"
+    ],
     "min_experience": 4
   },
-  "AI/NLP Engineer": {
-    "required": ["Python", "TensorFlow", "PyTorch", "NLP", "Transformers"],
-    "optional": ["Hugging Face", "spaCy", "Deep Learning", "BERT/GPT"],
-    "min_experience": 5
+  "QA / Test Automation Engineer": {
+    "required": [
+      "Test Automation Frameworks",
+      "API Testing",
+      "CI/CD",
+      "SQL",
+      "Bug Tracking"
+    ],
+    "optional": [
+      "Regression Testing",
+      "JMeter",
+      "Test Planning",
+      "Continuous Testing"
+    ],
+    "min_experience": 4
   },
-  "Blockchain Developer": {
-    "required": ["Solidity", "Ethereum", "Web3.js", "Smart Contracts", "Cryptography"],
-    "optional": ["Rust", "DApps", "DeFi", "IPFS"],
-    "min_experience": 3
+  "Site Reliability Engineer (SRE)": {
+    "required": [
+      "Linux",
+      "Kubernetes",
+      "Monitoring/Observability",
+      "Incident Response",
+      "Scripting (Python/Go)"
+    ],
+    "optional": [
+      "Autoscaling",
+      "PagerDuty",
+      "Runbooks",
+      "Chaos Engineering"
+    ],
+    "min_experience": 4
   },
-  "Embedded Systems Engineer": {
-    "required": ["C", "C++", "RTOS", "Microcontrollers", "ARM"],
-    "optional": ["Rust", "Linux Kernel", "Communication Protocols", "FPGA"],
-    "min_experience": 5
+  "Software Engineer": {
+    "required": [
+      "Data Structures & Algorithms",
+      "System Design",
+      "OOP",
+      "Git",
+      "Debugging"
+    ],
+    "optional": [
+      "Unit Testing",
+      "Design Patterns",
+      "CI/CD",
+      "Load Balancing"
+    ],
+    "min_experience": 4
+  },
+  "UI/UX Designer": {
+    "required": [
+      "Figma",
+      "User Research",
+      "Wireframing/Prototyping",
+      "Design Systems",
+      "Usability Testing"
+    ],
+    "optional": [
+      "A/B Testing",
+      "Accessibility (WCAG)",
+      "Prototyping",
+      "Wireframing"
+    ],
+    "min_experience": 4
   }
 }

@@ -1,23 +1,32 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Sparkles,
   Rocket, Plus, Search, ChevronRight, BookOpen, ExternalLink, Award, Check
 } from 'lucide-react'
-import { c4Progress, c4ProgressPopulate, c4ProgressSync, c4ProgressUpdate } from '../api'
+import {
+  c4Progress, c4ProgressSync, c4ProgressPopulate, c4ProgressUpdate,
+  c4ProgressDelete, c4ProgressDeleteSkill
+} from '../api'
+import PageHeader from '../components/PageHeader'
+import StatCard from '../components/StatCard'
+import EmptyState from '../components/EmptyState'
+import SkeletonLoader from '../components/SkeletonLoader'
+import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Progress() {
   const navigate = useNavigate()
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [data, setData] = useState(null)
-  const [busy, setBusy] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [syncBusy, setSyncBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [newSkillInput, setNewSkillInput] = useState('')
   const [addBusy, setAddBusy] = useState(false)
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -30,7 +39,6 @@ export default function Progress() {
   }, [])
 
   const loadData = async () => {
-    setBusy(true)
     try {
       const r = await c4Progress(candidateId)
       setData(r.data)
@@ -51,10 +59,10 @@ export default function Progress() {
         r = await c4ProgressPopulate({ candidate_id: candidateId })
       }
       const count = r?.data?.synced_count ?? r?.data?.populated ?? 0
-      toast.success(`Synced ${count} target skills from your interview & application history!`)
-      loadData()
+      toast.success(`Synced ${count} target competencies into your learning path!`)
+      await loadData()
     } catch {
-      toast.error('Failed to sync from applied interviews')
+      toast.error('Failed to sync progress goals')
     } finally {
       setSyncBusy(false)
     }
@@ -70,7 +78,7 @@ export default function Progress() {
       })
       const label = status === 'completed' ? 'Mastered' : status === 'in_progress' ? 'In Progress' : 'Target Set'
       toast.success(`${skill}: ${label}`)
-      loadData()
+      await loadData()
     } catch {
       toast.error('Failed to update progress status')
     }
@@ -78,7 +86,8 @@ export default function Progress() {
 
   const addCustomSkill = async (e) => {
     e.preventDefault()
-    if (!newSkillInput.trim()) return
+    const sk = newSkillInput.trim()
+    if (!sk) return
     setAddBusy(true)
     try {
       await c4ProgressUpdate({
@@ -89,12 +98,48 @@ export default function Progress() {
       })
       toast.success(`Added "${newSkillInput.trim()}" to learning goals!`)
       setNewSkillInput('')
-      loadData()
+      await loadData()
     } catch {
-      toast.error('Failed to add skill')
+      toast.error('Failed to add skill goal')
     } finally {
       setAddBusy(false)
     }
+  }
+
+  const deleteSingleSkill = (skill) => {
+    setConfirm({
+      open: true,
+      title: `Remove "${skill}" from goals?`,
+      message: 'This goal will be removed from your active progress tracking list.',
+      danger: true,
+      action: async () => {
+        try {
+          await c4ProgressDeleteSkill(candidateId, skill)
+          toast.success(`Removed "${skill}"`)
+          await loadData()
+        } catch {
+          toast.error('Failed to remove skill goal')
+        }
+      }
+    })
+  }
+
+  const resetAllGoals = () => {
+    setConfirm({
+      open: true,
+      title: 'Reset All Learning Goals?',
+      message: 'This will clear all tracked skill progress. You can re-sync anytime from your application & interview history.',
+      danger: true,
+      action: async () => {
+        try {
+          await c4ProgressDelete(candidateId)
+          toast.success('Learning goals reset')
+          await loadData()
+        } catch {
+          toast.error('Failed to reset goals')
+        }
+      }
+    })
   }
 
   const stats = data?.stats || {}
@@ -348,6 +393,20 @@ export default function Progress() {
           </div>
         )}
       </div>
+
+      {/* Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirm.open}
+        title={confirm.title}
+        message={confirm.message}
+        danger={confirm.danger}
+        confirmLabel={confirm.danger ? 'Confirm' : 'OK'}
+        onConfirm={async () => {
+          await confirm.action()
+          setConfirm({ ...confirm, open: false })
+        }}
+        onCancel={() => setConfirm({ ...confirm, open: false })}
+      />
     </div>
   )
 }

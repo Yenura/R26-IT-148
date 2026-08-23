@@ -130,29 +130,8 @@ export default function JobDetail() {
     })
   }
 
-  const startInterview = async () => {
-    if (!job) return
-    setConfirm({
-      open: true,
-      title: `Start interview for ${job.title}?`,
-      message: `You'll be asked ${job.interview_question_count || 10} questions.`,
-      action: async () => {
-        try {
-          const skills = job.required_skills?.length > 0 ? job.required_skills : [job.job_role || job.title]
-          const r = await c2Start({
-            candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
-            job_role: job.job_role || job.title,
-            job_level: job.job_level || 'Mid-Level',
-            required_skills: skills,
-            num_questions: job.interview_question_count || 10,
-          })
-          setInterviewSession(r.data)
-          setInterviewStarted(true)
-        } catch (err) {
-          toast.error(err?.response?.data?.detail || err.message || 'Failed to start interview')
-        }
-      }
-    })
+  const startInterview = () => {
+    navigate(`/candidate/interview?role=${encodeURIComponent(job?.job_role || job?.title)}&skills=${encodeURIComponent((job?.required_skills || []).join(','))}`)
   }
 
   if (loading) {
@@ -234,121 +213,6 @@ export default function JobDetail() {
                 {job.description || 'Join our engineering team to architect and build high-scale, resilient applications.'}
               </p>
             </div>
-          ) : (
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Status</th>
-                  <th>Applied</th>
-                </tr>
-              </thead>
-              <tbody>
-                {applicants.map((a) => (
-                  <tr key={a.id}>
-                    <td style={{ fontWeight: 500 }}>{a.candidate_name || '—'}</td>
-                    <td><span className={`badge ${a.status === 'applied' ? 'badge-blue' : 'badge-green'}`}>{a.status}</span></td>
-                    <td className="muted" style={{ fontSize: 13 }}>{a.applied_at ? new Date(a.applied_at).toLocaleDateString() : '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-      <ConfirmDialog
-        open={confirm.open}
-        title={confirm.title}
-        message={confirm.message}
-        danger={confirm.danger}
-        confirmLabel={confirm.danger ? 'Withdraw' : 'Confirm'}
-        onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
-        onCancel={() => setConfirm({ ...confirm, open: false })}
-      />
-    </div>
-  )
-}
-
-/* ── Inline Interview Component ─────────────────────────────── */
-function InlineInterview({ session, job, onDone }) {
-  const [step, setStep] = useState(0)
-  const [answers, setAnswers] = useState({})
-  const [submitting, setSubmitting] = useState(false)
-  const [result, setResult] = useState(null)
-  const [runResults, setRunResults] = useState(null)
-  const [running, setRunning] = useState(false)
-  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
-
-  const questions = session.questions || []
-  const q = questions[step]
-
-  useEffect(() => { setRunResults(null) }, [step])
-
-  const setAnswer = (val) => { setAnswers(prev => ({ ...prev, [step]: val })); setRunResults(null) }
-
-  const runCode = async () => {
-    const q = questions[step]
-    if (!q || q.question_type !== 'Coding') return
-    const code = answers[step] || ''
-    if (!code.trim()) return toast.error('Write some code first')
-    setRunning(true)
-    setRunResults(null)
-    try {
-      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [] })
-      setRunResults(r.data)
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Run failed')
-    } finally { setRunning(false) }
-  }
-
-  const submit = async () => {
-    setConfirm({
-      open: true,
-      title: 'Submit interview?',
-      message: 'You cannot change answers after submission.',
-      action: async () => {
-        setSubmitting(true)
-        try {
-          const formattedAnswers = questions.map((qq, i) => {
-            const a = answers[i]
-            if (qq.question_type === 'MCQ') {
-              return { question_id: qq.id, selected_option: a != null ? Number(a) : null }
-            }
-            if (qq.question_type === 'Coding') {
-              return { question_id: qq.id, code_text: a || '', language: 'Python' }
-            }
-            return { question_id: qq.id, answer_text: a || '' }
-          })
-          const r = await c2Submit({
-            candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
-            session_id: session.session_id,
-            job_role: job.job_role || job.title,
-            job_id: job.id || job._id,
-            answers: formattedAnswers,
-          })
-          setResult(r.data)
-        } catch (err) {
-          toast.error(err?.response?.data?.detail || err.message || 'Failed to submit interview')
-        } finally {
-          setSubmitting(false)
-        }
-      }
-    })
-  }
-
-  if (result) {
-    const score = result.interview_score ?? 0
-    return (
-      <div className="card fade-in">
-        <h3>Interview Complete</h3>
-        <div style={{ fontSize: 48, fontWeight: 800, color: score >= 70 ? 'var(--color-success)' : 'var(--color-danger)', margin: '16px 0' }}>
-          {score.toFixed(1)}%
-        </div>
-        <p className="muted" style={{ marginBottom: 16 }}>{result.grade || (score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : 'Needs improvement')}</p>
-        <button className="btn btn-primary" onClick={onDone}>Done</button>
-      </div>
-    )
-  }
 
             {/* Required Skills */}
             {job.required_skills?.length > 0 && (

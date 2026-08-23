@@ -1,17 +1,15 @@
 /*
- * RecruitAI Design Tokens
- * Three-layer architecture: Primitive → Semantic → Component
- *
- * Usage: import this file first in index.css
- * All component styles MUST reference semantic or component tokens, never primitives directly.
+ * RecruitAI Premium Design Tokens
+ * Architecture: Primitive → Semantic → Component
+ * Inspired by Linear, Stripe, and Vercel luxury SaaS design systems.
  */
 
 /* ═══════════════════════════════════════════════════════════════════
-   LAYER 1: PRIMITIVES — raw values, never used directly in components
+   LAYER 1: PRIMITIVES
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* ── Color palette ─────────────────────────────────────────────── */
+  /* ── Raw color scales ──────────────────────────────────────────── */
   --p-white: #ffffff;
   --p-black: #000000;
 
@@ -23,9 +21,6 @@
   --p-blue-400: #60a5fa;
   --p-blue-500: #3b82f6;
   --p-blue-600: #2563eb;
-  --p-blue-700: #1d4ed8;
-  --p-blue-800: #1e40af;
-  --p-blue-900: #1e3a8a;
 
   /* Emerald (accent — growth, opportunity) */
   --p-emerald-50: #ecfdf5;
@@ -89,7 +84,6 @@
   --p-space-9: 36px;
   --p-space-10: 40px;
   --p-space-12: 48px;
-  --p-space-14: 56px;
   --p-space-16: 64px;
 
   /* ── Typography scale ──────────────────────────────────────────── */
@@ -105,8 +99,8 @@
   --p-text-5xl: 36px;
 
   /* ── Font families ────────────────────────────────────────────── */
-  --p-font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --p-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+  --p-font-sans: 'Plus Jakarta Sans', 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --p-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
 
   /* ── Font weights ──────────────────────────────────────────────── */
   --p-weight-normal: 400;
@@ -116,16 +110,16 @@
   --p-weight-extrabold: 800;
 
   /* ── Line heights ──────────────────────────────────────────────── */
-  --p-leading-tight: 1.25;
-  --p-leading-normal: 1.5;
-  --p-leading-relaxed: 1.65;
+  --p-leading-tight: 1.2;
+  --p-leading-normal: 1.55;
+  --p-leading-relaxed: 1.7;
 
   /* ── Border radius ─────────────────────────────────────────────── */
   --p-radius-none: 0;
-  --p-radius-sm: 6px;
-  --p-radius-md: 8px;
-  --p-radius-lg: 14px;
-  --p-radius-xl: 20px;
+  --p-radius-sm: 8px;
+  --p-radius-md: 12px;
+  --p-radius-lg: 16px;
+  --p-radius-xl: 24px;
   --p-radius-full: 9999px;
 
   /* ── Shadows (tinted blue for premium depth) ───────────────────── */
@@ -139,10 +133,8 @@
   /* ── Timing ────────────────────────────────────────────────────── */
   --p-duration-fast: 120ms;
   --p-duration-normal: 200ms;
-  --p-duration-slow: 400ms;
-  --p-ease-default: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --p-ease-in: cubic-bezier(0.42, 0, 1, 1);
-  --p-ease-out: cubic-bezier(0, 0, 0.58, 1);
+  --p-duration-slow: 350ms;
+  --p-ease-default: cubic-bezier(0.16, 1, 0.3, 1);
   --p-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   /* ── Z-index scale ─────────────────────────────────────────────── */
@@ -154,14 +146,14 @@
   --p-z-toast: 500;
 
   /* ── Focus ring ────────────────────────────────────────────────── */
-  --p-focus-ring: 0 0 0 3px rgba(59, 130, 246, 0.35);
+  --p-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   LAYER 2: SEMANTICS — purpose-based aliases
+   LAYER 2: SEMANTICS
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Dark theme (default) ────────────────────────────────────────── */
+/* ── Dark theme (Default: Deep Space Obsidian & Slate) ──────────── */
 :root {
   color-scheme: dark;
 
@@ -258,14 +250,14 @@
   --chart-grid: var(--p-zinc-800);
 
   /* Scrollbar */
-  --scrollbar-track: var(--p-zinc-900);
-  --scrollbar-thumb: var(--p-zinc-700);
+  --scrollbar-track: #07090e;
+  --scrollbar-thumb: #1e293b;
 
   /* Input */
-  --input-bg: var(--p-zinc-900);
+  --input-bg: #0f1422;
 }
 
-/* ── Light theme ─────────────────────────────────────────────────── */
+/* ── Light theme (Ultra-Clean Silicon Valley Palette) ────────────── */
 [data-theme="light"] {
   color-scheme: light;
 
@@ -477,7 +469,7 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   BACKWARD COMPATIBILITY — map old token names to new semantic layer
+   BACKWARD COMPATIBILITY
    ═══════════════════════════════════════════════════════════════════ */
 
 :root {

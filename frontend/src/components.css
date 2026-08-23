@@ -218,10 +218,13 @@ code {
   position: sticky;
   top: 0;
   z-index: var(--p-z-sticky);
-  background: var(--sidebar-bg);
-  border-bottom: 1px solid var(--sidebar-border);
-  height: 56px;
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--glass-border);
+  height: 60px;
   flex-shrink: 0;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 .navbar-inner {

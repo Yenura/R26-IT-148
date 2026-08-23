@@ -1,3 +1,4 @@
+import React from 'react'
 import { AlertTriangle, Trash2, X } from 'lucide-react'
 
 export default function ConfirmDialog({
@@ -16,45 +17,70 @@ export default function ConfirmDialog({
     <div
       onClick={onCancel}
       style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24,
+        position: 'fixed',
+        inset: 0,
+        zIndex: 'var(--p-z-modal, 9999)',
+        background: 'rgba(3, 7, 18, 0.75)',
+        backdropFilter: 'blur(8px)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 'var(--p-space-4)',
+        animation: 'fadeIn 0.15s ease'
       }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
         style={{
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--p-radius-lg)',
+          background: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-border-strong)',
+          borderRadius: 'var(--radius-xl)',
           padding: 'var(--p-space-6)',
-          maxWidth: 400, width: '100%',
-          boxShadow: 'var(--shadow-lg)',
+          maxWidth: 420,
+          width: '100%',
+          boxShadow: 'var(--shadow-xl)',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 'var(--p-space-4)' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 'var(--p-space-5)' }}>
           <div style={{
-            width: 40, height: 40, borderRadius: 'var(--p-radius-md)', flexShrink: 0,
-            background: danger ? 'var(--color-error-muted)' : 'var(--color-primary-muted)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 44,
+            height: 44,
+            borderRadius: 'var(--radius-md)',
+            flexShrink: 0,
+            background: danger ? 'var(--color-danger-muted)' : 'var(--color-primary-muted)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: `1px solid ${danger ? 'rgba(244, 63, 94, 0.25)' : 'rgba(99, 102, 241, 0.25)'}`
           }}>
             {danger
-              ? <Trash2 size={18} style={{ color: 'var(--color-error)' }} />
-              : <AlertTriangle size={18} style={{ color: 'var(--color-primary)' }} />}
+              ? <Trash2 size={20} style={{ color: 'var(--color-danger)' }} />
+              : <AlertTriangle size={20} style={{ color: 'var(--color-primary)' }} />}
           </div>
-          <div style={{ flex: 1 }}>
-            <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 4 }}>{title}</h3>
-            <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.5 }}>{message}</p>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h3 style={{ fontSize: 'var(--p-text-lg)', fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 6px 0', letterSpacing: '-0.01em' }}>
+              {title}
+            </h3>
+            <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', lineHeight: 1.55, margin: 0 }}>
+              {message}
+            </p>
           </div>
-          <button onClick={onCancel} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-fg-muted)', padding: 4 }}>
+          <button
+            onClick={onCancel}
+            className="btn-ghost btn-sm"
+            style={{ padding: 4, borderRadius: 'var(--radius-sm)', color: 'var(--color-fg-muted)' }}
+            title="Cancel"
+          >
             <X size={16} />
           </button>
         </div>
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button className="btn btn-ghost btn-sm" onClick={onCancel}>{cancelLabel}</button>
+
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+          <button className="btn btn-ghost btn-sm" onClick={onCancel}>
+            {cancelLabel}
+          </button>
           <button
-            className={`btn btn-sm ${danger ? 'btn-danger' : ''}`}
+            className={`btn btn-sm ${danger ? 'btn-danger' : 'btn-primary'}`}
             onClick={onConfirm}
             style={danger ? { background: 'var(--color-danger)', color: 'var(--color-on-danger)', border: 'none' } : {}}
           >

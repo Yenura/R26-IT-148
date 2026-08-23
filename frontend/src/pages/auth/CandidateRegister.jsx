@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, User, ArrowLeft } from 'lucide-react'
+import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Sparkles } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CandidateRegister() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '' })
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
@@ -25,7 +26,7 @@ export default function CandidateRegister() {
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
       try {
         const me = await C0.get('/auth/me')
-        localStorage.setItem('recruitai.name', me.data.name || '')
+        localStorage.setItem('recruitai.name', me.data.name || form.full_name)
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
       toast.success('Candidate account created!')

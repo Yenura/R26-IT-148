@@ -7,6 +7,7 @@ import { C0 } from '../../api'
 export default function CandidateLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
@@ -24,13 +25,19 @@ export default function CandidateLogin() {
         localStorage.setItem('recruitai.name', me.data.name || '')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Welcome back!')
+      toast.success('Welcome back to RecruitAI!')
       navigate('/candidate/dashboard')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Invalid email or password')
     } finally {
       setBusy(false)
     }
+  }
+
+  const fillDemo = () => {
+    setEmail('candidate@example.com')
+    setPassword('candidate123')
+    toast.success('Demo candidate credentials loaded')
   }
 
   return (
@@ -95,6 +102,24 @@ export default function CandidateLogin() {
                   style={{ paddingLeft: 36 }}
                   required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--color-fg-muted)',
+                    padding: 0
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
             </div>
 

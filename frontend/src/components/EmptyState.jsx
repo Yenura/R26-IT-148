@@ -1,3 +1,4 @@
+import React from 'react'
 import { FileSearch, Plus, ArrowRight } from 'lucide-react'
 
 export default function EmptyState({
@@ -8,16 +9,42 @@ export default function EmptyState({
   icon: Icon = FileSearch
 }) {
   return (
-    <div style={{ padding: 48, textAlign: 'center', background: 'var(--bg-elevated)', borderRadius: 14, border: '1px dashed var(--border)', margin: '20px 0' }}>
-      <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'var(--bg)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', border: '1px solid var(--border)' }}>
-        <Icon size={26} />
+    <div style={{
+      padding: 'var(--p-space-10) var(--p-space-6)',
+      textAlign: 'center',
+      background: 'var(--color-bg-elevated)',
+      borderRadius: 'var(--radius-xl)',
+      border: '1px dashed var(--color-border)',
+      margin: 'var(--p-space-5) 0',
+      boxShadow: 'var(--shadow-sm)'
+    }}>
+      <div style={{
+        width: 60,
+        height: 60,
+        borderRadius: 'var(--radius-full)',
+        background: 'var(--color-bg-soft)',
+        color: 'var(--color-primary)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        margin: '0 auto var(--p-space-4)',
+        border: '1px solid var(--color-border)',
+        boxShadow: 'var(--shadow-xs)'
+      }}>
+        <Icon size={28} />
       </div>
-      <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{title}</h3>
-      <p style={{ fontSize: 13, color: 'var(--text-muted)', maxWidth: 460, margin: '0 auto 20px', lineHeight: 1.5 }}>
+      <h3 style={{ fontSize: 'var(--p-text-lg)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 8, letterSpacing: '-0.01em' }}>
+        {title}
+      </h3>
+      <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', maxWidth: 480, margin: '0 auto var(--p-space-6)', lineHeight: 1.6 }}>
         {description}
       </p>
       {onAction && (
-        <button className="btn" onClick={onAction} style={{ padding: '10px 20px', fontSize: 13, fontWeight: 700, borderRadius: 8, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+        <button
+          className="btn btn-primary"
+          onClick={onAction}
+          style={{ padding: '10px 22px', fontSize: 'var(--p-text-sm)', fontWeight: 700, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 8 }}
+        >
           <Plus size={15} /> {actionLabel} <ArrowRight size={14} />
         </button>
       )}

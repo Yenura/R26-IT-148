@@ -27,7 +27,10 @@ warnings.filterwarnings("ignore", category=UserWarning, module="sklearn")
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT    = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-DS_PATH = os.path.join(ROOT, "Data_set", "job_dataset_real_titles_10000.csv")
+# Accept either the 20k dataset (current) or legacy 10k filename
+_DS_20K = os.path.join(ROOT, "Data_set", "job_dataset_20_roles_20000.csv")
+_DS_10K = os.path.join(ROOT, "Data_set", "job_dataset_real_titles_10000.csv")
+DS_PATH = _DS_20K if os.path.exists(_DS_20K) else _DS_10K
 OUT_DIR = os.path.join(ROOT, "component4", "models")
 
 # ── Ordinal encoding maps ──────────────────────────────────────────────────────

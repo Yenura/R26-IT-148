@@ -7,6 +7,9 @@ import {
   ExternalLink, Layers, Lightbulb, ArrowRight, Plus, X
 } from 'lucide-react'
 import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync } from '../api'
+import PageHeader from '../components/PageHeader'
+import StatCard from '../components/StatCard'
+import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
