@@ -657,9 +657,101 @@ code {
   border-color: rgba(99, 102, 241, 0.4);
 }
 
-/* Table Row Edge Glow on Hover */
+/* ═══════════════════════════════════════════════════════════════════
+   DYNAMIC TEXT HIGHLIGHT & LUMINOUS GLOW SUITE (HOVER DYNAMICS)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Navigation Panel Link & Icon Text Highlight */
+.navbar-link, .nav-link, .nav-item {
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+              text-shadow 0.25s ease,
+              transform 0.2s ease,
+              background 0.2s ease !important;
+}
+
+.navbar-link:hover, .nav-link:hover, .nav-item:hover {
+  color: #ffffff !important;
+  text-shadow: 0 0 16px rgba(129, 140, 248, 0.75), 0 0 30px rgba(99, 102, 241, 0.4) !important;
+}
+
+.navbar-link:hover svg, .nav-link:hover svg, .nav-item:hover svg {
+  color: #818cf8 !important;
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6)) !important;
+  transform: translateY(-1px) scale(1.08) !important;
+}
+
+[data-theme="light"] .navbar-link:hover,
+[data-theme="light"] .nav-link:hover,
+[data-theme="light"] .nav-item:hover {
+  color: #4338ca !important;
+  text-shadow: 0 0 12px rgba(99, 102, 241, 0.25) !important;
+}
+
+[data-theme="light"] .navbar-link:hover svg,
+[data-theme="light"] .nav-link:hover svg,
+[data-theme="light"] .nav-item:hover svg {
+  color: #4f46e5 !important;
+  filter: drop-shadow(0 0 6px rgba(79, 70, 229, 0.3)) !important;
+}
+
+/* Interactive Headings & Card Text Highlight on Hover */
+.card h1, .card h2, .card h3, .card h4, .card .card-title,
+.premium-card h1, .premium-card h2, .premium-card h3, .premium-card h4, .premium-card .card-title,
+.goal-item .goal-title, .skill-gap-card h3, .skill-gap-card h4, .stat .stat-number, .stats-card .stat-number {
+  transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              text-shadow 0.25s ease,
+              transform 0.25s ease !important;
+}
+
+.card:hover h1, .card:hover h2, .card:hover h3, .card:hover h4, .card:hover .card-title,
+.premium-card:hover h1, .premium-card:hover h2, .premium-card:hover h3, .premium-card:hover h4, .premium-card:hover .card-title,
+.goal-item:hover .goal-title, .skill-gap-card:hover h3, .skill-gap-card:hover h4,
+.stat:hover .stat-number, .stats-card:hover .stat-number {
+  color: #ffffff !important;
+  text-shadow: 0 0 20px rgba(129, 140, 248, 0.6), 0 0 40px rgba(99, 102, 241, 0.3) !important;
+}
+
+[data-theme="light"] .card:hover h1, [data-theme="light"] .card:hover h2, [data-theme="light"] .card:hover h3, [data-theme="light"] .card:hover h4, [data-theme="light"] .card:hover .card-title,
+[data-theme="light"] .premium-card:hover h1, [data-theme="light"] .premium-card:hover h2, [data-theme="light"] .premium-card:hover h3, [data-theme="light"] .premium-card:hover h4, [data-theme="light"] .premium-card:hover .card-title,
+[data-theme="light"] .goal-item:hover .goal-title, [data-theme="light"] .skill-gap-card:hover h3, [data-theme="light"] .skill-gap-card:hover h4,
+[data-theme="light"] .stat:hover .stat-number, [data-theme="light"] .stats-card:hover .stat-number {
+  color: #0f172a !important;
+  text-shadow: 0 0 16px rgba(99, 102, 241, 0.2) !important;
+}
+
+/* Secondary & Subtitle Text Crisp Legibility on Hover */
+.card p, .card .secondary-text, .card .label, .card .text-muted,
+.premium-card p, .premium-card .secondary-text, .premium-card .label, .premium-card .text-muted,
+.goal-item .goal-subtitle, .skill-gap-card p {
+  transition: color 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease !important;
+}
+
+.card:hover p, .card:hover .secondary-text, .card:hover .label, .card:hover .text-muted,
+.premium-card:hover p, .premium-card:hover .secondary-text, .premium-card:hover .label, .premium-card:hover .text-muted,
+.goal-item:hover .goal-subtitle, .skill-gap-card:hover p {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .card:hover p,
+[data-theme="light"] .card:hover .secondary-text,
+[data-theme="light"] .card:hover .label,
+[data-theme="light"] .card:hover .text-muted,
+[data-theme="light"] .premium-card:hover p,
+[data-theme="light"] .premium-card:hover .secondary-text,
+[data-theme="light"] .premium-card:hover .label,
+[data-theme="light"] .premium-card:hover .text-muted,
+[data-theme="light"] .goal-item:hover .goal-subtitle,
+[data-theme="light"] .skill-gap-card:hover p {
+  color: #334155 !important;
+}
+
+/* Table Row Edge Glow & Text Focus on Hover */
 .table tbody tr {
   transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.table tbody tr td, .table tbody tr strong, .table tbody tr span {
+  transition: color 0.2s ease !important;
 }
 
 .table tbody tr:hover {
@@ -667,9 +759,18 @@ code {
   box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
+.table tbody tr:hover td, .table tbody tr:hover strong {
+  color: #ffffff !important;
+}
+
 [data-theme="light"] .table tbody tr:hover {
   background: rgba(99, 102, 241, 0.04) !important;
   box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+[data-theme="light"] .table tbody tr:hover td,
+[data-theme="light"] .table tbody tr:hover strong {
+  color: #0f172a !important;
 }
 
 .card:hover {
