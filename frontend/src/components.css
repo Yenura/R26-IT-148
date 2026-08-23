@@ -544,6 +544,42 @@ code {
               border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  overflow: hidden;
+}
+
+/* Interactive Cursor Spotlight on Cards & Containers */
+.card::after, .premium-card::after, .stat::after, .goal-item::after, .skill-gap-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    420px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(99, 102, 241, 0.16),
+    rgba(6, 182, 212, 0.06) 40%,
+    transparent 70%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.card:hover::after, .premium-card:hover::after, .stat:hover::after, .goal-item:hover::after, .skill-gap-card:hover::after {
+  opacity: 1;
+}
+
+[data-theme="light"] .card::after,
+[data-theme="light"] .premium-card::after,
+[data-theme="light"] .stat::after,
+[data-theme="light"] .goal-item::after,
+[data-theme="light"] .skill-gap-card::after {
+  background: radial-gradient(
+    420px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
+    rgba(99, 102, 241, 0.10),
+    rgba(168, 85, 247, 0.04) 40%,
+    transparent 70%
+  );
 }
 
 .card:hover {

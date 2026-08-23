@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useTheme } from '../context/ThemeContext'
 
@@ -7,11 +7,41 @@ export default function GlobalBackground() {
   const path = location.pathname
   const { theme } = useTheme()
   const isLight = theme === 'light'
+  const spotlightRef = useRef(null)
 
   const isSkillGap = path.includes('skill-gap')
   const isProgress = path.includes('progress')
   const isRecruiter = path.includes('company') || path.includes('pipeline')
   const isInterview = path.includes('interview')
+
+  useEffect(() => {
+    let frameId = null
+
+    const handlePointerMove = (e) => {
+      if (frameId) cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(() => {
+        // 1. Update Global Cursor Spotlight
+        if (spotlightRef.current) {
+          spotlightRef.current.style.setProperty('--mouse-x', `${e.clientX}px`)
+          spotlightRef.current.style.setProperty('--mouse-y', `${e.clientY}px`)
+        }
+
+        // 2. Update Interactive Spotlight on hovered cards & buttons
+        const cardTarget = e.target?.closest?.('.card, .premium-card, .stat, .goal-item, .skill-gap-card, .btn')
+        if (cardTarget) {
+          const rect = cardTarget.getBoundingClientRect()
+          cardTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`)
+          cardTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
+        }
+      })
+    }
+
+    window.addEventListener('pointermove', handlePointerMove, { passive: true })
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      if (frameId) cancelAnimationFrame(frameId)
+    }
+  }, [])
 
   return (
     <div
@@ -26,7 +56,23 @@ export default function GlobalBackground() {
         background: isLight ? '#f8fafc' : '#070814',
       }}
     >
-      {/* 1. Luminous Top Aurora Sunburst Header Beam */}
+      {/* 1. Interactive Cursor Spotlight Ambient Glow */}
+      <div
+        ref={spotlightRef}
+        className="global-cursor-spotlight"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: isLight
+            ? 'radial-gradient(700px circle at var(--mouse-x, 50vw) var(--mouse-y, 50vh), rgba(99, 102, 241, 0.12), rgba(168, 85, 247, 0.05) 50%, transparent 80%)'
+            : 'radial-gradient(700px circle at var(--mouse-x, 50vw) var(--mouse-y, 50vh), rgba(99, 102, 241, 0.24), rgba(6, 182, 212, 0.12) 45%, transparent 75%)',
+          pointerEvents: 'none',
+          zIndex: 1,
+          transition: 'opacity 0.3s ease',
+        }}
+      />
+
+      {/* 2. Luminous Top Aurora Sunburst Header Beam */}
       <div
         className="aurora-top-beam"
         style={{
@@ -45,7 +91,7 @@ export default function GlobalBackground() {
         }}
       />
 
-      {/* 2. Floating Luminous Aurora Nebula Orbs */}
+      {/* 3. Floating Luminous Aurora Nebula Orbs */}
       {/* Orb 1: Electric Indigo & Fuchsia Nebula (Top Left) */}
       <div
         className="aurora-orb-indigo"
@@ -101,7 +147,7 @@ export default function GlobalBackground() {
         }}
       />
 
-      {/* 3. Page-Specific Contextual Aurora Glows */}
+      {/* 4. Page-Specific Contextual Aurora Glows */}
       {isSkillGap && (
         <div
           className="aurora-accent-pulse"
@@ -170,7 +216,7 @@ export default function GlobalBackground() {
         />
       )}
 
-      {/* 4. Crisp High-Tech Dot Matrix & Intersection Grid */}
+      {/* 5. Crisp High-Tech Dot Matrix & Intersection Grid */}
       <div
         className="aurora-grid-pattern"
         style={{
@@ -186,7 +232,7 @@ export default function GlobalBackground() {
         }}
       />
 
-      {/* 5. Tactile Micro-Noise Texture */}
+      {/* 6. Tactile Micro-Noise Texture */}
       <div
         style={{
           position: 'absolute',
