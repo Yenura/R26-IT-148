@@ -6,7 +6,7 @@ import {
   Code, Building2, Sparkles, AlertCircle, CheckCircle2,
   ExternalLink, Layers, Lightbulb, ArrowRight
 } from 'lucide-react'
-import { c0JobsAll, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync } from '../api'
+import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync } from '../api'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import EmptyState from '../components/EmptyState'

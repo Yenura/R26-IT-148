@@ -39,7 +39,6 @@ export default function Progress() {
   }, [])
 
   const loadData = async () => {
-    if (!data) setLoading(true)
     try {
       const r = await c4Progress(candidateId)
       setData(r.data)
