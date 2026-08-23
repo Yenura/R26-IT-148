@@ -139,11 +139,16 @@
 
   /* ── Z-index scale ─────────────────────────────────────────────── */
   --p-z-base: 0;
-  --p-z-dropdown: 100;
-  --p-z-sticky: 200;
-  --p-z-overlay: 300;
-  --p-z-modal: 400;
-  --p-z-toast: 500;
+  --p-z-dropdown: 1100;
+  --p-z-sticky: 1000;
+  --p-z-overlay: 1200;
+  --p-z-modal: 1300;
+  --p-z-toast: 1400;
+
+  /* ── Glassmorphic Defaults ──────────────────────────────────────── */
+  --glass-bg: rgba(7, 9, 14, 0.90);
+  --glass-blur: blur(16px);
+  --glass-border: rgba(255, 255, 255, 0.08);
 
   /* ── Focus ring ────────────────────────────────────────────────── */
   --p-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.4);
@@ -327,6 +332,10 @@
   --scrollbar-thumb: var(--p-zinc-300);
 
   --input-bg: var(--p-white);
+
+  --glass-bg: rgba(255, 255, 255, 0.92);
+  --glass-blur: blur(16px);
+  --glass-border: rgba(226, 232, 240, 0.9);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
