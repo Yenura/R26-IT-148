@@ -16,12 +16,34 @@ export default function SkillGap() {
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [activeTab, setActiveTab] = useState('applied')
-  const [appliedReports, setAppliedReports] = useState([])
-  const [selectedJobId, setSelectedJobId] = useState(null)
+  const [appliedReports, setAppliedReports] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`recruitai.skillgap.${candidateId}`)
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  const [selectedJobId, setSelectedJobId] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`recruitai.skillgap.${candidateId}`)
+      const parsed = cached ? JSON.parse(cached) : []
+      return parsed.length > 0 ? parsed[0].job_id : null
+    } catch {
+      return null
+    }
+  })
   const [loadingApplied, setLoadingApplied] = useState(false)
   const [syncingProgress, setSyncingProgress] = useState(false)
 
-  const [availableJobs, setAvailableJobs] = useState([])
+  const [availableJobs, setAvailableJobs] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.jobs.cached')
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
   const [selectedOpeningId, setSelectedOpeningId] = useState('')
   const [roles, setRoles] = useState([])
   const [simulatedSkills, setSimulatedSkills] = useState([])
@@ -35,7 +57,7 @@ export default function SkillGap() {
     const role = localStorage.getItem('recruitai.role')
     if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
     
-    // Concurrent parallel initial fetch
+    // Concurrent parallel background revalidation
     Promise.all([
       c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => {}),
       loadAppliedJobsAnalysis(),
@@ -51,8 +73,13 @@ export default function SkillGap() {
       const reports = data.reports || []
       setAppliedReports(Array.isArray(reports) ? reports : [])
       setResult(data)
+      try {
+        sessionStorage.setItem(`recruitai.skillgap.${candidateId}`, JSON.stringify(reports))
+      } catch {}
       if (!selectedJobId && reports.length > 0) setSelectedJobId(reports[0].job_id)
-    } catch { toast.error('Failed to load applied jobs analysis') }
+    } catch {
+      if (appliedReports.length === 0) toast.error('Failed to load applied jobs analysis')
+    }
     finally { setLoadingApplied(false) }
   }
 
@@ -60,8 +87,12 @@ export default function SkillGap() {
     try {
       const r = await c0JobsAll()
       const jobs = r?.data?.jobs || r?.data || []
-      setAvailableJobs(Array.isArray(jobs) ? jobs : [])
-      if (jobs.length > 0) setSelectedOpeningId(jobs[0].id || jobs[0]._id)
+      const arr = Array.isArray(jobs) ? jobs : []
+      setAvailableJobs(arr)
+      try {
+        sessionStorage.setItem('recruitai.jobs.cached', JSON.stringify(arr))
+      } catch {}
+      if (arr.length > 0 && !selectedOpeningId) setSelectedOpeningId(arr[0].id || arr[0]._id)
     } catch { /* silent */ }
   }
 
