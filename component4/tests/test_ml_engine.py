@@ -267,7 +267,7 @@ class TestRunSkillGapAnalysis:
         "Cybersecurity Analyst", "Cloud Solutions Architect",
         "Database Administrator", "Mobile App Developer",
         "Full Stack Developer", "QA/Test Automation Engineer",
-        "Data Engineer", "Site Reliability Engineer (SRE)",
+        "Data Engineer", "Site Reliability Engineer",
         "UI/UX Designer", "Network Engineer",
         "Business/Systems Analyst", "AI/NLP Engineer",
         "Blockchain Developer", "Embedded Systems Engineer",

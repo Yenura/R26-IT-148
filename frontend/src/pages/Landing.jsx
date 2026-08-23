@@ -38,10 +38,10 @@ function CountUp({ end, suffix = '', duration = 1500 }) {
 }
 
 const roles = [
-  'Software Engineer', 'Data Scientist', 'ML Engineer', 'DevOps Engineer',
+  'Software Engineer', 'Data Scientist', 'Machine Learning Engineer', 'DevOps Engineer',
   'Cybersecurity Analyst', 'Cloud Solutions Architect', 'Frontend Developer',
   'Backend Developer', 'Full Stack Developer', 'QA/Test Automation Engineer',
-  'Data Engineer', 'Mobile App Developer', 'UI/UX Designer', 'Site Reliability Engineer (SRE)',
+  'Data Engineer', 'Mobile App Developer', 'UI/UX Designer', 'Site Reliability Engineer',
   'AI/NLP Engineer', 'Network Engineer', 'Blockchain Developer',
   'Business/Systems Analyst', 'Database Administrator', 'Embedded Systems Engineer',
 ]

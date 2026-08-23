@@ -28,7 +28,7 @@ const STANDARD_ROLES = {
   'Full Stack Developer': 'React, Node.js, TypeScript, PostgreSQL, Docker, Git',
   'QA/Test Automation Engineer': 'Selenium, Cypress, TestNG, Python, JIRA, CI/CD',
   'Data Engineer': 'SQL, Apache Spark, Python, ETL Pipelines, Kafka, BigQuery',
-  'Site Reliability Engineer (SRE)': 'Kubernetes, Prometheus, Linux, Incident Management, Python',
+  'Site Reliability Engineer': 'Kubernetes, Prometheus, Linux, Incident Management, Python',
   'UI/UX Designer': 'Figma, Adobe XD, Wireframing, User Research, Prototyping',
   'Network Engineer': 'Cisco, Routing & Switching, TCP/IP, Firewalls, VPN, Wireshark',
   'Business/Systems Analyst': 'Requirements Gathering, SQL, Agile, UML, JIRA, Business Process',

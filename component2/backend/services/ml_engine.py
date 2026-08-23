@@ -100,7 +100,17 @@ class InterviewService:
             "Database Administrator": ["SQL", "NoSQL", "Database Optimization", "Backup and Recovery", "Indexing", "Replication", "MongoDB", "PostgreSQL"],
             "Frontend Developer": ["React", "JavaScript", "CSS", "HTML", "Vue", "TypeScript", "UI/UX", "Accessibility", "DOM", "Responsive Design"],
             "Backend Developer": ["Python", "Java", "Node.js", "APIs", "Microservices", "SQL", "Database Design", "Server-side Logic", "Authentication"],
-            "Mobile App Developer": ["React Native", "Flutter", "iOS", "Android", "Kotlin", "Swift", "Mobile UI", "Performance Optimization"]
+            "Mobile App Developer": ["React Native", "Flutter", "iOS", "Android", "Kotlin", "Swift", "Mobile UI", "Performance Optimization"],
+            "AI/NLP Engineer": ["Python", "NLP", "Transformers", "PyTorch", "TensorFlow", "Hugging Face", "BERT", "GPT", "Text Processing"],
+            "Blockchain Developer": ["Solidity", "Ethereum", "Smart Contracts", "Web3.js", "Blockchain", "Cryptography", "DApps"],
+            "Business/Systems Analyst": ["Requirements Analysis", "SQL", "Stakeholder Management", "Process Mapping", "Documentation", "UML", "Agile"],
+            "Data Engineer": ["Python", "SQL", "ETL", "Spark", "Airflow", "Data Warehousing", "Big Data", "AWS"],
+            "Embedded Systems Engineer": ["C/C++", "RTOS", "Microcontrollers", "Hardware Interfaces", "Embedded Linux", "Firmware", "Debugging"],
+            "Full Stack Developer": ["React", "Node.js", "Python", "SQL", "REST APIs", "TypeScript", "MongoDB", "Docker"],
+            "Network Engineer": ["TCP/IP", "Routing", "Switching", "Firewalls", "VPN", "Network Monitoring", "Cisco", "DNS"],
+            "QA/Test Automation Engineer": ["Selenium", "Test Automation", "CI/CD", "API Testing", "SQL", "Bug Tracking", "pytest", "Jest"],
+            "Site Reliability Engineer": ["Linux", "Kubernetes", "Monitoring", "Incident Response", "Scripting", "AWS", "Terraform", "Prometheus"],
+            "UI/UX Designer": ["Figma", "User Research", "Wireframing", "Design Systems", "Usability Testing", "Prototyping", "Adobe XD"]
         }
 
     def _default_question_bank(self) -> List[Dict]:
@@ -349,7 +359,17 @@ class InterviewService:
                 "Database Administrator": {"mcq": 0.30, "descriptive": 0.40, "coding": 0.30},
                 "Frontend Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
                 "Backend Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
-                "Mobile App Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50}
+                "Mobile App Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "AI/NLP Engineer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "Blockchain Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "Business/Systems Analyst": {"mcq": 0.35, "descriptive": 0.50, "coding": 0.15},
+                "Data Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
+                "Embedded Systems Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
+                "Full Stack Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "Network Engineer": {"mcq": 0.40, "descriptive": 0.45, "coding": 0.15},
+                "QA/Test Automation Engineer": {"mcq": 0.25, "descriptive": 0.30, "coding": 0.45},
+                "Site Reliability Engineer": {"mcq": 0.35, "descriptive": 0.40, "coding": 0.25},
+                "UI/UX Designer": {"mcq": 0.30, "descriptive": 0.55, "coding": 0.15}
             },
             "grade_bands": {
                 "Excellent": {"min": 85},

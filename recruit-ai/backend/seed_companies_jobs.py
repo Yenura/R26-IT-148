@@ -75,7 +75,7 @@ COMPANIES_DATA = [
                 "interview_question_count": 10,
             },
             {
-                "title": "Site Reliability Engineer (SRE)",
+                "title": "Site Reliability Engineer",
                 "department": "Production Platforms",
                 "employment_type": "Full-time",
                 "location": "Seattle, WA (Hybrid)",

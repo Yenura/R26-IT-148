@@ -52,7 +52,7 @@ ROLE_DISPLAY_NAMES = {
     "Full_Stack_Developer":      "Full Stack Developer",
     "QA_Test_Automation_Engineer": "QA/Test Automation Engineer",
     "Data_Engineer":             "Data Engineer",
-    "Site_Reliability_Engineer": "Site Reliability Engineer (SRE)",
+    "Site_Reliability_Engineer": "Site Reliability Engineer",
     "UI_UX_Designer":            "UI/UX Designer",
     "Network_Engineer":          "Network Engineer",
     "Business_Systems_Analyst":  "Business/Systems Analyst",

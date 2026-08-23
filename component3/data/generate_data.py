@@ -37,7 +37,7 @@ EXCEL_ROLE_MAPPING = {
     "Embedded_Systems_Engineer": "Embedded_Systems_Engineer.xlsx",
     "Network_Engineer": "Network_Engineer.xlsx",
     "QA_Test_Automation_Engineer": "QA_Test_Automation_Engineer (2).xlsx",
-    "Site_Reliability_Engineer": "Site_Reliability_Engineer_(SRE).xlsx",
+    "Site_Reliability_Engineer": "Site_Reliability_Engineer.xlsx",
     "UI_UX_Designer": "UI_UX_Designer.xlsx",
 }
 

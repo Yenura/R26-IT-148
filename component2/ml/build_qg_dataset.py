@@ -35,7 +35,7 @@ ROLES = {
     "Full Stack Developer": ["React", "Node.js", "Python", "SQL", "Docker"],
     "QA/Test Automation Engineer": ["Selenium", "Pytest", "Jest", "API Testing", "CI/CD"],
     "Data Engineer": ["Python", "SQL", "Spark", "Kafka", "Airflow"],
-    "Site Reliability Engineer (SRE)": ["Linux", "Kubernetes", "Prometheus", "Terraform", "Go"],
+    "Site Reliability Engineer": ["Linux", "Kubernetes", "Prometheus", "Terraform", "Go"],
     "UI/UX Designer": ["Figma", "Sketch", "CSS", "Prototyping", "User Research"],
     "Network Engineer": ["TCP/IP", "Cisco", "Routing", "Firewalls", "VPN"],
     "Business/Systems Analyst": ["SQL", "UML", "BPMN", "Agile", "JIRA"],
