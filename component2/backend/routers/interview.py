@@ -23,7 +23,7 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
-from db import save_session, get_session, save_result, get_result, update_session_status
+from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -170,6 +170,8 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             job_role = matched_role
         
         # Create session (CPU-bound: question generation + filtering)
+        # Exclude questions the candidate has seen in past sessions
+        seen_ids = await get_seen_question_ids(interview_request.candidate_id or "")
         session = await run_in_threadpool(
             interview_service.create_interview_session,
             candidate_id=interview_request.candidate_id,
@@ -177,6 +179,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             num_questions=interview_request.num_questions,
             employer_skills=interview_request.required_skills or None,
             job_level=interview_request.job_level or "Mid-Level",
+            exclude_ids=seen_ids,
         )
         
         # Store time limits from employer config

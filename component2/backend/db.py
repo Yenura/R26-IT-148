@@ -140,3 +140,30 @@ async def save_result(result: Dict[str, Any]) -> None:
 
 async def get_result(interview_id: str) -> Optional[Dict[str, Any]]:
     return await run_in_threadpool(_get_result_sync, interview_id)
+
+
+def _get_seen_question_ids_sync(candidate_id: str, limit: int = 200) -> set:
+    """Return question IDs the candidate has seen in past sessions."""
+    mongo_db = _get_mongo_db()
+    seen = set()
+    if mongo_db is not None:
+        for doc in mongo_db["sessions"].find(
+            {"candidate_id": candidate_id},
+            {"questions.id": 1}
+        ).sort("created_at", -1).limit(limit):
+            for q in doc.get("questions", []):
+                qid = q.get("id")
+                if qid:
+                    seen.add(qid)
+    else:
+        for session in _memory_store["sessions"].values():
+            if session.get("candidate_id") == candidate_id:
+                for q in session.get("questions", []):
+                    qid = q.get("id")
+                    if qid:
+                        seen.add(qid)
+    return seen
+
+
+async def get_seen_question_ids(candidate_id: str, limit: int = 200) -> set:
+    return await run_in_threadpool(_get_seen_question_ids_sync, candidate_id, limit)

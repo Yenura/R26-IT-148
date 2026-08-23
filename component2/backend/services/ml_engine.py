@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import uuid
+import random
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
@@ -374,6 +375,7 @@ class InterviewService:
         num_questions: int = 10,
         employer_skills: Optional[List[str]] = None,
         job_level: str = "Mid-Level",
+        exclude_ids: Optional[set] = None,
     ) -> Dict:
         """
         Create interview session with questions
@@ -384,6 +386,7 @@ class InterviewService:
             num_questions: Number of questions to generate
             employer_skills: Optional skills from employer posting (merged with role defaults)
             job_level: Intern/Junior/Mid-Level/Senior/Staff level → difficulty filter
+            exclude_ids: Question IDs to skip (seen in past sessions)
 
         Returns:
             Interview session dictionary
@@ -417,14 +420,14 @@ class InterviewService:
         else:
             # Select questions by type from bank
             mcq_questions = self._select_questions_by_type(
-                "MCQ", num_mcq, required_skills, difficulty=difficulty
+                "MCQ", num_mcq, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
             )
             desc_questions = self._select_questions_by_type(
-                "Descriptive", num_desc, required_skills, difficulty=difficulty
+                "Descriptive", num_desc, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
             )
             code_questions = self._select_questions_by_type(
                 "Coding", num_code, required_skills,
-                coding_profile=coding_profile, difficulty=difficulty
+                coding_profile=coding_profile, difficulty=difficulty, exclude_ids=exclude_ids
             )
 
             # Combine all questions and top up if bank is smaller than requested count.
@@ -478,13 +481,15 @@ class InterviewService:
         existing_ids = {q.get("id") for q in topped_up if q.get("id")}
         existing_texts = {q.get("question_text", "").strip().lower() for q in topped_up if q.get("question_text")}
 
-        # 1) Fill from remaining bank with unseen question text.
-        for candidate in self.question_bank:
+        # 1) Fill from remaining bank with unseen question text (shuffled for randomness).
+        remaining = [c for c in self.question_bank if c.get("question_text", "").strip().lower() not in existing_texts]
+        random.shuffle(remaining)
+        for candidate in remaining:
             if len(topped_up) >= target_count:
                 break
             cid = candidate.get("id")
             ctext = candidate.get("question_text", "").strip().lower()
-            if not ctext or cid in existing_ids or ctext in existing_texts:
+            if not ctext or cid in existing_ids:
                 continue
             if candidate.get("question_type") == "Coding" and coding_profile in {"sql", "scripting"}:
                 if not self._filter_coding_questions_by_profile([candidate], coding_profile):
@@ -494,10 +499,12 @@ class InterviewService:
                 existing_ids.add(cid)
             existing_texts.add(ctext)
 
-        # 2) If still short, repeat selected pool with unique IDs.
+        # 2) If still short, repeat selected pool with unique IDs (shuffled order).
         idx = 1
-        while len(topped_up) < target_count and selected_questions:
-            source = selected_questions[(idx - 1) % len(selected_questions)].copy()
+        pool = list(selected_questions)
+        random.shuffle(pool)
+        while len(topped_up) < target_count and pool:
+            source = pool[(idx - 1) % len(pool)].copy()
             source["id"] = f"{source.get('id', 'Q')}_R{idx}"
             topped_up.append(source)
             idx += 1
@@ -520,7 +527,8 @@ class InterviewService:
                                   count: int, 
                                   relevant_skills: List[str],
                                   coding_profile: str = "full",
-                                  difficulty: str = "Medium") -> List[Dict]:
+                                  difficulty: str = "Medium",
+                                  exclude_ids: Optional[set] = None) -> List[Dict]:
         """
         Select questions by type with relevance filtering
         
@@ -530,14 +538,18 @@ class InterviewService:
             relevant_skills: Skills to filter by
             coding_profile: Coding profile for Coding questions
             difficulty: Preferred difficulty (Easy/Medium/Hard); prefers but does not require
+            exclude_ids: Question IDs to skip (seen in past sessions)
 
         Returns:
             List of selected questions
         """
+        exclude = exclude_ids or set()
+
         # Filter by type
         typed_questions = [
             q for q in self.question_bank 
             if q.get("question_type") == question_type
+            and q.get("id") not in exclude
         ]
         
         if not typed_questions:
@@ -553,6 +565,7 @@ class InterviewService:
                 typed_questions = [
                     q for q in self.question_bank 
                     if q.get("question_type") == "Coding"
+                    and q.get("id") not in exclude
                 ]
         
         # Filter by relevance to skills; if none match, fall back to generic typed questions.
@@ -585,10 +598,15 @@ class InterviewService:
         return self._prefer_difficulty((safe if safe else typed_questions), difficulty)[:count]
 
     def _prefer_difficulty(self, questions: List[Dict], difficulty: str) -> List[Dict]:
-        """Stable-sort so preferred-difficulty questions come first; never drops questions."""
+        """Stable-sort so preferred-difficulty questions come first, then shuffle within tiers."""
         if not difficulty:
+            random.shuffle(questions)
             return questions
-        return sorted(questions, key=lambda q: (q.get("difficulty") != difficulty,))
+        matched = [q for q in questions if q.get("difficulty") == difficulty]
+        rest = [q for q in questions if q.get("difficulty") != difficulty]
+        random.shuffle(matched)
+        random.shuffle(rest)
+        return matched + rest
 
     
     def _filter_coding_questions_by_profile(self, coding_questions: List[Dict], profile: str) -> List[Dict]:
