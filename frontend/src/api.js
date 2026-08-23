@@ -114,6 +114,7 @@ export const uJobsDelete       = (id)            => C0.delete(`/jobs/${id}`)
 export const uJobsApply        = (id, payload)   => C0.post(`/jobs/${id}/apply`, payload)
 export const uJobsWithdraw     = (id)             => C0.delete(`/jobs/${id}/apply`)
 export const uJobsApplicants   = (id)            => C0.get(`/jobs/${id}/applicants`)
+export const uJobsApplicantCounts = ()            => C0.get('/jobs/applicant-counts')
 
 // ── Unified: Resume ───────────────────────────────────────────
 export const uResumeUpload     = (formData)      => C0.post('/resume/upload', formData)

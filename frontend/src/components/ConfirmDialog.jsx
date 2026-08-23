@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { AlertTriangle, Trash2, X } from 'lucide-react'
 
 export default function ConfirmDialog({
@@ -11,6 +11,59 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
 }) {
+  const dialogRef = useRef(null)
+  const previousFocusRef = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onCancel()
+
+      // Focus trap
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    }
+
+    previousFocusRef.current = document.activeElement
+    document.body.style.overflow = 'hidden'
+
+    // Auto-focus the confirm button
+    setTimeout(() => {
+      if (dialogRef.current) {
+        const confirmBtn = dialogRef.current.querySelector('.btn-primary, .btn-danger')
+        if (confirmBtn) confirmBtn.focus()
+      }
+    }, 50)
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = 'unset'
+      if (previousFocusRef.current && previousFocusRef.current.focus) {
+        previousFocusRef.current.focus()
+      }
+    }
+  }, [open, onCancel])
+
   if (!open) return null
 
   return (
@@ -30,7 +83,11 @@ export default function ConfirmDialog({
       }}
     >
       <div
+        ref={dialogRef}
         onClick={(e) => e.stopPropagation()}
+        role="alertdialog"
+        aria-modal="true"
+        aria-label={title}
         style={{
           background: 'var(--color-bg-elevated)',
           border: '1px solid var(--color-border-strong)',

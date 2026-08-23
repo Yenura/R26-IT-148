@@ -1379,6 +1379,30 @@ pre {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD LAYOUTS (responsive two-column)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dashboard-grid {
+  display: grid;
+  gap: var(--p-space-5);
+}
+
+.dashboard-grid-main {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+}
+
+.dashboard-grid-equal {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid-main,
+  .dashboard-grid-equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    HOVER CARD (generic lift)
    ═══════════════════════════════════════════════════════════════════ */
 
