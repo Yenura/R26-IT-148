@@ -247,11 +247,23 @@ export default function SkillGap() {
                     </div>
                   </div>
 
-                  {/* Interview alert */}
+                  {/* Interview alert with animated subtle glow */}
                   {!selectedReport.interview_completed && (
-                    <div style={{ padding: '14px 18px', borderRadius: 'var(--radius-md)', background: 'var(--color-warning-muted)', border: '1px solid rgba(245, 158, 11, 0.3)', marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+                    <div style={{
+                      padding: '16px 20px',
+                      borderRadius: 'var(--radius-lg)',
+                      background: 'var(--color-warning-muted)',
+                      border: '1px solid rgba(245, 158, 11, 0.4)',
+                      boxShadow: '0 0 20px -4px rgba(245, 158, 11, 0.25)',
+                      marginBottom: 20,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <HelpCircle size={18} style={{ color: 'var(--color-warning)' }} />
+                        <HelpCircle size={20} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
                         <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg)' }}>
                           You have applied but haven&apos;t taken the technical assessment yet. Complete the interview to unlock complete gap diagnostics!
                         </span>
@@ -270,7 +282,13 @@ export default function SkillGap() {
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {selectedReport.strengths.map((st, idx) => (
-                          <div key={idx} style={{ padding: '10px 14px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                          <div key={idx} style={{
+                            padding: '10px 14px',
+                            background: 'var(--color-bg-elevated)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid rgba(16, 185, 129, 0.2)',
+                            borderLeft: '4px solid var(--color-success)'
+                          }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                               <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{st.skill}</span>
                               <span style={{ fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)', background: 'var(--color-success-muted)', color: 'var(--color-success)' }}>{st.source}</span>
@@ -282,26 +300,35 @@ export default function SkillGap() {
                     </div>
                   )}
 
-                  {/* Weaknesses */}
+                  {/* Weaknesses with Left Colored Border */}
                   {selectedReport.weaknesses?.length > 0 && (
                     <div style={{ marginBottom: 20, padding: 16, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
                       <h3 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <AlertCircle size={16} /> Identified Skill Deficits ({selectedReport.weaknesses.length})
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {selectedReport.weaknesses.map((wk, idx) => (
-                          <div key={idx} style={{ padding: '10px 14px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(244, 63, 94, 0.2)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{wk.skill}</span>
-                              <span style={{
-                                fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)',
-                                background: wk.severity === 'Critical' ? 'var(--color-danger-muted)' : 'var(--color-warning-muted)',
-                                color: wk.severity === 'Critical' ? 'var(--color-danger)' : 'var(--color-warning)'
-                              }}>{wk.source}</span>
+                        {selectedReport.weaknesses.map((wk, idx) => {
+                          const isCrit = wk.severity === 'Critical'
+                          return (
+                            <div key={idx} style={{
+                              padding: '10px 14px',
+                              background: 'var(--color-bg-elevated)',
+                              borderRadius: 'var(--radius-sm)',
+                              border: '1px solid rgba(244, 63, 94, 0.2)',
+                              borderLeft: `4px solid ${isCrit ? 'var(--color-danger)' : 'var(--color-warning)'}`
+                            }}>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{wk.skill}</span>
+                                <span style={{
+                                  fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)',
+                                  background: isCrit ? 'var(--color-danger-muted)' : 'var(--color-warning-muted)',
+                                  color: isCrit ? 'var(--color-danger)' : 'var(--color-warning)'
+                                }}>{wk.source}</span>
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 3 }}>{wk.details}</div>
                             </div>
-                            <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 3 }}>{wk.details}</div>
-                          </div>
-                        ))}
+                          )
+                        })}
                       </div>
                     </div>
                   )}

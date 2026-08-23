@@ -172,7 +172,12 @@ export default function CompanyDashboard() {
   const interviewRequiredCount = jobs.filter((j) => j.interview_required).length
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1180, margin: '0 auto' }}>
+    <div className="fade-in" style={{
+      maxWidth: 1180,
+      margin: '0 auto',
+      position: 'relative',
+      backgroundImage: 'radial-gradient(ellipse at 85% 5%, rgba(99, 102, 241, 0.08) 0%, transparent 55%), radial-gradient(ellipse at 15% 40%, rgba(168, 85, 247, 0.05) 0%, transparent 45%)'
+    }}>
       {/* Header & Primary CTAs */}
       <PageHeader
         badge="Employer Console"

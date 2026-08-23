@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   TrendingUp, CheckCircle2, Clock, AlertCircle, Download, Sparkles,
-  Rocket, Plus, Search, ChevronRight, BookOpen, ExternalLink, Award, Check
+  Rocket, Plus, Search, ChevronRight, BookOpen, ExternalLink, Award, Check, Trash2, RotateCcw
 } from 'lucide-react'
 import {
   c4Progress, c4ProgressSync, c4ProgressPopulate, c4ProgressUpdate,
@@ -39,13 +39,14 @@ export default function Progress() {
   }, [])
 
   const loadData = async () => {
+    setLoading(true)
     try {
       const r = await c4Progress(candidateId)
       setData(r.data)
     } catch {
       toast.error('Failed to load progress data')
     } finally {
-      setBusy(false)
+      setLoading(false)
     }
   }
 
@@ -92,11 +93,11 @@ export default function Progress() {
     try {
       await c4ProgressUpdate({
         candidate_id: candidateId,
-        skill: newSkillInput.trim(),
+        skill: sk,
         status: 'in_progress',
         notes: 'Custom Goal'
       })
-      toast.success(`Added "${newSkillInput.trim()}" to learning goals!`)
+      toast.success(`Added "${sk}" to learning goals!`)
       setNewSkillInput('')
       await loadData()
     } catch {
@@ -161,7 +162,7 @@ export default function Progress() {
 
     if (activeTab === 'in_progress') return matchesSearch && s.status === 'in_progress'
     if (activeTab === 'completed') return matchesSearch && s.status === 'completed'
-    if (activeTab === 'not_started') return matchesSearch && s.status === 'not_started'
+    if (activeTab === 'not_started') return matchesSearch && (s.status === 'not_started' || !s.status)
     return matchesSearch
   })
 
@@ -169,28 +170,38 @@ export default function Progress() {
   const inProgressCount = skills.filter((s) => s.status === 'in_progress').length
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1060, margin: '0 auto' }}>
+    <div className="fade-in" style={{ maxWidth: 1080, margin: '0 auto' }}>
       {/* Header */}
       <PageHeader
-        badge="Component 4 Career Development"
-        title="Targeted Skill Progress & Mastery"
-        description="Track and master competencies identified from your real applied positions and AI technical interview evaluations."
+        badge="Career Progression & Mastery"
+        title="Skill Development & Target Goals"
+        description="Track and master key technical competencies diagnosed from your real job applications and technical interview assessments."
         icon={TrendingUp}
         actions={
-          <button
-            className="btn btn-primary btn-sm"
-            onClick={syncFromInterviews}
-            disabled={syncBusy}
-          >
-            <Download size={14} /> {syncBusy ? 'Syncing...' : 'Sync from Skill Gap History'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-ghost btn-sm"
+              onClick={resetAllGoals}
+              disabled={skills.length === 0}
+              title="Reset all goals"
+            >
+              <RotateCcw size={13} /> Reset
+            </button>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={syncFromInterviews}
+              disabled={syncBusy}
+            >
+              <Download size={14} /> {syncBusy ? 'Syncing...' : 'Sync from Skill Gap'}
+            </button>
+          </div>
         }
       />
 
       {/* KPI & Career Trajectory Banner */}
-      <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)' }}>
+      <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 24, alignItems: 'center' }}>
-          {/* Progress Ring */}
+          {/* Progress Ring with Radial Glow */}
           <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
             <svg width="96" height="96" viewBox="0 0 100 100">
               <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-border-subtle)" strokeWidth="8" />
@@ -204,7 +215,7 @@ export default function Progress() {
                 strokeDasharray={`${pct * 2.51} 251`}
                 strokeLinecap="round"
                 transform="rotate(-90 50 50)"
-                style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                style={{ transition: 'stroke-dasharray 0.8s cubic-bezier(0.16, 1, 0.3, 1)' }}
               />
             </svg>
             <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -218,20 +229,20 @@ export default function Progress() {
           </div>
 
           <div>
-            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: careerTier.color, letterSpacing: '0.08em', marginBottom: 2 }}>
-              Current Progression Standing · {careerTier.level}
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: careerTier.color, letterSpacing: '0.08em', marginBottom: 3 }}>
+              Progression Standing · {careerTier.level}
             </div>
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--color-fg)' }}>
+            <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--color-fg)', letterSpacing: '-0.02em' }}>
               {careerTier.title}
             </h2>
-            <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', margin: 0, maxWidth: 640 }}>
-              Master remaining technical skills across your application targets to progress to the next engineering tier.
+            <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', margin: 0, maxWidth: 640, lineHeight: 1.5 }}>
+              Complete remaining technical competencies across your application targets to advance to the next professional engineering tier.
             </p>
           </div>
         </div>
       </div>
 
-      {/* KPI Stat Strip */}
+      {/* KPI Stat Strip with Auto CountUp */}
       <div className="grid grid-4" style={{ gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-6)' }}>
         <StatCard
           label="Total Goals"
@@ -259,30 +270,30 @@ export default function Progress() {
           value={`${pct.toFixed(0)}%`}
           icon={TrendingUp}
           color="purple"
-          helperText="Overall milestone index"
+          helperText="Overall roadmap index"
         />
       </div>
 
       {/* Add Custom Skill Form */}
-      <div className="card" style={{ padding: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
+      <div className="card" style={{ padding: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)', borderRadius: 'var(--radius-lg)' }}>
         <form onSubmit={addCustomSkill} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <input
             type="text"
-            placeholder="Add custom learning target (e.g. System Design, PyTorch, GraphQL)..."
+            placeholder="Add custom learning target (e.g. System Design, PyTorch, GraphQL, Docker)..."
             value={newSkillInput}
             onChange={(e) => setNewSkillInput(e.target.value)}
-            style={{ flex: 1, fontSize: 'var(--p-text-sm)' }}
+            style={{ flex: 1, fontSize: 'var(--p-text-sm)', height: 40 }}
           />
-          <button type="submit" className="btn btn-primary btn-sm" disabled={addBusy} style={{ whiteSpace: 'nowrap' }}>
-            <Plus size={14} /> Add Target Goal
+          <button type="submit" className="btn btn-primary btn-sm" disabled={addBusy} style={{ whiteSpace: 'nowrap', height: 40 }}>
+            <Plus size={15} /> Add Target Goal
           </button>
         </form>
       </div>
 
       {/* Skill List & Filters */}
-      <div className="card" style={{ padding: 'var(--p-space-5)' }}>
+      <div className="card" style={{ padding: 'var(--p-space-5)', borderRadius: 'var(--radius-xl)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--p-space-4)', flexWrap: 'wrap', gap: 12 }}>
-          {/* Status Filter Pills */}
+          {/* Status Filter Tabs */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {[
               { id: 'all', label: `All Goals (${skills.length})` },
@@ -315,40 +326,52 @@ export default function Progress() {
         </div>
 
         {/* Skill Items List */}
-        {filteredSkills.length === 0 ? (
+        {loading ? (
+          <SkeletonLoader type="card" count={3} />
+        ) : filteredSkills.length === 0 ? (
           <EmptyState
-            title="No skills found"
-            description="Sync from applied interviews or add your first custom technical learning goal above."
+            title="No learning goals found"
+            description="Sync your diagnostic results from applied positions or add custom competencies above."
+            actionLabel="Sync from Skill Gap"
+            onAction={syncFromInterviews}
             icon={Award}
           />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filteredSkills.map((item, idx) => {
               const isMastered = item.status === 'completed'
               const isInProgress = item.status === 'in_progress'
+              const accentBorderColor = isMastered
+                ? 'var(--color-success)'
+                : isInProgress
+                ? 'var(--color-primary)'
+                : 'var(--color-warning)'
 
               return (
                 <div
                   key={item.skill || idx}
+                  className="card"
                   style={{
-                    padding: '12px 16px',
-                    borderRadius: 'var(--radius-md)',
-                    border: '1px solid var(--color-border-subtle)',
+                    padding: '14px 18px',
+                    borderRadius: 'var(--radius-lg)',
+                    border: '1px solid var(--color-border)',
+                    borderLeft: `4px solid ${accentBorderColor}`,
                     background: 'var(--color-bg-elevated)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     gap: 14,
-                    flexWrap: 'wrap'
+                    flexWrap: 'wrap',
+                    marginBottom: 0
                   }}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <div style={{
-                      width: 24,
-                      height: 24,
-                      borderRadius: '50%',
-                      background: isMastered ? 'var(--color-success-muted)' : isInProgress ? 'var(--color-primary-muted)' : 'var(--color-border-subtle)',
-                      color: isMastered ? 'var(--color-success)' : isInProgress ? 'var(--color-primary)' : 'var(--color-fg-muted)',
+                      width: 28,
+                      height: 28,
+                      borderRadius: 'var(--radius-full)',
+                      background: isMastered ? 'var(--color-success-muted)' : isInProgress ? 'var(--color-primary-muted)' : 'var(--color-warning-muted)',
+                      color: isMastered ? 'var(--color-success)' : isInProgress ? 'var(--color-primary)' : 'var(--color-warning)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -363,28 +386,53 @@ export default function Progress() {
                       <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
                         {item.skill}
                       </div>
-                      {item.source_role && (
-                        <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
-                          Target: {item.source_role}
-                        </div>
-                      )}
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                        {item.source_role && <span>Target: {item.source_role}</span>}
+                        {item.notes && <span>• {item.notes}</span>}
+                      </div>
                     </div>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <a
+                      href={`https://www.coursera.org/search?query=${encodeURIComponent(item.skill)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--color-fg-muted)' }}
+                      title="Explore courses"
+                    >
+                      <BookOpen size={12} /> Course <ExternalLink size={10} />
+                    </a>
+
                     <button
                       className={`btn btn-sm ${isInProgress ? 'btn-primary' : 'btn-ghost'}`}
                       onClick={() => updateStatus(item.skill, 'in_progress')}
                       style={{ fontSize: '11px', padding: '4px 10px' }}
                     >
-                      <Clock size={12} /> Learning
+                      <Clock size={12} /> In Progress
                     </button>
+
                     <button
-                      className={`btn btn-sm ${isMastered ? 'btn-success' : 'btn-ghost'}`}
+                      className={`btn btn-sm ${isMastered ? 'btn-primary' : 'btn-ghost'}`}
                       onClick={() => updateStatus(item.skill, 'completed')}
-                      style={{ fontSize: '11px', padding: '4px 10px' }}
+                      style={{
+                        fontSize: '11px',
+                        padding: '4px 10px',
+                        background: isMastered ? 'var(--color-success)' : undefined,
+                        borderColor: isMastered ? 'var(--color-success)' : undefined
+                      }}
                     >
                       <Check size={12} /> Mastered
+                    </button>
+
+                    <button
+                      className="btn-ghost btn-sm"
+                      onClick={() => deleteSingleSkill(item.skill)}
+                      style={{ padding: '4px 8px', color: 'var(--color-fg-muted)' }}
+                      title="Delete goal"
+                    >
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>

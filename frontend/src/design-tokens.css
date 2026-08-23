@@ -158,59 +158,59 @@
    LAYER 2: SEMANTICS
    ═══════════════════════════════════════════════════════════════════ */
 
-/* ── Dark theme (Default: Deep Space Obsidian & Slate) ──────────── */
+/* ── Dark theme (Default: Refined Obsidian & Layered Depth) ─────── */
 :root {
   color-scheme: dark;
 
-  /* Backgrounds */
-  --color-bg: var(--p-zinc-950);
-  --color-bg-soft: var(--p-zinc-900);
-  --color-bg-elevated: var(--p-zinc-800);
-  --color-surface: var(--p-zinc-900);
-  --color-surface-hover: var(--p-zinc-800);
+  /* Backgrounds with layered depth */
+  --color-bg: #0a0a0f;
+  --color-bg-soft: #12121a;
+  --color-bg-elevated: #161622;
+  --color-surface: #12121a;
+  --color-surface-hover: #1a1a2e;
 
   /* Foregrounds */
-  --color-fg: #fafafa;
-  --color-fg-secondary: var(--p-zinc-400);
-  --color-fg-muted: var(--p-zinc-500);
+  --color-fg: #f8fafc;
+  --color-fg-secondary: #94a3b8;
+  --color-fg-muted: #64748b;
 
-  /* Borders */
-  --color-border: var(--p-zinc-700);
-  --color-border-subtle: var(--p-zinc-800);
-  --color-border-strong: var(--p-zinc-600);
+  /* Borders & Glass Highlights */
+  --color-border: rgba(255, 255, 255, 0.09);
+  --color-border-subtle: rgba(255, 255, 255, 0.05);
+  --color-border-strong: rgba(255, 255, 255, 0.16);
 
-  /* Primary (blue — trust) */
-  --color-primary: var(--p-blue-400);
-  --color-primary-hover: var(--p-blue-300);
-  --color-primary-active: var(--p-blue-500);
-  --color-primary-fg: var(--p-zinc-950);
-  --color-primary-muted: rgba(59, 130, 246, 0.12);
+  /* Primary (Electric Indigo / Sapphire) */
+  --color-primary: #6366f1;
+  --color-primary-hover: #818cf8;
+  --color-primary-active: #4f46e5;
+  --color-primary-fg: #ffffff;
+  --color-primary-muted: rgba(99, 102, 241, 0.12);
 
-  /* Accent / success (emerald — growth) */
-  --color-success: var(--p-emerald-400);
-  --color-success-hover: var(--p-emerald-300);
-  --color-success-fg: var(--p-zinc-950);
+  /* Accent / success (Emerald Green with vibrant glow) */
+  --color-success: #10b981;
+  --color-success-hover: #34d399;
+  --color-success-fg: #ffffff;
   --color-success-muted: rgba(16, 185, 129, 0.12);
 
-  /* Warning (amber) */
-  --color-warning: var(--p-amber-400);
-  --color-warning-hover: var(--p-amber-300);
-  --color-warning-fg: var(--p-zinc-950);
-  --color-warning-muted: rgba(251, 191, 36, 0.12);
+  /* Warning (Amber with subtle glow) */
+  --color-warning: #f59e0b;
+  --color-warning-hover: #fbbf24;
+  --color-warning-fg: #ffffff;
+  --color-warning-muted: rgba(245, 158, 11, 0.12);
 
-  /* Danger (rose) */
-  --color-danger: var(--p-rose-400);
-  --color-danger-hover: var(--p-rose-300);
-  --color-danger-fg: var(--p-zinc-950);
-  --color-danger-muted: rgba(251, 113, 133, 0.12);
+  /* Danger (Rose Coral with subtle glow) */
+  --color-danger: #f43f5e;
+  --color-danger-hover: #fb7185;
+  --color-danger-fg: #ffffff;
+  --color-danger-muted: rgba(244, 63, 94, 0.12);
 
-  /* Info (blue) */
-  --color-info: var(--p-blue-400);
-  --color-info-muted: rgba(96, 165, 250, 0.12);
+  /* Info (Sky Blue) */
+  --color-info: #38bdf8;
+  --color-info-muted: rgba(56, 189, 248, 0.12);
 
-  /* Purple (coding, creative) */
-  --color-purple: #8b5cf6;
-  --color-purple-muted: rgba(139, 92, 246, 0.12);
+  /* Purple (Coding & AI Sandbox) */
+  --color-purple: #a855f7;
+  --color-purple-muted: rgba(168, 85, 247, 0.12);
 
   /* Orange (high priority) */
   --color-orange: #f97316;
