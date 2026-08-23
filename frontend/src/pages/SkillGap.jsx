@@ -7,12 +7,14 @@ import {
   ExternalLink, Layers, Lightbulb, ArrowRight
 } from 'lucide-react'
 import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync } from '../api'
+import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [activeTab, setActiveTab] = useState('applied')
@@ -53,10 +55,6 @@ export default function SkillGap() {
   const [result, setResult] = useState(null)
 
   useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
-    
     // Concurrent parallel background revalidation
     Promise.all([
       c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => {}),
@@ -435,7 +433,7 @@ export default function SkillGap() {
           {currentOpening && (
             <>
               {/* Missing Required Skills */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div className="dashboard-grid dashboard-grid-equal" style={{ gap: 16 }}>
                 <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
                   <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
                     <AlertCircle size={15} /> Job Required Skills ({openingRequiredSkills.length})
