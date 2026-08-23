@@ -177,7 +177,7 @@ export default function CompanyDashboard() {
       <PageHeader
         badge="Employer Console"
         title={`Recruitment Overview · ${companyName}`}
-        description="Post new technical roles, monitor incoming applicants, and rank candidates with LambdaMART Learning-to-Rank."
+        description="Post new technical roles, monitor incoming applicants, and rank candidates with automated multi-factor evaluation."
         actions={
           <>
             <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>
@@ -221,7 +221,7 @@ export default function CompanyDashboard() {
             value="Active"
             icon={ListOrdered}
             color="success"
-            helperText="LambdaMART LTR Ready"
+            helperText="AI Evaluation Ready"
           />
         </div>
       )}

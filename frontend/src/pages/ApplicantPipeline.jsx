@@ -111,7 +111,7 @@ export default function ApplicantPipeline() {
             onClick={runRanking}
             disabled={ranking || applicants.length === 0}
           >
-            <Trophy size={14} /> {ranking ? 'Ranking Candidates...' : 'Run LambdaMART LTR Ranking'}
+            <Trophy size={14} /> {ranking ? 'Ranking Applicants...' : 'Rank Applicants'}
           </button>
         }
       />
@@ -124,7 +124,7 @@ export default function ApplicantPipeline() {
               <Trophy size={18} style={{ color: 'var(--color-primary)' }} /> Ranked Applicant Standings
             </h3>
             <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-              LightGBM LambdaMART LTR
+              Multi-Criteria Evaluation
             </span>
           </div>
 
@@ -134,10 +134,10 @@ export default function ApplicantPipeline() {
                 <tr>
                   <th style={{ width: 60 }}>Rank</th>
                   <th>Candidate</th>
-                  <th>Blended Score</th>
-                  <th>Skills (S_skill)</th>
-                  <th>Exp (S_exp)</th>
-                  <th>Interview (P_int)</th>
+                  <th>Overall Fit Score</th>
+                  <th>Skills Match</th>
+                  <th>Experience Match</th>
+                  <th>Interview Score</th>
                   <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
@@ -220,7 +220,7 @@ export default function ApplicantPipeline() {
               <Users size={18} style={{ color: 'var(--color-primary)' }} /> Applicants in Pipeline ({applicants.length})
             </h3>
             <button className="btn btn-primary btn-sm" onClick={runRanking}>
-              <Trophy size={14} /> Run LTR Ranking
+              <Trophy size={14} /> Rank Applicants
             </button>
           </div>
 

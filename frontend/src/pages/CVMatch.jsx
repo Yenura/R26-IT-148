@@ -436,14 +436,14 @@ export default function CVMatch() {
               }}>
                 <div>
                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <Layers size={16} style={{ color: 'var(--color-primary)' }} /> Component 1 Assessment — 3 Independent Feature Scores
+                    <Layers size={16} style={{ color: 'var(--color-primary)' }} /> Multi-Factor Resume Assessment — 3 Key Score Dimensions
                   </div>
                   <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', marginTop: 2 }}>
-                    Calculates independent feature scores for Skills ($S_{`{skill}`}$), Experience ($S_{`{exp}`}$), and Education ($S_{`{edu}`}$) to pass into Component 3 LambdaMART LTR.
+                    Calculates independent feature scores for Skills, Experience, and Education to compute overall candidate fit.
                   </div>
                 </div>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '3px 10px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
-                  ✓ Component 3 Ready
+                  ✓ Analysis Complete
                 </span>
               </div>
 
@@ -558,16 +558,16 @@ export default function CVMatch() {
               {/* Component 3 Handoff Vector View */}
               <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg-elevated)', margin: 0 }}>
                 <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                  <TrendingUp size={16} style={{ color: 'var(--color-primary)' }} /> Component 3 Feature Handoff Vector
+                  <TrendingUp size={16} style={{ color: 'var(--color-primary)' }} /> Candidate Evaluation Scores
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 2fr)', gap: 16, alignItems: 'center' }}>
                   <div style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', fontFamily: 'var(--p-font-mono)', fontSize: '12px', color: 'var(--color-primary)' }}>
-                    <div>S_skill = <strong>{matchResult.skill_score.toFixed(1)}</strong></div>
-                    <div>S_exp &nbsp;&nbsp;= <strong>{matchResult.experience_score.toFixed(1)}</strong></div>
-                    <div>S_edu &nbsp;&nbsp;= <strong>{(matchResult.education_score ?? 100).toFixed(1)}</strong></div>
+                    <div>Skills Match &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;= <strong>{matchResult.skill_score.toFixed(1)}%</strong></div>
+                    <div>Experience Match &nbsp;= <strong>{matchResult.experience_score.toFixed(1)}%</strong></div>
+                    <div>Education Match &nbsp;&nbsp;= <strong>{(matchResult.education_score ?? 100).toFixed(1)}%</strong></div>
                   </div>
                   <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', lineHeight: 1.5 }}>
-                    These 3 independent scores form the CV input vector to Component 3, which combines them with AI Interview scores to compute the final LambdaMART ranking.
+                    These 3 independent qualification scores are combined with technical assessment results to calculate the candidate's final ranking score.
                   </div>
                 </div>
               </div>
