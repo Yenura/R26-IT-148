@@ -34,13 +34,17 @@ export default function SkillGap() {
     const token = localStorage.getItem('recruitai.token')
     const role = localStorage.getItem('recruitai.role')
     if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
-    c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => {})
-    loadAppliedJobsAnalysis()
-    loadAvailableJobs()
+    
+    // Concurrent parallel initial fetch
+    Promise.all([
+      c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => {}),
+      loadAppliedJobsAnalysis(),
+      loadAvailableJobs(),
+    ])
   }, [])
 
   const loadAppliedJobsAnalysis = async () => {
-    setLoadingApplied(true)
+    if (appliedReports.length === 0) setLoadingApplied(true)
     try {
       const r = await c4SkillGapApplied(candidateId)
       const data = r?.data?.data || r?.data || {}
