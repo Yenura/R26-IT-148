@@ -64,9 +64,10 @@ export default function CompanyLogin() {
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
             Employer Sign In
           </h1>
-          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
-            Post engineering roles, monitor pipelines, and compute LambdaMART rankings.
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 6, lineHeight: 1.5 }}>
+            Post engineering roles, monitor applicant pipelines, and evaluate candidates with automated multi-criteria ranking.
           </p>
+
         </div>
 
         <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>

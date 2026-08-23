@@ -151,7 +151,7 @@ export default function Landing() {
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
         </div>
-      </div>
+      </header>
 
       {/* Hero Section */}
       <section style={{

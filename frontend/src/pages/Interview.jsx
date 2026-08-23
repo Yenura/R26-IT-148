@@ -110,7 +110,7 @@ export default function Interview() {
     setConfirm({
       open: true,
       title: 'Submit technical interview?',
-      message: 'Your answers will be evaluated by Component 2 AI heuristics and pass to the LTR ranker.',
+      message: 'Your answers will be evaluated and combined with your CV qualifications to update your ranking scores.',
       action: async () => {
         setBusy(true)
         try {

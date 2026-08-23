@@ -78,17 +78,19 @@ export default function CompanyDashboard() {
       const jobList = Array.isArray(r.data) ? r.data : []
       setJobs(jobList)
 
-      const counts = {}
-      for (const job of jobList) {
-        try {
-          const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
-          const apps = Array.isArray(ar.data) ? ar.data : []
-          counts[job.id] = apps.length
-        } catch {
-          counts[job.id] = 0
-        }
-      }
-      setApplicantCounts(counts)
+      // Fetch applicant counts concurrently in parallel
+      const countEntries = await Promise.all(
+        jobList.map(async (job) => {
+          try {
+            const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
+            const apps = Array.isArray(ar.data) ? ar.data : []
+            return [job.id, apps.length]
+          } catch {
+            return [job.id, 0]
+          }
+        })
+      )
+      setApplicantCounts(Object.fromEntries(countEntries))
     } catch {
       toast.error('Failed to load jobs')
     } finally {
@@ -172,12 +174,17 @@ export default function CompanyDashboard() {
   const interviewRequiredCount = jobs.filter((j) => j.interview_required).length
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1180, margin: '0 auto' }}>
+    <div className="fade-in" style={{
+      maxWidth: 1180,
+      margin: '0 auto',
+      position: 'relative',
+      backgroundImage: 'radial-gradient(ellipse at 85% 5%, rgba(99, 102, 241, 0.08) 0%, transparent 55%), radial-gradient(ellipse at 15% 40%, rgba(168, 85, 247, 0.05) 0%, transparent 45%)'
+    }}>
       {/* Header & Primary CTAs */}
       <PageHeader
         badge="Employer Console"
         title={`Recruitment Overview · ${companyName}`}
-        description="Post new technical roles, monitor incoming applicants, and rank candidates with LambdaMART Learning-to-Rank."
+        description="Post new technical roles, monitor incoming applicants, and rank candidates with automated multi-factor evaluation."
         actions={
           <>
             <button className="btn btn-primary btn-sm" onClick={() => setShowModal(true)}>
@@ -221,7 +228,7 @@ export default function CompanyDashboard() {
             value="Active"
             icon={ListOrdered}
             color="success"
-            helperText="LambdaMART LTR Ready"
+            helperText="AI Evaluation Ready"
           />
         </div>
       )}
