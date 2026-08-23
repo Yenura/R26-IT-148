@@ -398,38 +398,29 @@ export default function Progress() {
                       href={`https://www.coursera.org/search?query=${encodeURIComponent(item.skill)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="btn btn-ghost btn-sm"
-                      style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--color-fg-muted)' }}
+                      className="goal-action-btn course"
                       title="Explore courses"
                     >
-                      <BookOpen size={12} /> Course <ExternalLink size={10} />
+                      <BookOpen size={13} /> Course <ExternalLink size={11} />
                     </a>
 
                     <button
-                      className={`btn btn-sm ${isInProgress ? 'btn-primary' : 'btn-ghost'}`}
+                      className={`goal-action-btn in-progress ${isInProgress ? 'active' : ''}`}
                       onClick={() => updateStatus(item.skill, 'in_progress')}
-                      style={{ fontSize: '11px', padding: '4px 10px' }}
                     >
-                      <Clock size={12} /> In Progress
+                      <Clock size={13} /> In Progress
                     </button>
 
                     <button
-                      className={`btn btn-sm ${isMastered ? 'btn-primary' : 'btn-ghost'}`}
+                      className={`goal-action-btn mastered ${isMastered ? 'active' : ''}`}
                       onClick={() => updateStatus(item.skill, 'completed')}
-                      style={{
-                        fontSize: '11px',
-                        padding: '4px 10px',
-                        background: isMastered ? 'var(--color-success)' : undefined,
-                        borderColor: isMastered ? 'var(--color-success)' : undefined
-                      }}
                     >
-                      <Check size={12} /> Mastered
+                      <Check size={13} /> Mastered
                     </button>
 
                     <button
-                      className="btn-ghost btn-sm"
+                      className="goal-action-btn delete"
                       onClick={() => deleteSingleSkill(item.skill)}
-                      style={{ padding: '4px 8px', color: 'var(--color-fg-muted)' }}
                       title="Delete goal"
                     >
                       <Trash2 size={13} />

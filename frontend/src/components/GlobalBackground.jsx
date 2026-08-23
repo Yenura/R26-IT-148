@@ -20,19 +20,12 @@ export default function GlobalBackground() {
     const handlePointerMove = (e) => {
       if (frameId) cancelAnimationFrame(frameId)
       frameId = requestAnimationFrame(() => {
-        // 1. Update Global Cursor Spotlight
         if (spotlightRef.current) {
           spotlightRef.current.style.setProperty('--mouse-x', `${e.clientX}px`)
           spotlightRef.current.style.setProperty('--mouse-y', `${e.clientY}px`)
         }
-
-        // 2. Update Interactive Spotlight on hovered cards, buttons, navbar links, badges, inputs & small boxes
-        const cardTarget = e.target?.closest?.('.card, .premium-card, .stat, .goal-item, .skill-gap-card, .btn, .navbar-link, .nav-link, .filter-tab, .filter-tabs, .chip, .badge, .role-badge, .navbar-dropdown, .input-field, .search-input, input, select, textarea, .table tbody tr, .navbar, .score-badge')
-        if (cardTarget) {
-          const rect = cardTarget.getBoundingClientRect()
-          cardTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`)
-          cardTarget.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`)
-        }
+        document.documentElement.style.setProperty('--cursor-x', `${e.clientX}px`)
+        document.documentElement.style.setProperty('--cursor-y', `${e.clientY}px`)
       })
     }
 

@@ -2523,3 +2523,177 @@ pre {
   outline: none !important;
   box-shadow: 0 0 0 2px var(--color-bg, #070814), 0 0 0 4px #6366f1 !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CLEAR DIFFERENTIABLE BORDERS & UNIVERSAL BORDER GLOW HIGHLIGHTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Universal High-Contrast Differentiable Borders across entire site */
+.card, .premium-card, .stat, .stats-card, .goal-item, .skill-gap-card, .box,
+.filter-tabs, .input-field, .search-input, input, select, textarea,
+.navbar-dropdown, .table {
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  transition: border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+[data-theme="light"] .card,
+[data-theme="light"] .premium-card,
+[data-theme="light"] .stat,
+[data-theme="light"] .stats-card,
+[data-theme="light"] .goal-item,
+[data-theme="light"] .skill-gap-card,
+[data-theme="light"] .box,
+[data-theme="light"] .filter-tabs,
+[data-theme="light"] .input-field,
+[data-theme="light"] .search-input,
+[data-theme="light"] input,
+[data-theme="light"] select,
+[data-theme="light"] textarea,
+[data-theme="light"] .navbar-dropdown,
+[data-theme="light"] .table {
+  border: 1px solid rgba(0, 0, 0, 0.16) !important;
+}
+
+/* Universal Border Highlight on Cursor Hover for All Elements */
+.card:hover, .premium-card:hover, .stat:hover, .stats-card:hover,
+.goal-item:hover, .skill-gap-card:hover, .box:hover,
+.filter-tabs:hover, .navbar-dropdown:hover {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 20px -2px rgba(99, 102, 241, 0.45), 0 8px 30px rgba(0, 0, 0, 0.45) !important;
+}
+
+[data-theme="light"] .card:hover,
+[data-theme="light"] .premium-card:hover,
+[data-theme="light"] .stat:hover,
+[data-theme="light"] .stats-card:hover,
+[data-theme="light"] .goal-item:hover,
+[data-theme="light"] .skill-gap-card:hover,
+[data-theme="light"] .box:hover,
+[data-theme="light"] .filter-tabs:hover,
+[data-theme="light"] .navbar-dropdown:hover {
+  border-color: #4f46e5 !important;
+  box-shadow: 0 0 16px -2px rgba(99, 102, 241, 0.3), 0 8px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Input Focus Glow */
+input:focus, select:focus, textarea:focus, .input-field:focus, .search-input:focus {
+  border-color: #818cf8 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25), 0 0 15px rgba(99, 102, 241, 0.3) !important;
+  outline: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SMALL ACTION BOXES IN ALL GOALS (COURSE, IN PROGRESS, MASTERED)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.goal-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 5px 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--color-fg-muted, #94a3b8);
+}
+
+/* Course Small Box */
+.goal-action-btn.course {
+  border: 1px solid rgba(6, 182, 212, 0.35);
+  background: rgba(6, 182, 212, 0.08);
+  color: #38bdf8;
+}
+
+.goal-action-btn.course:hover {
+  border-color: #06b6d4 !important;
+  background: rgba(6, 182, 212, 0.22) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.6) !important;
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+/* In Progress Small Box */
+.goal-action-btn.in-progress {
+  border: 1px solid rgba(99, 102, 241, 0.35);
+  background: rgba(99, 102, 241, 0.08);
+  color: #818cf8;
+}
+
+.goal-action-btn.in-progress.active {
+  border-color: #6366f1;
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(99, 102, 241, 0.6);
+}
+
+.goal-action-btn.in-progress:hover {
+  border-color: #818cf8 !important;
+  background: rgba(99, 102, 241, 0.25) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(99, 102, 241, 0.65) !important;
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+/* Mastered Small Box */
+.goal-action-btn.mastered {
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.08);
+  color: #34d399;
+}
+
+.goal-action-btn.mastered.active {
+  border-color: #10b981;
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.6);
+}
+
+.goal-action-btn.mastered:hover {
+  border-color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.25) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.65) !important;
+  transform: translateY(-1px) scale(1.05) !important;
+}
+
+/* Delete Small Box */
+.goal-action-btn.delete {
+  border: 1px solid rgba(244, 63, 94, 0.25);
+  background: rgba(244, 63, 94, 0.05);
+  color: #fb7185;
+  padding: 5px 8px;
+}
+
+.goal-action-btn.delete:hover {
+  border-color: #f43f5e !important;
+  background: rgba(244, 63, 94, 0.25) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.6) !important;
+  transform: translateY(-1px) scale(1.08) !important;
+}
+
+/* Light Mode Small Action Boxes */
+[data-theme="light"] .goal-action-btn.course {
+  border-color: rgba(2, 132, 199, 0.4);
+  background: rgba(2, 132, 199, 0.08);
+  color: #0284c7;
+}
+
+[data-theme="light"] .goal-action-btn.in-progress {
+  border-color: rgba(79, 70, 229, 0.4);
+  background: rgba(79, 70, 229, 0.08);
+  color: #4f46e5;
+}
+
+[data-theme="light"] .goal-action-btn.mastered {
+  border-color: rgba(5, 150, 105, 0.4);
+  background: rgba(5, 150, 105, 0.08);
+  color: #059669;
+}
