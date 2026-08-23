@@ -325,9 +325,10 @@ export default function Landing() {
           display: 'grid',
           gridTemplateColumns: '1.1fr 0.9fr',
           gap: 40,
-          alignItems: 'center'
+          alignItems: 'center',
+          overflow: 'hidden'
         }}>
-          <div>
+          <div key={activeTab} style={{ animation: 'tab-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1)' }}>
             <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: features[activeTab].color, letterSpacing: '0.08em', marginBottom: 6 }}>
               {features[activeTab].badge}
             </div>

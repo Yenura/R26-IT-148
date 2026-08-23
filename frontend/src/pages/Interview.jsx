@@ -353,7 +353,8 @@ export default function Interview() {
                       textAlign: 'left',
                       width: '100%',
                       fontSize: 'inherit',
-                      fontFamily: 'inherit'
+                      fontFamily: 'inherit',
+                      animation: isSelected ? 'option-select-bounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
                     }}
                   >
                     <div style={{
