@@ -67,18 +67,19 @@ _EXPLICIT_EXP_RE = re.compile(
 _EXTRA_SKILLS = [
     "python", "java", "c", "c++", "c#", "go", "golang", "rust", "scala",
     "javascript", "typescript", "html", "css", "sql", "nosql",
-    "react", "vue", "angular", "django", "flask", "fastapi", "spring",
-    "node.js", "express", "graphql", "rest", "grpc",
+    "react", "react.js", "vue", "vue.js", "angular", "next.js", "nuxt.js",
+    "django", "flask", "fastapi", "spring", "spring boot", "express", "express.js",
+    "node.js", "graphql", "rest", "rest apis", "rest api", "grpc",
     "docker", "kubernetes", "helm", "terraform", "ansible", "puppet", "chef",
     "aws", "azure", "gcp", "cloud", "serverless", "lambda",
     "git", "github", "gitlab", "ci/cd", "jenkins", "github actions",
-    "mongodb", "postgresql", "mysql", "redis", "elasticsearch", "cassandra",
+    "mongodb", "postgresql", "mysql", "redis", "elasticsearch", "cassandra", "firebase", "sqlite",
     "kafka", "rabbitmq", "celery",
     "pandas", "numpy", "scipy", "matplotlib", "seaborn", "plotly",
     "scikit-learn", "tensorflow", "pytorch", "keras", "hugging face",
-    "nlp", "cv", "computer vision", "llm", "gpt", "bert",
+    "nlp", "cv", "computer vision", "llm", "gpt", "bert", "sbert",
     "linux", "bash", "shell scripting", "powershell",
-    "flutter", "swift", "kotlin", "react native", "android", "ios",
+    "flutter", "dart", "swift", "kotlin", "react native", "android", "ios",
     "figma", "sketch", "adobe xd", "invision",
     "solidity", "web3", "blockchain",
     "siem", "penetration testing", "firewalls", "vulnerability assessment",
@@ -86,6 +87,9 @@ _EXTRA_SKILLS = [
     "etl", "spark", "airflow", "dbt", "hadoop",
     "prometheus", "grafana", "elk", "datadog",
     "agile", "scrum", "kanban", "jira", "confluence",
+    "mvc", "mvvm", "rest api design", "api integration", "microservices", "microservices architecture",
+    "lightgbm", "xgboost", "svm", "logistic regression", "cosine similarity",
+    "postman", "cloudinary", "android studio", "vs code",
 ]
 
 _ALL_SKILLS_LOWER: set = set()
@@ -162,9 +166,28 @@ def _extract_experience_years(text: str) -> float:
 
     # 2. Sum up year ranges (e.g. "Jan 2019 – Mar 2022")
     total_months = 0
+    seen_ranges = set()
+
+    # First try month-year ranges
+    for m in _YEAR_RANGE_RE.finditer(text):
+        start_yr = int(m.group(0)[-4:])  # last 4 digits are start year
+        end_str = m.group(0).lower()
+        if 'present' in end_str or 'current' in end_str or 'now' in end_str:
+            import datetime
+            end_yr = datetime.date.today().year
+        else:
+            # Extract end year (last 4-digit number)
+            nums = re.findall(r'\d{4}', m.group(0))
+            end_yr = int(nums[-1]) if nums else 0
+        range_key = (start_yr, end_yr)
+        if range_key not in seen_ranges and 1970 <= start_yr <= end_yr <= 2035:
+            seen_ranges.add(range_key)
+            total_months += (end_yr - start_yr) * 12
+
+    # Then try plain year ranges
     for m in _YEAR_ONLY_RE.finditer(text):
         start_yr = int(m.group(1))
-        end_str  = m.group(2).lower()
+        end_str = m.group(2).lower()
         if end_str in ("present", "current", "now"):
             import datetime
             end_yr = datetime.date.today().year
@@ -173,7 +196,9 @@ def _extract_experience_years(text: str) -> float:
                 end_yr = int(end_str)
             except ValueError:
                 continue
-        if 1970 <= start_yr <= end_yr <= 2035:
+        range_key = (start_yr, end_yr)
+        if range_key not in seen_ranges and 1970 <= start_yr <= end_yr <= 2035:
+            seen_ranges.add(range_key)
             total_months += (end_yr - start_yr) * 12
 
     if total_months > 0:
@@ -187,10 +212,24 @@ def _extract_experience_years(text: str) -> float:
 def _extract_skills(text: str) -> List[str]:
     """Return deduplicated list of matched skill keywords from the resume text."""
     text_lower = text.lower()
+    # Also normalize common separators (bullets, pipes, semicolons) to spaces
+    # so multi-word skills like "React Native" match even if PDF inserts chars
+    text_normalized = re.sub(r'[·•|;/]', ' ', text_lower)
+    text_normalized = re.sub(r'\s+', ' ', text_normalized)
+
     matched = []
-    for skill in sorted(_ALL_SKILLS_LOWER):
-        # Use word-boundary match to avoid "go" matching "ago" etc.
+    # Sort by length descending so longer skills match first (e.g. "react native" before "react")
+    for skill in sorted(_ALL_SKILLS_LOWER, key=len, reverse=True):
         pattern = r'\b' + re.escape(skill) + r'\b'
-        if re.search(pattern, text_lower):
-            matched.append(skill)
+        if re.search(pattern, text_normalized) or re.search(pattern, text_lower):
+            # Deduplicate: don't add "react" if "react native" already matched
+            skill_parts = skill.split()
+            if len(skill_parts) > 1:
+                # Multi-word skill: check it's not already covered
+                if not any(skill_parts[0] in m for m in matched):
+                    matched.append(skill)
+            else:
+                # Single-word skill: check it's not a substring of an already-matched multi-word skill
+                if not any(skill in m.split() and len(m.split()) > 1 for m in matched):
+                    matched.append(skill)
     return matched
