@@ -6,10 +6,11 @@ This directory stores the saved ML model artifacts for Component 1.
 
 | File | Description |
 |------|-------------|
-| `sbert_classifier.joblib` | Proposed model: scikit-learn LogisticRegression trained on SBERT embeddings |
-| `tfidf_classifier.joblib` | Baseline model: scikit-learn LogisticRegression trained on TF-IDF features |
-| `tfidf_vectorizer.joblib` | Fitted TF-IDF vectorizer (required for baseline inference) |
-| `label_classes.joblib`    | Ordered list of the 20 canonical role class names |
+| `cv_classifier.pkl` | Primary model: LogisticRegression trained on regex+lexicon features |
+| `tfidf_baseline.pkl` | Baseline model: LogisticRegression trained on TF-IDF features |
+| `tfidf_vectorizer.pkl` | Fitted TF-IDF vectorizer (required for baseline inference) |
+| `label_encoder.pkl` | Fitted LabelEncoder for the 20 canonical role classes |
+| `matcher.pkl` | Semantic matcher (SBERT cosine similarity) |
 
 ## Reproducing the artifacts
 
@@ -23,11 +24,11 @@ python ml/train.py --n-per-role 150
 This will:
 1. Generate `data/synthetic_resumes.csv` (3,000 records: 150 × 20 roles)
 2. Split into `data/train.csv` / `data/val.csv` / `data/test.csv` (60/15/25)
-3. Train TF-IDF baseline + SBERT proposed models
+3. Train TF-IDF baseline + Feature-based primary models
 4. Save all artifacts to this `models/` directory
 5. Write evaluation report + confusion matrix chart to `results/`
 
 ## .gitignore note
 
-The `.joblib` binary files are excluded from git tracking (see `.gitignore`).
+The `.pkl` binary files are excluded from git tracking (see `.gitignore`).
 Re-run `python ml/train.py` on a fresh clone to regenerate them.

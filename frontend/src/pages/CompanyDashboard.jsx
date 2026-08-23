@@ -5,7 +5,8 @@ import {
   Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight,
   MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered
 } from 'lucide-react'
-import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicants } from '../api'
+import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicantCounts } from '../api'
+import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import Modal from '../components/Modal'
@@ -47,10 +48,15 @@ const emptyForm = {
   education_required: 'Bachelor Degree',
   interview_required: true,
   interview_question_count: 10,
+  interview_mcq_time: 60,
+  interview_desc_time: 300,
+  interview_coding_time: 600,
+  interview_total_time: 60,
 }
 
 export default function CompanyDashboard() {
   const navigate = useNavigate()
+  useAuth('company')
   const companyName = localStorage.getItem('recruitai.name') || 'Employer'
 
   const [jobs, setJobs] = useState([])
@@ -61,36 +67,18 @@ export default function CompanyDashboard() {
   const [submitting, setSubmitting] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
-  useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'company') {
-      navigate('/login/company')
-      return
-    }
-    loadJobs()
-  }, [])
+  useEffect(() => { loadJobs() }, [])
 
   const loadJobs = async () => {
     setLoading(true)
     try {
-      const r = await uJobsMy().catch(() => ({ data: [] }))
+      const [r, countsR] = await Promise.all([
+        uJobsMy().catch(() => ({ data: [] })),
+        uJobsApplicantCounts().catch(() => ({}))
+      ])
       const jobList = Array.isArray(r.data) ? r.data : []
       setJobs(jobList)
-
-      // Fetch applicant counts concurrently in parallel
-      const countEntries = await Promise.all(
-        jobList.map(async (job) => {
-          try {
-            const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
-            const apps = Array.isArray(ar.data) ? ar.data : []
-            return [job.id, apps.length]
-          } catch {
-            return [job.id, 0]
-          }
-        })
-      )
-      setApplicantCounts(Object.fromEntries(countEntries))
+      setApplicantCounts(countsR.data || countsR || {})
     } catch {
       toast.error('Failed to load jobs')
     } finally {
@@ -120,6 +108,10 @@ export default function CompanyDashboard() {
 
     const expReq = parseInt(form.experience_required, 10)
     const iqCount = parseInt(form.interview_question_count, 10)
+    const mcqTime = parseInt(form.interview_mcq_time, 10)
+    const descTime = parseInt(form.interview_desc_time, 10)
+    const codingTime = parseInt(form.interview_coding_time, 10)
+    const totalTime = parseInt(form.interview_total_time, 10)
 
     const payload = {
       title: form.title.trim(),
@@ -136,6 +128,10 @@ export default function CompanyDashboard() {
       status: 'open',
       interview_required: Boolean(form.interview_required),
       interview_question_count: isNaN(iqCount) ? 10 : Math.max(3, Math.min(30, iqCount)),
+      interview_mcq_time: isNaN(mcqTime) ? 60 : Math.max(10, Math.min(300, mcqTime)),
+      interview_desc_time: isNaN(descTime) ? 300 : Math.max(30, Math.min(900, descTime)),
+      interview_coding_time: isNaN(codingTime) ? 600 : Math.max(60, Math.min(1800, codingTime)),
+      interview_total_time: isNaN(totalTime) ? 60 : Math.max(10, Math.min(180, totalTime)),
     }
 
     setSubmitting(true)
@@ -333,7 +329,7 @@ export default function CompanyDashboard() {
                             alignItems: 'center',
                             gap: 4
                           }}>
-                            <CheckCircle2 size={12} /> Active ({job.interview_question_count || 10} Qs)
+                            <CheckCircle2 size={12} /> Active ({job.interview_question_count || 10} Qs, {job.interview_total_time || 60}m)
                           </span>
                         ) : (
                           <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>Optional</span>
@@ -508,16 +504,62 @@ export default function CompanyDashboard() {
             </div>
 
             {form.interview_required && (
-              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <label style={{ fontSize: '12px', margin: 0 }}>Question Count:</label>
-                <input
-                  type="number"
-                  min={3}
-                  max={30}
-                  value={form.interview_question_count}
-                  onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })}
-                  style={{ width: 80, padding: '4px 8px' }}
-                />
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Questions:</label>
+                  <input
+                    type="number"
+                    min={3}
+                    max={30}
+                    value={form.interview_question_count}
+                    onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>MCQ time (sec):</label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={300}
+                    value={form.interview_mcq_time}
+                    onChange={(e) => setForm({ ...form, interview_mcq_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Descriptive time (sec):</label>
+                  <input
+                    type="number"
+                    min={30}
+                    max={900}
+                    value={form.interview_desc_time}
+                    onChange={(e) => setForm({ ...form, interview_desc_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Coding time (sec):</label>
+                  <input
+                    type="number"
+                    min={60}
+                    max={1800}
+                    value={form.interview_coding_time}
+                    onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total duration (min):</label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={180}
+                    value={form.interview_total_time}
+                    onChange={(e) => setForm({ ...form, interview_total_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
               </div>
             )}
           </div>

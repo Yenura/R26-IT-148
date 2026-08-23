@@ -131,7 +131,16 @@ export default function JobDetail() {
   }
 
   const startInterview = () => {
-    navigate(`/candidate/interview?role=${encodeURIComponent(job?.job_role || job?.title)}&skills=${encodeURIComponent((job?.required_skills || []).join(','))}`)
+    const params = new URLSearchParams({
+      role: job?.job_role || job?.title || '',
+      skills: (job?.required_skills || []).join(','),
+      count: String(job?.interview_question_count || 10),
+      mcqTime: String(job?.interview_mcq_time || 60),
+      descTime: String(job?.interview_desc_time || 300),
+      codingTime: String(job?.interview_coding_time || 600),
+      totalTime: String(job?.interview_total_time || 60),
+    })
+    navigate(`/candidate/interview?${params.toString()}`)
   }
 
   if (loading) {
@@ -165,7 +174,7 @@ export default function JobDetail() {
       </button>
 
       {/* 2-Column Responsive Layout */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) minmax(0, 1fr)', gap: 'var(--p-space-6)', alignItems: 'start' }}>
+      <div className="dashboard-grid dashboard-grid-main" style={{ alignItems: 'start' }}>
         
         {/* Left Column: Job Description & Details */}
         <div>
@@ -301,7 +310,7 @@ export default function JobDetail() {
                     <p style={{ fontSize: '11px', color: 'var(--color-fg-secondary)', margin: '4px 0 0 0' }}>
                       {interviewDone
                         ? 'Your technical interview score is attached to this application.'
-                        : `Complete ${job.interview_question_count || 10} technical questions to qualify.`}
+                        : `${job.interview_question_count || 10} questions · ${job.interview_total_time || 60} min total`}
                     </p>
                   </div>
                 )}

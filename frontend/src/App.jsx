@@ -97,7 +97,11 @@ export default function App() {
   const navLinks = role === 'candidate' ? candidateLinks : role === 'company' ? companyLinks : []
 
   const handleLogout = () => {
-    localStorage.clear()
+    localStorage.removeItem('recruitai.token')
+    localStorage.removeItem('recruitai.role')
+    localStorage.removeItem('recruitai.user_id')
+    localStorage.removeItem('recruitai.name')
+    localStorage.removeItem('recruitai.avatar')
     setUserMenu(false)
     window.location.href = '/'
   }
@@ -167,7 +171,7 @@ export default function App() {
                 onClick={toggleTheme}
                 title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 aria-label="Toggle theme"
-                style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 44, height: 44, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
               </button>
@@ -176,9 +180,17 @@ export default function App() {
                 <div
                   className="navbar-user"
                   onClick={() => setUserMenu(!userMenu)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setUserMenu(!userMenu)
+                    }
+                    if (e.key === 'Escape') setUserMenu(false)
+                  }}
                   role="button"
                   tabIndex={0}
                   aria-expanded={userMenu}
+                  aria-haspopup="true"
                 >
                   {userAvatar ? (
                     <img src={userAvatar} alt="User Avatar" className="navbar-avatar" />

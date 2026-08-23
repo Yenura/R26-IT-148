@@ -16,8 +16,14 @@ export default function GlobalBackground() {
 
   useEffect(() => {
     let frameId = null
+    let lastUpdate = 0
+    const THROTTLE_MS = 16 // ~60fps
 
     const handlePointerMove = (e) => {
+      const now = Date.now()
+      if (now - lastUpdate < THROTTLE_MS) return
+      lastUpdate = now
+
       if (frameId) cancelAnimationFrame(frameId)
       frameId = requestAnimationFrame(() => {
         if (spotlightRef.current) {

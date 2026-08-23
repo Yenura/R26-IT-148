@@ -132,13 +132,25 @@ def compute_gap(
     optional = [s.strip() for s in req.get("optional", [])]
 
     # Fuzzy match — exact match or substring with minimum length guard
+    # Also decompose compound skills like "Swift/Kotlin or Flutter"
+    import re as _re
     def fuzzy_has(skill, cand_set):
+        # First try decomposing compound skills
+        parts = _re.split(r'[/|,]|\s+or\s+', skill)
+        parts = [p.strip() for p in parts if p.strip()]
+        for part in parts:
+            pl = part.lower()
+            for c in cand_set:
+                if pl == c:
+                    return True
+                if len(pl) >= 3 and len(c) >= 3 and (pl in c or c in pl):
+                    return True
+        # Also try the full skill string
         sl = skill.lower()
         for c in cand_set:
             if sl == c:
                 return True
-            # Substring only if both are 4+ chars to avoid false positives
-            if len(sl) >= 4 and len(c) >= 4 and (sl in c or c in sl):
+            if len(sl) >= 3 and len(c) >= 3 and (sl in c or c in sl):
                 return True
         return False
 

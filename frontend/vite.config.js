@@ -13,11 +13,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 600,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-icons': ['lucide-react'],
-          'vendor-charts': ['recharts'],
-          'vendor-utils': ['axios', 'react-hot-toast', 'es-toolkit']
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('react-dom') || id.includes('react-router')) return 'vendor-react'
+            if (id.includes('lucide-react')) return 'vendor-icons'
+            if (id.includes('recharts')) return 'vendor-charts'
+            return 'vendor'
+          }
         }
       }
     }

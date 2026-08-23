@@ -9,6 +9,8 @@ import {
   uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate,
   c0JobsAll, c0Predictions, c0Applications
 } from '../api'
+import { useAuth } from '../hooks/useAuth'
+import { toArr } from '../utils'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
@@ -17,19 +19,9 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
-const toArr = (r) => {
-  const d = r?.data
-  if (Array.isArray(d)) return d
-  if (Array.isArray(d?.data)) return d.data
-  if (Array.isArray(d?.resumes)) return d.resumes
-  if (Array.isArray(d?.applications)) return d.applications
-  if (Array.isArray(d?.predictions)) return d.predictions
-  if (Array.isArray(d?.jobs)) return d.jobs
-  return []
-}
-
 export default function CandidateDashboard() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const candidateName = localStorage.getItem('recruitai.name') || 'Candidate'
 
   const [resumes, setResumes] = useState([])
@@ -43,15 +35,7 @@ export default function CandidateDashboard() {
   const [editForm, setEditForm] = useState({})
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
-  useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') {
-      navigate('/login/candidate')
-      return
-    }
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     if (resumes.length === 0 && jobs.length === 0) setLoading(true)
@@ -204,7 +188,7 @@ export default function CandidateDashboard() {
       )}
 
       {/* Main 2-Column Cockpit */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1.2fr)', gap: 'var(--p-space-6)', alignItems: 'start' }}>
+            <div className="dashboard-grid dashboard-grid-main" style={{ alignItems: 'start' }}>
         
         {/* Left Column: Resumes & Application Status */}
         <div>
@@ -356,7 +340,7 @@ export default function CandidateDashboard() {
                               className="btn-ghost btn-sm"
                               onClick={() => startEdit(r)}
                               title="Edit parsed details"
-                              style={{ padding: 6 }}
+                              style={{ padding: 8, minWidth: 44, minHeight: 44 }}
                             >
                               <Edit3 size={14} />
                             </button>
@@ -364,7 +348,7 @@ export default function CandidateDashboard() {
                               className="btn-ghost btn-sm"
                               onClick={() => deleteResume(r.id)}
                               title="Delete resume"
-                              style={{ padding: 6, color: 'var(--color-danger)' }}
+                              style={{ padding: 8, minWidth: 44, minHeight: 44, color: 'var(--color-danger)' }}
                             >
                               <Trash2 size={14} />
                             </button>
@@ -503,6 +487,9 @@ export default function CandidateDashboard() {
                     <div
                       key={job.id}
                       onClick={() => navigate(`/candidate/jobs/${job.id}`)}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/candidate/jobs/${job.id}`)}
                       style={{
                         padding: '12px 14px',
                         borderRadius: 'var(--radius-sm)',
@@ -573,9 +560,6 @@ export default function CandidateDashboard() {
               Analyze technical gaps against industry benchmarks and simulate hiring readiness with automated learning pathways.
             </p>
             <div style={{ display: 'flex', gap: 8 }}>
-              <Link to="/pipeline/skill-gap" className="btn btn-primary btn-sm" style={{ flex: 1, fontSize: 'var(--p-text-xs)' }}>
-                <Target size={13} /> Skill Gap Matrix
-              </Link>
               <Link to="/pipeline/progress" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
                 Progress Tracker
               </Link>

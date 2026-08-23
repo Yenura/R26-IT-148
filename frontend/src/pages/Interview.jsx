@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -8,6 +8,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
+import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import ScoreMeter from '../components/ScoreMeter'
 import ScoreBadge from '../components/ScoreBadge'
@@ -19,12 +20,17 @@ export default function Interview() {
   const [searchParams] = useSearchParams()
   const jobRole = searchParams.get('role') || ''
   const jobSkills = searchParams.get('skills') || ''
+  const jobCount = parseInt(searchParams.get('count'), 10) || 10
+  const jobMcqTime = parseInt(searchParams.get('mcqTime'), 10) || 60
+  const jobDescTime = parseInt(searchParams.get('descTime'), 10) || 300
+  const jobCodingTime = parseInt(searchParams.get('codingTime'), 10) || 600
+  const jobTotalTime = parseInt(searchParams.get('totalTime'), 10) || 60
   const isPracticeMode = !jobRole
 
   const [step, setStep] = useState('setup')
   const [roles, setRoles] = useState({})
   const [selectedRole, setSelectedRole] = useState(jobRole)
-  const [numQuestions, setNumQuestions] = useState(10)
+  const [numQuestions, setNumQuestions] = useState(jobCount)
   const [session, setSession] = useState(null)
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState({})
@@ -33,24 +39,57 @@ export default function Interview() {
   const [runResults, setRunResults] = useState(null)
   const [running, setRunning] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
+  const [timeLeft, setTimeLeft] = useState(jobTotalTime * 60)
+  const timerRef = useRef(null)
+
+  useEffect(() => { loadRoles() }, [])
 
   useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') {
-      navigate('/login/candidate')
-      return
+    if (jobRole) {
+      const canonicalRoles = Object.keys(roles)
+      const match = canonicalRoles.find((r) => r.toLowerCase() === jobRole.toLowerCase())
+        || canonicalRoles.find((r) => r.toLowerCase().includes(jobRole.toLowerCase()) || jobRole.toLowerCase().includes(r.toLowerCase()))
+      setSelectedRole(match || jobRole)
     }
-    loadRoles()
-  }, [])
-
-  useEffect(() => {
-    if (jobRole) setSelectedRole(jobRole)
-  }, [jobRole])
+  }, [jobRole, roles])
 
   useEffect(() => {
     setRunResults(null)
   }, [currentQ])
+
+  const getPerQuestionTime = useCallback(() => {
+    if (!session) return jobMcqTime
+    const q = session.questions?.[currentQ]
+    if (!q) return jobMcqTime
+    if (q.question_type === 'MCQ') return jobMcqTime
+    if (q.question_type === 'Descriptive') return jobDescTime
+    if (q.question_type === 'Coding') return jobCodingTime
+    return jobMcqTime
+  }, [session, currentQ, jobMcqTime, jobDescTime, jobCodingTime])
+
+  useEffect(() => {
+    if (step !== 'quiz' || !session) return
+    setTimeLeft(getPerQuestionTime())
+  }, [currentQ, step, session, getPerQuestionTime])
+
+  useEffect(() => {
+    if (step !== 'quiz' || timeLeft <= 0) return
+    timerRef.current = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(timerRef.current)
+          toast.error('Time is up for this question!')
+          return 0
+        }
+        return t - 1
+      })
+    }, 1000)
+    return () => clearInterval(timerRef.current)
+  }, [step, currentQ, timeLeft > 0])
+
+  useEffect(() => {
+    if (result) clearInterval(timerRef.current)
+  }, [result])
 
   const loadRoles = async () => {
     try {
@@ -73,6 +112,10 @@ export default function Interview() {
         job_role: selectedRole,
         required_skills: skills,
         num_questions: numQuestions,
+        mcq_time: jobMcqTime,
+        desc_time: jobDescTime,
+        coding_time: jobCodingTime,
+        total_time: jobTotalTime,
       })
       setSession(r.data)
       setCurrentQ(0)
@@ -175,6 +218,9 @@ export default function Interview() {
               {Object.keys(roles).map((r) => (
                 <option key={r} value={r}>{r}</option>
               ))}
+              {selectedRole && !Object.keys(roles).includes(selectedRole) && (
+                <option key={selectedRole} value={selectedRole}>{selectedRole}</option>
+              )}
             </select>
           </div>
 
@@ -241,6 +287,18 @@ export default function Interview() {
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              fontSize: '13px',
+              fontWeight: 700,
+              padding: '3px 10px',
+              borderRadius: 'var(--radius-full)',
+              background: timeLeft <= 30 ? 'var(--color-danger-muted)' : 'var(--color-bg-elevated)',
+              color: timeLeft <= 30 ? 'var(--color-danger)' : 'var(--color-fg)',
+              border: `1px solid ${timeLeft <= 30 ? 'rgba(239,68,68,0.3)' : 'var(--color-border-subtle)'}`,
+              fontVariantNumeric: 'tabular-nums'
+            }}>
+              {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+            </span>
             <span style={{
               fontSize: '11px',
               fontWeight: 700,

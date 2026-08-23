@@ -9,22 +9,16 @@ import {
   c0JobsAll, uResumeList, c0Applications, c0InterviewScores,
   uJobsApply, uJobsWithdraw
 } from '../api'
+import { useAuth } from '../hooks/useAuth'
+import { toArr } from '../utils'
 import PageHeader from '../components/PageHeader'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
-const toArr = (r) => {
-  const d = r?.data
-  if (Array.isArray(d)) return d
-  if (Array.isArray(d?.data)) return d.data
-  if (Array.isArray(d?.applications)) return d.applications
-  if (Array.isArray(d?.jobs)) return d.jobs
-  return []
-}
-
 export default function JobBoard() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const [jobs, setJobs] = useState([])
   const [resumes, setResumes] = useState([])
   const [appliedIds, setAppliedIds] = useState(new Set())
@@ -34,15 +28,7 @@ export default function JobBoard() {
   const [loading, setLoading] = useState(true)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
-  useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') {
-      navigate('/login/candidate')
-      return
-    }
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     if (jobs.length === 0) setLoading(true)
@@ -200,6 +186,9 @@ export default function JobBoard() {
               <div
                 key={job.id}
                 onClick={() => navigate(`/candidate/jobs/${job.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && navigate(`/candidate/jobs/${job.id}`)}
                 className="card card-interactive"
                 style={{
                   padding: 'var(--p-space-5)',

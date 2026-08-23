@@ -490,9 +490,15 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
         cv_strengths = []
         cv_weaknesses = []
-        matched_cv_skills = analysis.get("matched_skills", [])
+        # The run_skill_gap_analysis returns "present_skills" (candidate's skills),
+        # not "matched_skills". Use "missing_required" and "missing_optional" instead.
+        present_skills = analysis.get("present_skills", [])
         missing_required = analysis.get("missing_required", [])
         missing_optional = analysis.get("missing_optional", [])
+
+        # Compute matched skills: candidate skills that are NOT in missing lists
+        missing_set = {s.lower() for s in missing_required + missing_optional}
+        matched_cv_skills = [s for s in present_skills if s.lower() not in missing_set]
 
         for ms in matched_cv_skills:
             if not any(s["skill"].lower() == ms.lower() for s in interview_strengths):
