@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, Building2, ArrowLeft, Sparkles, Eye, EyeOff } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyLogin() {
@@ -34,15 +34,11 @@ export default function CompanyLogin() {
     }
   }
 
-  const fillDemo = () => {
-    setEmail('company@techcorp.com')
-    setPassword('company123')
-    toast.success('Demo employer credentials loaded')
-  }
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20, position: 'relative', overflow: 'hidden' }}>
+      <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
         <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>

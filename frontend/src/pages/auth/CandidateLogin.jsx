@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, User, ArrowLeft, Sparkles, Eye, EyeOff } from 'lucide-react'
+import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CandidateLogin() {
@@ -34,15 +34,12 @@ export default function CandidateLogin() {
     }
   }
 
-  const fillDemo = () => {
-    setEmail('candidate@example.com')
-    setPassword('candidate123')
-    toast.success('Demo candidate credentials loaded')
-  }
-
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20, position: 'relative', overflow: 'hidden' }}>
+      {/* Ambient glow */}
+      <div style={{ position: 'absolute', top: '-20%', left: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '-20%', right: '-10%', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)', pointerEvents: 'none' }} />
+      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
         <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
@@ -71,29 +68,6 @@ export default function CandidateLogin() {
         </div>
 
         <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
-          {/* Quick Demo Fill Button */}
-          <div style={{ marginBottom: 18 }}>
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="btn btn-ghost btn-sm"
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                fontSize: '11px',
-                border: '1px dashed var(--color-primary)',
-                background: 'var(--color-primary-muted)',
-                color: 'var(--color-primary)',
-                fontWeight: 700
-              }}
-            >
-              <Sparkles size={13} /> 1-Click: Fill Demo Candidate Account
-            </button>
-          </div>
-
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: '12px', marginTop: 0 }}>Email Address</label>
