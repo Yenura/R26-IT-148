@@ -26,8 +26,8 @@ export default function GlobalBackground() {
           spotlightRef.current.style.setProperty('--mouse-y', `${e.clientY}px`)
         }
 
-        // 2. Update Interactive Spotlight on hovered cards & buttons
-        const cardTarget = e.target?.closest?.('.card, .premium-card, .stat, .goal-item, .skill-gap-card, .btn')
+        // 2. Update Interactive Spotlight on hovered cards, buttons, navbar links, badges, inputs & small boxes
+        const cardTarget = e.target?.closest?.('.card, .premium-card, .stat, .goal-item, .skill-gap-card, .btn, .navbar-link, .nav-link, .filter-tab, .filter-tabs, .chip, .badge, .role-badge, .navbar-dropdown, .input-field, .search-input, input, select, textarea, .table tbody tr, .navbar, .score-badge')
         if (cardTarget) {
           const rect = cardTarget.getBoundingClientRect()
           cardTarget.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`)

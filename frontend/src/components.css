@@ -547,8 +547,9 @@ code {
   overflow: hidden;
 }
 
-/* 1. Interactive Glowing Border Beam (Follows Cursor along Card Edges) */
-.card::before, .premium-card::before, .stat::before, .goal-item::before, .skill-gap-card::before {
+/* 1. Interactive Glowing Border Beam (Follows Cursor along Element Edges) */
+.card::before, .premium-card::before, .stat::before, .goal-item::before, .skill-gap-card::before,
+.navbar-dropdown::before, .filter-tabs::before, .input-field::before, .search-input::before {
   content: '';
   position: absolute;
   inset: 0px;
@@ -572,7 +573,8 @@ code {
   z-index: 2;
 }
 
-.card:hover::before, .premium-card:hover::before, .stat:hover::before, .goal-item:hover::before, .skill-gap-card:hover::before {
+.card:hover::before, .premium-card:hover::before, .stat:hover::before, .goal-item:hover::before, .skill-gap-card:hover::before,
+.navbar-dropdown:hover::before, .filter-tabs:hover::before, .input-field:focus::before, .search-input:focus::before {
   opacity: 1;
 }
 
@@ -580,7 +582,11 @@ code {
 [data-theme="light"] .premium-card::before,
 [data-theme="light"] .stat::before,
 [data-theme="light"] .goal-item::before,
-[data-theme="light"] .skill-gap-card::before {
+[data-theme="light"] .skill-gap-card::before,
+[data-theme="light"] .navbar-dropdown::before,
+[data-theme="light"] .filter-tabs::before,
+[data-theme="light"] .input-field::before,
+[data-theme="light"] .search-input::before {
   background: radial-gradient(
     320px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
     rgba(99, 102, 241, 0.90),
@@ -591,7 +597,8 @@ code {
 }
 
 /* 2. Interactive Soft Surface Spotlight */
-.card::after, .premium-card::after, .stat::after, .goal-item::after, .skill-gap-card::after {
+.card::after, .premium-card::after, .stat::after, .goal-item::after, .skill-gap-card::after,
+.navbar-dropdown::after, .filter-tabs::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -608,7 +615,8 @@ code {
   z-index: 1;
 }
 
-.card:hover::after, .premium-card:hover::after, .stat:hover::after, .goal-item:hover::after, .skill-gap-card:hover::after {
+.card:hover::after, .premium-card:hover::after, .stat:hover::after, .goal-item:hover::after, .skill-gap-card:hover::after,
+.navbar-dropdown:hover::after, .filter-tabs:hover::after {
   opacity: 1;
 }
 
@@ -616,13 +624,52 @@ code {
 [data-theme="light"] .premium-card::after,
 [data-theme="light"] .stat::after,
 [data-theme="light"] .goal-item::after,
-[data-theme="light"] .skill-gap-card::after {
+[data-theme="light"] .skill-gap-card::after,
+[data-theme="light"] .navbar-dropdown::after,
+[data-theme="light"] .filter-tabs::after {
   background: radial-gradient(
     420px circle at var(--mouse-x, -999px) var(--mouse-y, -999px),
     rgba(99, 102, 241, 0.10),
     rgba(168, 85, 247, 0.04) 40%,
     transparent 70%
   );
+}
+
+/* 3. Small Box, Badge, and Nav Highlight Effects */
+.navbar-link, .nav-link, .filter-tab, .chip, .badge, .role-badge, .score-badge {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.navbar-link:hover, .nav-link:hover, .filter-tab:hover, .chip:hover, .role-badge:hover {
+  box-shadow: 0 0 16px -2px rgba(99, 102, 241, 0.35), inset 0 1px 0 0 rgba(255, 255, 255, 0.15);
+  border-color: rgba(99, 102, 241, 0.5);
+  transform: translateY(-1px);
+}
+
+[data-theme="light"] .navbar-link:hover,
+[data-theme="light"] .nav-link:hover,
+[data-theme="light"] .filter-tab:hover,
+[data-theme="light"] .chip:hover,
+[data-theme="light"] .role-badge:hover {
+  box-shadow: 0 0 14px -2px rgba(99, 102, 241, 0.22), inset 0 1px 0 0 rgba(255, 255, 255, 0.5);
+  border-color: rgba(99, 102, 241, 0.4);
+}
+
+/* Table Row Edge Glow on Hover */
+.table tbody tr {
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.06) !important;
+  box-shadow: inset 3px 0 0 var(--color-primary);
+}
+
+[data-theme="light"] .table tbody tr:hover {
+  background: rgba(99, 102, 241, 0.04) !important;
+  box-shadow: inset 3px 0 0 var(--color-primary);
 }
 
 .card:hover {
