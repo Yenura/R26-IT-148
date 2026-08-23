@@ -140,10 +140,11 @@ export default function Modal({
             </div>
           </div>
 
-          <button
+            <button
             onClick={onClose}
             className="btn-ghost btn-sm"
             style={{ padding: 6, borderRadius: 'var(--radius-sm)', color: 'var(--color-fg-muted)' }}
+            aria-label="Close modal"
             title="Close modal"
           >
             <X size={18} />

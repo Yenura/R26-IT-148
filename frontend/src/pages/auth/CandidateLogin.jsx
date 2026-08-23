@@ -100,6 +100,7 @@ export default function CandidateLogin() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
                   style={{
                     position: 'absolute',
                     right: 12,

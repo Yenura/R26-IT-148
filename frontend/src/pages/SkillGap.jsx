@@ -314,8 +314,8 @@ export default function SkillGap() {
                         <CheckCircle2 size={16} /> Verified Strengths ({selectedReport.strengths.length})
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {selectedReport.strengths.map((st, idx) => (
-                          <div key={idx} style={{
+                        {selectedReport.strengths.map((st) => (
+                          <div key={st.skill} style={{
                             padding: '10px 14px',
                             background: 'var(--color-bg-elevated)',
                             borderRadius: 'var(--radius-sm)',
@@ -340,10 +340,10 @@ export default function SkillGap() {
                         <AlertCircle size={16} /> Identified Skill Deficits ({selectedReport.weaknesses.length})
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {selectedReport.weaknesses.map((wk, idx) => {
+                        {selectedReport.weaknesses.map((wk) => {
                           const isCrit = wk.severity === 'Critical'
                           return (
-                            <div key={idx} style={{
+                            <div key={wk.skill} style={{
                               padding: '10px 14px',
                               background: 'var(--color-bg-elevated)',
                               borderRadius: 'var(--radius-sm)',
@@ -373,8 +373,8 @@ export default function SkillGap() {
                         <Code size={16} style={{ color: 'var(--color-primary)' }} /> Targeted Learning Modules ({selectedReport.course_recommendations.length})
                       </h3>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
-                        {selectedReport.course_recommendations.map((c, idx) => (
-                          <div key={idx} style={{ padding: 14, background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        {selectedReport.course_recommendations.map((c) => (
+                          <div key={c.skill} style={{ padding: 14, background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                                 <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)', textTransform: 'uppercase' }}>{c.skill}</span>
@@ -444,10 +444,11 @@ export default function SkillGap() {
                       {openingRequiredSkills.map((s, i) => {
                         const isAdded = simulatedSkills.some(x => x.toLowerCase() === s.toLowerCase())
                         return (
-                          <span
+                          <button
                             key={i}
                             className="chip"
                             onClick={() => addSimSkill(s)}
+                            aria-pressed={isAdded}
                             style={{
                               fontSize: '11px', padding: '4px 10px',
                               background: isAdded ? 'var(--color-success-muted)' : 'var(--color-danger-muted)',
@@ -458,7 +459,7 @@ export default function SkillGap() {
                             title={isAdded ? 'Already added to simulation' : 'Click to simulate acquiring this skill'}
                           >
                             {isAdded ? '✓' : '+'} {s}
-                          </span>
+                          </button>
                         )
                       })}
                     </div>
@@ -472,10 +473,10 @@ export default function SkillGap() {
                   </h4>
                   {simulatedSkills.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {simulatedSkills.map((s, i) => (
-                        <span key={i} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      {simulatedSkills.map((s) => (
+                        <span key={s} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                           {s}
-                          <button onClick={() => removeSimSkill(s)} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', fontWeight: 800 }}>×</button>
+                          <button onClick={() => removeSimSkill(s)} aria-label={`Remove ${s}`} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', fontWeight: 800 }}>×</button>
                         </span>
                       ))}
                     </div>
@@ -525,10 +526,10 @@ export default function SkillGap() {
                   {/* Resources Grid */}
                   {simulationResult.resources?.length > 0 && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                      {simulationResult.resources.map((resItem, idx) => {
+                      {simulationResult.resources.map((resItem) => {
                         const pColor = resItem.priority === 'Critical' ? 'var(--color-danger)' : resItem.priority === 'High' ? 'var(--color-orange)' : 'var(--color-warning)'
                         return (
-                          <div key={idx} style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                          <div key={resItem.skill} style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                             <div>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                                 <span className="chip" style={{ fontSize: '10px', padding: '2px 8px', background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}40`, fontWeight: 700 }}>{resItem.priority} Priority</span>
@@ -556,7 +557,7 @@ export default function SkillGap() {
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {simulationResult.learning_plan.map((planItem, i) => (
-                          <div key={i} style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div key={planItem.skill || i} style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 14 }}>
                             <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-full)', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
                               {planItem.phase || i + 1}
                             </div>
@@ -577,8 +578,8 @@ export default function SkillGap() {
                         <Lightbulb size={18} style={{ color: 'var(--color-warning)' }} /> Actionable Next Steps
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                        {simulationResult.improvement_suggestions.map((s, i) => (
-                          <div key={i} style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        {simulationResult.improvement_suggestions.map((s) => (
+                          <div key={s} style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                             <span style={{ color: 'var(--color-warning)' }}>•</span> {s}
                           </div>
                         ))}

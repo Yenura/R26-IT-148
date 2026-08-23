@@ -35,8 +35,8 @@ export default function CompanyLogin() {
   }
 
   const fillDemo = () => {
-    setEmail('company@techcorp.com')
-    setPassword('company123')
+    setEmail('demo@example.com')
+    setPassword('demo123')
     toast.success('Demo employer credentials loaded')
   }
 
@@ -103,10 +103,11 @@ export default function CompanyLogin() {
                   style={{ paddingLeft: 36 }}
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
+              <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    style={{
                     position: 'absolute',
                     right: 12,
                     top: '50%',

@@ -10,6 +10,7 @@ function AnimatedNumber({ value }) {
     let start = 0
     const duration = 900
     const startTime = performance.now()
+    let frameId
 
     const step = (currentTime) => {
       const elapsed = currentTime - startTime
@@ -17,10 +18,11 @@ function AnimatedNumber({ value }) {
       const ease = 1 - Math.pow(1 - progress, 3) // easeOutCubic
       setDisplay(Math.round(start + (num - start) * ease))
       if (progress < 1) {
-        requestAnimationFrame(step)
+        frameId = requestAnimationFrame(step)
       }
     }
-    requestAnimationFrame(step)
+    frameId = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(frameId)
   }, [num, isNumber])
 
   if (!isNumber) return <span>{value}</span>

@@ -56,8 +56,9 @@ export default function Landing() {
       document.querySelectorAll('.reveal').forEach(el => el.classList.add('visible'))
       return
     }
+    let observer
     const timer = setTimeout(() => {
-      const observer = new IntersectionObserver(
+      observer = new IntersectionObserver(
         (entries) => entries.forEach(e => {
           if (e.isIntersecting) {
             e.target.classList.add('visible')
@@ -67,9 +68,11 @@ export default function Landing() {
         { threshold: 0.05 }
       )
       document.querySelectorAll('.reveal').forEach(el => observer.observe(el))
-      return () => observer.disconnect()
     }, 50)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      if (observer) observer.disconnect()
+    }
   }, [])
 
   const features = [
@@ -146,7 +149,9 @@ export default function Landing() {
           <Link to="/login/company" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
             Employer Sign In
           </Link>
-          <button onClick={toggleTheme} className="btn-ghost btn-sm" style={{ padding: '6px 8px' }}
+          <button
+            onClick={toggleTheme} className="btn-ghost btn-sm" style={{ padding: '6px 8px' }}
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
@@ -263,7 +268,7 @@ export default function Landing() {
             { end: 93, suffix: '%', label: 'Skill Gap ML Accuracy', color: 'var(--color-purple)', helper: 'Trained on 20,000 dataset' },
             { end: 100, suffix: '%', label: 'Instant Evaluation', color: 'var(--color-orange)', helper: 'Zero manual grading delays' },
           ].map((stat, i) => (
-            <div key={i} style={{ textAlign: 'center' }}>
+            <div key={stat.label} style={{ textAlign: 'center' }}>
               <div className="stat-number" style={{
                 fontSize: 'clamp(1.75rem, 3vw, 2.25rem)', fontWeight: 800,
                 letterSpacing: '-0.03em', color: stat.color, fontVariantNumeric: 'tabular-nums',

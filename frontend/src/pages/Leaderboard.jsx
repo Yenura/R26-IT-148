@@ -122,7 +122,6 @@ export default function Leaderboard() {
 
   const sendDirectInvite = (candidateName, role) => {
     toast.success(`Fast-track interview invitation dispatched to ${candidateName} for ${role}!`, {
-      icon: '🚀',
       duration: 3500
     })
   }

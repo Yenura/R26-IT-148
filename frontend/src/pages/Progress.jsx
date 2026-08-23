@@ -400,6 +400,7 @@ export default function Progress() {
                     <button
                       className={`goal-action-btn in-progress ${isInProgress ? 'active' : ''}`}
                       onClick={() => updateStatus(item.skill, 'in_progress')}
+                      aria-pressed={isInProgress}
                     >
                       <Clock size={13} /> In Progress
                     </button>
@@ -407,6 +408,7 @@ export default function Progress() {
                     <button
                       className={`goal-action-btn mastered ${isMastered ? 'active' : ''}`}
                       onClick={() => updateStatus(item.skill, 'completed')}
+                      aria-pressed={isMastered}
                     >
                       <Check size={13} /> Mastered
                     </button>
@@ -414,6 +416,7 @@ export default function Progress() {
                     <button
                       className="goal-action-btn delete"
                       onClick={() => deleteSingleSkill(item.skill)}
+                      aria-label={`Remove ${item.skill} from goals`}
                       title="Delete goal"
                     >
                       <Trash2 size={13} />

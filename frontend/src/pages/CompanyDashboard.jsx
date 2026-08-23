@@ -348,6 +348,7 @@ export default function CompanyDashboard() {
                           <button
                             className="btn-ghost btn-sm"
                             onClick={() => navigate(`/company/jobs/${job.id}`)}
+                            aria-label="Inspect job preview"
                             title="Inspect job preview"
                             style={{ padding: '6px 8px' }}
                           >
@@ -356,6 +357,7 @@ export default function CompanyDashboard() {
                           <button
                             className="btn-ghost btn-sm"
                             onClick={() => deleteJob(job.id)}
+                            aria-label="Delete job"
                             title="Delete job"
                             style={{ padding: '6px 8px', color: 'var(--color-danger)' }}
                           >
@@ -406,6 +408,7 @@ export default function CompanyDashboard() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
+                aria-required="true"
               />
             </div>
             <div>
@@ -465,13 +468,14 @@ export default function CompanyDashboard() {
 
           <div style={{ marginTop: 12 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Required Technical Skills (Comma Separated) *</label>
-            <input
-              type="text"
-              placeholder="e.g. React, Node.js, TypeScript, PostgreSQL, Docker"
-              value={form.required_skills}
-              onChange={(e) => setForm({ ...form, required_skills: e.target.value })}
-              required
-            />
+              <input
+                type="text"
+                placeholder="e.g. React, Node.js, TypeScript, PostgreSQL, Docker"
+                value={form.required_skills}
+                onChange={(e) => setForm({ ...form, required_skills: e.target.value })}
+                required
+                aria-required="true"
+              />
           </div>
 
           <div style={{ marginTop: 12 }}>
@@ -488,14 +492,15 @@ export default function CompanyDashboard() {
           <div style={{ marginTop: 16, padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                <label htmlFor="interview-required" style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>
                   Require AI Technical Interview
-                </div>
+                </label>
                 <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
                   Candidates complete automated MCQs, technical theory, and coding sandbox.
                 </div>
               </div>
               <input
+                id="interview-required"
                 type="checkbox"
                 checked={form.interview_required}
                 onChange={(e) => setForm({ ...form, interview_required: e.target.checked })}

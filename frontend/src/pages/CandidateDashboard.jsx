@@ -339,6 +339,7 @@ export default function CandidateDashboard() {
                             <button
                               className="btn-ghost btn-sm"
                               onClick={() => startEdit(r)}
+                              aria-label="Edit parsed details"
                               title="Edit parsed details"
                               style={{ padding: 8, minWidth: 44, minHeight: 44 }}
                             >
@@ -347,6 +348,7 @@ export default function CandidateDashboard() {
                             <button
                               className="btn-ghost btn-sm"
                               onClick={() => deleteResume(r.id)}
+                              aria-label="Delete resume"
                               title="Delete resume"
                               style={{ padding: 8, minWidth: 44, minHeight: 44, color: 'var(--color-danger)' }}
                             >
@@ -448,6 +450,7 @@ export default function CandidateDashboard() {
                         <button
                           className="btn-ghost btn-sm"
                           onClick={() => navigate(`/candidate/jobs/${app.job_id}`)}
+                          aria-label="View job posting"
                           style={{ padding: 6 }}
                           title="View job posting"
                         >

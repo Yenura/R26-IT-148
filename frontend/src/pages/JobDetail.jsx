@@ -68,7 +68,7 @@ export default function JobDetail() {
       const targetRole = jobData?.job_role || jobData?.title || ''
       setInterviewDone(scores.some((s) => s.job_role === targetRole || s.job_id === id))
     } catch {
-      /* silent */
+      // Non-critical: resume/app data failed to load, UI shows empty state
     }
   }
 
