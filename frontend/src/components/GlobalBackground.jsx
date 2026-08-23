@@ -36,26 +36,56 @@ export default function GlobalBackground() {
       })
     }
 
+    // 3. Viewport Scroll Progress Bar Handler
+    const scrollBar = document.getElementById('global-scroll-progress-bar')
+    const handleScroll = () => {
+      const totalHeight = document.documentElement.scrollHeight - window.innerHeight
+      if (totalHeight > 0 && scrollBar) {
+        const progress = (window.scrollY / totalHeight) * 100
+        scrollBar.style.width = `${progress}%`
+      }
+    }
+
     window.addEventListener('pointermove', handlePointerMove, { passive: true })
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => {
       window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('scroll', handleScroll)
       if (frameId) cancelAnimationFrame(frameId)
     }
   }, [])
 
   return (
-    <div
-      aria-hidden="true"
-      className="global-aurora-canvas"
-      style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: -1,
-        pointerEvents: 'none',
-        overflow: 'hidden',
-        background: isLight ? '#f8fafc' : '#070814',
-      }}
-    >
+    <>
+      {/* 0. Viewport Top Reading Scroll Progress Bar */}
+      <div
+        id="global-scroll-progress-bar"
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '3px',
+          width: '0%',
+          background: 'linear-gradient(90deg, #6366f1, #a855f7, #06b6d4)',
+          boxShadow: '0 0 12px rgba(99, 102, 241, 0.75)',
+          zIndex: 9999,
+          pointerEvents: 'none',
+          transition: 'width 0.1s ease-out',
+        }}
+      />
+
+      <div
+        aria-hidden="true"
+        className="global-aurora-canvas"
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: -1,
+          pointerEvents: 'none',
+          overflow: 'hidden',
+          background: isLight ? '#f8fafc' : '#070814',
+        }}
+      >
       {/* 1. Interactive Cursor Spotlight Ambient Glow */}
       <div
         ref={spotlightRef}
@@ -242,5 +272,6 @@ export default function GlobalBackground() {
         }}
       />
     </div>
+    </>
   )
 }

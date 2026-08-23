@@ -2230,3 +2230,113 @@ pre {
 .section { margin-bottom: var(--space-10); }
 .card-padding { padding: var(--space-6); }
 .grid-gap { gap: var(--space-5); }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PREMIUM LUXURY UI POLISH SUITE (DUAL-THEME EQUIVALENCE)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* 1. Ultra-Sleek Frosted Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.25);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  transition: background 0.25s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.55);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.2);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.45);
+}
+
+/* 2. Magnetic Button Press Physics & Smooth Icon Dynamics */
+.btn, button, .btn-primary, .btn-secondary, .btn-warning, .btn-ghost {
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
+}
+
+.btn:active, button:active, .btn-primary:active, .btn-secondary:active, .btn-warning:active {
+  transform: scale(0.97) !important;
+}
+
+.btn svg, button svg {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn:hover svg, button:hover svg {
+  transform: translateY(-1px);
+}
+
+/* 3. Frosted Modal & Dialog Backdrop Blur */
+.modal-overlay, .confirm-dialog-overlay, .dialog-overlay {
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(5, 6, 15, 0.75) !important;
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="light"] .modal-overlay,
+[data-theme="light"] .confirm-dialog-overlay {
+  background: rgba(248, 250, 252, 0.75) !important;
+}
+
+.modal-content, .confirm-dialog, .dialog-content {
+  border: 1px solid var(--border-subtle, rgba(255, 255, 255, 0.1)) !important;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08) !important;
+  animation: scaleUpModal 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleUpModal {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* 4. Metallic Angle Shimmer on Loading Skeletons */
+.skeleton-card, .skeleton-text, .skeleton-circle, .skeleton {
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0.03) 8%,
+    rgba(255, 255, 255, 0.09) 18%,
+    rgba(255, 255, 255, 0.03) 33%
+  ) !important;
+  background-size: 200% 100% !important;
+  animation: metallicShimmer 1.5s linear infinite !important;
+}
+
+[data-theme="light"] .skeleton-card,
+[data-theme="light"] .skeleton-text,
+[data-theme="light"] .skeleton-circle,
+[data-theme="light"] .skeleton {
+  background: linear-gradient(
+    110deg,
+    rgba(0, 0, 0, 0.04) 8%,
+    rgba(0, 0, 0, 0.08) 18%,
+    rgba(0, 0, 0, 0.04) 33%
+  ) !important;
+  background-size: 200% 100% !important;
+}
+
+@keyframes metallicShimmer {
+  to { background-position-x: -200%; }
+}
+
+/* 5. Electric Focus-Visible Accessibility Rings */
+*:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 2px var(--color-bg, #070814), 0 0 0 4px #6366f1 !important;
+}
