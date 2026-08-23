@@ -1,5 +1,7 @@
 import axios from 'axios'
 
+const inFlightGetRequests = new Map()
+
 const mk = (url) => {
   const instance = axios.create({
     baseURL: `${url}/api/v1`,
@@ -11,6 +13,23 @@ const mk = (url) => {
     if (token) cfg.headers.Authorization = `Bearer ${token}`
     return cfg
   })
+
+  // Deduplicate identical in-flight GET requests
+  const originalGet = instance.get.bind(instance)
+  instance.get = (requestUrl, config = {}) => {
+    const key = `${url}:${requestUrl}:${JSON.stringify(config.params || {})}`
+    if (inFlightGetRequests.has(key)) {
+      return inFlightGetRequests.get(key)
+    }
+    const promise = originalGet(requestUrl, config)
+      .finally(() => {
+        // Clear in-flight cache shortly after resolution
+        setTimeout(() => inFlightGetRequests.delete(key), 500)
+      })
+    inFlightGetRequests.set(key, promise)
+    return promise
+  }
+
   return instance
 }
 
@@ -88,6 +107,7 @@ export const c4Leaderboard     = (limit = 10) => C4.get(`/analytics/leaderboard?
 export const c4SkillGap        = (payload)    => C4.post('/skill-gap', payload)
 export const c4SkillGapRoles   = ()           => C4.get('/skill-gap/roles')
 export const c4SkillGapAnalyze = (payload)    => C4.post('/skill-gap/analyze', payload)
+export const c4SkillGapApplied = (candidateId)=> C4.get(`/skill-gap/applied-jobs/${candidateId}`)
 export const c4SkillGapSimulate= (payload)    => C4.post('/skill-gap/simulate', payload)
 export const c4CareerRec       = (payload)    => C4.post('/career/recommendation', payload)
 export const c4CareerRoles     = ()           => C4.get('/career/roles')
@@ -95,5 +115,7 @@ export const c4CareerPath      = (payload)    => C4.post('/career/path', payload
 export const c4LearningPath    = (payload)    => C4.post('/career/learning-path', payload)
 export const c4Progress        = (candidateId)=> C4.get(`/progress/${candidateId}`)
 export const c4ProgressPopulate= (payload)    => C4.post('/progress/populate', payload)
+export const c4ProgressSync    = (candidateId)=> C4.post(`/progress/sync-from-applied-interviews/${candidateId}`)
 export const c4ProgressUpdate  = (payload)    => C4.post('/progress/update', payload)
 export const c4ProgressDelete  = (candidateId)=> C4.delete(`/progress/${candidateId}`)
+export const c4ProgressDeleteSkill = (candidateId, skill) => C4.delete(`/progress/${candidateId}/${encodeURIComponent(skill)}`)

@@ -193,11 +193,14 @@ def build_feature_vector(
         role_label = col.replace("role_", "").replace("_", " ")
         row[col] = int(job_role.replace(" ", "_").replace("/", "_") == col.replace("role_", ""))
 
-    # Skill flags — match against ALL_SKILLS canonical list
-    candidate_text = " | ".join(skills).lower()
+    # Skill flags — match against ALL_SKILLS canonical list efficiently
+    cand_skills_lower = [s.lower() for s in skills]
+    cand_text = " | ".join(cand_skills_lower)
+    cand_set = set(cand_skills_lower)
     for skill in ALL_SKILLS:
         col = _col_key(skill)
-        row[col] = int(skill.lower() in candidate_text or any(skill.lower() in s.lower() for s in skills))
+        sl = skill.lower()
+        row[col] = int(sl in cand_set or sl in cand_text or any(sl in s for s in cand_skills_lower))
 
     df = pd.DataFrame([row])
     for c in _feat_cols:

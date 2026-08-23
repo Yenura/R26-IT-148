@@ -1,21 +1,22 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, User, ArrowLeft } from 'lucide-react'
+import { Brain, Mail, Lock, User, ArrowLeft, Sparkles } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CandidateLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
   const handleLogin = async (e) => {
     e?.preventDefault()
-    if (!email || !password) return toast.error('Fill in all fields')
+    if (!email || !password) return toast.error('Please enter your email and password')
     setBusy(true)
     try {
-      const r = await C0.post('/auth/login/candidate', { email: email, password: password })
+      const r = await C0.post('/auth/login/candidate', { email: email.trim(), password })
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'candidate')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -24,76 +25,125 @@ export default function CandidateLogin() {
         localStorage.setItem('recruitai.name', me.data.name || '')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Welcome back!')
+      toast.success('Welcome back to RecruitAI!')
       navigate('/candidate/dashboard')
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Login failed')
+      toast.error(err?.response?.data?.detail || 'Invalid email or password')
     } finally {
       setBusy(false)
     }
   }
 
+  const fillDemo = () => {
+    setEmail('candidate@example.com')
+    setPassword('candidate123')
+    toast.success('Demo candidate credentials loaded')
+  }
+
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', border: '1px solid var(--border)' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
+      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
-        
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div className="sidebar-logo" style={{ margin: '0 auto 14px', width: 52, height: 52, borderRadius: 14 }}>
-            <Brain size={28} />
+
+        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+          <div style={{
+            margin: '0 auto 12px',
+            width: 48,
+            height: 48,
+            borderRadius: 'var(--radius-md)',
+            background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff'
+          }}>
+            <Brain size={24} />
           </div>
-          <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)' }}>Candidate Sign In</h1>
-          <p className="muted" style={{ fontSize: 13, marginTop: 4 }}>Access your AI recruitment dashboard & tools</p>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+            Candidate Sign In
+          </h1>
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+            Access your AI resume analysis, job matching, and technical assessments.
+          </p>
         </div>
 
-        <div className="card" style={{ padding: 32, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--bg-elevated)', boxShadow: '0 8px 30px rgba(0,0,0,0.12)' }}>
+        <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
           <form onSubmit={handleLogin}>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Email Address</label>
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Email Address</label>
               <div style={{ position: 'relative' }}>
-                <Mail size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <Mail size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
                   id="candidate-email"
-                  name="email"
                   type="email"
                   autoComplete="email"
-                  maxLength={100}
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="candidate@example.com"
-                  style={{ paddingLeft: 40, height: 44, fontSize: 14, borderRadius: 8 }}
+                  style={{ paddingLeft: 36 }}
+                  required
                 />
               </div>
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6, display: 'block' }}>Password</label>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Password</label>
               <div style={{ position: 'relative' }}>
-                <Lock size={16} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
                   id="candidate-password"
-                  name="password"
                   type="password"
                   autoComplete="current-password"
-                  maxLength={100}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{ paddingLeft: 40, height: 44, fontSize: 14, borderRadius: 8 }}
+                  style={{ paddingLeft: 36 }}
+                  required
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  style={{
+                    position: 'absolute',
+                    right: 12,
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    color: 'var(--color-fg-muted)',
+                    padding: 0
+                  }}
+                  title={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
               </div>
             </div>
 
-            <button className="btn" type="submit" disabled={busy} style={{ width: '100%', height: 44, fontSize: 14, fontWeight: 700, borderRadius: 8, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}>
-              <User size={16} /> {busy ? 'Signing in...' : 'Sign In as Candidate'}
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={busy}
+              style={{ width: '100%', padding: '11px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700 }}
+            >
+              <User size={15} /> {busy ? 'Signing in...' : 'Sign In as Candidate'}
             </button>
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: 20, fontSize: 13 }}>
-            <span className="muted">Don't have a candidate account? </span>
-            <Link to="/register/candidate" style={{ color: 'var(--accent)', fontWeight: 600 }}>Register Candidate</Link>
+          <div style={{ textAlign: 'center', marginTop: 18, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+            <span>Don't have a candidate account? </span>
+            <Link to="/register/candidate" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
+              Create Account
+            </Link>
+          </div>
+
+          <div style={{ textAlign: 'center', marginTop: 10, fontSize: 'var(--p-text-xs)' }}>
+            <Link to="/login/company" style={{ color: 'var(--color-fg-muted)' }}>
+              Are you an employer? Sign in here →
+            </Link>
           </div>
         </div>
       </div>

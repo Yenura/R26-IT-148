@@ -54,10 +54,14 @@ async def lifespan(app: FastAPI):
     if connected:
         try:
             await db.users.create_index("email", unique=True)
+            await db.users.create_index("role")
             await db.jobs.create_index([("company_id", 1), ("created_at", -1)])
-            await db.resumes.create_index("candidate_id")
-            await db.predictions.create_index("candidate_id")
+            await db.jobs.create_index([("status", 1), ("created_at", -1)])
+            await db.resumes.create_index([("candidate_id", 1), ("created_at", -1)])
+            await db.predictions.create_index([("candidate_id", 1), ("created_at", -1)])
+            await db.predictions.create_index([("resume_id", 1), ("job_id", 1)])
             await db.applications.create_index([("job_id", 1), ("candidate_id", 1)], unique=True)
+            await db.applications.create_index([("candidate_id", 1), ("applied_at", -1)])
         except Exception as idx_exc:
             logger.warning(f"Index creation warning: {idx_exc}")
 
@@ -82,6 +86,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],

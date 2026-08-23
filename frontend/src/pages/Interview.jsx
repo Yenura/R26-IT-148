@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Play, CheckCircle, Code, FileText, Settings } from 'lucide-react'
+import {
+  Play, CheckCircle2, Code, FileText, Settings, Sparkles,
+  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy
+} from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
+import PageHeader from '../components/PageHeader'
+import ScoreMeter from '../components/ScoreMeter'
+import ScoreBadge from '../components/ScoreBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Interview() {
@@ -26,12 +32,15 @@ export default function Interview() {
   const [busy, setBusy] = useState(false)
   const [runResults, setRunResults] = useState(null)
   const [running, setRunning] = useState(false)
-  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', action: null })
+  const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
+    if (!token || role !== 'candidate') {
+      navigate('/login/candidate')
+      return
+    }
     loadRoles()
   }, [])
 
@@ -47,18 +56,20 @@ export default function Interview() {
     try {
       const r = await c2Jobs()
       setRoles(r?.data?.jobs || {})
-    } catch { toast.error('Failed to load roles') }
+    } catch {
+      toast.error('Failed to load roles')
+    }
   }
 
   const startInterview = async () => {
-    if (!selectedRole) return toast.error('Select a role')
+    if (!selectedRole) return toast.error('Please select a target role')
     setBusy(true)
     try {
       const skills = jobRole && jobSkills
         ? jobSkills.split(',').filter(Boolean)
         : (Object.keys(roles).length > 0 ? (roles[selectedRole] || []).slice(0, 5) : [])
       const r = await c2Start({
-        candidate_id: localStorage.getItem('recruitai.user_id'),
+        candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
         job_role: selectedRole,
         required_skills: skills,
         num_questions: numQuestions,
@@ -68,8 +79,10 @@ export default function Interview() {
       setAnswers({})
       setStep('quiz')
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Failed to start')
-    } finally { setBusy(false) }
+      toast.error(err?.response?.data?.detail || 'Failed to start interview')
+    } finally {
+      setBusy(false)
+    }
   }
 
   const answerQuestion = (questionId, value) => {
@@ -80,28 +93,30 @@ export default function Interview() {
   const runCode = async () => {
     if (!q || q.question_type !== 'Coding') return
     const code = answers[q.id] || ''
-    if (!code.trim()) return toast.error('Write some code first')
+    if (!code.trim()) return toast.error('Write some code before running tests')
     setRunning(true)
     setRunResults(null)
     try {
       const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [] })
       setRunResults(r.data)
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Run failed')
-    } finally { setRunning(false) }
+      toast.error(err?.response?.data?.detail || 'Execution failed')
+    } finally {
+      setRunning(false)
+    }
   }
 
   const submitInterview = async () => {
     setConfirm({
       open: true,
-      title: 'Submit interview?',
-      message: 'You cannot change answers after submission.',
+      title: 'Submit technical interview?',
+      message: 'Your answers will be evaluated by Component 2 AI heuristics and pass to the LTR ranker.',
       action: async () => {
         setBusy(true)
         try {
           const questions = session.questions || []
           const payload = {
-            candidate_id: localStorage.getItem('recruitai.user_id'),
+            candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
             session_id: session.session_id,
             job_role: selectedRole,
             answers: questions.map((q) => {
@@ -115,247 +130,390 @@ export default function Interview() {
           const r = await c2Submit(payload)
           setResult(r.data)
           setStep('result')
-          toast.success('Interview complete!')
+          toast.success('Interview evaluation complete!')
         } catch (err) {
-          toast.error(err?.response?.data?.detail || 'Submit failed')
-        } finally { setBusy(false) }
+          toast.error(err?.response?.data?.detail || 'Submission failed')
+        } finally {
+          setBusy(false)
+        }
       }
     })
   }
 
   const questions = session?.questions || []
   const q = questions[currentQ]
-  const progress = questions.length > 0 ? ((currentQ + 1) / questions.length) * 100 : 0
+  const progressPct = questions.length > 0 ? (((currentQ + 1) / questions.length) * 100).toFixed(0) : 0
 
-  const typeIcon = (t) => t === 'MCQ' ? <CheckCircle size={14} /> : t === 'Coding' ? <Code size={14} /> : <FileText size={14} />
+  const typeIcon = (t) => {
+    if (t === 'MCQ') return <CheckCircle2 size={14} />
+    if (t === 'Coding') return <Code size={14} />
+    return <FileText size={14} />
+  }
 
-  // SETUP
+  // ─────────────────────────────────────────────────────────────
+  // SETUP STAGE
+  // ─────────────────────────────────────────────────────────────
   if (step === 'setup') {
     return (
-      <div className="fade-in" style={{ padding: 28, maxWidth: 700, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>
-          {isPracticeMode ? 'Practice Interview' : `Interview — ${jobRole}`}
-        </h1>
-        <p className="muted" style={{ fontSize: 13, marginBottom: 24 }}>
-          {isPracticeMode
-            ? 'AI-powered interview with MCQ, Descriptive, and Coding questions'
-            : `Answer questions for the ${jobRole} position`
-          }
-        </p>
+      <div className="fade-in" style={{ maxWidth: 760, margin: '0 auto' }}>
+        <PageHeader
+          badge="Component 2 AI Engine"
+          title={isPracticeMode ? 'AI Technical Interview Sandbox' : `Technical Assessment · ${jobRole}`}
+          description="Simulate real-world technical evaluations with automated MCQs, semantic theory scoring, and live Python test execution."
+          icon={Code}
+        />
 
-        <div className="card" style={{ padding: 24 }}>
-          {isPracticeMode && (
-            <>
-              <h3 style={{ marginBottom: 16 }}>Select Role</h3>
-              <select value={selectedRole} onChange={(e) => setSelectedRole(e.target.value)} style={{ width: '100%', padding: '10px 12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, marginBottom: 16 }}>
-                <option value="">Choose a role...</option>
-                {Object.keys(roles).sort().map((r) => <option key={r} value={r}>{r}</option>)}
-              </select>
+        <div className="card" style={{ padding: 'var(--p-space-6)' }}>
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Target Technical Role *</label>
+            <select
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+            >
+              <option value="">Select target role...</option>
+              {Object.keys(roles).map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
 
-              {selectedRole && roles[selectedRole] && (
-                <div style={{ marginBottom: 16 }}>
-                  <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Skills tested:</div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {roles[selectedRole].slice(0, 8).map((s) => <span key={s} className="chip" style={{ fontSize: 11 }}>{s}</span>)}
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {!isPracticeMode && jobSkills && (
-            <div style={{ marginBottom: 16 }}>
-              <div className="muted" style={{ fontSize: 12, marginBottom: 6 }}>Skills tested:</div>
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {jobSkills.split(',').filter(Boolean).map((s) => <span key={s} className="chip" style={{ fontSize: 11 }}>{s}</span>)}
-              </div>
-            </div>
-          )}
-
-          <div style={{ marginBottom: 16 }}>
-            <label className="muted" style={{ fontSize: 12, display: 'block', marginBottom: 6 }}>
-              <Settings size={12} style={{ verticalAlign: -1, marginRight: 4 }} />
-              Number of Questions
-            </label>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              {[5, 10, 15, 20].map(n => (
-                <button key={n} className={`btn btn-sm ${numQuestions === n ? 'btn-primary' : 'btn-ghost'}`}
-                  onClick={() => setNumQuestions(n)} type="button">
-                  {n}
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Question Volume</label>
+            <div style={{ display: 'flex', gap: 10 }}>
+              {[5, 10, 15].map((count) => (
+                <button
+                  key={count}
+                  type="button"
+                  onClick={() => setNumQuestions(count)}
+                  className={`btn ${numQuestions === count ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{ flex: 1 }}
+                >
+                  {count} Questions
                 </button>
               ))}
-              <input type="number" min={3} max={30} value={numQuestions}
-                onChange={e => setNumQuestions(Math.max(3, Math.min(30, Number(e.target.value) || 10)))}
-                style={{ width: 60, padding: '6px 8px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text)', fontSize: 13, textAlign: 'center' }}
-              />
             </div>
           </div>
 
-          <button className="btn" onClick={startInterview} disabled={busy || (!isPracticeMode ? !selectedRole : !selectedRole)} style={{ width: '100%' }}>
-            <Play size={16} /> {busy ? 'Starting...' : 'Start Interview'}
+          {/* Assessment Protocol Summary */}
+          <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 24 }}>
+            <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 8, color: 'var(--color-fg)' }}>
+              Assessment Evaluation Format
+            </div>
+            <ul style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', margin: 0, paddingLeft: 18, lineHeight: 1.6 }}>
+              <li><strong>Deterministic MCQs:</strong> Automated algorithmic key matching.</li>
+              <li><strong>Descriptive Theory:</strong> Semantic cosine vector similarity evaluation.</li>
+              <li><strong>Coding Sandbox:</strong> Automated Python syntax AST verification & test cases runner.</li>
+            </ul>
+          </div>
+
+          <button
+            className="btn btn-primary"
+            onClick={startInterview}
+            disabled={busy || !selectedRole}
+            style={{ width: '100%', padding: '12px 20px', fontSize: 'var(--p-text-base)', fontWeight: 700 }}
+          >
+            <Play size={18} /> {busy ? 'Generating Assessment...' : 'Start Assessment Now'}
           </button>
         </div>
       </div>
     )
   }
 
-  // QUIZ
+  // ─────────────────────────────────────────────────────────────
+  // QUIZ STAGE
+  // ─────────────────────────────────────────────────────────────
   if (step === 'quiz' && q) {
+    const isAnswered = answers[q.id] !== undefined && answers[q.id] !== ''
+    const isLast = currentQ === questions.length - 1
+
     return (
-      <div className="fade-in" style={{ padding: 28, maxWidth: 700, margin: '0 auto' }}>
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>{selectedRole} Interview</span>
-            <span className="muted" style={{ fontSize: 13 }}>Question {currentQ + 1} of {questions.length}</span>
+      <div className="fade-in" style={{ maxWidth: 880, margin: '0 auto' }}>
+        {/* Progress Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+          <div>
+            <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-primary)' }}>
+              {selectedRole} Assessment
+            </div>
+            <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)' }}>
+              Question {currentQ + 1} of {questions.length}
+            </div>
           </div>
-          <div style={{ height: 4, background: 'var(--border)', borderRadius: 2, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${progress}%`, background: 'var(--accent)', borderRadius: 2, transition: 'width 0.3s' }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 700,
+              padding: '3px 10px',
+              borderRadius: 'var(--radius-full)',
+              background: q.question_type === 'Coding' ? 'var(--color-purple-muted)' : 'var(--color-primary-muted)',
+              color: q.question_type === 'Coding' ? 'var(--color-purple)' : 'var(--color-primary)',
+              border: '1px solid var(--color-border-subtle)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4
+            }}>
+              {typeIcon(q.question_type)} {q.question_type}
+            </span>
           </div>
         </div>
 
-        <div className="card" style={{ padding: 24 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-            <span className="chip" style={{ fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}>
-              {typeIcon(q.question_type)} {q.question_type}
-            </span>
-            {q.difficulty && <span className="chip" style={{ fontSize: 11 }}>{q.difficulty}</span>}
-          </div>
+        {/* Progress Bar */}
+        <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 'var(--radius-full)', overflow: 'hidden', marginBottom: 24 }}>
+          <div style={{ width: `${progressPct}%`, height: '100%', background: 'var(--color-primary)', transition: 'width 0.3s ease' }} />
+        </div>
 
-          <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20, lineHeight: 1.5 }}>{q.question_text}</h3>
+        {/* Question Card */}
+        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1.4, color: 'var(--color-fg)', margin: '0 0 20px 0' }}>
+            {q.question_text || q.question}
+          </h2>
 
+          {/* MCQ Mode */}
           {q.question_type === 'MCQ' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(q.options || []).map((opt, i) => (
-                <label key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: answers[q.id] === String(i) ? 'var(--accent)15' : 'var(--input-bg)', border: `1px solid ${answers[q.id] === String(i) ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', transition: 'all 0.15s' }}>
-                  <input type="radio" name={q.id} value={i} checked={answers[q.id] === String(i)} onChange={() => answerQuestion(q.id, String(i))} style={{ accentColor: 'var(--accent)' }} />
-                  <span style={{ fontSize: 14 }}>{opt.text || opt}</span>
-                </label>
-              ))}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {(q.options || []).map((opt, idx) => {
+                const isSelected = answers[q.id] === idx
+                return (
+                  <div
+                    key={idx}
+                    onClick={() => answerQuestion(q.id, idx)}
+                    style={{
+                      padding: '12px 16px',
+                      borderRadius: 'var(--radius-md)',
+                      border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-subtle)'}`,
+                      background: isSelected ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--color-primary)',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      flexShrink: 0
+                    }}>
+                      {String.fromCharCode(65 + idx)}
+                    </div>
+                    <span style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
+                      {opt}
+                    </span>
+                  </div>
+                )
+              })}
             </div>
           )}
 
+          {/* Descriptive Mode */}
           {q.question_type === 'Descriptive' && (
-            <textarea
-              value={answers[q.id] || ''}
-              onChange={(e) => answerQuestion(q.id, e.target.value)}
-              placeholder="Write your answer..."
-              rows={6}
-              style={{ width: '100%', padding: '12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 14, resize: 'vertical' }}
-            />
-          )}
-
-          {q.question_type === 'Coding' && (
-            <>
+            <div>
               <textarea
+                placeholder="Type your technical explanation here with architectural or algorithmic details..."
                 value={answers[q.id] || ''}
                 onChange={(e) => answerQuestion(q.id, e.target.value)}
-                placeholder="Write your code..."
-                rows={8}
-                style={{ width: '100%', padding: '12px', background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, color: 'var(--text)', fontSize: 13, fontFamily: 'monospace', resize: 'vertical' }}
+                rows={6}
+                style={{ fontFamily: 'inherit', fontSize: 'var(--p-text-base)', lineHeight: 1.6 }}
               />
-              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                <button className="btn btn-ghost btn-sm" onClick={runCode} disabled={running} type="button">
-                  {running ? 'Running...' : 'Run Code'}
-                </button>
-              </div>
-              {runResults && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--input-bg)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13 }}>
-                  {!runResults.syntax_valid && (
-                    <div style={{ color: 'var(--danger)', fontWeight: 600, marginBottom: 6 }}>Syntax Error</div>
-                  )}
-                  {runResults.results?.length === 0 && runResults.syntax_valid && (
-                    <div className="muted">No testable cases for this question.</div>
-                  )}
-                  {runResults.results?.map((r, i) => (
-                    <div key={i} style={{ marginBottom: 8, padding: '8px 10px', background: r.passed ? 'rgba(34,197,94,0.08)' : 'rgba(239,68,68,0.08)', border: `1px solid ${r.passed ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: 6 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <span style={{ fontWeight: 600 }}>Test {i + 1}</span>
-                        <span style={{ color: r.passed ? 'var(--accent-2)' : 'var(--danger)', fontWeight: 600 }}>{r.passed ? 'PASS' : 'FAIL'}</span>
-                      </div>
-                      <div style={{ fontFamily: 'monospace', fontSize: 12, color: 'var(--text-muted)' }}>Input: {JSON.stringify(r.input)}</div>
-                      <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Expected: {r.expected}</div>
-                      <div style={{ fontFamily: 'monospace', fontSize: 12 }}>Got: {r.output || '(no output)'}</div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </>
+            </div>
           )}
 
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 20 }}>
-            <button className="btn btn-ghost" onClick={() => setCurrentQ((c) => Math.max(0, c - 1))} disabled={currentQ === 0}>Previous</button>
-            {currentQ < questions.length - 1 ? (
-              <button className="btn" onClick={() => setCurrentQ((c) => c + 1)}>Next</button>
-            ) : (
-              <button className="btn btn-success" onClick={submitInterview} disabled={busy}>{busy ? 'Submitting...' : 'Submit Interview'}</button>
-            )}
-          </div>
-          <ConfirmDialog
-            open={confirm.open}
-            title={confirm.title}
-            message={confirm.message}
-            onConfirm={async () => { await confirm.action(); setConfirm({ ...confirm, open: false }) }}
-            onCancel={() => setConfirm({ ...confirm, open: false })}
-          />
+          {/* Coding Sandbox Mode */}
+          {q.question_type === 'Coding' && (
+            <div>
+              <div style={{ marginBottom: 12 }}>
+                <textarea
+                  placeholder="# Write your Python solution here...&#10;def solution():&#10;    pass"
+                  value={answers[q.id] || ''}
+                  onChange={(e) => answerQuestion(q.id, e.target.value)}
+                  rows={10}
+                  style={{
+                    fontFamily: 'var(--p-font-mono)',
+                    fontSize: '13px',
+                    lineHeight: 1.5,
+                    background: 'var(--color-bg)',
+                    color: 'var(--color-fg)'
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={runCode}
+                  disabled={running}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Terminal size={14} /> {running ? 'Running Tests...' : 'Run Unit Tests'}
+                </button>
+              </div>
+
+              {/* Console Output */}
+              {runResults && (
+                <div style={{
+                  padding: 14,
+                  background: 'var(--color-bg)',
+                  borderRadius: 'var(--radius-md)',
+                  border: '1px solid var(--color-border-subtle)',
+                  fontFamily: 'var(--p-font-mono)',
+                  fontSize: '12px'
+                }}>
+                  <div style={{
+                    fontWeight: 700,
+                    marginBottom: 6,
+                    color: runResults.all_passed ? 'var(--color-success)' : 'var(--color-danger)'
+                  }}>
+                    {runResults.all_passed ? '✓ All Test Cases Passed' : '✗ Some Test Cases Failed'}
+                  </div>
+                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'var(--color-fg-secondary)' }}>
+                    {runResults.output || JSON.stringify(runResults, null, 2)}
+                  </pre>
+                </div>
+              )}
+            </div>
+          )}
         </div>
+
+        {/* Navigation Buttons */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => setCurrentQ((c) => Math.max(0, c - 1))}
+            disabled={currentQ === 0}
+          >
+            <ArrowLeft size={14} /> Previous
+          </button>
+
+          {isLast ? (
+            <button
+              className="btn btn-primary"
+              onClick={submitInterview}
+              disabled={busy}
+            >
+              <Trophy size={16} /> Submit Assessment
+            </button>
+          ) : (
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => setCurrentQ((c) => Math.min(questions.length - 1, c + 1))}
+            >
+              Next Question <ArrowRight size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Confirmation Dialog */}
+        <ConfirmDialog
+          open={confirm.open}
+          title={confirm.title}
+          message={confirm.message}
+          confirmLabel="Submit Assessment"
+          onConfirm={async () => {
+            await confirm.action()
+            setConfirm({ ...confirm, open: false })
+          }}
+          onCancel={() => setConfirm({ ...confirm, open: false })}
+        />
       </div>
     )
   }
 
-  // RESULT
+  // ─────────────────────────────────────────────────────────────
+  // RESULT STAGE
+  // ─────────────────────────────────────────────────────────────
   if (step === 'result' && result) {
+    const mcqScore = result.mcq_score || 0
+    const descScore = result.descriptive_score || 0
+    const codeScore = result.code_score || 0
+    const overallScore = result.overall_score || (mcqScore * 0.2 + descScore * 0.3 + codeScore * 0.5)
+
     const chartData = [
-      { name: 'MCQ', value: result.mcq_score || 0, fill: 'var(--accent)' },
-      { name: 'Descriptive', value: result.descriptive_score || 0, fill: 'var(--accent-2)' },
-      { name: 'Coding', value: result.coding_score || 0, fill: 'var(--warn)' },
+      { name: 'MCQ Test', score: mcqScore },
+      { name: 'Theory Exam', score: descScore },
+      { name: 'Code Sandbox', score: codeScore },
     ]
 
     return (
-      <div className="fade-in" style={{ padding: 28, maxWidth: 700, margin: '0 auto' }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, marginBottom: 4 }}>Interview Results</h1>
-        <p className="muted" style={{ fontSize: 13, marginBottom: 24 }}>{selectedRole} — {result.grade}</p>
+      <div className="fade-in" style={{ maxWidth: 880, margin: '0 auto' }}>
+        <PageHeader
+          badge="Evaluation Summary"
+          title="Technical Assessment Scorecard"
+          description={`Comprehensive AI evaluation breakdown for ${selectedRole}. Scores are recorded to your candidate profile.`}
+          icon={Trophy}
+          actions={
+            <button className="btn btn-ghost btn-sm" onClick={() => setStep('setup')}>
+              <RefreshCw size={14} /> Retake Assessment
+            </button>
+          }
+        />
 
-        <div className="grid grid-3" style={{ marginBottom: 20 }}>
-          <div className="stat">
-            <div className="stat-label">Overall Score</div>
-            <div className="stat-value" style={{ color: 'var(--accent)' }}>{result.interview_score?.toFixed(1)}%</div>
+        {/* Top Overall Score Card */}
+        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)', textAlign: 'center' }}>
+          <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', letterSpacing: '0.08em', marginBottom: 6 }}>
+            Blended Interview Score (P_int)
           </div>
-          <div className="stat">
-            <div className="stat-label">Grade</div>
-            <div className="stat-value" style={{ color: result.interview_score >= 60 ? 'var(--accent-2)' : 'var(--danger)' }}>{result.grade}</div>
+          <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--color-primary)', lineHeight: 1, fontFamily: 'var(--p-font-mono)', marginBottom: 8 }}>
+            {overallScore.toFixed(1)}%
           </div>
-          <div className="stat">
-            <div className="stat-label">Questions</div>
-            <div className="stat-value">{(result.mcq_total || 0) + (result.descriptive_total || 0) + (result.coding_total || 0)}</div>
+          <div style={{ display: 'inline-flex', marginBottom: 20 }}>
+            <ScoreBadge score={overallScore} />
           </div>
-        </div>
 
-        <div className="card" style={{ padding: 20, marginBottom: 20 }}>
-          <h3 style={{ marginBottom: 12 }}>Score Breakdown</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={chartData}>
-              <XAxis dataKey="name" tick={{ ...ct.axisTick }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ ...ct.axisTickLg }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={ct.tooltip} />
-              <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
-                {chartData.map((e, i) => <Cell key={i} fill={e.fill} />)}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        {result.weak_topics && result.weak_topics.length > 0 && (
-          <div className="card" style={{ padding: 20, marginBottom: 20 }}>
-            <h3 style={{ marginBottom: 8 }}>Weak Areas</h3>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {result.weak_topics.map((t, i) => <span key={i} className="chip" style={{ fontSize: 11, borderColor: 'var(--danger)', color: 'var(--danger)' }}>{t}</span>)}
+          <div className="grid grid-3" style={{ gap: 'var(--p-space-4)', textAlign: 'left' }}>
+            <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <ScoreMeter score={mcqScore} label="MCQ Accuracy (P_mcq)" size="sm" />
+            </div>
+            <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <ScoreMeter score={descScore} label="Theory Cosine (P_desc)" size="sm" />
+            </div>
+            <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <ScoreMeter score={codeScore} label="Coding Sandbox (P_code)" size="sm" />
             </div>
           </div>
-        )}
+        </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn" onClick={() => { setStep('setup'); setResult(null); setSession(null); }}>Practice Again</button>
-          {jobRole && <button className="btn btn-ghost" onClick={() => navigate(-1)}>Back to Job</button>}
+        {/* Section Comparison Chart */}
+        <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+          <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
+            Section Score Breakdown
+          </h3>
+          <div style={{ height: 220, width: '100%' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
+                <XAxis dataKey="name" stroke={ct.axis} tick={{ fill: ct.text, fontSize: 12 }} />
+                <YAxis domain={[0, 100]} stroke={ct.axis} tick={{ fill: ct.text, fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 8 }}
+                  formatter={(val) => [`${Number(val).toFixed(1)}%`, 'Score']}
+                />
+                <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--color-primary)' : index === 1 ? 'var(--color-info)' : 'var(--color-purple)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Navigation CTAs */}
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <Link to="/candidate/jobs" className="btn btn-ghost">
+            Browse Jobs
+          </Link>
+          <Link to="/candidate/dashboard" className="btn btn-primary">
+            Back to Dashboard
+          </Link>
         </div>
       </div>
     )

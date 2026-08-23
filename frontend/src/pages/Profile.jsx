@@ -1,8 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { User, Lock, Upload, Save, FileText } from 'lucide-react'
-import { authGetProfile, authUpdateProfile, authChangePassword, authUploadAvatar, uResumeList } from '../api'
+import {
+  User, Lock, Upload, Save, FileText, ShieldCheck, Mail, Calendar, Check
+} from 'lucide-react'
+import {
+  authGetProfile, authUpdateProfile, authChangePassword,
+  authUploadAvatar, uResumeList
+} from '../api'
+import PageHeader from '../components/PageHeader'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -16,8 +22,11 @@ export default function Profile() {
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
-    if (!token) { navigate('/'); return }
-    authGetProfile().then(r => {
+    if (!token) {
+      navigate('/')
+      return
+    }
+    authGetProfile().then((r) => {
       setProfile(r.data)
       setForm({
         full_name: r.data.name || '',
@@ -26,7 +35,8 @@ export default function Profile() {
         website: r.data.website || '',
       })
     }).catch(() => toast.error('Failed to load profile'))
-    uResumeList().then(r => {
+
+    uResumeList().then((r) => {
       const list = Array.isArray(r.data) ? r.data : []
       if (list.length > 0) setResumeData(list[0])
     }).catch(() => {})
@@ -39,7 +49,7 @@ export default function Profile() {
       const r = await authUpdateProfile(form)
       setProfile(r.data)
       localStorage.setItem('recruitai.name', r.data.name || '')
-      toast.success('Profile updated')
+      toast.success('Profile updated successfully!')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Update failed')
     } finally {
@@ -49,12 +59,12 @@ export default function Profile() {
 
   const changePassword = async (e) => {
     e.preventDefault()
-    if (pwForm.new_password.length < 6) return toast.error('New password must be 6+ characters')
+    if (pwForm.new_password.length < 6) return toast.error('New password must be at least 6 characters')
     setPwBusy(true)
     try {
       await authChangePassword(pwForm)
       setPwForm({ current_password: '', new_password: '' })
-      toast.success('Password changed')
+      toast.success('Password changed successfully!')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Password change failed')
     } finally {
@@ -69,109 +79,160 @@ export default function Profile() {
     fd.append('file', file)
     try {
       const r = await authUploadAvatar(fd)
-      setProfile(p => ({ ...p, avatar_url: r.data.avatar_url }))
+      setProfile((p) => ({ ...p, avatar_url: r.data.avatar_url }))
       localStorage.setItem('recruitai.avatar', r.data.avatar_url)
-      toast.success('Avatar uploaded')
+      toast.success('Avatar uploaded!')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Upload failed')
     }
   }
 
-  const set = (k) => (e) => setForm(f => ({ ...f, [k]: e.target.value }))
-  const setPw = (k) => (e) => setPwForm(f => ({ ...f, [k]: e.target.value }))
+  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const setPw = (k) => (e) => setPwForm((f) => ({ ...f, [k]: e.target.value }))
 
-  if (!profile) return <div className="empty">Loading profile...</div>
+  if (!profile) return <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading profile...</div>
 
   return (
-    <div className="fade-in" style={{ maxWidth: 640 }}>
-      <div className="page-head">
-        <h1>My Profile</h1>
-        <p>Manage your account and resume information</p>
-      </div>
+    <div className="fade-in" style={{ maxWidth: 720, margin: '0 auto' }}>
+      <PageHeader
+        badge="Candidate Settings"
+        title="My Profile & Credentials"
+        description="Manage your account identity, contact information, and security credentials."
+        icon={User}
+      />
 
-      <div className="card" style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 20 }}>
+      {/* Avatar & Header Card */}
+      <div className="card" style={{ padding: 'var(--p-space-5)', display: 'flex', alignItems: 'center', gap: 20, marginBottom: 'var(--p-space-5)' }}>
         <div
           onClick={() => fileRef.current?.click()}
-          style={{ cursor: 'pointer', position: 'relative' }}
-          title="Change avatar"
+          style={{ cursor: 'pointer', position: 'relative', flexShrink: 0 }}
+          title="Click to update avatar"
         >
           {profile.avatar_url ? (
             <img
               src={profile.avatar_url}
               alt="Avatar"
-              style={{ width: 72, height: 72, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--color-border)' }}
+              style={{ width: 68, height: 68, borderRadius: 'var(--radius-full)', objectFit: 'cover', border: '2px solid var(--color-border)' }}
             />
           ) : (
-            <div className="avatar" style={{ width: 72, height: 72, fontSize: 28 }}>
-              {(profile.name || profile.email || '?')[0].toUpperCase()}
+            <div className="avatar" style={{ width: 68, height: 68, fontSize: 24, borderRadius: 'var(--radius-full)' }}>
+              {(profile.name || profile.email || 'U')[0].toUpperCase()}
             </div>
           )}
           <div style={{
-            position: 'absolute', bottom: 0, right: 0, width: 24, height: 24,
-            background: 'var(--color-primary)', borderRadius: '50%', display: 'flex',
-            alignItems: 'center', justifyContent: 'center', border: '2px solid var(--card-bg)'
+            position: 'absolute',
+            bottom: 0,
+            right: 0,
+            width: 24,
+            height: 24,
+            background: 'var(--color-primary)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#fff',
+            border: '2px solid var(--card-bg)'
           }}>
-            <Upload size={12} color="white" />
+            <Upload size={12} />
           </div>
         </div>
         <input ref={fileRef} type="file" accept="image/*" onChange={uploadAvatar} style={{ display: 'none' }} />
+
         <div>
-          <div style={{ fontWeight: 700, fontSize: 18 }}>{profile.name || 'Unnamed'}</div>
-          <div className="muted" style={{ fontSize: 13 }}>{profile.email}</div>
-          <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>
-            Member since {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : '—'}
+          <div style={{ fontWeight: 800, fontSize: '1.25rem', color: 'var(--color-fg)' }}>
+            {profile.name || 'Candidate'}
+          </div>
+          <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
+            <Mail size={12} /> {profile.email}
+          </div>
+          <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <Calendar size={11} /> Member since {profile.created_at ? new Date(profile.created_at).toLocaleDateString() : 'Active Member'}
           </div>
         </div>
       </div>
 
-      <form onSubmit={saveProfile} className="card">
-        <h3><User size={18} /> Account Information</h3>
-        <label>Full Name</label>
-        <input type="text" value={form.full_name} onChange={set('full_name')} placeholder="Your name" />
-        <label>Email</label>
-        <input type="email" value={profile.email} disabled />
-        <button className="btn btn-success" type="submit" disabled={busy} style={{ marginTop: 12 }}>
-          <Save size={16} /> {busy ? 'Saving...' : 'Save Changes'}
+      {/* Profile Form */}
+      <form onSubmit={saveProfile} className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <User size={16} style={{ color: 'var(--color-primary)' }} /> Account Details
+        </h3>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: '12px', marginTop: 0 }}>Full Name</label>
+          <input
+            type="text"
+            value={form.full_name}
+            onChange={set('full_name')}
+            placeholder="Your full name"
+            required
+          />
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: '12px', marginTop: 0 }}>Email Address (Account Identifier)</label>
+          <input type="email" value={profile.email} disabled />
+        </div>
+
+        <button className="btn btn-primary btn-sm" type="submit" disabled={busy}>
+          <Save size={14} /> {busy ? 'Saving...' : 'Save Profile Changes'}
         </button>
       </form>
 
+      {/* Resume Data Summary */}
       {resumeData && (
-        <div className="card">
-          <h3><FileText size={18} /> Resume Data</h3>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 14 }}>
+        <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+          <h3 style={{ margin: '0 0 12px 0', fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <FileText size={16} style={{ color: 'var(--color-primary)' }} /> Active Resume Metadata
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, fontSize: 'var(--p-text-xs)' }}>
             <div>
-              <span className="muted">Skills:</span>
-              <div style={{ marginTop: 4 }}>
-                {(resumeData.skills || []).slice(0, 8).map(s => (
-                  <span key={s} className="chip" style={{ fontSize: 12 }}>{s}</span>
+              <div style={{ color: 'var(--color-fg-muted)', marginBottom: 2 }}>Current Active File:</div>
+              <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{resumeData.filename || 'Uploaded CV'}</div>
+            </div>
+            <div>
+              <div style={{ color: 'var(--color-fg-muted)', marginBottom: 2 }}>Verified Experience:</div>
+              <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{resumeData.experience_years || 0} Years</div>
+            </div>
+            <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ color: 'var(--color-fg-muted)', marginBottom: 4 }}>Extracted Skills:</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                {(resumeData.skills || []).slice(0, 8).map((s) => (
+                  <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>{s}</span>
                 ))}
-                {(resumeData.skills || []).length > 8 && <span className="muted" style={{ fontSize: 12 }}> +{resumeData.skills.length - 8} more</span>}
               </div>
-            </div>
-            <div>
-              <span className="muted">Experience:</span>
-              <div style={{ marginTop: 4, fontWeight: 600 }}>{resumeData.experience_years || 0} years</div>
-            </div>
-            <div>
-              <span className="muted">Education:</span>
-              <div style={{ marginTop: 4 }}>{resumeData.education || '—'}</div>
-            </div>
-            <div>
-              <span className="muted">Resume:</span>
-              <div style={{ marginTop: 4, color: 'var(--color-success)' }}>{resumeData.filename || '—'}</div>
             </div>
           </div>
         </div>
       )}
 
-      <form onSubmit={changePassword} className="card">
-        <h3><Lock size={18} /> Change Password</h3>
-        <label>Current Password</label>
-        <input type="password" value={pwForm.current_password} onChange={setPw('current_password')} placeholder="Enter current password" />
-        <label>New Password</label>
-        <input type="password" value={pwForm.new_password} onChange={setPw('new_password')} placeholder="Min 6 characters" />
-        <button className="btn btn-ghost" type="submit" disabled={pwBusy} style={{ marginTop: 12 }}>
-          <Lock size={16} /> {pwBusy ? 'Changing...' : 'Change Password'}
+      {/* Password Change Card */}
+      <form onSubmit={changePassword} className="card" style={{ padding: 'var(--p-space-5)' }}>
+        <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Lock size={16} style={{ color: 'var(--color-primary)' }} /> Security & Password
+        </h3>
+
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ fontSize: '12px', marginTop: 0 }}>Current Password</label>
+          <input
+            type="password"
+            value={pwForm.current_password}
+            onChange={setPw('current_password')}
+            placeholder="Enter existing password"
+          />
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: '12px', marginTop: 0 }}>New Password</label>
+          <input
+            type="password"
+            value={pwForm.new_password}
+            onChange={setPw('new_password')}
+            placeholder="Minimum 6 characters"
+          />
+        </div>
+
+        <button className="btn btn-ghost btn-sm" type="submit" disabled={pwBusy}>
+          <Lock size={14} /> {pwBusy ? 'Updating...' : 'Update Password'}
         </button>
       </form>
     </div>

@@ -1,8 +1,9 @@
-"""Job posting routes for companies."""
 import re
+import time
 from datetime import datetime, timezone
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 
@@ -11,6 +12,15 @@ from routers.auth import require_company, require_candidate, get_current_user
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# In-memory TTL cache for public/all jobs list
+_JOBS_CACHE = {"data": None, "json": None, "expires_at": 0}
+_CACHE_TTL = 30.0  # 30 seconds
+
+def _invalidate_jobs_cache():
+    _JOBS_CACHE["data"] = None
+    _JOBS_CACHE["json"] = None
+    _JOBS_CACHE["expires_at"] = 0
 
 # Canonical interview roles (component2 interview supports exactly these 10).
 _INTERVIEW_ROLES = [
@@ -142,6 +152,7 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
     }
     result = await request.app.state.db.jobs.insert_one(doc)
     doc["_id"] = result.inserted_id
+    _invalidate_jobs_cache()
     return _job_out(doc)
 
 
@@ -154,18 +165,33 @@ async def list_jobs(request: Request, company: dict = Depends(require_company)):
 
 @router.get("/all", response_model=list[JobOut])
 async def list_all_jobs(request: Request):
+    import json
+    now = time.time()
+    if _JOBS_CACHE["json"] is not None and now < _JOBS_CACHE["expires_at"]:
+        return Response(content=_JOBS_CACHE["json"], media_type="application/json")
+
     db = request.app.state.db
     cursor = db.jobs.find({"status": "open"}).sort("created_at", -1)
     docs = [doc async for doc in cursor]
     if not docs:
+        _JOBS_CACHE["data"] = []
+        _JOBS_CACHE["json"] = b"[]"
+        _JOBS_CACHE["expires_at"] = now + _CACHE_TTL
         return []
+
     # Batch-fetch company names
     company_ids = list({doc.get("company_id") for doc in docs if doc.get("company_id")})
     company_names = {}
     if company_ids:
         users = await db.users.find({"_id": {"$in": company_ids}}).to_list(length=200)
         company_names = {str(u["_id"]): u.get("name", u.get("company_name", "")) for u in users}
-    return [_job_out(doc, company_names.get(str(doc.get("company_id", "")), "")) for doc in docs]
+
+    result = [_job_out(doc, company_names.get(str(doc.get("company_id", "")), "")) for doc in docs]
+    json_bytes = json.dumps([r.model_dump(mode="json") for r in result]).encode("utf-8")
+    _JOBS_CACHE["data"] = result
+    _JOBS_CACHE["json"] = json_bytes
+    _JOBS_CACHE["expires_at"] = now + _CACHE_TTL
+    return Response(content=json_bytes, media_type="application/json")
 
 
 @router.get("/public/{job_id}", response_model=JobOut)
@@ -202,6 +228,7 @@ async def update_job(job_id: str, payload: JobUpdate, request: Request, company:
     updates = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None}
     updates["updated_at"] = datetime.now(timezone.utc)
     await db.jobs.update_one({"_id": doc["_id"]}, {"$set": updates})
+    _invalidate_jobs_cache()
     return _job_out(await _get_owned_job(db, job_id, str(company["_id"])))
 
 
@@ -212,6 +239,7 @@ async def delete_job(job_id: str, request: Request, company: dict = Depends(requ
     doc = await _get_owned_job(db, job_id, str(company["_id"]))
     await db.jobs.delete_one({"_id": doc["_id"]})
     await db.applications.delete_many({"job_id": doc["_id"]})
+    _invalidate_jobs_cache()
     return None
 
 
