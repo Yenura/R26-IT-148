@@ -3,18 +3,17 @@ import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Route } from 'lucide-react'
 import { c4CareerRoles, c4CareerPath } from '../api'
+import { useAuth } from '../hooks/useAuth'
 
 export default function CareerPath() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const [roles, setRoles] = useState([])
   const [form, setForm] = useState({ current_role: '', skills: '', experience_years: 0 })
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') { navigate('/login/candidate'); return }
     c4CareerRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => toast.error('Failed to load roles'))
   }, [])
 

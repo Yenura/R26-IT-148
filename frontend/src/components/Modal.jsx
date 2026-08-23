@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 
 export default function Modal({
@@ -10,16 +10,57 @@ export default function Modal({
   maxWidth = 600,
   icon: Icon
 }) {
+  const dialogRef = useRef(null)
+  const previousFocusRef = useRef(null)
+
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' && open) onClose()
+
+      // Focus trap
+      if (e.key === 'Tab' && open && dialogRef.current) {
+        const focusable = dialogRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
     }
-    window.addEventListener('keydown', handleKeyDown)
+
     if (open) {
+      previousFocusRef.current = document.activeElement
       document.body.style.overflow = 'hidden'
+      // Auto-focus the first focusable element inside the dialog
+      setTimeout(() => {
+        if (dialogRef.current) {
+          const firstFocusable = dialogRef.current.querySelector(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+          )
+          if (firstFocusable) firstFocusable.focus()
+        }
+      }, 50)
     } else {
       document.body.style.overflow = 'unset'
+      // Restore focus when modal closes
+      if (previousFocusRef.current && previousFocusRef.current.focus) {
+        previousFocusRef.current.focus()
+      }
     }
+
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
       document.body.style.overflow = 'unset'
@@ -45,7 +86,11 @@ export default function Modal({
       }}
     >
       <div
+        ref={dialogRef}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         style={{
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
