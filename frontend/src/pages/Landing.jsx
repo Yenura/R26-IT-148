@@ -121,49 +121,37 @@ export default function Landing() {
       <header style={{
         position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '14px 28px',
-        background: 'var(--glass-bg)',
-        backdropFilter: 'var(--glass-blur)', WebkitBackdropFilter: 'var(--glass-blur)',
-        borderBottom: '1px solid var(--glass-border)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.15)'
+        padding: '12px 24px',
+        background: 'color-mix(in srgb, var(--color-bg) 80%, transparent)',
+        backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)',
+        borderBottom: '1px solid var(--color-border-subtle)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, var(--color-primary), #6366f1)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff',
-            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.35)'
+            width: 28, height: 28, borderRadius: 6,
+            background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
           }}>
-            <Brain size={18} />
+            <Brain size={16} />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ fontWeight: 800, fontSize: 'var(--p-text-lg)', letterSpacing: '-0.02em', color: 'var(--color-fg)', lineHeight: 1.1 }}>
-              RecruitAI
-            </div>
-            <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--color-primary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-              AI Recruitment Platform
-            </span>
+          <div style={{ fontWeight: 800, fontSize: 'var(--p-text-lg)', letterSpacing: '-0.3px', color: 'var(--color-fg)' }}>
+            RecruitAI
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Link to="/login/candidate" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
-            Candidate Portal
+            Candidate Sign In
           </Link>
-          <Link to="/login/company" className="btn btn-primary btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
-            Employer Portal
+          <Link to="/login/company" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
+            Employer Sign In
           </Link>
-          <button
-            onClick={toggleTheme}
-            className="btn-ghost btn-sm"
-            style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-full)' }}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            aria-label="Toggle Theme"
-          >
+          <button onClick={toggleTheme} className="btn-ghost btn-sm" style={{ padding: '6px 8px' }}
+            title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>
             {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
           </button>
         </div>
-      </header>
+      </div>
 
       {/* Hero Section */}
       <section style={{

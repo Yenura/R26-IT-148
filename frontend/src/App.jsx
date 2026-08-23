@@ -116,22 +116,17 @@ export default function App() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && navigate(role === 'candidate' ? '/candidate/dashboard' : '/company/dashboard')}
-                title="Go to Dashboard"
+                title="Go to dashboard"
               >
                 <div style={{
                   width: 32,
                   height: 32,
                   borderRadius: 'var(--radius-md)',
-                  background: role === 'company'
-                    ? 'linear-gradient(135deg, var(--color-purple), #6366f1)'
-                    : 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+                  background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#fff',
-                  boxShadow: role === 'company'
-                    ? '0 4px 12px rgba(168, 85, 247, 0.35)'
-                    : '0 4px 12px rgba(59, 130, 246, 0.35)'
+                  color: '#fff'
                 }}>
                   <Brain size={18} />
                 </div>
@@ -145,7 +140,7 @@ export default function App() {
                   borderRadius: 'var(--radius-full)',
                   background: role === 'company' ? 'var(--color-purple-muted)' : 'var(--color-primary-muted)',
                   color: role === 'company' ? 'var(--color-purple)' : 'var(--color-primary)',
-                  border: `1px solid ${role === 'company' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`,
+                  border: `1px solid ${role === 'company' ? 'rgba(139, 92, 246, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`,
                 }}>
                   {role === 'company' ? 'Recruiter' : 'Candidate'}
                 </span>
@@ -168,9 +163,9 @@ export default function App() {
               <button
                 className="btn-ghost btn-sm"
                 onClick={toggleTheme}
-                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                aria-label="Toggle Theme"
-                style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-full)' }}
+                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+                aria-label="Toggle theme"
+                style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
               </button>
@@ -186,15 +181,11 @@ export default function App() {
                   {userAvatar ? (
                     <img src={userAvatar} alt="User Avatar" className="navbar-avatar" />
                   ) : (
-                    <div className="navbar-avatar navbar-avatar-fallback" style={{
-                      background: role === 'company'
-                        ? 'linear-gradient(135deg, var(--color-purple), #6366f1)'
-                        : 'linear-gradient(135deg, var(--color-primary), #4f46e5)'
-                    }}>
+                    <div className="navbar-avatar navbar-avatar-fallback">
                       {(userName || (role === 'company' ? 'C' : 'U'))[0].toUpperCase()}
                     </div>
                   )}
-                  <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 600, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 600, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {userName || (role === 'company' ? 'Employer' : 'Candidate')}
                   </span>
                   <ChevronDown size={13} style={{ color: 'var(--color-fg-muted)' }} />
@@ -203,7 +194,7 @@ export default function App() {
                     <div className="navbar-dropdown" onClick={(e) => e.stopPropagation()}>
                       <div className="navbar-dropdown-label">
                         <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>{userName || 'Account'}</div>
-                        <div style={{ textTransform: 'capitalize', color: 'var(--color-fg-muted)', fontSize: '11px', marginTop: 2 }}>{role} Profile</div>
+                        <div style={{ textTransform: 'capitalize', color: 'var(--color-fg-muted)' }}>{role} Profile</div>
                       </div>
                       <button onClick={() => { navigate(profileLink); setUserMenu(false) }}>
                         <User size={14} /> Profile & Settings

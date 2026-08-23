@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Building2, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Sparkles } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft, Globe } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyRegister() {
@@ -13,7 +13,7 @@ export default function CompanyRegister() {
   const register = async (e) => {
     e.preventDefault()
     if (!form.company_name.trim() || !form.email.trim() || !form.password) {
-      return toast.error('Please fill in all required fields')
+      return toast.error('Please fill in required fields')
     }
     if (form.password.length < 6) {
       return toast.error('Password must be at least 6 characters')
@@ -29,7 +29,7 @@ export default function CompanyRegister() {
         localStorage.setItem('recruitai.name', me.data.name || form.company_name)
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Company account registered!')
+      toast.success('Company account created!')
       navigate('/company/dashboard')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Registration failed')
@@ -41,147 +41,102 @@ export default function CompanyRegister() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      background: 'radial-gradient(ellipse 80% 80% at 50% -20%, rgba(168, 85, 247, 0.15), rgba(9, 9, 11, 0))',
-      backgroundColor: 'var(--color-bg)',
-      padding: 24,
-      position: 'relative'
-    }}>
-      <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', zIndex: 1 }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
+      <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
 
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
           <div style={{
-            margin: '0 auto 14px',
-            width: 52,
-            height: 52,
-            borderRadius: 'var(--radius-lg)',
+            margin: '0 auto 12px',
+            width: 48,
+            height: 48,
+            borderRadius: 'var(--radius-md)',
             background: 'linear-gradient(135deg, var(--color-purple), #6366f1)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
-            boxShadow: '0 8px 24px rgba(168, 85, 247, 0.35)'
+            color: '#fff'
           }}>
-            <Building2 size={28} />
+            <Building2 size={24} />
           </div>
-          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0, letterSpacing: '-0.02em' }}>
-            Register Company
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+            Register Organization
           </h1>
-          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 6, lineHeight: 1.5 }}>
-            Create your employer account to publish jobs, assess candidates, and access ranking leaderboards.
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+            Create an employer account to publish jobs and screen applicants.
           </p>
         </div>
 
-        <form onSubmit={register} className="card" style={{
-          padding: 'var(--p-space-7)',
-          background: 'var(--color-bg-elevated)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: 'var(--shadow-xl)'
-        }}>
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-fg-secondary)', marginBottom: 6, display: 'block' }}>
-              Company / Organization Name *
-            </label>
-            <div style={{ position: 'relative' }}>
-              <Building2 size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
+        <form onSubmit={register} className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Company Name *</label>
+            <input
+              type="text"
+              value={form.company_name}
+              onChange={set('company_name')}
+              placeholder="e.g. Acme Tech Inc."
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Work Email *</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={set('email')}
+              placeholder="recruiter@acme.com"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Password *</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={set('password')}
+              placeholder="Minimum 6 characters"
+              required
+            />
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Industry</label>
               <input
                 type="text"
-                value={form.company_name}
-                onChange={set('company_name')}
-                placeholder="e.g. Acme Cloud Corp"
-                style={{ paddingLeft: 36 }}
-                required
+                value={form.industry}
+                onChange={set('industry')}
+                placeholder="e.g. SaaS"
               />
             </div>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-fg-secondary)', marginBottom: 6, display: 'block' }}>
-              Work Email Address *
-            </label>
-            <div style={{ position: 'relative' }}>
-              <Mail size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Website</label>
               <input
-                type="email"
-                value={form.email}
-                onChange={set('email')}
-                placeholder="recruiter@acme.com"
-                style={{ paddingLeft: 36 }}
-                required
+                type="text"
+                value={form.website}
+                onChange={set('website')}
+                placeholder="https://..."
               />
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 22 }}>
-            <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--color-fg-secondary)', marginBottom: 6, display: 'block' }}>
-              Password *
-            </label>
-            <div style={{ position: 'relative' }}>
-              <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={form.password}
-                onChange={set('password')}
-                placeholder="Minimum 6 characters"
-                style={{ paddingLeft: 36, paddingRight: 36 }}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  top: '50%',
-                  transform: 'translateY(-50%)',
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  color: 'var(--color-fg-muted)',
-                  padding: 0
-                }}
-                title={showPassword ? 'Hide password' : 'Show password'}
-              >
-                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-              </button>
             </div>
           </div>
 
           <button
-            className="btn"
+            className="btn btn-primary"
             type="submit"
             disabled={busy}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              fontSize: 'var(--p-text-sm)',
-              fontWeight: 700,
-              borderRadius: 'var(--radius-md)',
-              background: 'linear-gradient(135deg, var(--color-purple), #7c3aed)',
-              color: '#fff'
-            }}
+            style={{ width: '100%', padding: '11px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700, background: 'var(--color-purple)', borderColor: 'var(--color-purple)' }}
           >
-            <Sparkles size={15} /> {busy ? 'Creating Account...' : 'Register Recruiter Account'}
+            <Building2 size={15} /> {busy ? 'Registering...' : 'Create Employer Account'}
           </button>
 
-          <div style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+          <div style={{ textAlign: 'center', marginTop: 18, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
             <span>Already have an employer account? </span>
             <Link to="/login/company" style={{ color: 'var(--color-purple)', fontWeight: 700 }}>
-              Sign In Here
-            </Link>
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--p-text-xs)' }}>
-            <Link to="/register/candidate" style={{ color: 'var(--color-fg-secondary)', textDecoration: 'none' }}>
-              Looking for jobs? <span style={{ color: 'var(--color-primary)', fontWeight: 700 }}>Candidate sign up →</span>
+              Sign In
             </Link>
           </div>
         </form>
