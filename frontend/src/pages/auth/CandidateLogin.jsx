@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, User, ArrowLeft, Sparkles } from 'lucide-react'
+import { Brain, Mail, Lock, User, ArrowLeft, Sparkles, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CandidateLogin() {
@@ -22,7 +22,7 @@ export default function CandidateLogin() {
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
       try {
         const me = await C0.get('/auth/me')
-        localStorage.setItem('recruitai.name', me.data.name || '')
+        localStorage.setItem('recruitai.name', me.data.name || 'Candidate')
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
       toast.success('Welcome back to RecruitAI!')
@@ -43,7 +43,7 @@ export default function CandidateLogin() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
 
@@ -57,7 +57,8 @@ export default function CandidateLogin() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff'
+            color: '#fff',
+            boxShadow: 'var(--shadow-md)'
           }}>
             <Brain size={24} />
           </div>
@@ -70,6 +71,29 @@ export default function CandidateLogin() {
         </div>
 
         <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
+          {/* Quick Demo Fill Button */}
+          <div style={{ marginBottom: 18 }}>
+            <button
+              type="button"
+              onClick={fillDemo}
+              className="btn btn-ghost btn-sm"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                fontSize: '11px',
+                border: '1px dashed var(--color-primary)',
+                background: 'var(--color-primary-muted)',
+                color: 'var(--color-primary)',
+                fontWeight: 700
+              }}
+            >
+              <Sparkles size={13} /> 1-Click: Fill Demo Candidate Account
+            </button>
+          </div>
+
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: '12px', marginTop: 0 }}>Email Address</label>
@@ -94,12 +118,12 @@ export default function CandidateLogin() {
                 <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
                   id="candidate-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{ paddingLeft: 36 }}
+                  style={{ paddingLeft: 36, paddingRight: 36 }}
                   required
                 />
                 <button
