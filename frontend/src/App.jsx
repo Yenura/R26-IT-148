@@ -7,6 +7,7 @@ import {
   Menu, X, User, LogOut, ChevronDown
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
+import GlobalBackground from './components/GlobalBackground'
 
 const Landing        = lazy(() => import('./pages/Landing'))
 const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
@@ -104,6 +105,7 @@ export default function App() {
 
   return (
     <div className="app-root">
+      <GlobalBackground />
       {/* Top Navbar */}
       {navLinks.length > 0 && (
         <nav className="navbar" aria-label="Main Navigation">

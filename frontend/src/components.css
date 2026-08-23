@@ -197,6 +197,29 @@ code {
   background: var(--color-border);
 }
 
+/* Floating Orb Animations (GPU Accelerated) */
+@keyframes floatOrb1 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(60px, 40px, 0) scale(1.08); }
+  100% { transform: translate3d(-30px, 70px, 0) scale(0.95); }
+}
+
+@keyframes floatOrb2 {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-50px, -50px, 0) scale(1.06); }
+  100% { transform: translate3d(40px, -30px, 0) scale(0.94); }
+}
+
+@keyframes floatOrb3 {
+  0% { transform: translate3d(0, 0, 0) scale(0.95); }
+  50% { transform: translate3d(35px, -35px, 0) scale(1.04); }
+  100% { transform: translate3d(-35px, 25px, 0) scale(1); }
+}
+
+.floating-orb-1 { animation: floatOrb1 24s ease-in-out infinite alternate; }
+.floating-orb-2 { animation: floatOrb2 28s ease-in-out infinite alternate; }
+.floating-orb-3 { animation: floatOrb3 20s ease-in-out infinite alternate; }
+
 .pipeline-mini-step.filled {
   background: linear-gradient(90deg, var(--color-primary), var(--color-success));
 }
@@ -246,7 +269,8 @@ code {
 .navbar-logo {
   display: flex;
   align-items: center;
-  gap: var(--p-space-2);
+  gap: 8px;
+  text-decoration: none;
   cursor: pointer;
 }
 
@@ -255,7 +279,7 @@ code {
 }
 
 .navbar-brand {
-  font-weight: var(--p-weight-extrabold);
+  font-weight: 800;
   font-size: var(--p-text-lg);
   letter-spacing: -0.3px;
   color: var(--color-fg);
@@ -488,17 +512,23 @@ code {
 
 .card {
   background: var(--card-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
   border: 1px solid var(--card-border);
   border-radius: var(--card-radius);
   padding: var(--card-padding);
   margin-bottom: var(--p-space-4);
   box-shadow: var(--card-shadow);
-  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
 }
 
 .card:hover {
   border-color: var(--card-border-hover);
   box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
 }
 
 .card h3 {

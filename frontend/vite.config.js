@@ -7,4 +7,19 @@ export default defineConfig({
     port: 5174,
     host: true,
   },
+  build: {
+    target: 'esnext',
+    cssCodeSplit: true,
+    chunkSizeWarningLimit: 600,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          'vendor-icons': ['lucide-react'],
+          'vendor-charts': ['recharts'],
+          'vendor-utils': ['axios', 'react-hot-toast', 'es-toolkit']
+        }
+      }
+    }
+  }
 })
