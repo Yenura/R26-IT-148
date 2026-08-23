@@ -39,8 +39,10 @@ def _is_good_question(q: Dict) -> bool:
             and (q.get("correct_answer_index") is not None or q.get("correct_option") is not None)
         )
     if t == "Descriptive":
-        return bool((q.get("answer_text") or "").strip().lower()) \
-            and not q.get("answer_text", "").startswith("This question covers")
+        answer = (q.get("answer_text") or "").strip()
+        if len(answer) < 20:
+            return False
+        return bool(answer) and not answer.startswith("This question covers")
     if t == "Coding":
         qtext_lower = qtext.lower()
         for tc in q.get("test_cases") or []:

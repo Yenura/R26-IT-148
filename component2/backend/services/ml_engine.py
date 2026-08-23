@@ -658,7 +658,7 @@ class InterviewService:
         # Get original weights for this job role
         original_weights = self.interview_configs.get("interview_weights", {}).get(
             job_role,
-            {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40}
+            {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50}
         )
         
         # Determine which question types have answers (are available)
@@ -888,11 +888,13 @@ class AnswerEvaluationService:
                 return {"final_score": 0.0, "similarity": 0.0, "keyword_coverage": 0.0}
 
             intersection = reference_tokens.intersection(candidate_tokens)
-            similarity = len(intersection) / max(len(reference_tokens), 1)
+            # Jaccard similarity (intersection / union) — penalizes verbosity
+            union = reference_tokens.union(candidate_tokens)
+            similarity = len(intersection) / max(len(union), 1)
 
-            keywords = reference_tokens
-            matched_keywords = len([t for t in keywords if t in candidate_tokens])
-            keyword_coverage = matched_keywords / max(len(keywords), 1)
+            # Keyword recall: what fraction of reference tokens appear in candidate
+            matched_keywords = len([t for t in reference_tokens if t in candidate_tokens])
+            keyword_coverage = matched_keywords / max(len(reference_tokens), 1)
 
             final_score = round((similarity * 0.7 + keyword_coverage * 0.3) * 100, 2)
             return {
@@ -905,7 +907,7 @@ class AnswerEvaluationService:
         return result
 
     def evaluate_coding(self, code_text: str, test_cases: List[Dict]) -> Dict:
-        """Evaluate coding answer"""
+        """Evaluate coding answer (fallback when CodingEvaluator unavailable)."""
         if not self.code_evaluator:
             syntax_valid = False
             tests_passed = 0
@@ -918,13 +920,6 @@ class AnswerEvaluationService:
                     syntax_valid = True
                 except SyntaxError:
                     syntax_valid = False
-
-                if syntax_valid and total_tests > 0:
-                    lowered = code_text.lower()
-                    for tc in test_cases:
-                        expected = str(tc.get("expected_output", "")).lower()
-                        if expected and expected in lowered:
-                            tests_passed += 1
 
             test_pass_rate = round((tests_passed / total_tests * 100) if total_tests else (100 if syntax_valid else 0), 2)
             base_score = 70 if syntax_valid else (40 if code_text else 0)
