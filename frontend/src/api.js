@@ -75,7 +75,7 @@ const mk = (url) => {
 }
 
 // ── Unified backend (auth, resume, jobs, export) ──────────────
-const _C0 = mk(import.meta.env.VITE_C0_URL || 'http://127.0.0.1:8000')
+const _C0 = mk(import.meta.env.VITE_C0_URL || 'http://127.0.0.1:8004')
 
 // Response interceptor: redirect to login on 401
 _C0.interceptors.response.use(
