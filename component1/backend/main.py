@@ -178,3 +178,8 @@ async def health():
         "database": db_status,
         "predictor_mode": predictor.mode if predictor else "not_loaded",
     }
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8001)

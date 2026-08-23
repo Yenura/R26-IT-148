@@ -166,3 +166,8 @@ async def health():
         db_status = f"error: {exc}"
         logger.warning("Health check: DB ping failed — %s", exc)
     return {"status": "ok", "database": db_status}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8004)

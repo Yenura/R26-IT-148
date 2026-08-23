@@ -98,3 +98,8 @@ async def root():
 async def health():
     return {"status": "ok", "store": type(app.state.store).__name__,
             "ltr": getattr(app.state, "ltr_loaded", True), "port": PORT}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8003)

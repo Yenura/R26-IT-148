@@ -101,3 +101,8 @@ app.include_router(export.router, prefix="/api/v1/export", tags=["Export"])
 @app.get("/health", tags=["Health"])
 async def health():
     return {"status": "ok", "service": "recruit-ai"}
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)
