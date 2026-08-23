@@ -31,22 +31,31 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 def _is_py_literal(value) -> bool:
-    """True if the value is a safe Python literal (safe to inject as code)."""
-    if not isinstance(value, str) or not value.strip():
+    """True if the value can be safely injected as a Python variable."""
+    if value is None:
         return False
-    try:
-        ast.literal_eval(value)
+    if isinstance(value, (int, float, bool, list, dict, tuple)):
         return True
-    except (ValueError, SyntaxError):
-        return False
+    if isinstance(value, str) and value.strip():
+        return True
+    return False
 
 
 def _output_matches(output: str, expected: str) -> bool:
-    """Compare sandbox stdout to expected. Space-insensitive for collection types."""
+    """Compare sandbox stdout to expected. Handles float/int, bool case, collections."""
     if output == expected:
         return True
     if expected[:1] in "[{(":
         return output.replace(" ", "") == expected.replace(" ", "")
+    # Normalize float/int: "5.0" == "5", "5.00" == "5"
+    try:
+        if float(output) == float(expected):
+            return True
+    except (ValueError, TypeError):
+        pass
+    # Normalize bool case: "True" == "true"
+    if output.lower() == expected.lower() and output.lower() in ("true", "false"):
+        return True
     return False
 
 
@@ -57,7 +66,7 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
     Injection mirrors scoring: inputs become variables the code reads,
     candidates print() the result.
     """
-    inject = "".join(f"{k} = {v}\n" for k, v in inp.items())
+    inject = "".join(f"{k} = {repr(v) if isinstance(v, str) else v}\n" for k, v in inp.items())
     sandbox_wrapper = (
         "import sys as _sys\n"
         "from io import StringIO\n"
@@ -279,7 +288,9 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                     candidate_choice = int(candidate_choice)
                 except (TypeError, ValueError):
                     candidate_choice = -1
-                correct_choice = question.get("correct_option") or question.get("correct_answer_index", 0)
+                correct_choice = question.get("correct_option")
+                if correct_choice is None:
+                    correct_choice = question.get("correct_answer_index", 0)
                 processed_answer["selected_option"] = candidate_choice
                 processed_answer["correct_option"] = correct_choice
                 processed_answer["is_correct"] = candidate_choice == correct_choice
@@ -337,14 +348,10 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                 if test_pass_rate is None:
                     # No verifiable test case exists (placeholder/legacy data).
                     # Grade on structure alone; don't punish correct code.
-                    # ponytail: ceiling is structural-only grading (syntax+shape), so a
-                    # well-structured wrong answer can score high; upgrade = ensure the
-                    # question bank never ships questions without executable test cases.
                     code_score = round(quality_score * 100, 2)
                 else:
-                    # Passing tests is ground truth for correctness: all pass = 100.
-                    # Quality heuristics only break ties when no tests can run.
-                    code_score = round(test_pass_rate * 100, 2)
+                    # Blend 70% test correctness + 30% code quality (matches CodingEvaluator).
+                    code_score = round((0.7 * test_pass_rate + 0.3 * quality_score) * 100, 2)
                 processed_answer.update({
                     "code_text": code_text,
                     "language": answer.get("language", "Python"),
