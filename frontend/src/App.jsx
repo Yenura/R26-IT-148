@@ -30,10 +30,10 @@ const CompanyProfilePage = lazy(() => import('./pages/CompanyProfile'))
 
 const Loading = () => (
   <div style={{ padding: 60, textAlign: 'center' }}>
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxWidth: 300, margin: '0 auto' }}>
-      <div className="skeleton" style={{ height: 24, width: '60%', margin: '0 auto' }} />
-      <div className="skeleton" style={{ height: 14, width: '80%', margin: '0 auto' }} />
-      <div className="skeleton" style={{ height: 14, width: '40%', margin: '0 auto' }} />
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 320, margin: '0 auto' }}>
+      <div className="skeleton" style={{ height: 28, width: '60%', margin: '0 auto', borderRadius: 8 }} />
+      <div className="skeleton" style={{ height: 16, width: '85%', margin: '0 auto', borderRadius: 6 }} />
+      <div className="skeleton" style={{ height: 16, width: '45%', margin: '0 auto', borderRadius: 6 }} />
     </div>
   </div>
 )
@@ -56,7 +56,6 @@ export default function App() {
   const [userName, setUserName] = useState('')
   const [userAvatar, setUserAvatar] = useState('')
 
-  // Scroll-reveal: observe .reveal elements (design-taste-frontend 5.D — IntersectionObserver, not scroll listener)
   useEffect(() => {
     const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (prefersReduced) {
@@ -80,8 +79,8 @@ export default function App() {
 
   const candidateLinks = [
     { to: '/candidate/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/candidate/jobs', icon: Briefcase, label: 'Jobs' },
-    { to: '/candidate/interview', icon: MessagesSquare, label: 'Interview' },
+    { to: '/candidate/jobs', icon: Briefcase, label: 'Job Board' },
+    { to: '/candidate/interview', icon: MessagesSquare, label: 'AI Interview' },
     { to: '/pipeline/cv-match', icon: FileSearch, label: 'CV Match' },
     { to: '/pipeline/skill-gap', icon: Target, label: 'Skill Gap' },
     { to: '/pipeline/progress', icon: TrendingUp, label: 'Progress' },
@@ -89,8 +88,9 @@ export default function App() {
 
   const companyLinks = [
     { to: '/company/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/pipeline/ranking', icon: ListOrdered, label: 'Ranking' },
+    { to: '/pipeline/ranking', icon: ListOrdered, label: 'Candidate Ranking' },
     { to: '/pipeline/leaderboard', icon: Award, label: 'Leaderboard' },
+    { to: '/pipeline/skill-gap', icon: Target, label: 'Skill Gap Matrix' },
   ]
 
   const navLinks = role === 'candidate' ? candidateLinks : role === 'company' ? companyLinks : []
@@ -116,17 +116,22 @@ export default function App() {
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => e.key === 'Enter' && navigate(role === 'candidate' ? '/candidate/dashboard' : '/company/dashboard')}
-                title="Go to dashboard"
+                title="Go to Dashboard"
               >
                 <div style={{
                   width: 32,
                   height: 32,
                   borderRadius: 'var(--radius-md)',
-                  background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+                  background: role === 'company'
+                    ? 'linear-gradient(135deg, var(--color-purple), #6366f1)'
+                    : 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#fff'
+                  color: '#fff',
+                  boxShadow: role === 'company'
+                    ? '0 4px 12px rgba(168, 85, 247, 0.35)'
+                    : '0 4px 12px rgba(59, 130, 246, 0.35)'
                 }}>
                   <Brain size={18} />
                 </div>
@@ -140,7 +145,7 @@ export default function App() {
                   borderRadius: 'var(--radius-full)',
                   background: role === 'company' ? 'var(--color-purple-muted)' : 'var(--color-primary-muted)',
                   color: role === 'company' ? 'var(--color-purple)' : 'var(--color-primary)',
-                  border: `1px solid ${role === 'company' ? 'rgba(139, 92, 246, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`,
+                  border: `1px solid ${role === 'company' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`,
                 }}>
                   {role === 'company' ? 'Recruiter' : 'Candidate'}
                 </span>
@@ -163,9 +168,9 @@ export default function App() {
               <button
                 className="btn-ghost btn-sm"
                 onClick={toggleTheme}
-                title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-                aria-label="Toggle theme"
-                style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                aria-label="Toggle Theme"
+                style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 'var(--radius-full)' }}
               >
                 {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
               </button>
@@ -181,11 +186,15 @@ export default function App() {
                   {userAvatar ? (
                     <img src={userAvatar} alt="User Avatar" className="navbar-avatar" />
                   ) : (
-                    <div className="navbar-avatar navbar-avatar-fallback">
+                    <div className="navbar-avatar navbar-avatar-fallback" style={{
+                      background: role === 'company'
+                        ? 'linear-gradient(135deg, var(--color-purple), #6366f1)'
+                        : 'linear-gradient(135deg, var(--color-primary), #4f46e5)'
+                    }}>
                       {(userName || (role === 'company' ? 'C' : 'U'))[0].toUpperCase()}
                     </div>
                   )}
-                  <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 600, maxWidth: 110, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 600, maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {userName || (role === 'company' ? 'Employer' : 'Candidate')}
                   </span>
                   <ChevronDown size={13} style={{ color: 'var(--color-fg-muted)' }} />
@@ -194,7 +203,7 @@ export default function App() {
                     <div className="navbar-dropdown" onClick={(e) => e.stopPropagation()}>
                       <div className="navbar-dropdown-label">
                         <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>{userName || 'Account'}</div>
-                        <div style={{ textTransform: 'capitalize', color: 'var(--color-fg-muted)' }}>{role} Profile</div>
+                        <div style={{ textTransform: 'capitalize', color: 'var(--color-fg-muted)', fontSize: '11px', marginTop: 2 }}>{role} Profile</div>
                       </div>
                       <button onClick={() => { navigate(profileLink); setUserMenu(false) }}>
                         <User size={14} /> Profile & Settings
@@ -256,7 +265,7 @@ export default function App() {
         </nav>
       )}
 
-      {/* Main Content shell */}
+      {/* Main Content Shell */}
       <div className="app-shell">
         <main className="main-content">
           <Suspense fallback={<Loading />}>
@@ -278,14 +287,29 @@ export default function App() {
               <Route path="/company/pipeline/:jobId" element={<PrivateRoute role="company"><ApplicantPipeline /></PrivateRoute>} />
               <Route path="/company/profile" element={<PrivateRoute role="company"><CompanyProfilePage /></PrivateRoute>} />
 
+              {/* Seamless Universal Route Aliases */}
               <Route path="/pipeline/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
               <Route path="/candidate/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
               <Route path="/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
+
               <Route path="/pipeline/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
+              <Route path="/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
+
               <Route path="/pipeline/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
+              <Route path="/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
+
               <Route path="/pipeline/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
+              <Route path="/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
+
               <Route path="/pipeline/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
+              <Route path="/candidate/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
+              <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
+
               <Route path="/pipeline/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
+              <Route path="/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
+
+              <Route path="/jobs" element={<PrivateRoute><JobBoard /></PrivateRoute>} />
+              <Route path="/interview" element={<PrivateRoute><InterviewPage /></PrivateRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
