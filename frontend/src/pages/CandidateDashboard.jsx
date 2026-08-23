@@ -54,7 +54,7 @@ export default function CandidateDashboard() {
   }, [])
 
   const loadData = async () => {
-    setLoading(true)
+    if (resumes.length === 0 && jobs.length === 0) setLoading(true)
     try {
       const [r1, r2, r3, r4] = await Promise.all([
         uResumeList().catch(() => ({ data: [] })),

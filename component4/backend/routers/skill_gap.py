@@ -1,6 +1,6 @@
 """Router: Skill Gap Analysis endpoints"""
 
-import sys, os
+import sys, os, asyncio
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
@@ -333,7 +333,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "is_baseline": True
         })
 
-    for app in applications:
+    async def process_app(app):
         job_id = str(app.get("job_id", ""))
         job = None
         try:
@@ -344,7 +344,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             job = await db.jobs.find_one({"_id": job_id})
         
         if not job:
-            continue
+            return None
 
         job_title = job.get("title", "Software Engineer")
         job_skills = job.get("required_skills", [])
@@ -361,34 +361,35 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         if not company_name:
             company_name = "Tech Employer"
 
-        # Fetch CV Match / Prediction from C1/C0
-        pred = await db.predictions.find_one({
+        # Parallel database lookups for this application
+        pred_task = db.predictions.find_one({
             "candidate_id": candidate_id,
             "$or": [{"job_id": job_id}, {"job_id": str(job.get("_id", ""))}, {"predicted_role": job_title}]
         }, sort=[("created_at", -1)])
 
-        cv_matching_score = pred.get("overall_score") if pred else None
-        if cv_matching_score is None and cand_skills and job_skills:
-            # Calculate CV match score directly if prediction not stored
-            matched_cv_count = len([s for s in job_skills if any(s.lower() in cs.lower() or cs.lower() in s.lower() for cs in cand_skills)])
-            cv_matching_score = round((matched_cv_count / max(len(job_skills), 1)) * 100, 1)
-
-        # Fetch Component 2 Interview Results & Sessions
-        interview_res = await db.results.find_one({
+        interview_res_task = db.results.find_one({
             "candidate_id": candidate_id,
             "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
         }, sort=[("created_at", -1)])
 
-        session = await db.sessions.find_one({
+        session_task = db.sessions.find_one({
             "candidate_id": candidate_id,
             "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
         }, sort=[("created_at", -1)])
 
-        # Also check interview_scores table
-        score_doc = await db.interview_scores.find_one({
+        score_doc_task = db.interview_scores.find_one({
             "candidate_id": candidate_id,
             "$or": [{"job_id": job_id}, {"job_role": job_title}]
         }, sort=[("created_at", -1)])
+
+        pred, interview_res, session, score_doc = await asyncio.gather(
+            pred_task, interview_res_task, session_task, score_doc_task
+        )
+
+        cv_matching_score = pred.get("overall_score") if pred else None
+        if cv_matching_score is None and cand_skills and job_skills:
+            matched_cv_count = len([s for s in job_skills if any(s.lower() in cs.lower() or cs.lower() in s.lower() for cs in cand_skills)])
+            cv_matching_score = round((matched_cv_count / max(len(job_skills), 1)) * 100, 1)
 
         interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None
         interview_score = None
@@ -398,7 +399,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         grade = "N/A"
         weak_topics = []
         failed_mcq_topics = []
-        topic_scores = {}  # topic -> list of percentage scores
+        topic_scores = {}
 
         if interview_res:
             interview_score = interview_res.get("interview_score", 0)
@@ -409,19 +410,16 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             weak_topics = interview_res.get("weak_topics", [])
             failed_mcq_topics = interview_res.get("failed_mcq_topics", [])
 
-            # Extract MCQ topic performance
             for mcq in interview_res.get("mcq_details", []):
                 t = mcq.get("topic") or mcq.get("category") or "General"
                 is_corr = mcq.get("is_correct", False)
                 topic_scores.setdefault(t, []).append(100 if is_corr else 0)
 
-            # Extract Descriptive topic performance
             for desc in interview_res.get("descriptive_details", []):
                 t = desc.get("topic") or desc.get("category") or "General"
                 s = desc.get("score") or desc.get("similarity_score") or 50
                 topic_scores.setdefault(t, []).append(float(s))
 
-            # Extract Coding topic performance
             for code in interview_res.get("coding_details", []):
                 t = code.get("topic") or "Coding & Algorithms"
                 s = code.get("score") or 0
@@ -434,44 +432,45 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             coding_score = score_doc.get("coding_score", 0)
             grade = score_doc.get("grade", "Average")
 
-        # Compile topic performance summaries
         topic_performance = []
         interview_strengths = []
         interview_weaknesses = []
 
-        for topic_name, scores in topic_scores.items():
-            avg_topic_score = round(sum(scores) / len(scores), 1)
-            is_strong = avg_topic_score >= 70
-            status_label = "Strong" if is_strong else "Needs Improvement"
+        for topic, scores in topic_scores.items():
+            if not scores:
+                continue
+            avg_score = round(sum(scores) / len(scores), 1)
+            is_strong = avg_score >= 70
+            is_weak = avg_score < 50
             topic_performance.append({
-                "topic": topic_name,
-                "score": avg_topic_score,
-                "status": status_label
+                "topic": topic,
+                "score": avg_score,
+                "status": "Strong" if is_strong else ("Needs Improvement" if is_weak else "Moderate"),
+                "total_questions": len(scores)
             })
             if is_strong:
                 interview_strengths.append({
-                    "skill": topic_name,
-                    "source": "AI Interview Verified",
-                    "details": f"Scored {avg_topic_score}% on interview questions for {topic_name}"
+                    "skill": topic,
+                    "source": "AI Interview Performance",
+                    "details": f"Scored {avg_score}% in technical interview evaluation"
                 })
-            else:
+            elif is_weak:
                 interview_weaknesses.append({
-                    "skill": topic_name,
-                    "source": "Interview Deficit",
-                    "details": f"Poor score in interview ({avg_topic_score}%) — missed key technical concepts",
-                    "severity": "High" if avg_topic_score < 50 else "Medium"
+                    "skill": topic,
+                    "source": "AI Interview Weakness",
+                    "details": f"Identified as knowledge gap during technical interview",
+                    "severity": "High"
                 })
 
         for wt in weak_topics:
             if not any(w["skill"].lower() == wt.lower() for w in interview_weaknesses):
                 interview_weaknesses.append({
                     "skill": wt,
-                    "source": "Interview Weak Topic",
+                    "source": "AI Interview Weakness",
                     "details": f"Identified as knowledge gap during technical interview",
                     "severity": "High"
                 })
 
-        # Run ML engine analysis
         analysis = await run_in_threadpool(
             run_skill_gap_analysis,
             candidate_id=candidate_id,
@@ -489,7 +488,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             failed_mcq_topics=failed_mcq_topics,
         )
 
-        # CV Strengths & Weaknesses
         cv_strengths = []
         cv_weaknesses = []
         matched_cv_skills = analysis.get("matched_skills", [])
@@ -522,11 +520,9 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                     "severity": "Low"
                 })
 
-        # Combined strengths and weaknesses
         all_strengths = interview_strengths + cv_strengths
         all_weaknesses = interview_weaknesses + cv_weaknesses
 
-        # Compute composite fit percentage
         if interview_score is not None and cv_matching_score is not None:
             composite_fit = round(0.55 * interview_score + 0.45 * cv_matching_score, 1)
         elif interview_score is not None:
@@ -536,7 +532,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         else:
             composite_fit = round((analysis.get("skill_match_pct", 50)), 1)
 
-        # Target course recommendations specifically addressing these weaknesses
         targeted_resources = []
         seen_res = set()
         for w in all_weaknesses:
@@ -568,7 +563,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                 "improvement_tip": f"Practice {sk} core fundamentals and live coding problems to boost future interview scores."
             })
 
-        reports.append({
+        return {
             "job_id": job_id,
             "job_title": job_title,
             "department": job.get("department", ""),
@@ -596,7 +591,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "career_suggestions": analysis.get("career_suggestions", []),
             "hire_probability": analysis.get("hire_probability", 0.5),
             "gap_severity": analysis.get("gap_severity", "Medium"),
-        })
+        }
+
+    if applications:
+        results = await asyncio.gather(*[process_app(app) for app in applications])
+        reports.extend([r for r in results if r is not None])
 
     return {"success": True, "candidate_id": candidate_id, "total_applied_jobs": len(reports), "reports": reports}
-

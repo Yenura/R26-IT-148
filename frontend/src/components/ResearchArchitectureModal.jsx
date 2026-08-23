@@ -43,7 +43,7 @@ export default function ResearchArchitectureModal({ isOpen, onClose }) {
             </div>
             <span style={{ color: 'var(--text-muted)' }}>→</span>
             <div style={{ padding: '10px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
-              <Cpu size={16} style={{ color: 'var(--color-warning)', margin: '0 auto 4px' }} /> Component 3 (LTR Ranking)
+              <Cpu size={16} style={{ color: 'var(--color-warning)', margin: '0 auto 4px' }} /> Component 3 (Candidate Ranking)
             </div>
             <span style={{ color: 'var(--text-muted)' }}>→</span>
             <div style={{ padding: '10px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12, fontWeight: 700 }}>
