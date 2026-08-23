@@ -203,28 +203,43 @@ code {
   background: var(--color-border);
 }
 
-/* Floating Orb Animations (GPU Accelerated) */
-@keyframes floatOrb1 {
+/* Dynamic Aurora & Cosmic Nebula Keyframes (GPU Accelerated) */
+@keyframes auroraBeamFlow {
+  0% { transform: translateX(-50%) scale(1) rotate(0deg); opacity: 0.85; }
+  50% { transform: translateX(-48%) scale(1.12) rotate(1.5deg); opacity: 1; }
+  100% { transform: translateX(-52%) scale(0.96) rotate(-1.5deg); opacity: 0.9; }
+}
+
+@keyframes auroraIndigoFloat {
   0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(60px, 40px, 0) scale(1.08); }
-  100% { transform: translate3d(-30px, 70px, 0) scale(0.95); }
+  33% { transform: translate3d(80px, 60px, 0) scale(1.15); }
+  66% { transform: translate3d(-50px, 100px, 0) scale(0.92); }
+  100% { transform: translate3d(30px, -40px, 0) scale(1.08); }
 }
 
-@keyframes floatOrb2 {
+@keyframes auroraCyanFloat {
   0% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(-50px, -50px, 0) scale(1.06); }
-  100% { transform: translate3d(40px, -30px, 0) scale(0.94); }
+  33% { transform: translate3d(-70px, -80px, 0) scale(1.12); }
+  66% { transform: translate3d(60px, -40px, 0) scale(0.90); }
+  100% { transform: translate3d(-40px, 50px, 0) scale(1.06); }
 }
 
-@keyframes floatOrb3 {
-  0% { transform: translate3d(0, 0, 0) scale(0.95); }
-  50% { transform: translate3d(35px, -35px, 0) scale(1.04); }
-  100% { transform: translate3d(-35px, 25px, 0) scale(1); }
+@keyframes auroraVioletFloat {
+  0% { transform: translate3d(-50%, -50%) scale(1); }
+  50% { transform: translate3d(-46%, -54%) scale(1.18); }
+  100% { transform: translate3d(-54%, -46%) scale(0.92); }
 }
 
-.floating-orb-1 { animation: floatOrb1 24s ease-in-out infinite alternate; }
-.floating-orb-2 { animation: floatOrb2 28s ease-in-out infinite alternate; }
-.floating-orb-3 { animation: floatOrb3 20s ease-in-out infinite alternate; }
+@keyframes auroraAccentPulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
+}
+
+.aurora-top-beam { animation: auroraBeamFlow 18s ease-in-out infinite alternate; }
+.aurora-orb-indigo { animation: auroraIndigoFloat 22s ease-in-out infinite alternate; }
+.aurora-orb-cyan { animation: auroraCyanFloat 26s ease-in-out infinite alternate; }
+.aurora-orb-violet { animation: auroraVioletFloat 30s ease-in-out infinite alternate; }
+.aurora-accent-pulse { animation: auroraAccentPulse 8s ease-in-out infinite alternate; }
 
 .pipeline-mini-step.filled {
   background: linear-gradient(90deg, var(--color-primary), var(--color-success));
