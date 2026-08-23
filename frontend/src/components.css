@@ -811,14 +811,7 @@ p:hover, span:hover, label:hover, li:hover, td:hover,
 [data-theme="light"] .table tbody tr:hover td,
 [data-theme="light"] .table tbody tr:hover strong {
   color: #0f172a !important;
-  text-shadow: 0 0 8px rgba(99, 102, 241, 0.15) !important;
-}
- .dropdown-item:hover {
-  background: linear-gradient(135deg, #ffffff 0%, #a5b4fc 50%, #38bdf8 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.6)) !important;
-  transform: translateY(-1px) scale(1.04) !important;
+  text-shadow: none !important;
 }
 
 [data-theme="light"] .badge:hover,
@@ -831,10 +824,11 @@ p:hover, span:hover, label:hover, li:hover, td:hover,
 [data-theme="light"] .pill:hover,
 [data-theme="light"] .navbar-dropdown a:hover,
 [data-theme="light"] .dropdown-item:hover {
-  background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 50%, #0284c7 100%) !important;
-  -webkit-background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.3)) !important;
+  color: #1e1b4b !important;
+  -webkit-text-fill-color: #1e1b4b !important;
+  border-color: #6366f1 !important;
+  background: #f1f5f9 !important;
+  filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.2)) !important;
   transform: translateY(-1px) scale(1.04) !important;
 }
 
@@ -2680,20 +2674,128 @@ input:focus, select:focus, textarea:focus, .input-field:focus, .search-input:foc
 }
 
 /* Light Mode Small Action Boxes */
+[data-theme="light"] .goal-action-btn {
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  background: rgba(0, 0, 0, 0.03) !important;
+  color: #334155 !important;
+}
+
 [data-theme="light"] .goal-action-btn.course {
-  border-color: rgba(2, 132, 199, 0.4);
-  background: rgba(2, 132, 199, 0.08);
-  color: #0284c7;
+  border-color: rgba(2, 132, 199, 0.4) !important;
+  background: rgba(2, 132, 199, 0.08) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .goal-action-btn.course:hover {
+  border-color: #0284c7 !important;
+  background: rgba(2, 132, 199, 0.18) !important;
+  color: #0369a1 !important;
+  box-shadow: 0 0 10px rgba(2, 132, 199, 0.3) !important;
 }
 
 [data-theme="light"] .goal-action-btn.in-progress {
-  border-color: rgba(79, 70, 229, 0.4);
-  background: rgba(79, 70, 229, 0.08);
-  color: #4f46e5;
+  border-color: rgba(79, 70, 229, 0.4) !important;
+  background: rgba(79, 70, 229, 0.08) !important;
+  color: #4f46e5 !important;
+}
+
+[data-theme="light"] .goal-action-btn.in-progress.active {
+  background: #4f46e5 !important;
+  color: #ffffff !important;
+  border-color: #4338ca !important;
+}
+
+[data-theme="light"] .goal-action-btn.in-progress:hover {
+  border-color: #4338ca !important;
+  background: rgba(79, 70, 229, 0.18) !important;
+  color: #312e81 !important;
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.3) !important;
 }
 
 [data-theme="light"] .goal-action-btn.mastered {
-  border-color: rgba(5, 150, 105, 0.4);
-  background: rgba(5, 150, 105, 0.08);
-  color: #059669;
+  border-color: rgba(5, 150, 105, 0.4) !important;
+  background: rgba(5, 150, 105, 0.08) !important;
+  color: #059669 !important;
 }
+
+[data-theme="light"] .goal-action-btn.mastered.active {
+  background: #059669 !important;
+  color: #ffffff !important;
+  border-color: #047857 !important;
+}
+
+[data-theme="light"] .goal-action-btn.mastered:hover {
+  border-color: #047857 !important;
+  background: rgba(5, 150, 105, 0.18) !important;
+  color: #064e3b !important;
+  box-shadow: 0 0 10px rgba(5, 150, 105, 0.3) !important;
+}
+
+[data-theme="light"] .goal-action-btn.delete {
+  border-color: rgba(225, 29, 72, 0.3) !important;
+  background: rgba(225, 29, 72, 0.06) !important;
+  color: #e11d48 !important;
+}
+
+[data-theme="light"] .goal-action-btn.delete:hover {
+  border-color: #e11d48 !important;
+  background: rgba(225, 29, 72, 0.18) !important;
+  color: #9f1239 !important;
+  box-shadow: 0 0 10px rgba(225, 29, 72, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LIGHT MODE CONTRAST & VISIBILITY OVERRIDES
+   ═══════════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] h1, [data-theme="light"] h2, [data-theme="light"] h3,
+[data-theme="light"] h4, [data-theme="light"] h5, [data-theme="light"] h6 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] p, [data-theme="light"] .text-muted,
+[data-theme="light"] .secondary-text, [data-theme="light"] .goal-subtitle {
+  color: #334155 !important;
+}
+
+[data-theme="light"] input, [data-theme="light"] select, [data-theme="light"] textarea {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .table th {
+  color: #1e293b !important;
+  background: #f8fafc !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .table td {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .navbar-dropdown {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .navbar-dropdown a,
+[data-theme="light"] .navbar-dropdown button {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .badge, [data-theme="light"] .chip {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .btn-ghost {
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .btn-ghost:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
