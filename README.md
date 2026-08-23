@@ -2,7 +2,7 @@
 ### Intelligent Candidate Matching, Technical Assessments & Predictive Career Development
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![React](https://img.shields.io/badge/Frontend-React_18_%2B_Vite-61DAFB.svg?logo=react&logoColor=black)](https://reactjs.org/)
+[![React](https://img.shields.io/badge/Frontend-React_19_%2B_Vite-61DAFB.svg?logo=react&logoColor=black)](https://reactjs.org/)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB.svg?logo=python&logoColor=white)](https://python.org)
 [![MongoDB](https://img.shields.io/badge/Database-MongoDB_Atlas-47A248.svg?logo=mongodb&logoColor=white)](https://mongodb.com)
 [![LightGBM](https://img.shields.io/badge/ML-LightGBM_LambdaMART-FF6F00.svg)](https://lightgbm.readthedocs.io)
@@ -94,7 +94,7 @@ The ecosystem is built on a decoupled microservices architecture with a shared M
 | **Frontend** | React UI Platform | **5174** | `http://localhost:5174` | Unified Candidate & Recruiter Dashboards, Sandbox, Visualizations |
 | **C0 Backend** | Unified Core Service | **8000** | `http://localhost:8000/health` | Candidate & Company Auth, Job Postings, Resume Uploads, PDF Export |
 | **Component 1** | CV Screening & Roles | **8001** | `http://localhost:8001/health` | Text extraction, entity parsing, separate $S_{skill}, S_{exp}, S_{edu}$ calculation |
-| **Component 2** | AI Interview System | **8002** | `http://localhost:8002/health` | Dynamic question generation, SBERT descriptive scoring, code sandbox |
+| **Component 2** | AI Interview System | **8002** | `http://localhost:8002/health` | Custom QG Transformer, 3-tier eval (MCQ/Descriptive/Coding), SBERT scoring, AST sandbox, 10 role profiles |
 | **Component 3** | Candidate Ranking | **8003** | `http://localhost:8003/health` | LambdaMART Learning-to-Rank (LTR), CSS scoring ($W_{CV}=0.40, W_{INT}=0.60$) |
 | **Component 4** | Skill Gap & Career | **8004** | `http://localhost:8004/health` | 10k dataset ML inference, skill gap matrix, career roadmap, leaderboard |
 
@@ -111,7 +111,17 @@ Each component implements validated research algorithms and machine learning mod
 
 ### Component 2: AI-Driven Technical Interview Evaluation
 - **Three-Tier Assessment**: MCQs (100% deterministic), Descriptive theory (SBERT cosine semantic similarity with MSE 0.04), and Live Coding Sandbox.
-- **Secure Code Sandbox**: Abstract Syntax Tree (AST) validation and isolated subprocess execution with automated unit test runner.
+- **Custom QG Model**: Seq2Seq Transformer (v2: d_model=192, nhead=6, 3 enc+3 dec layers, vocab 8k) trained on 4,996 examples; fallback static bank of 18,757 questions.
+- **Question Mix** (configurable per role): MCQ 30%, Descriptive 40%, Coding 30%.
+- **Secure Code Sandbox**: Abstract Syntax Tree (AST) validation, isolated subprocess execution with import blocking (`os`, `subprocess`, `shutil`, etc.), 5-second timeout, and automated unit test runner.
+- **Scoring Formulas**:
+  - **MCQ**: $+1$ correct, $-0.25$ wrong, $0$ skipped → $\text{MCQ\_Score} = \max(0, \sum) / N \times 100$
+  - **Descriptive**: $\text{Blended} = 0.85 \times \text{CosineSim} + 0.15 \times \text{KeywordBonus}$ (SBERT `all-mpnet-base-v2`)
+  - **Coding**: $\text{Code\_Score} = 0.7 \times \text{TestPassRate} \times 100 + 0.3 \times \text{QualityScore} \times 100$
+  - **Final**: $\text{IS} = w_{mcq} \cdot \text{MCQ} + w_{desc} \cdot \text{DESC} + w_{code} \cdot \text{CODE}$ (role-weighted)
+- **Role Profiles**: 10 roles with distinct weights (e.g., Software Engineer: 0.20/0.30/0.50; Cybersecurity: 0.45/0.55/0.00) and coding profiles (`full`, `sql`, `scripting`, `none`).
+- **Grade Bands**: Excellent (≥85), Good (≥70), Average (≥55), Below Average (≥40), Poor (<40).
+- **Security**: Rate-limited endpoints (10 starts/min, 5 submits/min), sandboxed execution with blocked dangerous imports, `slowapi` middleware.
 
 ### Component 3: Interview-Driven Candidate Ranking (LambdaMART LTR)
 - **Algorithm**: **LightGBM LambdaMART** (Ranker optimized on NDCG@10).
@@ -237,7 +247,6 @@ R26-IT-148/
 ├── start_all.py                # Python master launcher
 ├── start_servers.py            # Backend services launcher
 ├── README.md                   # Complete system documentation
-├── RESEARCH_ML_SPECIFICATION.md# Mathematical & algorithmic specifications
 │
 ├── recruit-ai/                 # Unified Core Backend (Port 8000)
 │   └── backend/
@@ -249,7 +258,22 @@ R26-IT-148/
 ├── component1/                 # Component 1 (Port 8001)
 │   └── backend/                # Resume parsing, feature extraction ($S_{skill}, S_{exp}, S_{edu}$)
 ├── component2/                 # Component 2 (Port 8002)
-│   └── backend/                # AI Interview generator, scoring, coding sandbox
+│   ├── backend/
+│   │   ├── main.py             # FastAPI app, CORS, rate limiting
+│   │   ├── db.py               # MongoDB session/result persistence
+│   │   ├── routers/interview.py # API endpoints (start, submit, code/run, result)
+│   │   ├── services/
+│   │   │   ├── qg_engine.py    # Question generation (QG Transformer + fallback)
+│   │   │   └── ml_engine.py    # SBERT scoring, evaluation, composite scoring
+│   │   └── models/schemas.py   # Pydantic request/response models
+│   ├── ml/
+│   │   ├── build_qg_dataset.py # Build v1/v2 training datasets from RAIGS CSV
+│   │   ├── train_qg_model.py   # Train QG Transformer v1 (20k examples)
+│   │   ├── train_qg_model_v2.py # Train QG Transformer v2 (5k examples, preferred)
+│   │   ├── question_generator.py # QG inference wrapper
+│   │   └── answer_evaluator.py # SBERT descriptive answer evaluator
+│   ├── models/                 # Trained checkpoints, question bank (18,757 Qs), scoring config
+│   └── raigs/                  # RAIGS-generated question CSV + generator script
 ├── component3/                 # Component 3 (Port 8003)
 │   └── backend/                # LambdaMART LTR model, CSS weighted ranker
 ├── component4/                 # Component 4 (Port 8004)

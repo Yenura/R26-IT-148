@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from pymongo import MongoClient
 
-MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR")
+MONGODB_URI = os.getenv("MONGODB_URI", "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/HR")
 DB_NAME = os.getenv("DB_NAME", "HR")
 
 client = MongoClient(MONGODB_URI)

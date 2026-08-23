@@ -61,8 +61,8 @@ Justification:
 
 For descriptive answers, the system combines semantic similarity and keyword coverage.
 
-- Semantic similarity = 70%
-- Keyword coverage = 30%
+- Semantic similarity = 85%
+- Keyword coverage = 15%
 
 Justification:
 - Semantic similarity captures meaning beyond exact wording and handles paraphrase, which is essential for open-ended answers. SBERT embeddings are proven in NLP research to match human judgments of semantic equivalence.

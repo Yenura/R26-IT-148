@@ -69,7 +69,7 @@ def show_instructions():
    npm install
    npm run dev
    
-   ✓ Frontend will be available at: http://localhost:5173
+   ✓ Frontend will be available at: http://localhost:5174
    
 3. TEST ENDPOINTS:
    # Health check
@@ -89,7 +89,7 @@ def show_instructions():
      }'
 
 4. OPEN BROWSER:
-   Navigate to http://localhost:5173 to access the interview UI
+   Navigate to http://localhost:5174 to access the interview UI
 
 5. COMPLETE INTERVIEW:
    - Select job role
@@ -139,7 +139,7 @@ Next steps:
 1. Open 2 terminals
 2. Run backend: python -m uvicorn main:app --port 8002
 3. Run frontend: npm run dev
-4. Navigate to http://localhost:5173
+4. Navigate to http://localhost:5174
 
 For detailed documentation, see README.md
 """)

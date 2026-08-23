@@ -41,9 +41,9 @@ NPM = "npm.cmd" if sys.platform == "win32" else "npm"
 COMMON_ENV = {
     **os.environ,
     "PYTHONUNBUFFERED": "1",
-    "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
+    "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/HR"),
     "DB_NAME": os.getenv("DB_NAME", "HR"),
-    "JWT_SECRET": os.getenv("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod"),
+    "JWT_SECRET": os.getenv("JWT_SECRET", "change-this-in-production"),
 }
 
 SERVICES = [

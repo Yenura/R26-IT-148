@@ -20,7 +20,7 @@
 │  ┌──────────────────┐  ┌──────────────────┐  ┌─────────────┐  │
 │  │   FastAPI        │  │   React          │  │  ML Models  │  │
 │  │   Backend        │  │   Frontend       │  │  (SBERT +   │  │
-│  │   (port 8002)    │  │   (port 5173)    │  │   QG Model) │  │
+│  │   (port 8002)    │  │   (port 5174)    │  │   QG Model) │  │
 │  └──────────────────┘  └──────────────────┘  └─────────────┘  │
 │         ▲                      ▲                    ▲            │
 │         └──────────┬───────────┴────────────────────┘            │
@@ -145,7 +145,7 @@ npm install
 # 3. Start development server
 npm run dev
 
-# Frontend will be available at http://localhost:5173
+# Frontend will be available at http://localhost:5174
 ```
 
 ---
