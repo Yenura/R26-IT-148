@@ -1,6 +1,12 @@
 import axios from 'axios'
 
 const inFlightGetRequests = new Map()
+const responseCache = new Map()
+const CACHE_TTL_MS = 4000 // 4 seconds instant tab switching cache
+
+export const clearApiCache = () => {
+  responseCache.clear()
+}
 
 const mk = (url) => {
   const instance = axios.create({
@@ -14,18 +20,53 @@ const mk = (url) => {
     return cfg
   })
 
-  // Deduplicate identical in-flight GET requests
+  // Invalidate cache on mutations
+  const originalPost = instance.post.bind(instance)
+  const originalPut = instance.put.bind(instance)
+  const originalDelete = instance.delete.bind(instance)
+
+  instance.post = (...args) => {
+    responseCache.clear()
+    return originalPost(...args)
+  }
+  instance.put = (...args) => {
+    responseCache.clear()
+    return originalPut(...args)
+  }
+  instance.delete = (...args) => {
+    responseCache.clear()
+    return originalDelete(...args)
+  }
+
+  // Fast Cached GET with in-flight deduplication
   const originalGet = instance.get.bind(instance)
   instance.get = (requestUrl, config = {}) => {
     const key = `${url}:${requestUrl}:${JSON.stringify(config.params || {})}`
+    const now = Date.now()
+
+    // 1. Return fresh cached response if available
+    if (responseCache.has(key)) {
+      const entry = responseCache.get(key)
+      if (now - entry.timestamp < CACHE_TTL_MS) {
+        return Promise.resolve(entry.data)
+      }
+      responseCache.delete(key)
+    }
+
+    // 2. Return in-flight promise to prevent duplicate requests
     if (inFlightGetRequests.has(key)) {
       return inFlightGetRequests.get(key)
     }
+
     const promise = originalGet(requestUrl, config)
-      .finally(() => {
-        // Clear in-flight cache shortly after resolution
-        setTimeout(() => inFlightGetRequests.delete(key), 500)
+      .then((res) => {
+        responseCache.set(key, { timestamp: Date.now(), data: res })
+        return res
       })
+      .finally(() => {
+        inFlightGetRequests.delete(key)
+      })
+
     inFlightGetRequests.set(key, promise)
     return promise
   }

@@ -43,19 +43,18 @@ export default function Leaderboard() {
         const companyApplicants = []
         const seenCandidates = new Set()
 
-        for (const job of jobs) {
-          const jobId = job.id || job._id
-          try {
-            // Get evaluation ranking results for this job
-            const pipeRes = await c3Pipeline(jobId).catch(() => ({ data: { data: [] } }))
-            const rankedList = pipeRes.data?.data || pipeRes.data?.rankings || []
+        const resultsPerJob = await Promise.all(
+          jobs.map(async (job) => {
+            const jobId = job.id || job._id
+            const jobApps = []
+            try {
+              // 1. Fetch ranking pipeline
+              const pipeRes = await c3Pipeline(jobId).catch(() => ({ data: { data: [] } }))
+              const rankedList = pipeRes.data?.data || pipeRes.data?.rankings || []
 
-            if (rankedList.length > 0) {
-              for (const cand of rankedList) {
-                const uniqueKey = `${cand.candidate_id || cand.candidate_name}_${jobId}`
-                if (!seenCandidates.has(uniqueKey)) {
-                  seenCandidates.add(uniqueKey)
-                  companyApplicants.push({
+              if (rankedList.length > 0) {
+                for (const cand of rankedList) {
+                  jobApps.push({
                     candidate_id: cand.candidate_id,
                     candidate_name: cand.candidate_name || 'Applicant',
                     job_id: jobId,
@@ -69,16 +68,12 @@ export default function Leaderboard() {
                     passed_filter: cand.passed_hard_filter !== false
                   })
                 }
-              }
-            } else {
-              // Fallback to raw applicants if ranking not yet run
-              const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
-              const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
-              for (const app of rawApps) {
-                const uniqueKey = `${app.candidate_id || app.candidate_name}_${jobId}`
-                if (!seenCandidates.has(uniqueKey)) {
-                  seenCandidates.add(uniqueKey)
-                  companyApplicants.push({
+              } else {
+                // Fallback to raw applicants if ranking not yet run
+                const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
+                const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
+                for (const app of rawApps) {
+                  jobApps.push({
                     candidate_id: app.candidate_id,
                     candidate_name: app.candidate_name || 'Applicant',
                     job_id: jobId,
@@ -93,9 +88,20 @@ export default function Leaderboard() {
                   })
                 }
               }
+            } catch {
+              /* ignore error for individual job */
             }
-          } catch {
-            /* continue */
+            return jobApps
+          })
+        )
+
+        for (const list of resultsPerJob) {
+          for (const cand of list) {
+            const uniqueKey = `${cand.candidate_id || cand.candidate_name}_${cand.job_id}`
+            if (!seenCandidates.has(uniqueKey)) {
+              seenCandidates.add(uniqueKey)
+              companyApplicants.push(cand)
+            }
           }
         }
 

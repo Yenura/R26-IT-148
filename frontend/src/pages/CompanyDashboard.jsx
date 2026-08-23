@@ -78,17 +78,19 @@ export default function CompanyDashboard() {
       const jobList = Array.isArray(r.data) ? r.data : []
       setJobs(jobList)
 
-      const counts = {}
-      for (const job of jobList) {
-        try {
-          const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
-          const apps = Array.isArray(ar.data) ? ar.data : []
-          counts[job.id] = apps.length
-        } catch {
-          counts[job.id] = 0
-        }
-      }
-      setApplicantCounts(counts)
+      // Fetch applicant counts concurrently in parallel
+      const countEntries = await Promise.all(
+        jobList.map(async (job) => {
+          try {
+            const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
+            const apps = Array.isArray(ar.data) ? ar.data : []
+            return [job.id, apps.length]
+          } catch {
+            return [job.id, 0]
+          }
+        })
+      )
+      setApplicantCounts(Object.fromEntries(countEntries))
     } catch {
       toast.error('Failed to load jobs')
     } finally {
