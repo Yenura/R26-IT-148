@@ -78,7 +78,7 @@ export default function CVMatch() {
         setSelectedResume(resumeList[0].id)
       }
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to load resumes and jobs')
     }
   }
 
@@ -656,8 +656,8 @@ export default function CVMatch() {
 
               {careerResult?.recommendations?.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--p-space-4)' }}>
-                  {careerResult.recommendations.map((rec, i) => (
-                    <div key={i} className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg-elevated)', margin: 0 }}>
+                    {careerResult.recommendations.map((rec) => (
+                      <div key={rec.target_role || rec.role} className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg-elevated)', margin: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                         <div style={{ fontWeight: 700, fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
                           {rec.target_role || rec.role}
@@ -708,9 +708,9 @@ export default function CVMatch() {
 
               {learningPathResult?.learning_path?.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {learningPathResult.learning_path.map((item, idx) => (
-                    <div
-                      key={idx}
+                    {learningPathResult.learning_path.map((item, idx) => (
+                      <div
+                        key={item.skill || item.title}
                       style={{
                         padding: 'var(--p-space-4)',
                         background: 'var(--color-bg-elevated)',

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  Users, Trophy, ArrowLeft, Loader, X, CheckCircle2, Code, FileText,
+  Users, Trophy, ArrowLeft, X, CheckCircle2, Code, FileText,
   Building2, MapPin, Sparkles, Eye, AlertCircle
 } from 'lucide-react'
 import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail } from '../api'
@@ -143,8 +143,8 @@ export default function ApplicantPipeline() {
                 </tr>
               </thead>
               <tbody>
-                {rankings.map((r, i) => (
-                  <tr key={r.candidate_id || i} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
+                {rankings.map((r) => (
+                  <tr key={r.candidate_id} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
                     <td>
                       <div style={{
                         width: 28,
@@ -163,7 +163,9 @@ export default function ApplicantPipeline() {
                     </td>
                     <td>
                       <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{r.candidate_name || 'Candidate'}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>ID: {r.candidate_id?.slice(0, 8)}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                        <span title={r.candidate_id}>ID: {r.candidate_id?.slice(0, 8)}</span>
+                      </div>
                     </td>
                     <td>
                       <div style={{ fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
@@ -236,8 +238,8 @@ export default function ApplicantPipeline() {
                 </tr>
               </thead>
               <tbody>
-                {applicants.map((app, idx) => (
-                  <tr key={app.id || idx}>
+                {applicants.map((app) => (
+                  <tr key={app.candidate_id || app.id}>
                     <td style={{ fontWeight: 700, color: 'var(--color-fg)' }}>
                       {app.candidate_name || 'Verified Applicant'}
                     </td>
@@ -313,7 +315,7 @@ export default function ApplicantPipeline() {
             {detail.answers?.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {detail.answers.map((ans, idx) => (
-                  <div key={idx} style={{ padding: 12, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
+                  <div key={ans.question_id} style={{ padding: 12, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
                     <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 4 }}>
                       Question #{idx + 1}
                     </div>

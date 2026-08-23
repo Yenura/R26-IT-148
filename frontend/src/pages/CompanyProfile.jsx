@@ -13,7 +13,7 @@ export default function CompanyProfile() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [form, setForm] = useState({ full_name: '', company_name: '', industry: '', website: '' })
-  const [pwForm, setPwForm] = useState({ current_password: '', new_password: '' })
+  const [pwForm, setPwForm] = useState({ current_password: '', new_password: '', confirm_password: '' })
   const [busy, setBusy] = useState(false)
   const [pwBusy, setPwBusy] = useState(false)
   const fileRef = useRef()
@@ -53,10 +53,11 @@ export default function CompanyProfile() {
   const changePassword = async (e) => {
     e.preventDefault()
     if (pwForm.new_password.length < 6) return toast.error('New password must be at least 6 characters')
+    if (pwForm.new_password !== pwForm.confirm_password) return toast.error('New passwords do not match')
     setPwBusy(true)
     try {
       await authChangePassword(pwForm)
-      setPwForm({ current_password: '', new_password: '' })
+      setPwForm({ current_password: '', new_password: '', confirm_password: '' })
       toast.success('Password changed successfully!')
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Password change failed')
@@ -68,6 +69,9 @@ export default function CompanyProfile() {
   const uploadAvatar = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    const MAX_SIZE = 5 * 1024 * 1024
+    if (!file.type.startsWith('image/')) return toast.error('Please upload an image file')
+    if (file.size > MAX_SIZE) return toast.error('Image must be under 5MB')
     const fd = new FormData()
     fd.append('file', file)
     try {
@@ -83,7 +87,10 @@ export default function CompanyProfile() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
   const setPw = (k) => (e) => setPwForm((f) => ({ ...f, [k]: e.target.value }))
 
-  if (!profile) return <div className="card" style={{ padding: 40, textAlign: 'center' }}>Loading profile...</div>
+  if (!profile) return <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+    <div className="shimmer" style={{ height: 20, width: 200, margin: '0 auto 12px', borderRadius: 6 }} />
+    <div className="shimmer" style={{ height: 14, width: 140, margin: '0 auto', borderRadius: 6 }} />
+  </div>
 
   return (
     <div className="fade-in" style={{ maxWidth: 720, margin: '0 auto' }}>
@@ -98,6 +105,10 @@ export default function CompanyProfile() {
       <div className="card" style={{ padding: 'var(--p-space-5)', display: 'flex', alignItems: 'center', gap: 20, marginBottom: 'var(--p-space-5)' }}>
         <div
           onClick={() => fileRef.current?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current?.click() } }}
+          tabIndex={0}
+          role="button"
+          aria-label="Upload company logo"
           style={{ cursor: 'pointer', position: 'relative', flexShrink: 0 }}
           title="Click to update logo"
         >
@@ -217,6 +228,16 @@ export default function CompanyProfile() {
             value={pwForm.new_password}
             onChange={setPw('new_password')}
             placeholder="Minimum 6 characters"
+          />
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <label style={{ fontSize: '12px', marginTop: 0 }}>Confirm New Password</label>
+          <input
+            type="password"
+            value={pwForm.confirm_password}
+            onChange={setPw('confirm_password')}
+            placeholder="Re-enter new password"
           />
         </div>
 

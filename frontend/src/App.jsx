@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
 import GlobalBackground from './components/GlobalBackground'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const Landing        = lazy(() => import('./pages/Landing'))
 const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
@@ -23,7 +24,6 @@ const InterviewPage = lazy(() => import('./pages/Interview'))
 const CVMatchPage   = lazy(() => import('./pages/CVMatch'))
 const RankingPage   = lazy(() => import('./pages/Ranking'))
 const SkillGapPage  = lazy(() => import('./pages/SkillGap'))
-const CareerPathPage= lazy(() => import('./pages/CareerPath'))
 const ProgressPage  = lazy(() => import('./pages/Progress'))
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard'))
 const ProfilePage   = lazy(() => import('./pages/Profile'))
@@ -40,11 +40,13 @@ const Loading = () => (
 )
 
 function PrivateRoute({ children, role }) {
-  const token = localStorage.getItem('recruitai.token')
-  const userRole = localStorage.getItem('recruitai.role')
-  const userId = localStorage.getItem('recruitai.user_id')
-  if (!token || !userId) return <Navigate to="/login/candidate" />
-  if (role && userRole !== role) return <Navigate to="/" />
+  const auth = useMemo(() => ({
+    token: localStorage.getItem('recruitai.token'),
+    userRole: localStorage.getItem('recruitai.role'),
+    userId: localStorage.getItem('recruitai.user_id'),
+  }), [])
+  if (!auth.token || !auth.userId) return <Navigate to="/login/candidate" />
+  if (role && auth.userRole !== role) return <Navigate to="/" />
   return children
 }
 
@@ -96,17 +98,29 @@ export default function App() {
 
   const navLinks = role === 'candidate' ? candidateLinks : role === 'company' ? companyLinks : []
 
-  const handleLogout = () => {
+  const handleLogout = useCallback(() => {
     localStorage.removeItem('recruitai.token')
     localStorage.removeItem('recruitai.role')
     localStorage.removeItem('recruitai.user_id')
     localStorage.removeItem('recruitai.name')
     localStorage.removeItem('recruitai.avatar')
     setUserMenu(false)
-    window.location.href = '/'
-  }
+    navigate('/')
+  }, [navigate])
 
   const profileLink = role === 'candidate' ? '/profile' : role === 'company' ? '/company/profile' : null
+
+  const userMenuRef = useRef(null)
+  useEffect(() => {
+    if (!userMenu) return
+    const handleClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [userMenu])
 
   return (
     <div className="app-root">
@@ -178,6 +192,7 @@ export default function App() {
 
               {profileLink && (
                 <div
+                  ref={userMenuRef}
                   className="navbar-user"
                   onClick={() => setUserMenu(!userMenu)}
                   onKeyDown={(e) => {
@@ -225,6 +240,7 @@ export default function App() {
                 className="navbar-hamburger"
                 onClick={() => setMobileMenu(!mobileMenu)}
                 aria-label="Toggle navigation menu"
+                aria-expanded={mobileMenu}
               >
                 {mobileMenu ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -273,6 +289,7 @@ export default function App() {
       {/* Main Content Shell */}
       <div className="app-shell">
         <main className="main-content">
+          <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -319,6 +336,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

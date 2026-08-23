@@ -125,6 +125,7 @@ export default function ConfirmDialog({
           <button
             onClick={onCancel}
             className="btn-ghost btn-sm"
+            aria-label="Cancel"
             style={{ padding: 4, borderRadius: 'var(--radius-sm)', color: 'var(--color-fg-muted)' }}
             title="Cancel"
           >

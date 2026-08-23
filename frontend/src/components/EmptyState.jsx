@@ -45,7 +45,7 @@ export default function EmptyState({
           onClick={onAction}
           style={{ padding: '10px 22px', fontSize: 'var(--p-text-sm)', fontWeight: 700, borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 8 }}
         >
-          <Plus size={15} /> {actionLabel} <ArrowRight size={14} />
+          <Plus size={15} aria-hidden="true" /> {actionLabel} <ArrowRight size={14} aria-hidden="true" />
         </button>
       )}
     </div>

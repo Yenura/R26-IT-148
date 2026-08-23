@@ -85,7 +85,7 @@ export default function Interview() {
       })
     }, 1000)
     return () => clearInterval(timerRef.current)
-  }, [step, currentQ, timeLeft > 0])
+  }, [step, currentQ])
 
   useEffect(() => {
     if (result) clearInterval(timerRef.current)
@@ -335,9 +335,11 @@ export default function Interview() {
               {(q.options || []).map((opt, idx) => {
                 const isSelected = answers[q.id] === idx
                 return (
-                  <div
-                    key={idx}
+                  <button
+                    key={String.fromCharCode(65 + idx)}
+                    type="button"
                     onClick={() => answerQuestion(q.id, idx)}
+                    aria-pressed={isSelected}
                     style={{
                       padding: '12px 16px',
                       borderRadius: 'var(--radius-md)',
@@ -347,7 +349,11 @@ export default function Interview() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 12,
-                      transition: 'all 0.15s ease'
+                      transition: 'all 0.15s ease',
+                      textAlign: 'left',
+                      width: '100%',
+                      fontSize: 'inherit',
+                      fontFamily: 'inherit'
                     }}
                   >
                     <div style={{
@@ -368,7 +374,7 @@ export default function Interview() {
                     <span style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
                       {typeof opt === 'string' ? opt : opt.text}
                     </span>
-                  </div>
+                  </button>
                 )
               })}
             </div>
