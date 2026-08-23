@@ -73,7 +73,7 @@ export default function ConfirmDialog({
         position: 'fixed',
         inset: 0,
         zIndex: 'var(--p-z-modal, 9999)',
-        background: 'rgba(3, 7, 18, 0.75)',
+        background: 'var(--modal-overlay)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
         alignItems: 'center',

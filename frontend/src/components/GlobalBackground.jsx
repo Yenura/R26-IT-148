@@ -65,8 +65,8 @@ export default function GlobalBackground() {
           left: 0,
           height: '3px',
           width: '0%',
-          background: 'linear-gradient(90deg, #6366f1, #a855f7, #06b6d4)',
-          boxShadow: '0 0 12px rgba(99, 102, 241, 0.75)',
+          background: 'linear-gradient(90deg, var(--color-primary), var(--color-purple), var(--color-info))',
+          boxShadow: isLight ? '0 0 12px rgba(99, 102, 241, 0.4)' : '0 0 12px rgba(99, 102, 241, 0.75)',
           zIndex: 9999,
           pointerEvents: 'none',
           transition: 'width 0.1s ease-out',
@@ -82,7 +82,7 @@ export default function GlobalBackground() {
           zIndex: -1,
           pointerEvents: 'none',
           overflow: 'hidden',
-          background: isLight ? '#f8fafc' : '#070814',
+          background: 'var(--color-bg)',
         }}
       >
       {/* 1. Interactive Cursor Spotlight Ambient Glow */}
@@ -187,7 +187,9 @@ export default function GlobalBackground() {
             width: '500px',
             height: '500px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(244, 63, 94, 0.28) 0%, rgba(245, 158, 11, 0.18) 50%, transparent 70%)',
+            background: isLight
+              ? 'radial-gradient(circle, rgba(244, 63, 94, 0.10) 0%, rgba(245, 158, 11, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(244, 63, 94, 0.28) 0%, rgba(245, 158, 11, 0.18) 50%, transparent 70%)',
             filter: 'blur(80px)',
             transition: 'opacity 0.8s ease',
           }}
@@ -204,7 +206,9 @@ export default function GlobalBackground() {
             width: '520px',
             height: '520px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(6, 182, 212, 0.16) 50%, transparent 70%)',
+            background: isLight
+              ? 'radial-gradient(circle, rgba(16, 185, 129, 0.10) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(6, 182, 212, 0.16) 50%, transparent 70%)',
             filter: 'blur(80px)',
             transition: 'opacity 0.8s ease',
           }}
@@ -221,7 +225,9 @@ export default function GlobalBackground() {
             width: '550px',
             height: '550px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.30) 0%, rgba(99, 102, 241, 0.20) 50%, transparent 70%)',
+            background: isLight
+              ? 'radial-gradient(circle, rgba(168, 85, 247, 0.10) 0%, rgba(99, 102, 241, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(168, 85, 247, 0.30) 0%, rgba(99, 102, 241, 0.20) 50%, transparent 70%)',
             filter: 'blur(85px)',
             transition: 'opacity 0.8s ease',
           }}
@@ -238,7 +244,9 @@ export default function GlobalBackground() {
             width: '500px',
             height: '500px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(99, 102, 241, 0.18) 50%, transparent 70%)',
+            background: isLight
+              ? 'radial-gradient(circle, rgba(56, 189, 248, 0.10) 0%, rgba(99, 102, 241, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(99, 102, 241, 0.18) 50%, transparent 70%)',
             filter: 'blur(80px)',
             transition: 'opacity 0.8s ease',
           }}

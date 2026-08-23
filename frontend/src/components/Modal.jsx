@@ -76,7 +76,7 @@ export default function Modal({
         position: 'fixed',
         inset: 0,
         zIndex: 'var(--p-z-modal, 400)',
-        background: 'rgba(0, 0, 0, 0.65)',
+        background: 'var(--modal-overlay)',
         backdropFilter: 'blur(4px)',
         display: 'flex',
         alignItems: 'center',
