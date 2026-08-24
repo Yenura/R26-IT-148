@@ -344,7 +344,18 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                 lines = code_text.strip().split('\n')
                 code_lines = len([l for l in lines if l.strip() and not l.strip().startswith('#')])
                 has_return = any(kw in code_text for kw in ['def ', 'class ', 'return'])
-                quality_score = 0.5 * float(syntax_valid) + 0.3 * float(0 < code_lines < 200) + 0.2 * float(has_return)
+                # Stricter quality: penalise gibberish that merely compiles
+                meaningful = any(kw in code_text for kw in ['def ', 'class ', 'return', 'import ', 'for ', 'while ', 'if ', 'elif ', 'else:', 'try:', 'with ', 'yield ', 'lambda ', '=', 'print(', 'len(', 'range(', 'return'])
+                has_operators = any(op in code_text for op in ['==', '!=', '<=', '>=', '+', '-', '*', '/', '%', '**', '//'])
+                has_structure = any(kw in code_text for kw in ['def ', 'class ', 'for ', 'while ', 'if ', 'try:', 'with '])
+                quality_score = (
+                    0.15 * float(syntax_valid)
+                    + 0.10 * float(0 < code_lines < 200)
+                    + 0.15 * float(has_return)
+                    + 0.20 * float(meaningful)
+                    + 0.20 * float(has_operators)
+                    + 0.20 * float(has_structure)
+                )
                 if test_pass_rate is None:
                     # No verifiable test case exists (placeholder/legacy data).
                     # Grade on structure alone; don't punish correct code.
