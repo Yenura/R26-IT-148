@@ -104,7 +104,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 # CORS Configuration
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:5173,http://localhost:5174,http://localhost:5175,http://localhost:5176,http://localhost:5177,http://localhost:5178"
+    "http://localhost:5174"
 ).split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -141,7 +141,6 @@ async def global_exception_handler(request: Request, exc: Exception):
             "success": False,
             "message": "Internal server error",
             "error_code": "INTERNAL_ERROR",
-            "details": str(exc)
         }
     )
 

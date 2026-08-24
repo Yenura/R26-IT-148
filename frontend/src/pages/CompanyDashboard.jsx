@@ -5,7 +5,8 @@ import {
   Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight,
   MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered
 } from 'lucide-react'
-import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicants } from '../api'
+import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicantCounts } from '../api'
+import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import Modal from '../components/Modal'
@@ -27,7 +28,7 @@ const STANDARD_ROLES = {
   'Full Stack Developer': 'React, Node.js, TypeScript, PostgreSQL, Docker, Git',
   'QA/Test Automation Engineer': 'Selenium, Cypress, TestNG, Python, JIRA, CI/CD',
   'Data Engineer': 'SQL, Apache Spark, Python, ETL Pipelines, Kafka, BigQuery',
-  'Site Reliability Engineer (SRE)': 'Kubernetes, Prometheus, Linux, Incident Management, Python',
+  'Site Reliability Engineer': 'Kubernetes, Prometheus, Linux, Incident Management, Python',
   'UI/UX Designer': 'Figma, Adobe XD, Wireframing, User Research, Prototyping',
   'Network Engineer': 'Cisco, Routing & Switching, TCP/IP, Firewalls, VPN, Wireshark',
   'Business/Systems Analyst': 'Requirements Gathering, SQL, Agile, UML, JIRA, Business Process',
@@ -42,15 +43,21 @@ const emptyForm = {
   department: '',
   location: '',
   employment_type: 'Full-time',
+  job_level: 'Mid-Level',
   required_skills: '',
   experience_required: 0,
   education_required: 'Bachelor Degree',
   interview_required: true,
   interview_question_count: 10,
+  interview_mcq_time: 60,
+  interview_desc_time: 300,
+  interview_coding_time: 600,
+  interview_total_time: 60,
 }
 
 export default function CompanyDashboard() {
   const navigate = useNavigate()
+  useAuth('company')
   const companyName = localStorage.getItem('recruitai.name') || 'Employer'
 
   const [jobs, setJobs] = useState([])
@@ -61,36 +68,34 @@ export default function CompanyDashboard() {
   const [submitting, setSubmitting] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
-  useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'company') {
-      navigate('/login/company')
-      return
-    }
-    loadJobs()
-  }, [])
+  useEffect(() => { loadJobs() }, [])
 
   const loadJobs = async () => {
     setLoading(true)
     try {
-      const r = await uJobsMy().catch(() => ({ data: [] }))
+      const [r, countsR] = await Promise.all([
+        uJobsMy().catch(() => ({ data: [] })),
+        uJobsApplicantCounts().catch(() => ({}))
+      ])
       const jobList = Array.isArray(r.data) ? r.data : []
       setJobs(jobList)
-
-      // Fetch applicant counts concurrently in parallel
-      const countEntries = await Promise.all(
-        jobList.map(async (job) => {
-          try {
-            const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
-            const apps = Array.isArray(ar.data) ? ar.data : []
-            return [job.id, apps.length]
-          } catch {
-            return [job.id, 0]
-          }
-        })
-      )
-      setApplicantCounts(Object.fromEntries(countEntries))
+      const bulkCounts = countsR?.data || countsR
+      if (bulkCounts && typeof bulkCounts === 'object' && Object.keys(bulkCounts).length > 0) {
+        setApplicantCounts(bulkCounts)
+      } else {
+        const countEntries = await Promise.all(
+          jobList.map(async (job) => {
+            try {
+              const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
+              const apps = Array.isArray(ar.data) ? ar.data : []
+              return [job.id, apps.length]
+            } catch {
+              return [job.id, 0]
+            }
+          })
+        )
+        setApplicantCounts(Object.fromEntries(countEntries))
+      }
     } catch {
       toast.error('Failed to load jobs')
     } finally {
@@ -120,12 +125,17 @@ export default function CompanyDashboard() {
 
     const expReq = parseInt(form.experience_required, 10)
     const iqCount = parseInt(form.interview_question_count, 10)
+    const mcqTime = parseInt(form.interview_mcq_time, 10)
+    const descTime = parseInt(form.interview_desc_time, 10)
+    const codingTime = parseInt(form.interview_coding_time, 10)
+    const totalTime = parseInt(form.interview_total_time, 10)
 
     const payload = {
       title: form.title.trim(),
       department: form.department?.trim() || '',
       location: form.location?.trim() || '',
       employment_type: form.employment_type || 'Full-time',
+      job_level: form.job_level || 'Mid-Level',
       experience_required: isNaN(expReq) ? 0 : Math.max(0, expReq),
       education_required: form.education_required || 'Bachelor Degree',
       required_skills: skillsArray,
@@ -136,6 +146,10 @@ export default function CompanyDashboard() {
       status: 'open',
       interview_required: Boolean(form.interview_required),
       interview_question_count: isNaN(iqCount) ? 10 : Math.max(3, Math.min(30, iqCount)),
+      interview_mcq_time: isNaN(mcqTime) ? 60 : Math.max(10, Math.min(300, mcqTime)),
+      interview_desc_time: isNaN(descTime) ? 300 : Math.max(30, Math.min(900, descTime)),
+      interview_coding_time: isNaN(codingTime) ? 600 : Math.max(60, Math.min(1800, codingTime)),
+      interview_total_time: isNaN(totalTime) ? 60 : Math.max(10, Math.min(180, totalTime)),
     }
 
     setSubmitting(true)
@@ -282,7 +296,7 @@ export default function CompanyDashboard() {
                       <td style={{ fontWeight: 600 }}>
                         <div style={{ color: 'var(--color-fg)', fontSize: 'var(--p-text-base)' }}>{job.title}</div>
                         <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
-                          {job.employment_type || 'Full-time'} · {job.experience_required || 0}+ yrs exp · {job.education_required || 'Degree'}
+                          {job.employment_type || 'Full-time'} · {job.job_level || 'Mid-Level'} · {job.experience_required || 0}+ yrs exp · {job.education_required || 'Degree'}
                         </div>
                       </td>
                       <td>
@@ -333,7 +347,7 @@ export default function CompanyDashboard() {
                             alignItems: 'center',
                             gap: 4
                           }}>
-                            <CheckCircle2 size={12} /> Active ({job.interview_question_count || 10} Qs)
+                            <CheckCircle2 size={12} /> Active ({job.interview_question_count || 10} Qs, {job.interview_total_time || 60}m)
                           </span>
                         ) : (
                           <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>Optional</span>
@@ -352,6 +366,7 @@ export default function CompanyDashboard() {
                           <button
                             className="btn-ghost btn-sm"
                             onClick={() => navigate(`/company/jobs/${job.id}`)}
+                            aria-label="Inspect job preview"
                             title="Inspect job preview"
                             style={{ padding: '6px 8px' }}
                           >
@@ -360,6 +375,7 @@ export default function CompanyDashboard() {
                           <button
                             className="btn-ghost btn-sm"
                             onClick={() => deleteJob(job.id)}
+                            aria-label="Delete job"
                             title="Delete job"
                             style={{ padding: '6px 8px', color: 'var(--color-danger)' }}
                           >
@@ -410,6 +426,7 @@ export default function CompanyDashboard() {
                 value={form.title}
                 onChange={(e) => setForm({ ...form, title: e.target.value })}
                 required
+                aria-required="true"
               />
             </div>
             <div>
@@ -443,6 +460,20 @@ export default function CompanyDashboard() {
               </select>
             </div>
             <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Job Level</label>
+              <select
+                value={form.job_level}
+                onChange={(e) => setForm({ ...form, job_level: e.target.value })}
+              >
+                <option value="Intern">Intern</option>
+                <option value="Junior">Junior</option>
+                <option value="Mid-Level">Mid-Level</option>
+                <option value="Senior">Senior</option>
+                <option value="Lead">Lead</option>
+                <option value="Principal / Staff">Principal / Staff</option>
+              </select>
+            </div>
+            <div>
               <label style={{ fontSize: '12px', marginTop: 0 }}>Min Experience (Years)</label>
               <input
                 type="number"
@@ -469,13 +500,14 @@ export default function CompanyDashboard() {
 
           <div style={{ marginTop: 12 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Required Technical Skills (Comma Separated) *</label>
-            <input
-              type="text"
-              placeholder="e.g. React, Node.js, TypeScript, PostgreSQL, Docker"
-              value={form.required_skills}
-              onChange={(e) => setForm({ ...form, required_skills: e.target.value })}
-              required
-            />
+              <input
+                type="text"
+                placeholder="e.g. React, Node.js, TypeScript, PostgreSQL, Docker"
+                value={form.required_skills}
+                onChange={(e) => setForm({ ...form, required_skills: e.target.value })}
+                required
+                aria-required="true"
+              />
           </div>
 
           <div style={{ marginTop: 12 }}>
@@ -492,14 +524,15 @@ export default function CompanyDashboard() {
           <div style={{ marginTop: 16, padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div>
-                <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                <label htmlFor="interview-required" style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>
                   Require AI Technical Interview
-                </div>
+                </label>
                 <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
                   Candidates complete automated MCQs, technical theory, and coding sandbox.
                 </div>
               </div>
               <input
+                id="interview-required"
                 type="checkbox"
                 checked={form.interview_required}
                 onChange={(e) => setForm({ ...form, interview_required: e.target.checked })}
@@ -508,16 +541,62 @@ export default function CompanyDashboard() {
             </div>
 
             {form.interview_required && (
-              <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
-                <label style={{ fontSize: '12px', margin: 0 }}>Question Count:</label>
-                <input
-                  type="number"
-                  min={3}
-                  max={30}
-                  value={form.interview_question_count}
-                  onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })}
-                  style={{ width: 80, padding: '4px 8px' }}
-                />
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Questions:</label>
+                  <input
+                    type="number"
+                    min={3}
+                    max={30}
+                    value={form.interview_question_count}
+                    onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>MCQ time (sec):</label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={300}
+                    value={form.interview_mcq_time}
+                    onChange={(e) => setForm({ ...form, interview_mcq_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Descriptive time (sec):</label>
+                  <input
+                    type="number"
+                    min={30}
+                    max={900}
+                    value={form.interview_desc_time}
+                    onChange={(e) => setForm({ ...form, interview_desc_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Coding time (sec):</label>
+                  <input
+                    type="number"
+                    min={60}
+                    max={1800}
+                    value={form.interview_coding_time}
+                    onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total duration (min):</label>
+                  <input
+                    type="number"
+                    min={10}
+                    max={180}
+                    value={form.interview_total_time}
+                    onChange={(e) => setForm({ ...form, interview_total_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
+                </div>
               </div>
             )}
           </div>

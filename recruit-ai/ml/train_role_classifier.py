@@ -59,7 +59,7 @@ ROLES = {
         "react", "node.js", "python", "sql", "rest api", "docker",
         "git", "html", "css", "typescript", "mongodb", "postgresql",
     ],
-    "QA / Test Automation Engineer": [
+    "QA/Test Automation Engineer": [
         "selenium", "pytest", "jest", "ci/cd", "api testing", "python",
         "postman", "test strategy", "automation", "cypress",
     ],
@@ -67,7 +67,7 @@ ROLES = {
         "python", "sql", "spark", "kafka", "airflow", "etl",
         "aws", "gcp", "data modeling", "hadoop", "bigquery",
     ],
-    "Site Reliability Engineer (SRE)": [
+    "Site Reliability Engineer": [
         "linux", "kubernetes", "prometheus", "grafana", "terraform",
         "python", "go", "ci/cd", "incident response", "monitoring",
     ],

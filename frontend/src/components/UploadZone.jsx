@@ -35,6 +35,11 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
           onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
+          onClick={() => document.getElementById('resume-file-input')?.click()}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); document.getElementById('resume-file-input')?.click() } }}
+          tabIndex={0}
+          role="button"
+          aria-label="Upload resume file"
           style={{
             border: `2px dashed ${dragOver ? 'var(--color-primary)' : 'var(--color-border)'}`,
             background: dragOver ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)',
@@ -126,6 +131,7 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
                 type="button"
                 className="btn-ghost btn-sm"
                 onClick={onRemoveFile}
+                aria-label="Remove file"
                 style={{ padding: 6, color: 'var(--color-danger)', borderRadius: 'var(--radius-sm)' }}
                 title="Remove file"
               >

@@ -306,7 +306,7 @@ Every API input is validated by Pydantic before reaching any business logic:
                            │ REST API calls (JSON)
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              BACKEND — FastAPI (port 8000)                  │
+│              BACKEND — FastAPI (port 8004)                  │
 │                                                             │
 │  main.py                                                    │
 │  ├── CORS middleware (origin whitelist)                     │
@@ -436,7 +436,7 @@ Provides organisation-wide insight:
 |-------|----------|----------|-----|
 | Random Forest | ~95% | ~91% | ~99% |
 | Gradient Boosting | ~95% | ~91% | ~99% |
-| **Logistic Regression** | **95.75%** | **91.8%** | **99.36%** ✅ |
+| **Logistic Regression** | **95.75%** | **98.25%** | **99.36%** ✅ |
 
 The **Logistic Regression** model was selected as it achieved the highest AUC score. AUC (Area Under the ROC Curve) close to 1.0 means the model correctly ranks "hire-worthy" candidates above others almost perfectly.
 
@@ -542,7 +542,7 @@ Edit `.env`:
 ```
 MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net
 DB_NAME=HR
-ALLOWED_ORIGINS=http://localhost:5173,http://localhost:5174
+ALLOWED_ORIGINS=http://localhost:5174
 ```
 
 ```bash
@@ -571,7 +571,7 @@ pip install fastapi uvicorn motor pydantic python-dotenv scikit-learn pandas num
 
 ```bash
 cd component4/backend
-python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn main:app --host 127.0.0.1 --port 8004 --reload
 ```
 
 You should see:
@@ -579,10 +579,10 @@ You should see:
 [INFO] Loaded artifact: skill_gap_classifier.pkl
 [INFO] MongoDB connected: .../HR
 [INFO] MongoDB indexes verified
-[INFO] Uvicorn running on http://127.0.0.1:8000
+[INFO] Uvicorn running on http://127.0.0.1:8004
 ```
 
-API docs available at: **http://127.0.0.1:8000/docs**
+API docs available at: **http://127.0.0.1:8004/docs**
 
 ---
 

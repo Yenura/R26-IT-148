@@ -71,8 +71,25 @@ def analyze_skill_gap(
     matched_skills = []
     missing_skills_info = []
 
+    def _fuzzy_has(skill: str, cand_set: set) -> bool:
+        """Check if a skill matches any candidate skill via exact or substring match."""
+        sl = skill.lower()
+        for c in cand_set:
+            if sl == c:
+                return True
+            # Substring match: both must be 3+ chars to avoid false positives
+            if len(sl) >= 3 and len(c) >= 3:
+                if sl in c or c in sl:
+                    return True
+        return False
+
     for s in norm_req_skills:
-        if s.lower() in curr_set:
+        # Decompose compound skills like "Swift/Kotlin or Flutter" into individual skills
+        import re as _re
+        parts = _re.split(r'[/|,]|\s+or\s+', s)
+        parts = [p.strip() for p in parts if p.strip()]
+
+        if any(_fuzzy_has(p, curr_set) for p in parts):
             matched_skills.append(s)
         else:
             p_score, p_cat = compute_priority_score(s, importance_level="high", market_freq_pct=85.0, dependency_score_pct=80.0)
@@ -84,7 +101,11 @@ def analyze_skill_gap(
             })
 
     for s in norm_opt_skills:
-        if s.lower() in curr_set:
+        import re as _re
+        parts = _re.split(r'[/|,]|\s+or\s+', s)
+        parts = [p.strip() for p in parts if p.strip()]
+
+        if any(_fuzzy_has(p, curr_set) for p in parts):
             if s.lower() not in {m.lower() for m in matched_skills}:
                 matched_skills.append(s)
         else:

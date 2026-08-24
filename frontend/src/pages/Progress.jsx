@@ -9,6 +9,7 @@ import {
   c4Progress, c4ProgressSync, c4ProgressPopulate, c4ProgressUpdate,
   c4ProgressDelete, c4ProgressDeleteSkill
 } from '../api'
+import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import EmptyState from '../components/EmptyState'
@@ -17,6 +18,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 
 export default function Progress() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [data, setData] = useState(null)
@@ -28,15 +30,7 @@ export default function Progress() {
   const [addBusy, setAddBusy] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
-  useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') {
-      navigate('/login/candidate')
-      return
-    }
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     try {
@@ -406,6 +400,7 @@ export default function Progress() {
                     <button
                       className={`goal-action-btn in-progress ${isInProgress ? 'active' : ''}`}
                       onClick={() => updateStatus(item.skill, 'in_progress')}
+                      aria-pressed={isInProgress}
                     >
                       <Clock size={13} /> In Progress
                     </button>
@@ -413,6 +408,7 @@ export default function Progress() {
                     <button
                       className={`goal-action-btn mastered ${isMastered ? 'active' : ''}`}
                       onClick={() => updateStatus(item.skill, 'completed')}
+                      aria-pressed={isMastered}
                     >
                       <Check size={13} /> Mastered
                     </button>
@@ -420,6 +416,7 @@ export default function Progress() {
                     <button
                       className="goal-action-btn delete"
                       onClick={() => deleteSingleSkill(item.skill)}
+                      aria-label={`Remove ${item.skill} from goals`}
                       title="Delete goal"
                     >
                       <Trash2 size={13} />

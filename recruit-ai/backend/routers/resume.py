@@ -151,7 +151,7 @@ async def predict_role(
     db = request.app.state.db
     if resume_id:
         from bson import ObjectId
-        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id)})
+        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
     else:
         resume_doc = await db.resumes.find_one(
             {"candidate_id": str(user["_id"])},
@@ -202,7 +202,7 @@ async def match_resume(
     db = request.app.state.db
     if resume_id:
         from bson import ObjectId
-        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id)})
+        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
     else:
         resume_doc = await db.resumes.find_one(
             {"candidate_id": str(user["_id"])},
@@ -248,10 +248,23 @@ async def match_resume(
     matcher = _get_matcher()
     semantic_score = matcher.compute_similarity(resume_text, job_text) if job_text else 0
 
-    # Skill matching: exact case-insensitive match
+    # Skill matching: bidirectional substring match (fuzzy)
+    def _skill_matches(job_skill: str, cand_skills: list) -> bool:
+        """Check if a job skill matches any candidate skill via substring containment."""
+        js = job_skill.lower().strip()
+        for cs in cand_skills:
+            cs_lower = cs.lower().strip()
+            if js == cs_lower:
+                return True
+            # Substring match: "flutter" in "flutter sdk" or "flutter sdk" in "flutter"
+            if len(js) >= 3 and len(cs_lower) >= 3:
+                if js in cs_lower or cs_lower in js:
+                    return True
+        return False
+
     matched_original = []
     for orig, lower in zip(job_skills_original, job_skills_lower):
-        if lower in resume_skills_lower:
+        if _skill_matches(lower, resume_skills_lower):
             matched_original.append(orig)
     missing = [s for s in job_skills_original if s not in matched_original]
     extra = [s for s in resume_doc.get("skills", []) if s.lower() not in job_skills_lower]
@@ -401,7 +414,7 @@ async def parse_resume_text(
 
 @limiter.limit("30/minute")
 @router.post("/interview-scores")
-async def save_interview_scores(payload: InterviewScoresCreate, request: Request):
+async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
     doc = {
         "candidate_id": payload.candidate_id,

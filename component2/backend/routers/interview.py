@@ -23,7 +23,7 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
-from db import save_session, get_session, save_result, get_result, update_session_status
+from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -31,22 +31,31 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 def _is_py_literal(value) -> bool:
-    """True if the value is a safe Python literal (safe to inject as code)."""
-    if not isinstance(value, str) or not value.strip():
+    """True if the value can be safely injected as a Python variable."""
+    if value is None:
         return False
-    try:
-        ast.literal_eval(value)
+    if isinstance(value, (int, float, bool, list, dict, tuple)):
         return True
-    except (ValueError, SyntaxError):
-        return False
+    if isinstance(value, str) and value.strip():
+        return True
+    return False
 
 
 def _output_matches(output: str, expected: str) -> bool:
-    """Compare sandbox stdout to expected. Space-insensitive for collection types."""
+    """Compare sandbox stdout to expected. Handles float/int, bool case, collections."""
     if output == expected:
         return True
     if expected[:1] in "[{(":
         return output.replace(" ", "") == expected.replace(" ", "")
+    # Normalize float/int: "5.0" == "5", "5.00" == "5"
+    try:
+        if float(output) == float(expected):
+            return True
+    except (ValueError, TypeError):
+        pass
+    # Normalize bool case: "True" == "true"
+    if output.lower() == expected.lower() and output.lower() in ("true", "false"):
+        return True
     return False
 
 
@@ -57,14 +66,24 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
     Injection mirrors scoring: inputs become variables the code reads,
     candidates print() the result.
     """
-    inject = "".join(f"{k} = {v}\n" for k, v in inp.items())
+    inject = "".join(f"{k} = {repr(v) if isinstance(v, str) else v}\n" for k, v in inp.items())
     sandbox_wrapper = (
         "import sys as _sys\n"
         "from io import StringIO\n"
-        "_blocked = {'os','subprocess','shutil','socket','pathlib','ctypes','multiprocessing','threading','signal','inspect','importlib'}\n"
+        "_blocked = {\n"
+        "    'os','subprocess','shutil','socket','pathlib','ctypes',\n"
+        "    'multiprocessing','threading','signal','inspect','importlib',\n"
+        "    'pickle','pickletools','shelve','marshal','copyreg',\n"
+        "    'urllib','urllib.request','urllib.parse','urllib.error',\n"
+        "    'http','http.client','http.server',\n"
+        "    'smtplib','ftplib','telnetlib','xmlrpc',\n"
+        "    'webbrowser','code','codeop','compileall',\n"
+        "    '_thread','dummy_thread',\n"
+        "}\n"
         "_real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__\n"
         "def _safe_import(name, *a, **kw):\n"
-        "    if name in _blocked: raise ImportError(f'Blocked: {name}')\n"
+        "    top = name.split('.')[0]\n"
+        "    if top in _blocked: raise ImportError(f'Blocked: {name}')\n"
         "    return _real_import(name, *a, **kw)\n"
         "__builtins__.__import__ = _safe_import\n"
         "_stdout = _sys.stdout\n"
@@ -170,6 +189,8 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             job_role = matched_role
         
         # Create session (CPU-bound: question generation + filtering)
+        # Exclude questions the candidate has seen in past sessions
+        seen_ids = await get_seen_question_ids(interview_request.candidate_id or "")
         session = await run_in_threadpool(
             interview_service.create_interview_session,
             candidate_id=interview_request.candidate_id,
@@ -177,7 +198,14 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             num_questions=interview_request.num_questions,
             employer_skills=interview_request.required_skills or None,
             job_level=interview_request.job_level or "Mid-Level",
+            exclude_ids=seen_ids,
         )
+        
+        # Store time limits from employer config
+        session["mcq_time"] = interview_request.mcq_time or 60
+        session["desc_time"] = interview_request.desc_time or 300
+        session["coding_time"] = interview_request.coding_time or 600
+        session["total_time"] = interview_request.total_time or 60
         
         # Persist interview session to MongoDB
         await save_session(session)
@@ -207,6 +235,10 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             questions=questions,
             question_count=session["question_count"],
             total_questions=session["total_questions"],
+            mcq_time=session["mcq_time"],
+            desc_time=session["desc_time"],
+            coding_time=session["coding_time"],
+            total_time=session["total_time"],
             created_at=session["created_at"],
             status=session["status"]
         )
@@ -215,7 +247,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
         raise
     except Exception as e:
         logger.error(f"Error starting interview: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to start interview")
 
 
 @router.post("/submit", response_model=InterviewScoreResult)
@@ -266,7 +298,9 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                     candidate_choice = int(candidate_choice)
                 except (TypeError, ValueError):
                     candidate_choice = -1
-                correct_choice = question.get("correct_option") or question.get("correct_answer_index", 0)
+                correct_choice = question.get("correct_option")
+                if correct_choice is None:
+                    correct_choice = question.get("correct_answer_index", 0)
                 processed_answer["selected_option"] = candidate_choice
                 processed_answer["correct_option"] = correct_choice
                 processed_answer["is_correct"] = candidate_choice == correct_choice
@@ -320,18 +354,25 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                 lines = code_text.strip().split('\n')
                 code_lines = len([l for l in lines if l.strip() and not l.strip().startswith('#')])
                 has_return = any(kw in code_text for kw in ['def ', 'class ', 'return'])
-                quality_score = 0.5 * float(syntax_valid) + 0.3 * float(0 < code_lines < 200) + 0.2 * float(has_return)
+                # Stricter quality: penalise gibberish that merely compiles
+                meaningful = any(kw in code_text for kw in ['def ', 'class ', 'return', 'import ', 'for ', 'while ', 'if ', 'elif ', 'else:', 'try:', 'with ', 'yield ', 'lambda ', '=', 'print(', 'len(', 'range(', 'return'])
+                has_operators = any(op in code_text for op in ['==', '!=', '<=', '>=', '+', '-', '*', '/', '%', '**', '//'])
+                has_structure = any(kw in code_text for kw in ['def ', 'class ', 'for ', 'while ', 'if ', 'try:', 'with '])
+                quality_score = (
+                    0.15 * float(syntax_valid)
+                    + 0.10 * float(0 < code_lines < 200)
+                    + 0.15 * float(has_return)
+                    + 0.20 * float(meaningful)
+                    + 0.20 * float(has_operators)
+                    + 0.20 * float(has_structure)
+                )
                 if test_pass_rate is None:
                     # No verifiable test case exists (placeholder/legacy data).
                     # Grade on structure alone; don't punish correct code.
-                    # ponytail: ceiling is structural-only grading (syntax+shape), so a
-                    # well-structured wrong answer can score high; upgrade = ensure the
-                    # question bank never ships questions without executable test cases.
                     code_score = round(quality_score * 100, 2)
                 else:
-                    # Passing tests is ground truth for correctness: all pass = 100.
-                    # Quality heuristics only break ties when no tests can run.
-                    code_score = round(test_pass_rate * 100, 2)
+                    # Blend 70% test correctness + 30% code quality (matches CodingEvaluator).
+                    code_score = round((0.7 * test_pass_rate + 0.3 * quality_score) * 100, 2)
                 processed_answer.update({
                     "code_text": code_text,
                     "language": answer.get("language", "Python"),
@@ -410,7 +451,7 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
         raise
     except Exception as e:
         logger.error(f"Error submitting answers: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to submit answers")
 
 
 @router.post("/code/run")

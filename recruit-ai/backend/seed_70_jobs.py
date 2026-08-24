@@ -59,7 +59,7 @@ COMPANIES_70 = [
                 "interview_question_count": 10,
             },
             {
-                "title": "Site Reliability Engineer (SRE)",
+                "title": "Site Reliability Engineer",
                 "department": "Cloud Telemetry & Chaos Engineering",
                 "employment_type": "Full-time",
                 "location": "Los Gatos, CA (Hybrid)",
@@ -682,7 +682,7 @@ COMPANIES_70 = [
                 "interview_question_count": 10,
             },
             {
-                "title": "Site Reliability Engineer (SRE)",
+                "title": "Site Reliability Engineer",
                 "department": "Frontier Training Cluster Reliability",
                 "employment_type": "Full-time",
                 "location": "San Francisco, CA (On-site)",
@@ -901,7 +901,7 @@ COMPANIES_70 = [
                 "interview_question_count": 10,
             },
             {
-                "title": "Site Reliability Engineer (SRE)",
+                "title": "Site Reliability Engineer",
                 "department": "Real-Time Query Engine & Incident Operations",
                 "employment_type": "Full-time",
                 "location": "Boston, MA (Hybrid)",
@@ -1152,7 +1152,7 @@ COMPANIES_70 = [
                 "interview_question_count": 10,
             },
             {
-                "title": "Site Reliability Engineer (SRE)",
+                "title": "Site Reliability Engineer",
                 "department": "Core Availability & DNS Edge Routing",
                 "employment_type": "Full-time",
                 "location": "San Francisco, CA (Remote)",

@@ -8,7 +8,7 @@ services:
     volumes:
       - mongo_data:/data/db
     environment:
-      MONGO_INITDB_DATABASE: recruit_ai
+      MONGO_INITDB_DATABASE: HR
 
   backend:
     build:
@@ -17,10 +17,10 @@ services:
     ports:
       - "8000:8000"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      MONGODB_URI: "${MONGODB_URI}"
       DB_NAME: "HR"
-      JWT_SECRET: "change-this-in-production"
-      ALLOWED_ORIGINS: "http://localhost:5173,http://localhost:5174,http://localhost:3000"
+      JWT_SECRET: "${JWT_SECRET}"
+      ALLOWED_ORIGINS: "http://localhost:5174"
     depends_on:
       - mongodb
 
@@ -40,7 +40,7 @@ services:
     ports:
       - "8001:8001"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      MONGODB_URI: "${MONGODB_URI}"
       DB_NAME: "HR"
       PORT: "8001"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8001"]
@@ -55,7 +55,7 @@ services:
     ports:
       - "8002:8002"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      MONGODB_URI: "${MONGODB_URI}"
       DB_NAME: "HR"
       PORT: "8002"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
@@ -70,7 +70,7 @@ services:
     ports:
       - "8003:8003"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      MONGODB_URI: "${MONGODB_URI}"
       DB_NAME: "HR"
       PORT: "8003"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
@@ -85,7 +85,7 @@ services:
     ports:
       - "8004:8004"
     environment:
-      MONGODB_URI: "${MONGODB_URI:-mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR}"
+      MONGODB_URI: "${MONGODB_URI}"
       DB_NAME: "HR"
       PORT: "8004"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8004"]

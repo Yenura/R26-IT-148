@@ -47,4 +47,4 @@ echo "python train_qg_model.py"
 echo ""
 
 echo -e "${GREEN}After starting both services:${NC}"
-echo "Open http://localhost:5173 in your browser"
+echo "Open http://localhost:5174 in your browser"

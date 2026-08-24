@@ -225,6 +225,11 @@ class InterviewSession(BaseModel):
     question_count: Dict[str, int]
     total_questions: int
     
+    mcq_time: int = 60
+    desc_time: int = 300
+    coding_time: int = 600
+    total_time: int = 60
+    
     created_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
@@ -238,6 +243,10 @@ class InterviewRequest(BaseModel):
     required_skills: List[str]
     num_questions: int = 10
     job_level: Optional[str] = "Mid-Level"
+    mcq_time: Optional[int] = 60
+    desc_time: Optional[int] = 300
+    coding_time: Optional[int] = 600
+    total_time: Optional[int] = 60
 
 
 # ====================================================================

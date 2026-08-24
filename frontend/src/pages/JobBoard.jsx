@@ -9,22 +9,16 @@ import {
   c0JobsAll, uResumeList, c0Applications, c0InterviewScores,
   uJobsApply, uJobsWithdraw
 } from '../api'
+import { useAuth } from '../hooks/useAuth'
+import { toArr } from '../utils'
 import PageHeader from '../components/PageHeader'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
-const toArr = (r) => {
-  const d = r?.data
-  if (Array.isArray(d)) return d
-  if (Array.isArray(d?.data)) return d.data
-  if (Array.isArray(d?.applications)) return d.applications
-  if (Array.isArray(d?.jobs)) return d.jobs
-  return []
-}
-
 export default function JobBoard() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const [jobs, setJobs] = useState([])
   const [resumes, setResumes] = useState([])
   const [appliedIds, setAppliedIds] = useState(new Set())
@@ -33,16 +27,11 @@ export default function JobBoard() {
   const [selectedType, setSelectedType] = useState('all')
   const [loading, setLoading] = useState(true)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
+  const [selectedResumeId, setSelectedResumeId] = useState('')
+  const [resumeSelectOpen, setResumeSelectOpen] = useState(false)
+  const [pendingJobId, setPendingJobId] = useState(null)
 
-  useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') {
-      navigate('/login/candidate')
-      return
-    }
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     if (jobs.length === 0) setLoading(true)
@@ -78,6 +67,16 @@ export default function JobBoard() {
       toast.error('Please complete the AI Technical Interview first (open the job and click Start Interview)')
       return
     }
+    if (resumes.length === 1) {
+      doApply(jobId, resumes[0].id)
+      return
+    }
+    setPendingJobId(jobId)
+    setSelectedResumeId(resumes[0]?.id || '')
+    setResumeSelectOpen(true)
+  }
+
+  const doApply = async (jobId, resumeId) => {
     setConfirm({
       open: true,
       title: 'Apply to this job?',
@@ -89,7 +88,7 @@ export default function JobBoard() {
           await uJobsApply(jobId, {
             candidate_id: candidateId,
             candidate_name: candidateName,
-            resume_id: resumes[0].id,
+            resume_id: resumeId,
           })
           setAppliedIds((prev) => new Set([...prev, jobId]))
           toast.success('Application submitted successfully!')
@@ -200,6 +199,9 @@ export default function JobBoard() {
               <div
                 key={job.id}
                 onClick={() => navigate(`/candidate/jobs/${job.id}`)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => e.key === 'Enter' && navigate(`/candidate/jobs/${job.id}`)}
                 className="card card-interactive"
                 style={{
                   padding: 'var(--p-space-5)',
@@ -246,6 +248,8 @@ export default function JobBoard() {
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Clock size={13} /> {job.employment_type || 'Full-time'}
                     </span>
+                    <span>·</span>
+                    <span>{job.job_level || 'Mid-Level'}</span>
                     <span>·</span>
                     <span>{job.experience_required || 0}+ yrs exp</span>
                   </div>
@@ -303,6 +307,7 @@ export default function JobBoard() {
                   <button
                     className="btn-ghost btn-sm"
                     onClick={() => navigate(`/candidate/jobs/${job.id}`)}
+                    aria-label="View full job posting"
                     style={{ padding: 6 }}
                     title="View full job posting"
                   >
@@ -312,6 +317,62 @@ export default function JobBoard() {
               </div>
             )
           })}
+        </div>
+      )}
+
+      {/* Resume Selection Modal */}
+      {resumeSelectOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}
+          onClick={() => setResumeSelectOpen(false)}
+        >
+          <div
+            className="card"
+            style={{ padding: 'var(--p-space-5)', maxWidth: 420, width: '90%' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 12px', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>Select Resume to Submit</h3>
+            <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '0 0 16px' }}>
+              Choose which resume to attach to this application.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {resumes.map((r) => (
+                <label
+                  key={r.id}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+                    borderRadius: 'var(--radius-md)',
+                    border: `1.5px solid ${selectedResumeId === r.id ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    background: selectedResumeId === r.id ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <input
+                    type="radio"
+                    name="resume-select"
+                    value={r.id}
+                    checked={selectedResumeId === r.id}
+                    onChange={() => setSelectedResumeId(r.id)}
+                    style={{ accentColor: 'var(--color-primary)' }}
+                  />
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)' }}>{r.filename || 'Resume'}</div>
+                    {r.candidate_name && <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{r.candidate_name}</div>}
+                  </div>
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setResumeSelectOpen(false)}>Cancel</button>
+              <button
+                className="btn btn-primary btn-sm"
+                disabled={!selectedResumeId}
+                onClick={() => { setResumeSelectOpen(false); doApply(pendingJobId, selectedResumeId) }}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

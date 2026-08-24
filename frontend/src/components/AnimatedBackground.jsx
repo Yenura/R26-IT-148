@@ -68,6 +68,7 @@ export function AnimatedBackground() {
         height: '1px',
         background: 'linear-gradient(90deg, transparent, rgba(59,130,246,0.15), transparent)',
         animation: 'scan-line 6s linear infinite',
+        willChange: 'transform',
       }} />
 
       <style>{`
@@ -86,10 +87,13 @@ export function AnimatedBackground() {
           50% { transform: translate(20px, -20px) scale(1.1); }
         }
         @keyframes scan-line {
-          0% { top: 0; opacity: 0; }
+          0% { transform: translateY(0); opacity: 0; }
           10% { opacity: 1; }
           90% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
+          100% { transform: translateY(100vh); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .animated-bg-scan { animation: none !important; }
         }
       `}</style>
     </div>

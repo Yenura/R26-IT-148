@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -8,6 +8,7 @@ import {
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
+import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import ScoreMeter from '../components/ScoreMeter'
 import ScoreBadge from '../components/ScoreBadge'
@@ -19,12 +20,19 @@ export default function Interview() {
   const [searchParams] = useSearchParams()
   const jobRole = searchParams.get('role') || ''
   const jobSkills = searchParams.get('skills') || ''
+  const jobCount = parseInt(searchParams.get('count'), 10) || 10
+  const jobLevel = searchParams.get('level') || 'Mid-Level'
+  const jobMcqTime = parseInt(searchParams.get('mcqTime'), 10) || 60
+  const jobDescTime = parseInt(searchParams.get('descTime'), 10) || 300
+  const jobCodingTime = parseInt(searchParams.get('codingTime'), 10) || 600
+  const jobTotalTime = parseInt(searchParams.get('totalTime'), 10) || 60
   const isPracticeMode = !jobRole
 
   const [step, setStep] = useState('setup')
   const [roles, setRoles] = useState({})
   const [selectedRole, setSelectedRole] = useState(jobRole)
-  const [numQuestions, setNumQuestions] = useState(10)
+  const [selectedLevel, setSelectedLevel] = useState(jobLevel)
+  const [numQuestions, setNumQuestions] = useState(jobCount)
   const [session, setSession] = useState(null)
   const [currentQ, setCurrentQ] = useState(0)
   const [answers, setAnswers] = useState({})
@@ -33,24 +41,70 @@ export default function Interview() {
   const [runResults, setRunResults] = useState(null)
   const [running, setRunning] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
+  const [timeLeft, setTimeLeft] = useState(jobTotalTime * 60)
+  const timerRef = useRef(null)
+
+  useEffect(() => { loadRoles() }, [])
 
   useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') {
-      navigate('/login/candidate')
-      return
+    if (jobRole) {
+      const canonicalRoles = Object.keys(roles)
+      const match = canonicalRoles.find((r) => r.toLowerCase() === jobRole.toLowerCase())
+        || canonicalRoles.find((r) => r.toLowerCase().includes(jobRole.toLowerCase()) || jobRole.toLowerCase().includes(r.toLowerCase()))
+      setSelectedRole(match || jobRole)
     }
-    loadRoles()
-  }, [])
-
-  useEffect(() => {
-    if (jobRole) setSelectedRole(jobRole)
-  }, [jobRole])
+  }, [jobRole, roles])
 
   useEffect(() => {
     setRunResults(null)
   }, [currentQ])
+
+  const getPerQuestionTime = useCallback(() => {
+    if (!session) return jobMcqTime
+    const q = session.questions?.[currentQ]
+    if (!q) return jobMcqTime
+    if (q.question_type === 'MCQ') return jobMcqTime
+    if (q.question_type === 'Descriptive') return jobDescTime
+    if (q.question_type === 'Coding') return jobCodingTime
+    return jobMcqTime
+  }, [session, currentQ, jobMcqTime, jobDescTime, jobCodingTime])
+
+  useEffect(() => {
+    if (step !== 'quiz' || !session) return
+    setTimeLeft(getPerQuestionTime())
+  }, [currentQ, step, session, getPerQuestionTime])
+
+  useEffect(() => {
+    if (step !== 'quiz' || timeLeft <= 0) return
+    timerRef.current = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(timerRef.current)
+          toast.error('Time is up! Moving to next question...')
+          return 0
+        }
+        return t - 1
+      })
+    }, 1000)
+    return () => clearInterval(timerRef.current)
+  }, [step, currentQ])
+
+  useEffect(() => {
+    if (result) clearInterval(timerRef.current)
+  }, [result])
+
+  // Auto-advance when timer hits 0
+  useEffect(() => {
+    if (step !== 'quiz' || !session || timeLeft !== 0) return
+    const timer = setTimeout(() => {
+      if (currentQ < session.questions.length - 1) {
+        setCurrentQ((q) => q + 1)
+      } else {
+        handleSubmit()
+      }
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [timeLeft, step, currentQ, session])
 
   const loadRoles = async () => {
     try {
@@ -71,8 +125,13 @@ export default function Interview() {
       const r = await c2Start({
         candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
         job_role: selectedRole,
+        job_level: selectedLevel,
         required_skills: skills,
         num_questions: numQuestions,
+        mcq_time: jobMcqTime,
+        desc_time: jobDescTime,
+        coding_time: jobCodingTime,
+        total_time: jobTotalTime,
       })
       setSession(r.data)
       setCurrentQ(0)
@@ -142,6 +201,13 @@ export default function Interview() {
 
   const questions = session?.questions || []
   const q = questions[currentQ]
+  if (step === 'interview' && !q) {
+    return (
+      <div style={{ padding: 60, textAlign: 'center' }}>
+        <p>Loading question...</p>
+      </div>
+    )
+  }
   const progressPct = questions.length > 0 ? (((currentQ + 1) / questions.length) * 100).toFixed(0) : 0
 
   const typeIcon = (t) => {
@@ -174,6 +240,22 @@ export default function Interview() {
               <option value="">Select target role...</option>
               {Object.keys(roles).map((r) => (
                 <option key={r} value={r}>{r}</option>
+              ))}
+              {selectedRole && !Object.keys(roles).includes(selectedRole) && (
+                <option key={selectedRole} value={selectedRole}>{selectedRole}</option>
+              )}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Job Level</label>
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+            >
+              {['Intern', 'Junior', 'Mid-Level', 'Senior', 'Lead', 'Principal / Staff'].map((lvl) => (
+                <option key={lvl} value={lvl}>{lvl}</option>
               ))}
             </select>
           </div>
@@ -242,6 +324,18 @@ export default function Interview() {
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{
+              fontSize: '13px',
+              fontWeight: 700,
+              padding: '3px 10px',
+              borderRadius: 'var(--radius-full)',
+              background: timeLeft <= 30 ? 'var(--color-danger-muted)' : 'var(--color-bg-elevated)',
+              color: timeLeft <= 30 ? 'var(--color-danger)' : 'var(--color-fg)',
+              border: `1px solid ${timeLeft <= 30 ? 'rgba(239,68,68,0.3)' : 'var(--color-border-subtle)'}`,
+              fontVariantNumeric: 'tabular-nums'
+            }}>
+              {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
+            </span>
+            <span style={{
               fontSize: '11px',
               fontWeight: 700,
               padding: '3px 10px',
@@ -265,9 +359,11 @@ export default function Interview() {
 
         {/* Question Card */}
         <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)' }}>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, lineHeight: 1.4, color: 'var(--color-fg)', margin: '0 0 20px 0' }}>
-            {q.question_text || q.question}
-          </h2>
+          <div style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 8, marginBottom: 20 }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.6, color: 'var(--color-fg)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+              {q.question_text || q.question}
+            </h2>
+          </div>
 
           {/* MCQ Mode */}
           {q.question_type === 'MCQ' && (
@@ -275,9 +371,11 @@ export default function Interview() {
               {(q.options || []).map((opt, idx) => {
                 const isSelected = answers[q.id] === idx
                 return (
-                  <div
-                    key={idx}
+                  <button
+                    key={String.fromCharCode(65 + idx)}
+                    type="button"
                     onClick={() => answerQuestion(q.id, idx)}
+                    aria-pressed={isSelected}
                     style={{
                       padding: '12px 16px',
                       borderRadius: 'var(--radius-md)',
@@ -287,7 +385,12 @@ export default function Interview() {
                       display: 'flex',
                       alignItems: 'center',
                       gap: 12,
-                      transition: 'all 0.15s ease'
+                      transition: 'all 0.15s ease',
+                      textAlign: 'left',
+                      width: '100%',
+                      fontSize: 'inherit',
+                      fontFamily: 'inherit',
+                      animation: isSelected ? 'option-select-bounce 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)' : 'none'
                     }}
                   >
                     <div style={{
@@ -306,9 +409,9 @@ export default function Interview() {
                       {String.fromCharCode(65 + idx)}
                     </div>
                     <span style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
-                      {opt}
+                      {typeof opt === 'string' ? opt : opt.text}
                     </span>
-                  </div>
+                  </button>
                 )
               })}
             </div>
@@ -330,18 +433,80 @@ export default function Interview() {
           {/* Coding Sandbox Mode */}
           {q.question_type === 'Coding' && (
             <div>
+              {/* Test Cases / Examples */}
+              {q.test_cases?.length > 0 && (
+                <div style={{ marginBottom: 16, padding: 14, background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '0.05em' }}>
+                    Examples / Test Cases
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {q.test_cases.filter(tc => {
+                      const exp = String(tc.expected_output || '').trim().toLowerCase()
+                      return exp && exp !== 'see answer' && exp !== 'result'
+                    }).map((tc, i) => (
+                      <div key={i} style={{ fontSize: '12px', fontFamily: 'var(--p-font-mono)', lineHeight: 1.6 }}>
+                        <div style={{ color: 'var(--color-fg-muted)' }}>
+                          <span style={{ fontWeight: 700 }}>Input:</span>{' '}
+                          {Object.entries(tc.input || {}).map(([k, v]) => `${k} = ${JSON.stringify(v)}`).join(', ')}
+                        </div>
+                        <div style={{ color: 'var(--color-primary)', fontWeight: 600 }}>
+                          Expected Output: {JSON.stringify(tc.expected_output)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div style={{ marginBottom: 12 }}>
                 <textarea
                   placeholder="# Write your Python solution here...&#10;def solution():&#10;    pass"
                   value={answers[q.id] || ''}
                   onChange={(e) => answerQuestion(q.id, e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Tab') {
+                      e.preventDefault()
+                      const ta = e.target
+                      const start = ta.selectionStart
+                      const end = ta.selectionEnd
+                      const val = ta.value
+                      if (e.shiftKey) {
+                        const lineStart = val.lastIndexOf('\n', start - 1) + 1
+                        const lineText = val.substring(lineStart, start)
+                        const spaces = lineText.match(/^ {1,4}/)
+                        if (spaces) {
+                          const removeLen = spaces[0].length
+                          answerQuestion(q.id, val.substring(0, lineStart) + val.substring(lineStart + removeLen))
+                          setTimeout(() => { ta.selectionStart = ta.selectionEnd = start - removeLen }, 0)
+                        }
+                      } else {
+                        const newVal = val.substring(0, start) + '    ' + val.substring(end)
+                        answerQuestion(q.id, newVal)
+                        setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 4 }, 0)
+                      }
+                    } else if (e.key === 'Enter') {
+                      e.preventDefault()
+                      const ta = e.target
+                      const start = ta.selectionStart
+                      const val = ta.value
+                      const lineStart = val.lastIndexOf('\n', start - 1) + 1
+                      const lineText = val.substring(lineStart, start)
+                      const indent = lineText.match(/^(\s*)/)[1]
+                      const extra = lineText.trimEnd().endsWith(':') ? '    ' : ''
+                      const newVal = val.substring(0, start) + '\n' + indent + extra + val.substring(ta.selectionEnd)
+                      answerQuestion(q.id, newVal)
+                      setTimeout(() => { ta.selectionStart = ta.selectionEnd = start + 1 + indent.length + extra.length }, 0)
+                    }
+                  }}
                   rows={10}
+                  spellCheck={false}
                   style={{
                     fontFamily: 'var(--p-font-mono)',
                     fontSize: '13px',
                     lineHeight: 1.5,
                     background: 'var(--color-bg)',
-                    color: 'var(--color-fg)'
+                    color: 'var(--color-fg)',
+                    tabSize: 4
                   }}
                 />
               </div>
@@ -364,20 +529,48 @@ export default function Interview() {
                   padding: 14,
                   background: 'var(--color-bg)',
                   borderRadius: 'var(--radius-md)',
-                  border: '1px solid var(--color-border-subtle)',
+                  border: `1px solid ${runResults.syntax_valid === false ? 'rgba(244,63,94,0.4)' : 'var(--color-border-subtle)'}`,
                   fontFamily: 'var(--p-font-mono)',
                   fontSize: '12px'
                 }}>
-                  <div style={{
-                    fontWeight: 700,
-                    marginBottom: 6,
-                    color: runResults.all_passed ? 'var(--color-success)' : 'var(--color-danger)'
-                  }}>
-                    {runResults.all_passed ? '✓ All Test Cases Passed' : '✗ Some Test Cases Failed'}
-                  </div>
-                  <pre style={{ margin: 0, whiteSpace: 'pre-wrap', color: 'var(--color-fg-secondary)' }}>
-                    {runResults.output || JSON.stringify(runResults, null, 2)}
-                  </pre>
+                  {/* Syntax error */}
+                  {runResults.syntax_valid === false && (
+                    <div style={{ padding: '8px 12px', marginBottom: 10, borderRadius: 'var(--radius-sm)', background: 'var(--color-danger-muted)', color: 'var(--color-danger)', fontWeight: 700 }}>
+                      ✗ Syntax Error — your code won&apos;t run. Fix the error and try again.
+                    </div>
+                  )}
+
+                  {/* Per-test-case results */}
+                  {runResults.results?.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {runResults.results.map((r, i) => (
+                        <div key={i} style={{
+                          padding: '8px 12px',
+                          borderRadius: 'var(--radius-sm)',
+                          border: `1px solid ${r.passed ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'}`,
+                          background: r.passed ? 'rgba(16,185,129,0.06)' : 'rgba(244,63,94,0.06)'
+                        }}>
+                          <div style={{ fontWeight: 700, marginBottom: 4, color: r.passed ? 'var(--color-success)' : 'var(--color-danger)' }}>
+                            {r.passed ? '✓' : '✗'} Test Case {i + 1}
+                          </div>
+                          <div style={{ color: 'var(--color-fg-muted)' }}>
+                            <span style={{ fontWeight: 600 }}>Input:</span>{' '}
+                            {Object.entries(r.input || {}).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(', ')}
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}>Expected:</span>{' '}
+                            <span style={{ color: 'var(--color-success)' }}>{r.expected}</span>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--color-fg-muted)', fontWeight: 600 }}>Your Output:</span>{' '}
+                            <span style={{ color: r.passed ? 'var(--color-success)' : 'var(--color-danger)' }}>{r.output || '(no output)'}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={{ color: 'var(--color-fg-muted)' }}>No test cases were executed.</div>
+                  )}
                 </div>
               )}
             </div>
@@ -434,8 +627,8 @@ export default function Interview() {
   if (step === 'result' && result) {
     const mcqScore = result.mcq_score || 0
     const descScore = result.descriptive_score || 0
-    const codeScore = result.code_score || 0
-    const overallScore = result.overall_score || (mcqScore * 0.2 + descScore * 0.3 + codeScore * 0.5)
+    const codeScore = result.coding_score || 0
+    const overallScore = result.interview_score || (mcqScore * 0.2 + descScore * 0.3 + codeScore * 0.5)
 
     const chartData = [
       { name: 'MCQ Test', score: mcqScore },
@@ -504,16 +697,6 @@ export default function Interview() {
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
-
-        {/* Navigation CTAs */}
-        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-          <Link to="/candidate/jobs" className="btn btn-ghost">
-            Browse Jobs
-          </Link>
-          <Link to="/candidate/dashboard" className="btn btn-primary">
-            Back to Dashboard
-          </Link>
         </div>
       </div>
     )

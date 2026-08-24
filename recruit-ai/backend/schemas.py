@@ -1,4 +1,5 @@
 """Pydantic schemas for auth, resume, jobs, export."""
+import re
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
@@ -11,11 +12,27 @@ class CompanyRegister(BaseModel):
     industry: str = Field(default="", max_length=200)
     website: str = Field(default="", max_length=500)
 
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError("Invalid email format")
+        return v
+
 
 class CandidateRegister(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=200)
     email: str = Field(..., min_length=5, max_length=200)
     password: str = Field(..., min_length=6, max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError("Invalid email format")
+        return v
 
 
 class LoginRequest(BaseModel):
@@ -72,6 +89,10 @@ class JobCreate(BaseModel):
     status: str = Field(default="open", max_length=20)
     interview_required: bool = False
     interview_question_count: int = 10
+    interview_mcq_time: int = 60
+    interview_desc_time: int = 300
+    interview_coding_time: int = 600
+    interview_total_time: int = 60
 
     @field_validator("experience_required", mode="before")
     @classmethod
@@ -93,6 +114,46 @@ class JobCreate(BaseModel):
         except (ValueError, TypeError):
             return 10
 
+    @field_validator("interview_mcq_time", mode="before")
+    @classmethod
+    def parse_mcq_time(cls, v):
+        if v is None or v == "":
+            return 60
+        try:
+            return max(10, min(300, int(v)))
+        except (ValueError, TypeError):
+            return 60
+
+    @field_validator("interview_desc_time", mode="before")
+    @classmethod
+    def parse_desc_time(cls, v):
+        if v is None or v == "":
+            return 300
+        try:
+            return max(30, min(900, int(v)))
+        except (ValueError, TypeError):
+            return 300
+
+    @field_validator("interview_coding_time", mode="before")
+    @classmethod
+    def parse_coding_time(cls, v):
+        if v is None or v == "":
+            return 600
+        try:
+            return max(60, min(1800, int(v)))
+        except (ValueError, TypeError):
+            return 600
+
+    @field_validator("interview_total_time", mode="before")
+    @classmethod
+    def parse_total_time(cls, v):
+        if v is None or v == "":
+            return 60
+        try:
+            return max(10, min(180, int(v)))
+        except (ValueError, TypeError):
+            return 60
+
 
 class JobUpdate(BaseModel):
     title: str | None = Field(default=None, max_length=300)
@@ -111,6 +172,10 @@ class JobUpdate(BaseModel):
     status: str | None = Field(default=None, max_length=20)
     interview_required: bool | None = None
     interview_question_count: int | None = None
+    interview_mcq_time: int | None = None
+    interview_desc_time: int | None = None
+    interview_coding_time: int | None = None
+    interview_total_time: int | None = None
 
 
 class JobOut(BaseModel):
@@ -133,6 +198,10 @@ class JobOut(BaseModel):
     status: str = "open"
     interview_required: bool = False
     interview_question_count: int = 10
+    interview_mcq_time: int = 60
+    interview_desc_time: int = 300
+    interview_coding_time: int = 600
+    interview_total_time: int = 60
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

@@ -34,44 +34,50 @@ MODELS  = os.path.join(_HERE, "..", "..", "models")
 
 
 # ── Safe artifact loader ───────────────────────────────────────────────────────
-def _load_artifact(filename: str):
+def _load_artifact(filename: str, required: bool = True):
     """Load a joblib artifact from the models directory with clear error reporting."""
     path = os.path.join(MODELS, filename)
     if not os.path.exists(path):
-        logger.critical("[STARTUP] Missing model artifact: %s", path)
-        raise FileNotFoundError(
-            f"Required model artifact not found: {path}\n"
-            f"Run: python component4/ml/train_model.py to regenerate."
-        )
+        if required:
+            logger.critical("[STARTUP] Missing model artifact: %s", path)
+            raise FileNotFoundError(
+                f"Required model artifact not found: {path}\n"
+                f"Run: python component4/ml/train_model.py to regenerate."
+            )
+        logger.warning("[STARTUP] Optional model artifact missing: %s — using fallback", path)
+        return None
     artifact = joblib.load(path)
     logger.info("Loaded artifact: %s", filename)
     return artifact
 
 
-def _load_json(filename: str) -> dict:
+def _load_json(filename: str, required: bool = True) -> dict:
     """Load a JSON knowledge file from the models directory."""
     path = os.path.join(MODELS, filename)
     if not os.path.exists(path):
-        logger.critical("[STARTUP] Missing knowledge file: %s", path)
-        raise FileNotFoundError(f"Required knowledge file not found: {path}")
+        if required:
+            logger.critical("[STARTUP] Missing knowledge file: %s", path)
+            raise FileNotFoundError(f"Required knowledge file not found: {path}")
+        logger.warning("[STARTUP] Optional knowledge file missing: %s — using empty", path)
+        return {}
     with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
 # ── Load ML artefacts ──────────────────────────────────────────────────────────
-_clf       = _load_artifact("skill_gap_classifier.pkl")
-_feat_cols = _load_artifact("feature_columns.pkl")
-_role_cols = _load_artifact("role_columns.pkl")
-ALL_SKILLS = _load_artifact("all_skills.pkl")
+_clf       = _load_artifact("skill_gap_classifier.pkl", required=False)
+_feat_cols = _load_artifact("feature_columns.pkl", required=False)
+_role_cols = _load_artifact("role_columns.pkl", required=False)
+ALL_SKILLS = _load_artifact("all_skills.pkl", required=False) or []
 
 # ── Load knowledge files ───────────────────────────────────────────────────────
-JOB_REQ   = _load_json("job_requirements.json")
-RESOURCES = _load_json("learning_resources.json")
-SKILL_CAT = _load_json("skill_categories.json")
-_CP_DATA  = _load_json("career_paths.json")
+JOB_REQ   = _load_json("job_requirements.json", required=False)
+RESOURCES = _load_json("learning_resources.json", required=False)
+SKILL_CAT = _load_json("skill_categories.json", required=False)
+_CP_DATA  = _load_json("career_paths.json", required=False)
 
-CAREER_PATHS     = _CP_DATA["career_paths"]
-ROLE_TRANSITIONS = _CP_DATA["role_transitions"]
+CAREER_PATHS     = _CP_DATA.get("career_paths", {})
+ROLE_TRANSITIONS = _CP_DATA.get("role_transitions", {})
 
 # ── Education ordinal map ──────────────────────────────────────────────────────
 EDU_RANK = {
@@ -132,13 +138,25 @@ def compute_gap(
     optional = [s.strip() for s in req.get("optional", [])]
 
     # Fuzzy match — exact match or substring with minimum length guard
+    # Also decompose compound skills like "Swift/Kotlin or Flutter"
+    import re as _re
     def fuzzy_has(skill, cand_set):
+        # First try decomposing compound skills
+        parts = _re.split(r'[/|,]|\s+or\s+', skill)
+        parts = [p.strip() for p in parts if p.strip()]
+        for part in parts:
+            pl = part.lower()
+            for c in cand_set:
+                if pl == c:
+                    return True
+                if len(pl) >= 3 and len(c) >= 3 and (pl in c or c in pl):
+                    return True
+        # Also try the full skill string
         sl = skill.lower()
         for c in cand_set:
             if sl == c:
                 return True
-            # Substring only if both are 4+ chars to avoid false positives
-            if len(sl) >= 4 and len(c) >= 4 and (sl in c or c in sl):
+            if len(sl) >= 3 and len(c) >= 3 and (sl in c or c in sl):
                 return True
         return False
 
@@ -188,10 +206,11 @@ def build_feature_vector(
         "Projects Count":     projects_count,
     }
 
-    # One-hot role
-    for col in _role_cols:
-        role_label = col.replace("role_", "").replace("_", " ")
-        row[col] = int(job_role.replace(" ", "_").replace("/", "_") == col.replace("role_", ""))
+    # One-hot role (skip if role columns not loaded)
+    if _role_cols:
+        for col in _role_cols:
+            role_label = col.replace("role_", "").replace("_", " ")
+            row[col] = int(job_role.replace(" ", "_").replace("/", "_") == col.replace("role_", ""))
 
     # Skill flags — match against ALL_SKILLS canonical list efficiently
     cand_skills_lower = [s.lower() for s in skills]
@@ -203,10 +222,12 @@ def build_feature_vector(
         row[col] = int(sl in cand_set or sl in cand_text or any(sl in s for s in cand_skills_lower))
 
     df = pd.DataFrame([row])
-    for c in _feat_cols:
-        if c not in df.columns:
-            df[c] = 0
-    return df[_feat_cols]
+    if _feat_cols:
+        for c in _feat_cols:
+            if c not in df.columns:
+                df[c] = 0
+        return df[_feat_cols]
+    return df
 
 
 # ── Main inference ────────────────────────────────────────────────────────────
@@ -244,7 +265,11 @@ def run_skill_gap_analysis(
         skills, job_role, experience_years, education,
         job_level, work_mode, cert_count, projects_count,
     )
-    hire_prob = float(_clf.predict_proba(fv)[0][1])
+    if _clf is not None:
+        hire_prob = float(_clf.predict_proba(fv)[0][1])
+    else:
+        # Fallback: use skill match percentage as rough proxy
+        hire_prob = min(1.0, skill_match_pct / 100 * 0.8 + 0.1)
     predicted = hire_prob >= 0.5
 
     # Blend ML probability with external CV/interview scores if available

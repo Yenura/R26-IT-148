@@ -174,7 +174,7 @@ CANDIDATES = [
     },
     {
         "candidate_id": "T-014", "candidate_name": "Dishan Jayawardena",
-        "job_role": "Site Reliability Engineer (SRE)", "job_level": "Senior", "work_mode": "On-Site",
+        "job_role": "Site Reliability Engineer", "job_level": "Senior", "work_mode": "On-Site",
         "skills": ["Linux", "Kubernetes", "Prometheus", "Grafana", "Terraform", "Python"],
         "experience_years": 7, "education": "B.Sc. Information Technology",
         "certifications": "CKA | AWS Solutions Architect", "certifications_count": 2, "projects_count": 16,
@@ -290,7 +290,7 @@ roles = [
     "Cybersecurity Analyst", "Cloud Solutions Architect",
     "Database Administrator", "Mobile App Developer",
     "Full Stack Developer", "QA/Test Automation Engineer",
-    "Data Engineer", "Site Reliability Engineer (SRE)",
+    "Data Engineer", "Site Reliability Engineer",
     "UI/UX Designer", "Network Engineer",
     "Business/Systems Analyst", "AI/NLP Engineer",
     "Blockchain Developer", "Embedded Systems Engineer",

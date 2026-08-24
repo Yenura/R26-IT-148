@@ -765,7 +765,7 @@ select {
 
 .table td {
   padding: var(--table-cell-padding);
-  border-bottom: 1px solid rgba(30, 30, 58, .6);
+  border-bottom: 1px solid var(--color-border-subtle, rgba(30, 30, 58, .6));
   font-size: var(--p-text-base);
 }
 
@@ -1155,6 +1155,32 @@ select {
   color: var(--color-success-fg);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD LAYOUTS (responsive two-column)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dashboard-grid {
+  display: grid;
+  gap: var(--p-space-5);
+}
+
+.dashboard-grid-main {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+}
+
+.dashboard-grid-equal {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid-main,
+  .dashboard-grid-equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+
 .step-label {
   font-size: var(--p-text-xs);
   color: var(--color-fg-muted);
@@ -1379,6 +1405,30 @@ pre {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+DASHBOARD LAYOUTS (responsive two-column)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dashboard-grid {
+  display: grid;
+  gap: var(--p-space-5);
+}
+
+.dashboard-grid-main {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+}
+
+.dashboard-grid-equal {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid-main,
+  .dashboard-grid-equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    HOVER CARD (generic lift)
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -1582,5 +1632,73 @@ pre {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+}
+/* ═══════════════════════════════════════════════════════════════════
+   TAB CONTENT TRANSITION
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes tab-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   TABLE ROW STAGGER
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes row-stagger-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.table tbody tr {
+  animation: row-stagger-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.table tbody tr:nth-child(1) { animation-delay: 0ms; }
+.table tbody tr:nth-child(2) { animation-delay: 40ms; }
+.table tbody tr:nth-child(3) { animation-delay: 80ms; }
+.table tbody tr:nth-child(4) { animation-delay: 120ms; }
+.table tbody tr:nth-child(5) { animation-delay: 160ms; }
+.table tbody tr:nth-child(6) { animation-delay: 200ms; }
+.table tbody tr:nth-child(7) { animation-delay: 240ms; }
+.table tbody tr:nth-child(8) { animation-delay: 280ms; }
+.table tbody tr:nth-child(9) { animation-delay: 320ms; }
+.table tbody tr:nth-child(10) { animation-delay: 360ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .table tbody tr {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   MCQ OPTION BOUNCE
+   ═══════════════════════════════════════════════════════════════════ */
+
+@keyframes option-select-bounce {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes option-select-bounce {
+    0%, 100% { transform: none; }
   }
 }

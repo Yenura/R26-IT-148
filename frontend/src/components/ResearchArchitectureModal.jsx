@@ -4,7 +4,7 @@ export default function ResearchArchitectureModal({ isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'var(--modal-overlay)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <div className="fade-in card" style={{ width: '100%', maxWidth: 840, maxHeight: '90vh', overflowY: 'auto', padding: 32, borderRadius: 16, border: '1px solid var(--border)', background: 'var(--bg-elevated)', position: 'relative' }}>
         <button onClick={onClose} style={{ position: 'absolute', top: 20, right: 20, background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
           <X size={20} />

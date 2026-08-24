@@ -32,16 +32,31 @@ class SimpleSkillGapRequest(BaseModel):
     # Component 1 integration fields (Option 2)
     predicted_role: Optional[str] = None
     detected_skills: Optional[List[str]] = None
+    skills: Optional[List[str]] = None
+    job_role: Optional[str] = None
+
+
+class SimulateRequest(BaseModel):
+    candidate_id: Optional[str] = None
+    target_role: Optional[str] = None
+    job_role: Optional[str] = None
+    role: Optional[str] = None
+    acquired_skills: Optional[List[str]] = None
+    skills: Optional[List[str]] = None
+    simulated_skills: Optional[List[str]] = None
+    current_skills: Optional[List[str]] = None
+    required_skills: Optional[List[str]] = None
+    opening_required_skills: Optional[List[str]] = None
 
 
 @router.post("", summary="Skill Gap Analysis (Simple JSON or Option 2 Component 1 Integration)")
 @router.post("/", summary="Skill Gap Analysis (Simple JSON or Option 2 Component 1 Integration)")
-async def simple_skill_gap(payload: Dict[str, Any]):
+async def simple_skill_gap(payload: SimpleSkillGapRequest):
     """
     Accepts Option 1 (current_skills + target_role) or Option 2 (Component 1 output).
     """
-    current_skills = payload.get("current_skills") or payload.get("detected_skills") or payload.get("skills") or []
-    target_role = payload.get("target_role") or payload.get("predicted_role") or payload.get("job_role") or "Data Scientist"
+    current_skills = payload.current_skills or payload.detected_skills or payload.skills or []
+    target_role = payload.target_role or payload.predicted_role or payload.job_role or "Data Scientist"
 
     if not current_skills:
         current_skills = ["Python", "SQL"]
@@ -66,14 +81,14 @@ async def simple_skill_gap(payload: Dict[str, Any]):
 
 
 @router.post("/simulate", summary="Run 'What-If' skill acquisition simulation")
-async def simulate_skill_acquisition(payload: Dict[str, Any], request: Request = None):
+async def simulate_skill_acquisition(payload: SimulateRequest, request: Request = None):
     db = getattr(request.app.state, "db", None) if request else None
 
-    candidate_id = payload.get("candidate_id")
-    target_role = payload.get("target_role") or payload.get("job_role") or payload.get("role") or "Software Engineer"
-    acquired_skills = payload.get("acquired_skills") or payload.get("skills") or payload.get("simulated_skills") or []
-    current_skills = payload.get("current_skills")
-    custom_required = payload.get("required_skills") or payload.get("opening_required_skills")
+    candidate_id = payload.candidate_id
+    target_role = payload.target_role or payload.job_role or payload.role or "Software Engineer"
+    acquired_skills = payload.acquired_skills or payload.skills or payload.simulated_skills or []
+    current_skills = payload.current_skills
+    custom_required = payload.required_skills or payload.opening_required_skills
 
     # If current_skills not explicitly provided, load candidate's real CV skills from db
     if current_skills is None and candidate_id and db is not None:
@@ -232,6 +247,7 @@ async def list_reports(request: Request, skip: int = 0, limit: int = 50):
 
 
 @router.delete("/report/{candidate_id}", summary="Delete a candidate's report")
+@limiter.limit("10/minute")
 async def delete_report(candidate_id: str, request: Request):
     db  = request.app.state.db
     res = await db.skill_gap_reports.delete_many({"candidate_id": candidate_id})
@@ -490,9 +506,15 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
         cv_strengths = []
         cv_weaknesses = []
-        matched_cv_skills = analysis.get("matched_skills", [])
+        # The run_skill_gap_analysis returns "present_skills" (candidate's skills),
+        # not "matched_skills". Use "missing_required" and "missing_optional" instead.
+        present_skills = analysis.get("present_skills", [])
         missing_required = analysis.get("missing_required", [])
         missing_optional = analysis.get("missing_optional", [])
+
+        # Compute matched skills: candidate skills that are NOT in missing lists
+        missing_set = {s.lower() for s in missing_required + missing_optional}
+        matched_cv_skills = [s for s in present_skills if s.lower() not in missing_set]
 
         for ms in matched_cv_skills:
             if not any(s["skill"].lower() == ms.lower() for s in interview_strengths):

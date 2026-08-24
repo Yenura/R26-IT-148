@@ -164,7 +164,7 @@ ROLES = {
         "cost optimization for data pipelines", "data catalog design", "real-time data processing",
         "data pipeline error handling", "data serialization formats", "capacity planning for pipelines",
     ]),
-    "Site Reliability Engineer (SRE)": dict(coding=True, topics=[
+    "Site Reliability Engineer": dict(coding=True, topics=[
         "service level objectives", "error budgets", "incident management process",
         "postmortem culture", "on-call rotation design", "toil reduction",
         "capacity planning", "chaos engineering practices", "monitoring and alerting design",

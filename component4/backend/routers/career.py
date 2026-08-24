@@ -4,16 +4,43 @@ import sys, os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import APIRouter, Request, HTTPException
+from pydantic import BaseModel, Field
 
 COMPONENT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(COMPONENT_ROOT))
 
-from models.schemas import CareerPathRequest
+from models.schemas import CareerPathRequest, VALID_JOB_ROLES
 from services.ml_engine import JOB_REQ, RESOURCES, CAREER_PATHS, ROLE_TRANSITIONS, compute_gap
 from src.recommendation.career_recommender import recommend_career_paths
 from src.recommendation.learning_path import generate_learning_path
 
 router = APIRouter()
+
+
+class CareerRecRequest(BaseModel):
+    current_skills: Optional[List[str]] = Field(default_factory=list)
+    skills: Optional[List[str]] = Field(default_factory=list)
+    current_role: Optional[str] = "Backend Developer"
+    role: Optional[str] = None
+
+    def get_skills(self) -> List[str]:
+        return self.current_skills or self.skills or []
+
+    def get_role(self) -> str:
+        return self.current_role or self.role or "Backend Developer"
+
+
+class LearningPathRequest(BaseModel):
+    current_skills: Optional[List[str]] = Field(default_factory=list)
+    skills: Optional[List[str]] = Field(default_factory=list)
+    target_role: Optional[str] = "Data Scientist"
+    role: Optional[str] = None
+
+    def get_skills(self) -> List[str]:
+        return self.current_skills or self.skills or []
+
+    def get_role(self) -> str:
+        return self.target_role or self.role or "Data Scientist"
 
 
 def _exp_to_level(exp: int) -> int:
@@ -26,9 +53,9 @@ def _exp_to_level(exp: int) -> int:
 
 @router.post("/recommendation", summary="Career Recommendation (Simple JSON)")
 @router.post("/career-recommendation", summary="Career Recommendation (Simple JSON)")
-async def career_recommendations_endpoint(payload: Dict[str, Any]):
-    current_skills = payload.get("current_skills") or payload.get("skills") or []
-    current_role = payload.get("current_role") or payload.get("role") or "Backend Developer"
+async def career_recommendations_endpoint(payload: CareerRecRequest):
+    current_skills = payload.get_skills()
+    current_role = payload.get_role()
 
     res = recommend_career_paths(current_skills=current_skills, current_role=current_role)
 
@@ -48,9 +75,9 @@ async def career_recommendations_endpoint(payload: Dict[str, Any]):
 
 
 @router.post("/learning-path", summary="Learning Path Recommendation (Simple JSON)")
-async def learning_path_endpoint(payload: Dict[str, Any]):
-    current_skills = payload.get("current_skills") or payload.get("skills") or []
-    target_role = payload.get("target_role") or payload.get("role") or "Data Scientist"
+async def learning_path_endpoint(payload: LearningPathRequest):
+    current_skills = payload.get_skills()
+    target_role = payload.get_role()
 
     res = generate_learning_path(current_skills=current_skills, target_role=target_role)
 

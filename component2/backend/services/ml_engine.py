@@ -8,6 +8,7 @@ import os
 import re
 import sys
 import uuid
+import random
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 from pathlib import Path
@@ -99,7 +100,17 @@ class InterviewService:
             "Database Administrator": ["SQL", "NoSQL", "Database Optimization", "Backup and Recovery", "Indexing", "Replication", "MongoDB", "PostgreSQL"],
             "Frontend Developer": ["React", "JavaScript", "CSS", "HTML", "Vue", "TypeScript", "UI/UX", "Accessibility", "DOM", "Responsive Design"],
             "Backend Developer": ["Python", "Java", "Node.js", "APIs", "Microservices", "SQL", "Database Design", "Server-side Logic", "Authentication"],
-            "Mobile App Developer": ["React Native", "Flutter", "iOS", "Android", "Kotlin", "Swift", "Mobile UI", "Performance Optimization"]
+            "Mobile App Developer": ["React Native", "Flutter", "iOS", "Android", "Kotlin", "Swift", "Mobile UI", "Performance Optimization"],
+            "AI/NLP Engineer": ["Python", "NLP", "Transformers", "PyTorch", "TensorFlow", "Hugging Face", "BERT", "GPT", "Text Processing"],
+            "Blockchain Developer": ["Solidity", "Ethereum", "Smart Contracts", "Web3.js", "Blockchain", "Cryptography", "DApps"],
+            "Business/Systems Analyst": ["Requirements Analysis", "SQL", "Stakeholder Management", "Process Mapping", "Documentation", "UML", "Agile"],
+            "Data Engineer": ["Python", "SQL", "ETL", "Spark", "Airflow", "Data Warehousing", "Big Data", "AWS"],
+            "Embedded Systems Engineer": ["C/C++", "RTOS", "Microcontrollers", "Hardware Interfaces", "Embedded Linux", "Firmware", "Debugging"],
+            "Full Stack Developer": ["React", "Node.js", "Python", "SQL", "REST APIs", "TypeScript", "MongoDB", "Docker"],
+            "Network Engineer": ["TCP/IP", "Routing", "Switching", "Firewalls", "VPN", "Network Monitoring", "Cisco", "DNS"],
+            "QA/Test Automation Engineer": ["Selenium", "Test Automation", "CI/CD", "API Testing", "SQL", "Bug Tracking", "pytest", "Jest"],
+            "Site Reliability Engineer": ["Linux", "Kubernetes", "Monitoring", "Incident Response", "Scripting", "AWS", "Terraform", "Prometheus"],
+            "UI/UX Designer": ["Figma", "User Research", "Wireframing", "Design Systems", "Usability Testing", "Prototyping", "Adobe XD"]
         }
 
     def _default_question_bank(self) -> List[Dict]:
@@ -348,7 +359,17 @@ class InterviewService:
                 "Database Administrator": {"mcq": 0.30, "descriptive": 0.40, "coding": 0.30},
                 "Frontend Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
                 "Backend Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
-                "Mobile App Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50}
+                "Mobile App Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "AI/NLP Engineer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "Blockchain Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "Business/Systems Analyst": {"mcq": 0.35, "descriptive": 0.50, "coding": 0.15},
+                "Data Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
+                "Embedded Systems Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
+                "Full Stack Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
+                "Network Engineer": {"mcq": 0.40, "descriptive": 0.45, "coding": 0.15},
+                "QA/Test Automation Engineer": {"mcq": 0.25, "descriptive": 0.30, "coding": 0.45},
+                "Site Reliability Engineer": {"mcq": 0.35, "descriptive": 0.40, "coding": 0.25},
+                "UI/UX Designer": {"mcq": 0.30, "descriptive": 0.55, "coding": 0.15}
             },
             "grade_bands": {
                 "Excellent": {"min": 85},
@@ -374,6 +395,7 @@ class InterviewService:
         num_questions: int = 10,
         employer_skills: Optional[List[str]] = None,
         job_level: str = "Mid-Level",
+        exclude_ids: Optional[set] = None,
     ) -> Dict:
         """
         Create interview session with questions
@@ -384,6 +406,7 @@ class InterviewService:
             num_questions: Number of questions to generate
             employer_skills: Optional skills from employer posting (merged with role defaults)
             job_level: Intern/Junior/Mid-Level/Senior/Staff level → difficulty filter
+            exclude_ids: Question IDs to skip (seen in past sessions)
 
         Returns:
             Interview session dictionary
@@ -417,14 +440,14 @@ class InterviewService:
         else:
             # Select questions by type from bank
             mcq_questions = self._select_questions_by_type(
-                "MCQ", num_mcq, required_skills, difficulty=difficulty
+                "MCQ", num_mcq, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
             )
             desc_questions = self._select_questions_by_type(
-                "Descriptive", num_desc, required_skills, difficulty=difficulty
+                "Descriptive", num_desc, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
             )
             code_questions = self._select_questions_by_type(
                 "Coding", num_code, required_skills,
-                coding_profile=coding_profile, difficulty=difficulty
+                coding_profile=coding_profile, difficulty=difficulty, exclude_ids=exclude_ids
             )
 
             # Combine all questions and top up if bank is smaller than requested count.
@@ -478,13 +501,15 @@ class InterviewService:
         existing_ids = {q.get("id") for q in topped_up if q.get("id")}
         existing_texts = {q.get("question_text", "").strip().lower() for q in topped_up if q.get("question_text")}
 
-        # 1) Fill from remaining bank with unseen question text.
-        for candidate in self.question_bank:
+        # 1) Fill from remaining bank with unseen question text (shuffled for randomness).
+        remaining = [c for c in self.question_bank if c.get("question_text", "").strip().lower() not in existing_texts]
+        random.shuffle(remaining)
+        for candidate in remaining:
             if len(topped_up) >= target_count:
                 break
             cid = candidate.get("id")
             ctext = candidate.get("question_text", "").strip().lower()
-            if not ctext or cid in existing_ids or ctext in existing_texts:
+            if not ctext or cid in existing_ids:
                 continue
             if candidate.get("question_type") == "Coding" and coding_profile in {"sql", "scripting"}:
                 if not self._filter_coding_questions_by_profile([candidate], coding_profile):
@@ -494,10 +519,12 @@ class InterviewService:
                 existing_ids.add(cid)
             existing_texts.add(ctext)
 
-        # 2) If still short, repeat selected pool with unique IDs.
+        # 2) If still short, repeat selected pool with unique IDs (shuffled order).
         idx = 1
-        while len(topped_up) < target_count and selected_questions:
-            source = selected_questions[(idx - 1) % len(selected_questions)].copy()
+        pool = list(selected_questions)
+        random.shuffle(pool)
+        while len(topped_up) < target_count and pool:
+            source = pool[(idx - 1) % len(pool)].copy()
             source["id"] = f"{source.get('id', 'Q')}_R{idx}"
             topped_up.append(source)
             idx += 1
@@ -520,7 +547,8 @@ class InterviewService:
                                   count: int, 
                                   relevant_skills: List[str],
                                   coding_profile: str = "full",
-                                  difficulty: str = "Medium") -> List[Dict]:
+                                  difficulty: str = "Medium",
+                                  exclude_ids: Optional[set] = None) -> List[Dict]:
         """
         Select questions by type with relevance filtering
         
@@ -530,14 +558,18 @@ class InterviewService:
             relevant_skills: Skills to filter by
             coding_profile: Coding profile for Coding questions
             difficulty: Preferred difficulty (Easy/Medium/Hard); prefers but does not require
+            exclude_ids: Question IDs to skip (seen in past sessions)
 
         Returns:
             List of selected questions
         """
+        exclude = exclude_ids or set()
+
         # Filter by type
         typed_questions = [
             q for q in self.question_bank 
             if q.get("question_type") == question_type
+            and q.get("id") not in exclude
         ]
         
         if not typed_questions:
@@ -553,6 +585,7 @@ class InterviewService:
                 typed_questions = [
                     q for q in self.question_bank 
                     if q.get("question_type") == "Coding"
+                    and q.get("id") not in exclude
                 ]
         
         # Filter by relevance to skills; if none match, fall back to generic typed questions.
@@ -585,10 +618,15 @@ class InterviewService:
         return self._prefer_difficulty((safe if safe else typed_questions), difficulty)[:count]
 
     def _prefer_difficulty(self, questions: List[Dict], difficulty: str) -> List[Dict]:
-        """Stable-sort so preferred-difficulty questions come first; never drops questions."""
+        """Stable-sort so preferred-difficulty questions come first, then shuffle within tiers."""
         if not difficulty:
+            random.shuffle(questions)
             return questions
-        return sorted(questions, key=lambda q: (q.get("difficulty") != difficulty,))
+        matched = [q for q in questions if q.get("difficulty") == difficulty]
+        rest = [q for q in questions if q.get("difficulty") != difficulty]
+        random.shuffle(matched)
+        random.shuffle(rest)
+        return matched + rest
 
     
     def _filter_coding_questions_by_profile(self, coding_questions: List[Dict], profile: str) -> List[Dict]:
@@ -640,7 +678,7 @@ class InterviewService:
         # Get original weights for this job role
         original_weights = self.interview_configs.get("interview_weights", {}).get(
             job_role,
-            {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40}
+            {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50}
         )
         
         # Determine which question types have answers (are available)
@@ -870,11 +908,13 @@ class AnswerEvaluationService:
                 return {"final_score": 0.0, "similarity": 0.0, "keyword_coverage": 0.0}
 
             intersection = reference_tokens.intersection(candidate_tokens)
-            similarity = len(intersection) / max(len(reference_tokens), 1)
+            # Jaccard similarity (intersection / union) — penalizes verbosity
+            union = reference_tokens.union(candidate_tokens)
+            similarity = len(intersection) / max(len(union), 1)
 
-            keywords = reference_tokens
-            matched_keywords = len([t for t in keywords if t in candidate_tokens])
-            keyword_coverage = matched_keywords / max(len(keywords), 1)
+            # Keyword recall: what fraction of reference tokens appear in candidate
+            matched_keywords = len([t for t in reference_tokens if t in candidate_tokens])
+            keyword_coverage = matched_keywords / max(len(reference_tokens), 1)
 
             final_score = round((similarity * 0.7 + keyword_coverage * 0.3) * 100, 2)
             return {
@@ -887,7 +927,7 @@ class AnswerEvaluationService:
         return result
 
     def evaluate_coding(self, code_text: str, test_cases: List[Dict]) -> Dict:
-        """Evaluate coding answer"""
+        """Evaluate coding answer (fallback when CodingEvaluator unavailable)."""
         if not self.code_evaluator:
             syntax_valid = False
             tests_passed = 0
@@ -900,13 +940,6 @@ class AnswerEvaluationService:
                     syntax_valid = True
                 except SyntaxError:
                     syntax_valid = False
-
-                if syntax_valid and total_tests > 0:
-                    lowered = code_text.lower()
-                    for tc in test_cases:
-                        expected = str(tc.get("expected_output", "")).lower()
-                        if expected and expected in lowered:
-                            tests_passed += 1
 
             test_pass_rate = round((tests_passed / total_tests * 100) if total_tests else (100 if syntax_valid else 0), 2)
             base_score = 70 if syntax_valid else (40 if code_text else 0)

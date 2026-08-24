@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from 'react'
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react'
 import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
@@ -8,6 +8,7 @@ import {
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
 import GlobalBackground from './components/GlobalBackground'
+import ErrorBoundary from './components/ErrorBoundary'
 
 const Landing        = lazy(() => import('./pages/Landing'))
 const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
@@ -23,7 +24,6 @@ const InterviewPage = lazy(() => import('./pages/Interview'))
 const CVMatchPage   = lazy(() => import('./pages/CVMatch'))
 const RankingPage   = lazy(() => import('./pages/Ranking'))
 const SkillGapPage  = lazy(() => import('./pages/SkillGap'))
-const CareerPathPage= lazy(() => import('./pages/CareerPath'))
 const ProgressPage  = lazy(() => import('./pages/Progress'))
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard'))
 const ProfilePage   = lazy(() => import('./pages/Profile'))
@@ -40,11 +40,26 @@ const Loading = () => (
 )
 
 function PrivateRoute({ children, role }) {
-  const token = localStorage.getItem('recruitai.token')
-  const userRole = localStorage.getItem('recruitai.role')
-  const userId = localStorage.getItem('recruitai.user_id')
-  if (!token || !userId) return <Navigate to="/login/candidate" />
-  if (role && userRole !== role) return <Navigate to="/" />
+  const [auth, setAuth] = useState(() => ({
+    token: localStorage.getItem('recruitai.token'),
+    userRole: localStorage.getItem('recruitai.role'),
+    userId: localStorage.getItem('recruitai.user_id'),
+  }))
+
+  useEffect(() => {
+    const onStorage = () => {
+      setAuth({
+        token: localStorage.getItem('recruitai.token'),
+        userRole: localStorage.getItem('recruitai.role'),
+        userId: localStorage.getItem('recruitai.user_id'),
+      })
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
+  if (!auth.token || !auth.userId) return <Navigate to="/login/candidate" />
+  if (role && auth.userRole !== role) return <Navigate to="/" />
   return children
 }
 
@@ -91,18 +106,52 @@ export default function App() {
     { to: '/company/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/pipeline/ranking', icon: ListOrdered, label: 'Candidate Ranking' },
     { to: '/pipeline/leaderboard', icon: Award, label: 'Leaderboard' },
-    { to: '/pipeline/skill-gap', icon: Target, label: 'Skill Gap Matrix' },
   ]
 
   const navLinks = role === 'candidate' ? candidateLinks : role === 'company' ? companyLinks : []
 
-  const handleLogout = () => {
-    localStorage.clear()
+  const handleLogout = useCallback(() => {
+    localStorage.removeItem('recruitai.token')
+    localStorage.removeItem('recruitai.role')
+    localStorage.removeItem('recruitai.user_id')
+    localStorage.removeItem('recruitai.name')
+    localStorage.removeItem('recruitai.avatar')
     setUserMenu(false)
-    window.location.href = '/'
-  }
+    navigate('/')
+  }, [navigate])
 
   const profileLink = role === 'candidate' ? '/profile' : role === 'company' ? '/company/profile' : null
+
+  const userMenuRef = useRef(null)
+  useEffect(() => {
+    if (!userMenu) return
+    const handleClick = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [userMenu])
+
+  const location = useLocation()
+  useEffect(() => {
+    const path = location.pathname
+    let title = 'RecruitAI'
+    if (path.includes('/candidate/dashboard')) title = 'Candidate Dashboard | RecruitAI'
+    else if (path.includes('/company/dashboard')) title = 'Company Dashboard | RecruitAI'
+    else if (path.includes('/candidate/jobs')) title = 'Job Board | RecruitAI'
+    else if (path.includes('/interview')) title = 'AI Interview | RecruitAI'
+    else if (path.includes('/cv-match')) title = 'CV Match | RecruitAI'
+    else if (path.includes('/skill-gap')) title = 'Skill Gap Analysis | RecruitAI'
+    else if (path.includes('/ranking')) title = 'Candidate Ranking | RecruitAI'
+    else if (path.includes('/leaderboard')) title = 'Leaderboard | RecruitAI'
+    else if (path.includes('/progress')) title = 'Progress Tracking | RecruitAI'
+    else if (path.includes('/profile')) title = 'Profile | RecruitAI'
+    else if (path.includes('/login')) title = 'Login | RecruitAI'
+    else if (path.includes('/register')) title = 'Register | RecruitAI'
+    document.title = title
+  }, [location.pathname])
 
   return (
     <div className="app-root">
@@ -167,18 +216,27 @@ export default function App() {
                 onClick={toggleTheme}
                 title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
                 aria-label="Toggle theme"
-                style={{ width: 34, height: 34, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                style={{ width: 44, height: 44, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
                 {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
               </button>
 
               {profileLink && (
                 <div
+                  ref={userMenuRef}
                   className="navbar-user"
                   onClick={() => setUserMenu(!userMenu)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setUserMenu(!userMenu)
+                    }
+                    if (e.key === 'Escape') setUserMenu(false)
+                  }}
                   role="button"
                   tabIndex={0}
                   aria-expanded={userMenu}
+                  aria-haspopup="true"
                 >
                   {userAvatar ? (
                     <img src={userAvatar} alt="User Avatar" className="navbar-avatar" />
@@ -213,6 +271,7 @@ export default function App() {
                 className="navbar-hamburger"
                 onClick={() => setMobileMenu(!mobileMenu)}
                 aria-label="Toggle navigation menu"
+                aria-expanded={mobileMenu}
               >
                 {mobileMenu ? <X size={20} /> : <Menu size={20} />}
               </button>
@@ -261,6 +320,7 @@ export default function App() {
       {/* Main Content Shell */}
       <div className="app-shell">
         <main className="main-content">
+          <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>
               <Route path="/" element={<Landing />} />
@@ -307,6 +367,7 @@ export default function App() {
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </Suspense>
+          </ErrorBoundary>
         </main>
       </div>
     </div>

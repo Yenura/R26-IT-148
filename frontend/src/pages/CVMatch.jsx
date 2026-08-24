@@ -10,6 +10,7 @@ import {
   uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
   c1Analyze, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath
 } from '../api'
+import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import UploadZone from '../components/UploadZone'
 import ScoreMeter from '../components/ScoreMeter'
@@ -42,6 +43,7 @@ const CANONICAL_ROLES = [
 
 export default function CVMatch() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const [resumes, setResumes] = useState([])
   const [jobs, setJobs] = useState([])
   const [selectedResume, setSelectedResume] = useState('')
@@ -61,15 +63,7 @@ export default function CVMatch() {
   const [simulationResult, setSimulationResult] = useState(null)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
-  useEffect(() => {
-    const token = localStorage.getItem('recruitai.token')
-    const role = localStorage.getItem('recruitai.role')
-    if (!token || role !== 'candidate') {
-      navigate('/login/candidate')
-      return
-    }
-    loadData()
-  }, [])
+  useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     try {
@@ -84,7 +78,7 @@ export default function CVMatch() {
         setSelectedResume(resumeList[0].id)
       }
     } catch (err) {
-      console.error(err)
+      toast.error('Failed to load resumes and jobs')
     }
   }
 
@@ -250,7 +244,7 @@ export default function CVMatch() {
         </div>
 
         {/* Upload Zone & Select Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1.8fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-4)' }}>
+        <div className="dashboard-grid dashboard-grid-main" style={{ marginBottom: 'var(--p-space-4)' }}>
           <div>
             <UploadZone
               onFileSelect={handleFileUpload}
@@ -662,8 +656,8 @@ export default function CVMatch() {
 
               {careerResult?.recommendations?.length > 0 ? (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--p-space-4)' }}>
-                  {careerResult.recommendations.map((rec, i) => (
-                    <div key={i} className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg-elevated)', margin: 0 }}>
+                    {careerResult.recommendations.map((rec) => (
+                      <div key={rec.target_role || rec.role} className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg-elevated)', margin: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
                         <div style={{ fontWeight: 700, fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
                           {rec.target_role || rec.role}
@@ -714,9 +708,9 @@ export default function CVMatch() {
 
               {learningPathResult?.learning_path?.length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {learningPathResult.learning_path.map((item, idx) => (
-                    <div
-                      key={idx}
+                    {learningPathResult.learning_path.map((item, idx) => (
+                      <div
+                        key={item.skill || item.title}
                       style={{
                         padding: 'var(--p-space-4)',
                         background: 'var(--color-bg-elevated)',

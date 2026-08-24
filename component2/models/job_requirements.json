@@ -1,52 +1,43 @@
 {
-  "Software Engineer": [
-    "Java",
+  "AI/NLP Engineer": [
     "Python",
-    "C++",
-    "SQL",
-    "React",
-    "REST APIs",
-    "OOP",
-    "Design Patterns"
-  ],
-  "Data Scientist": [
-    "Python",
-    "Machine Learning",
-    "SQL",
-    "Statistics",
-    "Deep Learning",
-    "Data Analysis",
-    "Pandas",
-    "NumPy"
-  ],
-  "Machine Learning Engineer": [
-    "Python",
-    "TensorFlow",
+    "NLP",
+    "Transformers",
     "PyTorch",
-    "MLOps",
-    "Model Training",
-    "Data Pipeline",
-    "Scikit-learn"
+    "TensorFlow",
+    "Hugging Face",
+    "BERT",
+    "GPT",
+    "Text Processing"
   ],
-  "DevOps Engineer": [
-    "Docker",
-    "Kubernetes",
-    "CI/CD",
-    "AWS",
-    "Linux",
-    "Git",
-    "Infrastructure as Code",
-    "Monitoring"
+  "Backend Developer": [
+    "Python",
+    "Java",
+    "Node.js",
+    "APIs",
+    "Microservices",
+    "SQL",
+    "Database Design",
+    "Server-side Logic",
+    "Authentication"
   ],
-  "Cybersecurity Analyst": [
-    "Cybersecurity",
-    "Networking",
-    "Linux",
-    "Ethical Hacking",
-    "SIEM",
-    "Threat Detection",
-    "Encryption",
-    "Vulnerability Assessment"
+  "Blockchain Developer": [
+    "Solidity",
+    "Ethereum",
+    "Smart Contracts",
+    "Web3.js",
+    "Blockchain",
+    "Cryptography",
+    "DApps"
+  ],
+  "Business/Systems Analyst": [
+    "Requirements Analysis",
+    "SQL",
+    "Stakeholder Management",
+    "Process Mapping",
+    "Documentation",
+    "UML",
+    "Agile"
   ],
   "Cloud Solutions Architect": [
     "AWS",
@@ -58,6 +49,36 @@
     "Microservices",
     "Load Balancing"
   ],
+  "Cybersecurity Analyst": [
+    "Cybersecurity",
+    "Networking",
+    "Linux",
+    "Ethical Hacking",
+    "SIEM",
+    "Threat Detection",
+    "Encryption",
+    "Vulnerability Assessment"
+  ],
+  "Data Engineer": [
+    "Python",
+    "SQL",
+    "ETL",
+    "Spark",
+    "Airflow",
+    "Data Warehousing",
+    "Big Data",
+    "AWS"
+  ],
+  "Data Scientist": [
+    "Python",
+    "Machine Learning",
+    "SQL",
+    "Statistics",
+    "Deep Learning",
+    "Data Analysis",
+    "Pandas",
+    "NumPy"
+  ],
   "Database Administrator": [
     "SQL",
     "NoSQL",
@@ -67,6 +88,25 @@
     "Replication",
     "MongoDB",
     "PostgreSQL"
+  ],
+  "DevOps Engineer": [
+    "Docker",
+    "Kubernetes",
+    "CI/CD",
+    "AWS",
+    "Linux",
+    "Git",
+    "Infrastructure as Code",
+    "Monitoring"
+  ],
+  "Embedded Systems Engineer": [
+    "C/C++",
+    "RTOS",
+    "Microcontrollers",
+    "Hardware Interfaces",
+    "Embedded Linux",
+    "Firmware",
+    "Debugging"
   ],
   "Frontend Developer": [
     "React",
@@ -80,16 +120,24 @@
     "DOM",
     "Responsive Design"
   ],
-  "Backend Developer": [
-    "Python",
-    "Java",
+  "Full Stack Developer": [
+    "React",
     "Node.js",
-    "APIs",
-    "Microservices",
+    "Python",
     "SQL",
-    "Database Design",
-    "Server-side Logic",
-    "Authentication"
+    "REST APIs",
+    "TypeScript",
+    "MongoDB",
+    "Docker"
+  ],
+  "Machine Learning Engineer": [
+    "Python",
+    "TensorFlow",
+    "PyTorch",
+    "MLOps",
+    "Model Training",
+    "Data Pipeline",
+    "Scikit-learn"
   ],
   "Mobile App Developer": [
     "React Native",
@@ -100,5 +148,54 @@
     "Swift",
     "Mobile UI",
     "Performance Optimization"
+  ],
+  "Network Engineer": [
+    "TCP/IP",
+    "Routing",
+    "Switching",
+    "Firewalls",
+    "VPN",
+    "Network Monitoring",
+    "Cisco",
+    "DNS"
+  ],
+  "QA/Test Automation Engineer": [
+    "Selenium",
+    "Test Automation",
+    "CI/CD",
+    "API Testing",
+    "SQL",
+    "Bug Tracking",
+    "pytest",
+    "Jest"
+  ],
+  "Site Reliability Engineer": [
+    "Linux",
+    "Kubernetes",
+    "Monitoring",
+    "Incident Response",
+    "Scripting",
+    "AWS",
+    "Terraform",
+    "Prometheus"
+  ],
+  "Software Engineer": [
+    "Java",
+    "Python",
+    "C++",
+    "SQL",
+    "React",
+    "REST APIs",
+    "OOP",
+    "Design Patterns"
+  ],
+  "UI/UX Designer": [
+    "Figma",
+    "User Research",
+    "Wireframing",
+    "Design Systems",
+    "Usability Testing",
+    "Prototyping",
+    "Adobe XD"
   ]
 }

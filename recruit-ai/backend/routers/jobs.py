@@ -95,6 +95,10 @@ def _job_out(doc: dict, company_name: str = "") -> JobOut:
         status=doc.get("status", "open"),
         interview_required=doc.get("interview_required", False),
         interview_question_count=doc.get("interview_question_count", 10),
+        interview_mcq_time=doc.get("interview_mcq_time", 60),
+        interview_desc_time=doc.get("interview_desc_time", 300),
+        interview_coding_time=doc.get("interview_coding_time", 600),
+        interview_total_time=doc.get("interview_total_time", 60),
         created_at=doc.get("created_at"),
         updated_at=doc.get("updated_at"),
     )
@@ -147,6 +151,10 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
         "status": payload.status,
         "interview_required": payload.interview_required,
         "interview_question_count": payload.interview_question_count,
+        "interview_mcq_time": payload.interview_mcq_time,
+        "interview_desc_time": payload.interview_desc_time,
+        "interview_coding_time": payload.interview_coding_time,
+        "interview_total_time": payload.interview_total_time,
         "created_at": now,
         "updated_at": now,
     }
@@ -158,8 +166,8 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
 
 @router.get("", response_model=list[JobOut])
 @router.get("/", response_model=list[JobOut])
-async def list_jobs(request: Request, company: dict = Depends(require_company)):
-    cursor = request.app.state.db.jobs.find({"company_id": company["_id"]}).sort("created_at", -1)
+async def list_jobs(request: Request, company: dict = Depends(require_company), skip: int = 0, limit: int = 50):
+    cursor = request.app.state.db.jobs.find({"company_id": company["_id"]}).sort("created_at", -1).skip(skip).limit(min(limit, 100))
     return [_job_out(doc) async for doc in cursor]
 
 
@@ -216,6 +224,31 @@ async def list_my_applications(request: Request, user: dict = Depends(get_curren
     return [_app_out(doc) async for doc in cursor]
 
 
+@router.get("/applicant-counts")
+async def get_applicant_counts(request: Request, company: dict = Depends(require_company)):
+    """Batch endpoint: return {job_id: count} for all jobs owned by this company."""
+    db = request.app.state.db
+    company_oid = company["_id"]
+    # Match both string and ObjectId forms of company_id
+    job_docs = await db.jobs.find({"$or": [
+        {"company_id": company_oid},
+        {"company_id": str(company_oid)},
+    ]}, {"_id": 1}).to_list(1000)
+    job_ids = [doc["_id"] for doc in job_docs]
+    if not job_ids:
+        return {}
+    # Count applicants per job in a single aggregation
+    pipeline = [
+        {"$match": {"job_id": {"$in": job_ids}}},
+        {"$group": {"_id": "$job_id", "count": {"$sum": 1}}}
+    ]
+    cursor = db.applications.aggregate(pipeline)
+    result = {}
+    async for doc in cursor:
+        result[str(doc["_id"])] = doc["count"]
+    return result
+
+
 @router.get("/{job_id}", response_model=JobOut)
 async def get_job(job_id: str, request: Request, company: dict = Depends(require_company)):
     return _job_out(await _get_owned_job(request.app.state.db, job_id, str(company["_id"])))
@@ -226,6 +259,12 @@ async def update_job(job_id: str, payload: JobUpdate, request: Request, company:
     db = request.app.state.db
     doc = await _get_owned_job(db, job_id, str(company["_id"]))
     updates = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None}
+    if "title" in updates:
+        title = updates["title"]
+        if not updates.get("job_role"):
+            updates["job_role"] = _normalize_job_role(title)
+        if not updates.get("job_level"):
+            updates["job_level"] = _normalize_job_level(title)
     updates["updated_at"] = datetime.now(timezone.utc)
     await db.jobs.update_one({"_id": doc["_id"]}, {"$set": updates})
     _invalidate_jobs_cache()
@@ -257,6 +296,18 @@ async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request
     job = await db.jobs.find_one({"_id": oid})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
+    # Enforce interview requirement
+    if job.get("interview_required"):
+        job_role = job.get("job_role") or _normalize_job_role(job.get("title", ""))
+        interview_done = await db.results.find_one({
+            "candidate_id": payload.candidate_id,
+            "$or": [{"job_role": job_role}, {"job_id": job_id}],
+        }) or await db.interview_scores.find_one({
+            "candidate_id": payload.candidate_id,
+            "$or": [{"job_role": job_role}, {"job_id": job_id}],
+        })
+        if not interview_done:
+            raise HTTPException(status_code=403, detail="AI Technical Interview is required for this job. Complete the interview before applying.")
     existing = await db.applications.find_one({"job_id": oid, "candidate_id": payload.candidate_id})
     if existing:
         raise HTTPException(status_code=409, detail="Already applied")

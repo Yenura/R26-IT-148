@@ -38,7 +38,7 @@ if not MONGODB_URI:
 DB_NAME         = os.getenv("DB_NAME", "HR")
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:5173,http://localhost:5174",
+    "http://localhost:5174",
 ).split(",")
 MODEL_DIR = Path(os.getenv("MODEL_DIR", "models"))
 

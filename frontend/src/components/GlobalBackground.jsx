@@ -16,8 +16,13 @@ export default function GlobalBackground() {
 
   useEffect(() => {
     let frameId = null
+let lastUpdate = 0
+    const THROTTLE_MS = 16 // ~60fps
 
     const handlePointerMove = (e) => {
+      const now = Date.now()
+      if (now - lastUpdate < THROTTLE_MS) return
+      lastUpdate = now
       if (frameId) cancelAnimationFrame(frameId)
       frameId = requestAnimationFrame(() => {
         if (spotlightRef.current) {
@@ -59,8 +64,8 @@ export default function GlobalBackground() {
           left: 0,
           height: '3px',
           width: '0%',
-          background: 'linear-gradient(90deg, #6366f1, #a855f7, #06b6d4)',
-          boxShadow: '0 0 12px rgba(99, 102, 241, 0.75)',
+background: 'linear-gradient(90deg, var(--color-primary), var(--color-purple), var(--color-info))',
+          boxShadow: isLight ? '0 0 12px rgba(99, 102, 241, 0.4)' : '0 0 12px rgba(99, 102, 241, 0.75)',
           zIndex: 9999,
           pointerEvents: 'none',
           transition: 'width 0.1s ease-out',
@@ -76,7 +81,7 @@ export default function GlobalBackground() {
           zIndex: -1,
           pointerEvents: 'none',
           overflow: 'hidden',
-          background: isLight ? '#f8fafc' : '#070814',
+background: 'var(--color-bg)',
         }}
       >
       {/* 1. Interactive Cursor Spotlight Ambient Glow */}
@@ -130,6 +135,7 @@ export default function GlobalBackground() {
             : 'radial-gradient(circle, rgba(99, 102, 241, 0.38) 0%, rgba(236, 72, 153, 0.22) 45%, rgba(79, 70, 229, 0.1) 65%, transparent 75%)',
           filter: 'blur(75px)',
           willChange: 'transform',
+animation: 'aurora-rotate 40s linear infinite',
         }}
       />
 
@@ -148,6 +154,7 @@ export default function GlobalBackground() {
             : 'radial-gradient(circle, rgba(6, 182, 212, 0.32) 0%, rgba(16, 185, 129, 0.20) 50%, rgba(14, 165, 233, 0.08) 65%, transparent 75%)',
           filter: 'blur(75px)',
           willChange: 'transform',
+animation: 'aurora-rotate-reverse 50s linear infinite',
         }}
       />
 
@@ -158,7 +165,7 @@ export default function GlobalBackground() {
           position: 'absolute',
           top: '38%',
           left: '45%',
-          transform: 'translate(-50%, -50%)',
+
           width: '750px',
           height: '750px',
           borderRadius: '50%',
@@ -167,6 +174,8 @@ export default function GlobalBackground() {
             : 'radial-gradient(circle, rgba(168, 85, 247, 0.28) 0%, rgba(139, 92, 246, 0.16) 45%, rgba(99, 102, 241, 0.08) 65%, transparent 75%)',
           filter: 'blur(85px)',
           willChange: 'transform',
+animation: 'aurora-rotate 60s linear infinite',
+          transform: 'translate(-50%, -50%)',
         }}
       />
 
@@ -181,7 +190,9 @@ export default function GlobalBackground() {
             width: '500px',
             height: '500px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(244, 63, 94, 0.28) 0%, rgba(245, 158, 11, 0.18) 50%, transparent 70%)',
+background: isLight
+              ? 'radial-gradient(circle, rgba(244, 63, 94, 0.10) 0%, rgba(245, 158, 11, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(244, 63, 94, 0.28) 0%, rgba(245, 158, 11, 0.18) 50%, transparent 70%)',
             filter: 'blur(80px)',
             transition: 'opacity 0.8s ease',
           }}
@@ -198,7 +209,9 @@ export default function GlobalBackground() {
             width: '520px',
             height: '520px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(6, 182, 212, 0.16) 50%, transparent 70%)',
+background: isLight
+              ? 'radial-gradient(circle, rgba(16, 185, 129, 0.10) 0%, rgba(6, 182, 212, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(16, 185, 129, 0.28) 0%, rgba(6, 182, 212, 0.16) 50%, transparent 70%)',
             filter: 'blur(80px)',
             transition: 'opacity 0.8s ease',
           }}
@@ -215,7 +228,9 @@ export default function GlobalBackground() {
             width: '550px',
             height: '550px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(168, 85, 247, 0.30) 0%, rgba(99, 102, 241, 0.20) 50%, transparent 70%)',
+background: isLight
+              ? 'radial-gradient(circle, rgba(168, 85, 247, 0.10) 0%, rgba(99, 102, 241, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(168, 85, 247, 0.30) 0%, rgba(99, 102, 241, 0.20) 50%, transparent 70%)',
             filter: 'blur(85px)',
             transition: 'opacity 0.8s ease',
           }}
@@ -232,7 +247,9 @@ export default function GlobalBackground() {
             width: '500px',
             height: '500px',
             borderRadius: '50%',
-            background: 'radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(99, 102, 241, 0.18) 50%, transparent 70%)',
+background: isLight
+              ? 'radial-gradient(circle, rgba(56, 189, 248, 0.10) 0%, rgba(99, 102, 241, 0.06) 50%, transparent 70%)'
+              : 'radial-gradient(circle, rgba(56, 189, 248, 0.28) 0%, rgba(99, 102, 241, 0.18) 50%, transparent 70%)',
             filter: 'blur(80px)',
             transition: 'opacity 0.8s ease',
           }}
@@ -264,6 +281,23 @@ export default function GlobalBackground() {
           backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
         }}
       />
+<style>{`
+        @keyframes aurora-rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        @keyframes aurora-rotate-reverse {
+          from { transform: rotate(360deg); }
+          to { transform: rotate(0deg); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .aurora-orb-indigo,
+          .aurora-orb-cyan,
+          .aurora-orb-violet {
+            animation: none !important;
+          }
+        }
+      `}</style>
     </div>
     </>
   )
