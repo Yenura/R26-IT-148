@@ -80,7 +80,7 @@ export default function Interview() {
       setTimeLeft((t) => {
         if (t <= 1) {
           clearInterval(timerRef.current)
-          toast.error('Time is up for this question!')
+          toast.error('Time is up! Moving to next question...')
           return 0
         }
         return t - 1
@@ -92,6 +92,19 @@ export default function Interview() {
   useEffect(() => {
     if (result) clearInterval(timerRef.current)
   }, [result])
+
+  // Auto-advance when timer hits 0
+  useEffect(() => {
+    if (step !== 'quiz' || !session || timeLeft !== 0) return
+    const timer = setTimeout(() => {
+      if (currentQ < session.questions.length - 1) {
+        setCurrentQ((q) => q + 1)
+      } else {
+        handleSubmit()
+      }
+    }, 1500)
+    return () => clearTimeout(timer)
+  }, [timeLeft, step, currentQ, session])
 
   const loadRoles = async () => {
     try {
