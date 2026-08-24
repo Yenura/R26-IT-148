@@ -249,6 +249,8 @@ export default function JobBoard() {
                       <Clock size={13} /> {job.employment_type || 'Full-time'}
                     </span>
                     <span>·</span>
+                    <span>{job.job_level || 'Mid-Level'}</span>
+                    <span>·</span>
                     <span>{job.experience_required || 0}+ yrs exp</span>
                   </div>
 

@@ -43,6 +43,7 @@ const emptyForm = {
   department: '',
   location: '',
   employment_type: 'Full-time',
+  job_level: 'Mid-Level',
   required_skills: '',
   experience_required: 0,
   education_required: 'Bachelor Degree',
@@ -118,6 +119,7 @@ export default function CompanyDashboard() {
       department: form.department?.trim() || '',
       location: form.location?.trim() || '',
       employment_type: form.employment_type || 'Full-time',
+      job_level: form.job_level || 'Mid-Level',
       experience_required: isNaN(expReq) ? 0 : Math.max(0, expReq),
       education_required: form.education_required || 'Bachelor Degree',
       required_skills: skillsArray,
@@ -278,7 +280,7 @@ export default function CompanyDashboard() {
                       <td style={{ fontWeight: 600 }}>
                         <div style={{ color: 'var(--color-fg)', fontSize: 'var(--p-text-base)' }}>{job.title}</div>
                         <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
-                          {job.employment_type || 'Full-time'} · {job.experience_required || 0}+ yrs exp · {job.education_required || 'Degree'}
+                          {job.employment_type || 'Full-time'} · {job.job_level || 'Mid-Level'} · {job.experience_required || 0}+ yrs exp · {job.education_required || 'Degree'}
                         </div>
                       </td>
                       <td>
@@ -439,6 +441,20 @@ export default function CompanyDashboard() {
                 <option value="Part-time">Part-time</option>
                 <option value="Contract">Contract</option>
                 <option value="Internship">Internship</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Job Level</label>
+              <select
+                value={form.job_level}
+                onChange={(e) => setForm({ ...form, job_level: e.target.value })}
+              >
+                <option value="Intern">Intern</option>
+                <option value="Junior">Junior</option>
+                <option value="Mid-Level">Mid-Level</option>
+                <option value="Senior">Senior</option>
+                <option value="Lead">Lead</option>
+                <option value="Principal / Staff">Principal / Staff</option>
               </select>
             </div>
             <div>
