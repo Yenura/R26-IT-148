@@ -52,6 +52,12 @@ def _get_mongo_db() -> Optional[Database]:
         _mongo_db["sessions"].create_index([("candidate_id", 1)])
         _mongo_db["sessions"].create_index([("created_at", -1)])
         _mongo_db["sessions"].create_index([("status", 1)])
+        # TTL: auto-delete completed sessions after 30 days
+        _mongo_db["sessions"].create_index(
+            [("created_at", 1)],
+            expireAfterSeconds=30 * 24 * 3600,
+            partialFilterExpression={"status": "completed"},
+        )
         _mongo_db["results"].create_index([("interview_id", 1)], unique=True)
         _mongo_db["results"].create_index([("candidate_id", 1)])
         _mongo_db["results"].create_index([("created_at", -1)])

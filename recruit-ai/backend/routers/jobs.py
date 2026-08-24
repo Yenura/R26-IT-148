@@ -166,8 +166,8 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
 
 @router.get("", response_model=list[JobOut])
 @router.get("/", response_model=list[JobOut])
-async def list_jobs(request: Request, company: dict = Depends(require_company)):
-    cursor = request.app.state.db.jobs.find({"company_id": company["_id"]}).sort("created_at", -1)
+async def list_jobs(request: Request, company: dict = Depends(require_company), skip: int = 0, limit: int = 50):
+    cursor = request.app.state.db.jobs.find({"company_id": company["_id"]}).sort("created_at", -1).skip(skip).limit(min(limit, 100))
     return [_job_out(doc) async for doc in cursor]
 
 
