@@ -21,6 +21,7 @@ export default function Interview() {
   const jobRole = searchParams.get('role') || ''
   const jobSkills = searchParams.get('skills') || ''
   const jobCount = parseInt(searchParams.get('count'), 10) || 10
+  const jobLevel = searchParams.get('level') || 'Mid-Level'
   const jobMcqTime = parseInt(searchParams.get('mcqTime'), 10) || 60
   const jobDescTime = parseInt(searchParams.get('descTime'), 10) || 300
   const jobCodingTime = parseInt(searchParams.get('codingTime'), 10) || 600
@@ -30,6 +31,7 @@ export default function Interview() {
   const [step, setStep] = useState('setup')
   const [roles, setRoles] = useState({})
   const [selectedRole, setSelectedRole] = useState(jobRole)
+  const [selectedLevel, setSelectedLevel] = useState(jobLevel)
   const [numQuestions, setNumQuestions] = useState(jobCount)
   const [session, setSession] = useState(null)
   const [currentQ, setCurrentQ] = useState(0)
@@ -110,6 +112,7 @@ export default function Interview() {
       const r = await c2Start({
         candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
         job_role: selectedRole,
+        job_level: selectedLevel,
         required_skills: skills,
         num_questions: numQuestions,
         mcq_time: jobMcqTime,
@@ -221,6 +224,19 @@ export default function Interview() {
               {selectedRole && !Object.keys(roles).includes(selectedRole) && (
                 <option key={selectedRole} value={selectedRole}>{selectedRole}</option>
               )}
+            </select>
+          </div>
+
+          <div style={{ marginBottom: 24 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Job Level</label>
+            <select
+              value={selectedLevel}
+              onChange={(e) => setSelectedLevel(e.target.value)}
+              style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+            >
+              {['Intern', 'Junior', 'Mid-Level', 'Senior', 'Lead', 'Principal / Staff'].map((lvl) => (
+                <option key={lvl} value={lvl}>{lvl}</option>
+              ))}
             </select>
           </div>
 

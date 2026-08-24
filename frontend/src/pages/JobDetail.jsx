@@ -134,6 +134,7 @@ export default function JobDetail() {
     const params = new URLSearchParams({
       role: job?.job_role || job?.title || '',
       skills: (job?.required_skills || []).join(','),
+      level: job?.job_level || 'Mid-Level',
       count: String(job?.interview_question_count || 10),
       mcqTime: String(job?.interview_mcq_time || 60),
       descTime: String(job?.interview_desc_time || 300),
