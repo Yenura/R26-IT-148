@@ -305,7 +305,7 @@ export default function ApplicantPipeline() {
                 <div>
                   <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Coding Sandbox</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-purple)' }}>
-                    {(detail.code_score || 0).toFixed(0)}%
+                    {(detail.coding_score || 0).toFixed(0)}%
                   </div>
                 </div>
               </div>
