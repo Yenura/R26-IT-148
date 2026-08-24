@@ -32,16 +32,31 @@ class SimpleSkillGapRequest(BaseModel):
     # Component 1 integration fields (Option 2)
     predicted_role: Optional[str] = None
     detected_skills: Optional[List[str]] = None
+    skills: Optional[List[str]] = None
+    job_role: Optional[str] = None
+
+
+class SimulateRequest(BaseModel):
+    candidate_id: Optional[str] = None
+    target_role: Optional[str] = None
+    job_role: Optional[str] = None
+    role: Optional[str] = None
+    acquired_skills: Optional[List[str]] = None
+    skills: Optional[List[str]] = None
+    simulated_skills: Optional[List[str]] = None
+    current_skills: Optional[List[str]] = None
+    required_skills: Optional[List[str]] = None
+    opening_required_skills: Optional[List[str]] = None
 
 
 @router.post("", summary="Skill Gap Analysis (Simple JSON or Option 2 Component 1 Integration)")
 @router.post("/", summary="Skill Gap Analysis (Simple JSON or Option 2 Component 1 Integration)")
-async def simple_skill_gap(payload: Dict[str, Any]):
+async def simple_skill_gap(payload: SimpleSkillGapRequest):
     """
     Accepts Option 1 (current_skills + target_role) or Option 2 (Component 1 output).
     """
-    current_skills = payload.get("current_skills") or payload.get("detected_skills") or payload.get("skills") or []
-    target_role = payload.get("target_role") or payload.get("predicted_role") or payload.get("job_role") or "Data Scientist"
+    current_skills = payload.current_skills or payload.detected_skills or payload.skills or []
+    target_role = payload.target_role or payload.predicted_role or payload.job_role or "Data Scientist"
 
     if not current_skills:
         current_skills = ["Python", "SQL"]
@@ -66,14 +81,14 @@ async def simple_skill_gap(payload: Dict[str, Any]):
 
 
 @router.post("/simulate", summary="Run 'What-If' skill acquisition simulation")
-async def simulate_skill_acquisition(payload: Dict[str, Any], request: Request = None):
+async def simulate_skill_acquisition(payload: SimulateRequest, request: Request = None):
     db = getattr(request.app.state, "db", None) if request else None
 
-    candidate_id = payload.get("candidate_id")
-    target_role = payload.get("target_role") or payload.get("job_role") or payload.get("role") or "Software Engineer"
-    acquired_skills = payload.get("acquired_skills") or payload.get("skills") or payload.get("simulated_skills") or []
-    current_skills = payload.get("current_skills")
-    custom_required = payload.get("required_skills") or payload.get("opening_required_skills")
+    candidate_id = payload.candidate_id
+    target_role = payload.target_role or payload.job_role or payload.role or "Software Engineer"
+    acquired_skills = payload.acquired_skills or payload.skills or payload.simulated_skills or []
+    current_skills = payload.current_skills
+    custom_required = payload.required_skills or payload.opening_required_skills
 
     # If current_skills not explicitly provided, load candidate's real CV skills from db
     if current_skills is None and candidate_id and db is not None:

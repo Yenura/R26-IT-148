@@ -115,9 +115,7 @@ app.add_middleware(
 from routers import skill_gap, career, progress, analytics  # noqa: E402
 
 app.include_router(skill_gap.router, prefix="/api/v1/skill-gap", tags=["Skill Gap Analysis"])
-app.include_router(skill_gap.router, prefix="/api/v1", tags=["Skill Gap Direct"])
 app.include_router(career.router,    prefix="/api/v1/career",    tags=["Career Guidance"])
-app.include_router(career.router,    prefix="/api/v1",           tags=["Career Guidance Direct"])
 app.include_router(progress.router,  prefix="/api/v1/progress",  tags=["Progress Tracking"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 

@@ -189,6 +189,9 @@ async def upload_avatar(request: Request, file: UploadFile = File(...), user: di
 
 @router.get("/avatar/{user_id}")
 async def get_avatar(user_id: str):
+    import re
+    if not re.match(r'^[A-Za-z0-9_\-]+$', user_id):
+        raise HTTPException(status_code=400, detail="Invalid user ID")
     path = f"uploads/avatars/{user_id}.jpg"
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="Avatar not found")

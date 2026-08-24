@@ -40,11 +40,24 @@ const Loading = () => (
 )
 
 function PrivateRoute({ children, role }) {
-  const auth = useMemo(() => ({
+  const [auth, setAuth] = useState(() => ({
     token: localStorage.getItem('recruitai.token'),
     userRole: localStorage.getItem('recruitai.role'),
     userId: localStorage.getItem('recruitai.user_id'),
-  }), [])
+  }))
+
+  useEffect(() => {
+    const onStorage = () => {
+      setAuth({
+        token: localStorage.getItem('recruitai.token'),
+        userRole: localStorage.getItem('recruitai.role'),
+        userId: localStorage.getItem('recruitai.user_id'),
+      })
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [])
+
   if (!auth.token || !auth.userId) return <Navigate to="/login/candidate" />
   if (role && auth.userRole !== role) return <Navigate to="/" />
   return children

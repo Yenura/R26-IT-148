@@ -228,9 +228,12 @@ async def list_my_applications(request: Request, user: dict = Depends(get_curren
 async def get_applicant_counts(request: Request, company: dict = Depends(require_company)):
     """Batch endpoint: return {job_id: count} for all jobs owned by this company."""
     db = request.app.state.db
-    company_id = str(company["_id"])
-    # Get all job IDs for this company
-    job_docs = await db.jobs.find({"company_id": company_id}, {"_id": 1}).to_list(1000)
+    company_oid = company["_id"]
+    # Match both string and ObjectId forms of company_id
+    job_docs = await db.jobs.find({"$or": [
+        {"company_id": company_oid},
+        {"company_id": str(company_oid)},
+    ]}, {"_id": 1}).to_list(1000)
     job_ids = [doc["_id"] for doc in job_docs]
     if not job_ids:
         return {}
@@ -256,6 +259,12 @@ async def update_job(job_id: str, payload: JobUpdate, request: Request, company:
     db = request.app.state.db
     doc = await _get_owned_job(db, job_id, str(company["_id"]))
     updates = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None}
+    if "title" in updates:
+        title = updates["title"]
+        if not updates.get("job_role"):
+            updates["job_role"] = _normalize_job_role(title)
+        if not updates.get("job_level"):
+            updates["job_level"] = _normalize_job_level(title)
     updates["updated_at"] = datetime.now(timezone.utc)
     await db.jobs.update_one({"_id": doc["_id"]}, {"$set": updates})
     _invalidate_jobs_cache()

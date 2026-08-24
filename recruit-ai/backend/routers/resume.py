@@ -151,7 +151,7 @@ async def predict_role(
     db = request.app.state.db
     if resume_id:
         from bson import ObjectId
-        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id)})
+        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
     else:
         resume_doc = await db.resumes.find_one(
             {"candidate_id": str(user["_id"])},
@@ -202,7 +202,7 @@ async def match_resume(
     db = request.app.state.db
     if resume_id:
         from bson import ObjectId
-        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id)})
+        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
     else:
         resume_doc = await db.resumes.find_one(
             {"candidate_id": str(user["_id"])},
@@ -414,7 +414,7 @@ async def parse_resume_text(
 
 @limiter.limit("30/minute")
 @router.post("/interview-scores")
-async def save_interview_scores(payload: InterviewScoresCreate, request: Request):
+async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
     doc = {
         "candidate_id": payload.candidate_id,

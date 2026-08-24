@@ -234,244 +234,230 @@ async def list_roles():
 @router.get("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
 async def rank_pipeline(request: Request, job_id: str):
     """Fetch real applicants from MongoDB, build candidate inputs, and rank them."""
-    import motor.motor_asyncio
     from models.schemas import CandidateInput
     
-    # Connect to same MongoDB as C0
-    c0_mongo_uri = os.environ.get("C0_MONGODB_URI") or os.environ.get("MONGODB_URI")
-    if not c0_mongo_uri:
-        raise RuntimeError("MONGODB_URI not set — copy .env.example to .env and fill credentials")
-    c0_db_name = os.environ.get("C0_DB_NAME", os.environ.get("DB_NAME", "HR"))
-    client = motor.motor_asyncio.AsyncIOMotorClient(c0_mongo_uri)
-    db = client[c0_db_name]
+    store = request.app.state.store
+    if not hasattr(store, '_db'):
+        raise HTTPException(status_code=503, detail="MongoDB not available")
+    db = store._db
+
+    # 1. Fetch job details
+    from bson import ObjectId
+    job = None
+    if ObjectId.is_valid(job_id):
+        try:
+            job = await db.jobs.find_one({"_id": ObjectId(job_id)})
+        except Exception:
+            pass
+    if not job:
+        job = await db.jobs.find_one({"id": job_id})
+    if not job:
+        job = await db.jobs.find_one({"_id": job_id})
+        
+    job_title = job.get("title", "Software Engineer") if job else "Software Engineer"
+    job_role = job_title.replace(" ", "_")
+    service = get_service()
+    supported_roles = service.roles()
+    if job_role not in supported_roles:
+        job_role = "Software_Engineer"
+        for r in supported_roles:
+            if r.lower() in job_title.lower() or job_title.lower() in r.lower():
+                job_role = r
+                break
+
+    required_skills = job.get("required_skills", ["Python", "SQL", "Git"]) if job else ["Python", "SQL"]
+    
+    # 2. Fetch applications for this job
+    query_conditions = [{"job_id": job_id}]
+    if ObjectId.is_valid(job_id):
+        query_conditions.append({"job_id": ObjectId(job_id)})
+        
+    cursor = db.applications.find({"$or": query_conditions})
+    applicants = await cursor.to_list(length=200)
+    
+    if not applicants:
+        resume_cursor = db.resumes.find().sort("created_at", -1)
+        resumes_list = await resume_cursor.to_list(length=50)
+        if not resumes_list:
+            c1_cursor = db.cv_analyses.find().sort("analysis_timestamp", -1)
+            resumes_list = await c1_cursor.to_list(length=50)
+            
+        applicants = [
+            {
+                "candidate_id": r.get("candidate_id", str(r.get("_id", "unknown"))),
+                "candidate_name": r.get("candidate_name", r.get("filename", "Candidate")),
+                "resume_skills": r.get("skills", []),
+                "experience_years": r.get("experience_years", 2),
+                "education": r.get("education", "BSc IT"),
+            }
+            for r in resumes_list
+        ]
+
+    if not applicants:
+        return {"success": True, "job_id": job_id, "data": [], "message": "No applicants or resumes found"}
+
+    # 3. Batch-fetch resumes and interview scores for all candidates
+    candidate_ids = [app.get("candidate_id") or str(app.get("_id", "CAND")) for app in applicants]
+    resume_map = {}
+    async for r in db.resumes.find({"candidate_id": {"$in": candidate_ids}}):
+        resume_map[r.get("candidate_id", "")] = r
+    scores_map = {}
+    async for s in db.interview_scores.find({"candidate_id": {"$in": candidate_ids}}).sort("created_at", -1):
+        cid = s.get("candidate_id", "")
+        if cid not in scores_map:
+            scores_map[cid] = s
+
+    # 4. Build candidate inputs
+    candidates = []
+    for app in applicants:
+        candidate_id = app.get("candidate_id") or str(app.get("_id", "CAND"))
+        candidate_name = app.get("candidate_name") or app.get("name") or "Candidate"
+        
+        resume_skills = app.get("resume_skills", [])
+        experience_years = app.get("experience_years", 0)
+        edu_level = 2
+        
+        if not resume_skills:
+            resume = resume_map.get(candidate_id)
+            if resume:
+                resume_skills = resume.get("skills", [])
+                experience_years = resume.get("experience_years", 0)
+                edu_str = resume.get("education", "").lower()
+                if "phd" in edu_str or "doctorate" in edu_str:
+                    edu_level = 4
+                elif "master" in edu_str or "m.sc" in edu_str or "mba" in edu_str:
+                    edu_level = 3
+                elif "bachelor" in edu_str or "b.sc" in edu_str or "b.tech" in edu_str:
+                    edu_level = 2
+                elif "diploma" in edu_str:
+                    edu_level = 1
+                else:
+                    edu_level = 1
+
+        if not resume_skills:
+            resume_skills = ["Python", "SQL", "Git"]
+
+        mcq_score = 0.8
+        descriptive_score = 0.75
+        coding_score = 0.85
+        latest = scores_map.get(candidate_id)
+        if latest:
+            mcq_score = (latest.get("mcq_score", 80) or 80) / 100
+            descriptive_score = (latest.get("descriptive_score", 75) or 75) / 100
+            coding_score = (latest.get("coding_score", 85) or 85) / 100
+        
+        matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() for rs in resume_skills)) if resume_skills else 0
+        skill_score_raw = matched / max(len(required_skills), 1)
+        
+        candidates.append(CandidateInput(
+            candidate_id=candidate_id,
+            candidate_name=candidate_name,
+            job_role=job_role,
+            years_experience=float(experience_years or 2.0),
+            edu_level=int(edu_level),
+            skill_score_raw=float(skill_score_raw),
+            P_mcq=float(mcq_score),
+            P_desc=float(descriptive_score),
+            P_code=float(coding_score),
+            skills=resume_skills,
+        ))
+    
+    if not candidates:
+        return {"success": True, "job_id": job_id, "data": [], "message": "No valid candidates"}
     
     try:
-        # 1. Fetch job details
-        from bson import ObjectId
-        job = None
-        if ObjectId.is_valid(job_id):
-            try:
-                job = await db.jobs.find_one({"_id": ObjectId(job_id)})
-            except Exception:
-                pass
-        if not job:
-            job = await db.jobs.find_one({"id": job_id})
-        if not job:
-            job = await db.jobs.find_one({"_id": job_id})
-            
-        job_title = job.get("title", "Software Engineer") if job else "Software Engineer"
-        job_role = job_title.replace(" ", "_")
-        # Ensure role is canonical or supported by CSS engine
-        service = get_service()
-        supported_roles = service.roles()
-        if job_role not in supported_roles:
-            job_role = "Software_Engineer"
-            for r in supported_roles:
-                if r.lower() in job_title.lower() or job_title.lower() in r.lower():
-                    job_role = r
-                    break
-
-        required_skills = job.get("required_skills", ["Python", "SQL", "Git"]) if job else ["Python", "SQL"]
+        job_obj, ranked = service.rank(
+            job_role, candidates,
+            w_cv=0.4, w_int=0.6, use_ltr=True)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception:
+        job_obj, ranked = service.rank(
+            "Software_Engineer", candidates,
+            w_cv=0.4, w_int=0.6, use_ltr=True)
+    
+    out = []
+    for r in ranked:
+        css = round(r["CSS"], 4)
+        s_cv = round(r["S_cv"], 4)
+        s_int = round(r["S_int"], 4)
+        s_edu = round(r.get("S_edu", 0), 4)
+        s_exp = round(r.get("S_exp", 0), 4)
+        s_skill = round(r.get("S_skill", 0), 4)
+        p_mcq = round(r.get("P_mcq", 0), 4)
+        p_desc = round(r.get("P_desc", 0), 4)
+        p_code = round(r.get("P_code", 0), 4)
         
-        # 2. Fetch applications for this job
-        query_conditions = [{"job_id": job_id}]
-        if ObjectId.is_valid(job_id):
-            query_conditions.append({"job_id": ObjectId(job_id)})
-            
-        cursor = db.applications.find({"$or": query_conditions})
-        applicants = await cursor.to_list(length=200)
+        strengths = []
+        weaknesses = []
         
-        # Fallback to all stored resumes if no direct applications found
-        if not applicants:
-            resume_cursor = db.resumes.find().sort("created_at", -1)
-            resumes_list = await resume_cursor.to_list(length=50)
-            if not resumes_list:
-                # Secondary fallback: cv_analyses collection
-                c1_cursor = db.cv_analyses.find().sort("analysis_timestamp", -1)
-                resumes_list = await c1_cursor.to_list(length=50)
-                
-            applicants = [
-                {
-                    "candidate_id": r.get("candidate_id", str(r.get("_id", "unknown"))),
-                    "candidate_name": r.get("candidate_name", r.get("filename", "Candidate")),
-                    "resume_skills": r.get("skills", []),
-                    "experience_years": r.get("experience_years", 2),
-                    "education": r.get("education", "BSc IT"),
-                }
-                for r in resumes_list
-            ]
-
-        if not applicants:
-            return {"success": True, "job_id": job_id, "data": [], "message": "No applicants or resumes found"}
-
-        # 3. Batch-fetch resumes and interview scores for all candidates
-        candidate_ids = [app.get("candidate_id") or str(app.get("_id", "CAND")) for app in applicants]
-        resume_map = {}
-        async for r in db.resumes.find({"candidate_id": {"$in": candidate_ids}}):
-            resume_map[r.get("candidate_id", "")] = r
-        scores_map = {}
-        async for s in db.interview_scores.find({"candidate_id": {"$in": candidate_ids}}).sort("created_at", -1):
-            cid = s.get("candidate_id", "")
-            if cid not in scores_map:
-                scores_map[cid] = s
-
-        # 4. Build candidate inputs from applicant + resume + interview data
-        candidates = []
-        for app in applicants:
-            candidate_id = app.get("candidate_id") or str(app.get("_id", "CAND"))
-            candidate_name = app.get("candidate_name") or app.get("name") or "Candidate"
+        if s_skill >= 0.75:
+            strengths.append(f"Strong CV skill match ({s_skill*100:.0f}%)")
+        elif s_skill < 0.50:
+            weaknesses.append(f"Low CV skill alignment ({s_skill*100:.0f}%)")
             
-            resume_skills = app.get("resume_skills", [])
-            experience_years = app.get("experience_years", 0)
-            edu_level = 2
+        if s_exp >= 0.75:
+            strengths.append("Solid years of relevant experience")
+        elif s_exp < 0.40:
+            weaknesses.append("Limited industry experience")
             
-            if not resume_skills:
-                resume = resume_map.get(candidate_id)
-                if resume:
-                    resume_skills = resume.get("skills", [])
-                    experience_years = resume.get("experience_years", 0)
-                    edu_str = resume.get("education", "").lower()
-                    if "phd" in edu_str or "doctorate" in edu_str:
-                        edu_level = 4
-                    elif "master" in edu_str or "m.sc" in edu_str or "mba" in edu_str:
-                        edu_level = 3
-                    elif "bachelor" in edu_str or "b.sc" in edu_str or "b.tech" in edu_str:
-                        edu_level = 2
-                    elif "diploma" in edu_str:
-                        edu_level = 1
-                    else:
-                        edu_level = 1
-
-            if not resume_skills:
-                resume_skills = ["Python", "SQL", "Git"]
-
-            mcq_score = 0.8
-            descriptive_score = 0.75
-            coding_score = 0.85
-            latest = scores_map.get(candidate_id)
-            if latest:
-                mcq_score = (latest.get("mcq_score", 80) or 80) / 100
-                descriptive_score = (latest.get("descriptive_score", 75) or 75) / 100
-                coding_score = (latest.get("coding_score", 85) or 85) / 100
+        if p_code >= 0.80:
+            strengths.append(f"Top-tier live coding & unit test pass rate ({p_code*100:.0f}%)")
+        elif p_code < 0.50:
+            weaknesses.append(f"Failed live coding test cases ({p_code*100:.0f}%)")
             
-            # Calculate skill match
-            matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() for rs in resume_skills)) if resume_skills else 0
-            skill_score_raw = matched / max(len(required_skills), 1)
+        if p_mcq >= 0.80:
+            strengths.append(f"High conceptual MCQ score ({p_mcq*100:.0f}%)")
+        elif p_mcq < 0.50:
+            weaknesses.append(f"Low conceptual MCQ marks ({p_mcq*100:.0f}%)")
             
-            candidates.append(CandidateInput(
-                candidate_id=candidate_id,
-                candidate_name=candidate_name,
-                job_role=job_role,
-                years_experience=float(experience_years or 2.0),
-                edu_level=int(edu_level),
-                skill_score_raw=float(skill_score_raw),
-                P_mcq=float(mcq_score),
-                P_desc=float(descriptive_score),
-                P_code=float(coding_score),
-                skills=resume_skills,
-            ))
+        if p_desc >= 0.80:
+            strengths.append(f"Clear architectural & descriptive explanations ({p_desc*100:.0f}%)")
+        elif p_desc < 0.50:
+            weaknesses.append(f"Weak descriptive theory answers ({p_desc*100:.0f}%)")
+            
+        if not r["passed_hard_filter"]:
+            verdict = "Disqualified (Filter Failed)"
+            badge_color = "#ef4444"
+            reasoning = f"Failed mandatory role filter: {r.get('filter_fail_reason', 'Did not meet prerequisites')}."
+        elif css >= 0.80:
+            verdict = "Highly Recommended"
+            badge_color = "#22c55e"
+            reasoning = f"Top-ranked candidate with {s_int*100:.0f}% interview performance and {s_cv*100:.0f}% CV fit. Excellent coding and conceptual marks."
+        elif css >= 0.65:
+            verdict = "Recommended"
+            badge_color = "#3b82f6"
+            reasoning = f"Strong contender with {s_int*100:.0f}% interview score. Good alignment across technical criteria with minor gaps."
+        elif css >= 0.50:
+            verdict = "Potential Match"
+            badge_color = "#f59e0b"
+            reasoning = f"Moderate fit ({css*100:.0f}% Composite). Demonstrates foundation but requires upskilling in: {', '.join(weaknesses[:2]) if weaknesses else 'key areas'}."
+        else:
+            verdict = "Not Recommended"
+            badge_color = "#ef4444"
+            reasoning = f"Low composite score ({css*100:.0f}%). Significant deficits in technical interview marks and required CV skills."
         
-        if not candidates:
-            return {"success": True, "job_id": job_id, "data": [], "message": "No valid candidates"}
-        
-        # 4. Rank candidates using LTR & CSS engine
-        try:
-            job_obj, ranked = service.rank(
-                job_role, candidates,
-                w_cv=0.4, w_int=0.6, use_ltr=True)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc))
-        except Exception:
-            # Fallback to Software_Engineer role if job_role parsing failed
-            job_obj, ranked = service.rank(
-                "Software_Engineer", candidates,
-                w_cv=0.4, w_int=0.6, use_ltr=True)
-        
-        out = []
-        for r in ranked:
-            css = round(r["CSS"], 4)
-            s_cv = round(r["S_cv"], 4)
-            s_int = round(r["S_int"], 4)
-            s_edu = round(r.get("S_edu", 0), 4)
-            s_exp = round(r.get("S_exp", 0), 4)
-            s_skill = round(r.get("S_skill", 0), 4)
-            p_mcq = round(r.get("P_mcq", 0), 4)
-            p_desc = round(r.get("P_desc", 0), 4)
-            p_code = round(r.get("P_code", 0), 4)
-            
-            # Generate AI Candidate Evaluation & Why Good/Bad
-            strengths = []
-            weaknesses = []
-            
-            if s_skill >= 0.75:
-                strengths.append(f"Strong CV skill match ({s_skill*100:.0f}%)")
-            elif s_skill < 0.50:
-                weaknesses.append(f"Low CV skill alignment ({s_skill*100:.0f}%)")
-                
-            if s_exp >= 0.75:
-                strengths.append("Solid years of relevant experience")
-            elif s_exp < 0.40:
-                weaknesses.append("Limited industry experience")
-                
-            if p_code >= 0.80:
-                strengths.append(f"Top-tier live coding & unit test pass rate ({p_code*100:.0f}%)")
-            elif p_code < 0.50:
-                weaknesses.append(f"Failed live coding test cases ({p_code*100:.0f}%)")
-                
-            if p_mcq >= 0.80:
-                strengths.append(f"High conceptual MCQ score ({p_mcq*100:.0f}%)")
-            elif p_mcq < 0.50:
-                weaknesses.append(f"Low conceptual MCQ marks ({p_mcq*100:.0f}%)")
-                
-            if p_desc >= 0.80:
-                strengths.append(f"Clear architectural & descriptive explanations ({p_desc*100:.0f}%)")
-            elif p_desc < 0.50:
-                weaknesses.append(f"Weak descriptive theory answers ({p_desc*100:.0f}%)")
-                
-            if not r["passed_hard_filter"]:
-                verdict = "Disqualified (Filter Failed)"
-                badge_color = "#ef4444"
-                reasoning = f"Failed mandatory role filter: {r.get('filter_fail_reason', 'Did not meet prerequisites')}."
-            elif css >= 0.80:
-                verdict = "Highly Recommended"
-                badge_color = "#22c55e"
-                reasoning = f"Top-ranked candidate with {s_int*100:.0f}% interview performance and {s_cv*100:.0f}% CV fit. Excellent coding and conceptual marks."
-            elif css >= 0.65:
-                verdict = "Recommended"
-                badge_color = "#3b82f6"
-                reasoning = f"Strong contender with {s_int*100:.0f}% interview score. Good alignment across technical criteria with minor gaps."
-            elif css >= 0.50:
-                verdict = "Potential Match"
-                badge_color = "#f59e0b"
-                reasoning = f"Moderate fit ({css*100:.0f}% Composite). Demonstrates foundation but requires upskilling in: {', '.join(weaknesses[:2]) if weaknesses else 'key areas'}."
-            else:
-                verdict = "Not Recommended"
-                badge_color = "#ef4444"
-                reasoning = f"Low composite score ({css*100:.0f}%). Significant deficits in technical interview marks and required CV skills."
-            
-            out.append({
-                "rank": r["rank"],
-                "candidate_id": r["candidate_id"],
-                "candidate_name": r["candidate_name"],
-                "CSS": css,
-                "S_cv": s_cv,
-                "S_int": s_int,
-                "S_edu": s_edu,
-                "S_exp": s_exp,
-                "S_skill": s_skill,
-                "P_mcq": p_mcq,
-                "P_desc": p_desc,
-                "P_code": p_code,
-                "ltr_score": r.get("ltr_score"),
-                "passed_hard_filter": r["passed_hard_filter"],
-                "filter_fail_reason": r.get("filter_fail_reason", ""),
-                "verdict": verdict,
-                "badge_color": badge_color,
-                "reasoning": reasoning,
-                "strengths": strengths if strengths else ["Basic profile compatibility"],
-                "weaknesses": weaknesses if weaknesses else ["No critical deficits detected"],
-            })
-        
-        return {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
-    finally:
-        client.close()
+        out.append({
+            "rank": r["rank"],
+            "candidate_id": r["candidate_id"],
+            "candidate_name": r["candidate_name"],
+            "CSS": css,
+            "S_cv": s_cv,
+            "S_int": s_int,
+            "S_edu": s_edu,
+            "S_exp": s_exp,
+            "S_skill": s_skill,
+            "P_mcq": p_mcq,
+            "P_desc": p_desc,
+            "P_code": p_code,
+            "ltr_score": r.get("ltr_score"),
+            "passed_hard_filter": r["passed_hard_filter"],
+            "filter_fail_reason": r.get("filter_fail_reason", ""),
+            "verdict": verdict,
+            "badge_color": badge_color,
+            "reasoning": reasoning,
+            "strengths": strengths if strengths else ["Basic profile compatibility"],
+            "weaknesses": weaknesses if weaknesses else ["No critical deficits detected"],
+        })
+    
+    return {"success": True, "job_id": job_id, "job_role": job_role, "data": out}

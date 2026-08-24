@@ -70,10 +70,20 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
     sandbox_wrapper = (
         "import sys as _sys\n"
         "from io import StringIO\n"
-        "_blocked = {'os','subprocess','shutil','socket','pathlib','ctypes','multiprocessing','threading','signal','inspect','importlib'}\n"
+        "_blocked = {\n"
+        "    'os','subprocess','shutil','socket','pathlib','ctypes',\n"
+        "    'multiprocessing','threading','signal','inspect','importlib',\n"
+        "    'pickle','pickletools','shelve','marshal','copyreg',\n"
+        "    'urllib','urllib.request','urllib.parse','urllib.error',\n"
+        "    'http','http.client','http.server',\n"
+        "    'smtplib','ftplib','telnetlib','xmlrpc',\n"
+        "    'webbrowser','code','codeop','compileall',\n"
+        "    '_thread','dummy_thread',\n"
+        "}\n"
         "_real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__\n"
         "def _safe_import(name, *a, **kw):\n"
-        "    if name in _blocked: raise ImportError(f'Blocked: {name}')\n"
+        "    top = name.split('.')[0]\n"
+        "    if top in _blocked: raise ImportError(f'Blocked: {name}')\n"
         "    return _real_import(name, *a, **kw)\n"
         "__builtins__.__import__ = _safe_import\n"
         "_stdout = _sys.stdout\n"
@@ -237,7 +247,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
         raise
     except Exception as e:
         logger.error(f"Error starting interview: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to start interview")
 
 
 @router.post("/submit", response_model=InterviewScoreResult)
@@ -441,7 +451,7 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
         raise
     except Exception as e:
         logger.error(f"Error submitting answers: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail="Failed to submit answers")
 
 
 @router.post("/code/run")
