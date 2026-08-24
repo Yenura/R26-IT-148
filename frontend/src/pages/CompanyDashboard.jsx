@@ -79,7 +79,23 @@ export default function CompanyDashboard() {
       ])
       const jobList = Array.isArray(r.data) ? r.data : []
       setJobs(jobList)
-      setApplicantCounts(countsR.data || countsR || {})
+      const bulkCounts = countsR?.data || countsR
+      if (bulkCounts && typeof bulkCounts === 'object' && Object.keys(bulkCounts).length > 0) {
+        setApplicantCounts(bulkCounts)
+      } else {
+        const countEntries = await Promise.all(
+          jobList.map(async (job) => {
+            try {
+              const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
+              const apps = Array.isArray(ar.data) ? ar.data : []
+              return [job.id, apps.length]
+            } catch {
+              return [job.id, 0]
+            }
+          })
+        )
+        setApplicantCounts(Object.fromEntries(countEntries))
+      }
     } catch {
       toast.error('Failed to load jobs')
     } finally {

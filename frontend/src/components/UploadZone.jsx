@@ -50,7 +50,6 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
             cursor: 'pointer',
             boxShadow: dragOver ? '0 0 24px rgba(99, 102, 241, 0.2)' : 'var(--shadow-sm)'
           }}
-          onClick={() => document.getElementById('resume-file-input')?.click()}
         >
           <div style={{
             width: 58,

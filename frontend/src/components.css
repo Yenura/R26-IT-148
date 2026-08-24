@@ -765,7 +765,7 @@ select {
 
 .table td {
   padding: var(--table-cell-padding);
-  border-bottom: 1px solid var(--color-border-subtle);
+  border-bottom: 1px solid var(--color-border-subtle, rgba(30, 30, 58, .6));
   font-size: var(--p-text-base);
 }
 
@@ -1155,6 +1155,32 @@ select {
   color: var(--color-success-fg);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD LAYOUTS (responsive two-column)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dashboard-grid {
+  display: grid;
+  gap: var(--p-space-5);
+}
+
+.dashboard-grid-main {
+  grid-template-columns: minmax(0, 1.8fr) minmax(0, 1.2fr);
+}
+
+.dashboard-grid-equal {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 900px) {
+  .dashboard-grid-main,
+  .dashboard-grid-equal {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════ */
+
 .step-label {
   font-size: var(--p-text-xs);
   color: var(--color-fg-muted);
@@ -1379,7 +1405,7 @@ pre {
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   DASHBOARD LAYOUTS (responsive two-column)
+DASHBOARD LAYOUTS (responsive two-column)
    ═══════════════════════════════════════════════════════════════════ */
 
 .dashboard-grid {
@@ -1608,7 +1634,6 @@ pre {
     transform: none !important;
   }
 }
-
 /* ═══════════════════════════════════════════════════════════════════
    TAB CONTENT TRANSITION
    ═══════════════════════════════════════════════════════════════════ */

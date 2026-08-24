@@ -180,7 +180,7 @@ export default function Ranking() {
                       const isTop3 = cand.rank <= 3 && cand.passed_hard_filter
                       return (
                         <tr
-                          key={cand.candidate_id}
+                          key={cand.candidate_id || idx}
                           style={{ opacity: cand.passed_hard_filter ? 1 : 0.6 }}
                         >
                           <td>
