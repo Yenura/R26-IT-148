@@ -106,7 +106,6 @@ export default function App() {
     { to: '/company/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/pipeline/ranking', icon: ListOrdered, label: 'Candidate Ranking' },
     { to: '/pipeline/leaderboard', icon: Award, label: 'Leaderboard' },
-    { to: '/pipeline/skill-gap', icon: Target, label: 'Skill Gap Matrix' },
   ]
 
   const navLinks = role === 'candidate' ? candidateLinks : role === 'company' ? companyLinks : []
