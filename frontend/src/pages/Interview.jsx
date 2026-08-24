@@ -607,8 +607,8 @@ export default function Interview() {
   if (step === 'result' && result) {
     const mcqScore = result.mcq_score || 0
     const descScore = result.descriptive_score || 0
-    const codeScore = result.code_score || 0
-    const overallScore = result.overall_score || (mcqScore * 0.2 + descScore * 0.3 + codeScore * 0.5)
+    const codeScore = result.coding_score || 0
+    const overallScore = result.interview_score || (mcqScore * 0.2 + descScore * 0.3 + codeScore * 0.5)
 
     const chartData = [
       { name: 'MCQ Test', score: mcqScore },
