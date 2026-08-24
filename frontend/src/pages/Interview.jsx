@@ -201,6 +201,13 @@ export default function Interview() {
 
   const questions = session?.questions || []
   const q = questions[currentQ]
+  if (step === 'interview' && !q) {
+    return (
+      <div style={{ padding: 60, textAlign: 'center' }}>
+        <p>Loading question...</p>
+      </div>
+    )
+  }
   const progressPct = questions.length > 0 ? (((currentQ + 1) / questions.length) * 100).toFixed(0) : 0
 
   const typeIcon = (t) => {

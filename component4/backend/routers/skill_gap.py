@@ -247,6 +247,7 @@ async def list_reports(request: Request, skip: int = 0, limit: int = 50):
 
 
 @router.delete("/report/{candidate_id}", summary="Delete a candidate's report")
+@limiter.limit("10/minute")
 async def delete_report(candidate_id: str, request: Request):
     db  = request.app.state.db
     res = await db.skill_gap_reports.delete_many({"candidate_id": candidate_id})

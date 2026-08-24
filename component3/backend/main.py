@@ -31,6 +31,15 @@ limiter = Limiter(key_func=get_remote_address)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.store = await create_store()
+    # Create indexes if using MongoDB
+    if hasattr(app.state.store, '_db'):
+        db = app.state.store._db
+        await db.rankings.create_index([("job_id", 1)], unique=True)
+        await db.rankings.create_index([("created_at", -1)])
+        await db.ranked_candidates.create_index([("candidate_id", 1)])
+        await db.ranked_candidates.create_index([("job_id", 1)])
+        await db.weight_profiles.create_index([("job_role", 1)])
+        logger.info("C3 MongoDB indexes verified")
     yield
 
 

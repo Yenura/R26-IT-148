@@ -135,6 +135,25 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [userMenu])
 
+  const location = useLocation()
+  useEffect(() => {
+    const path = location.pathname
+    let title = 'RecruitAI'
+    if (path.includes('/candidate/dashboard')) title = 'Candidate Dashboard | RecruitAI'
+    else if (path.includes('/company/dashboard')) title = 'Company Dashboard | RecruitAI'
+    else if (path.includes('/candidate/jobs')) title = 'Job Board | RecruitAI'
+    else if (path.includes('/interview')) title = 'AI Interview | RecruitAI'
+    else if (path.includes('/cv-match')) title = 'CV Match | RecruitAI'
+    else if (path.includes('/skill-gap')) title = 'Skill Gap Analysis | RecruitAI'
+    else if (path.includes('/ranking')) title = 'Candidate Ranking | RecruitAI'
+    else if (path.includes('/leaderboard')) title = 'Leaderboard | RecruitAI'
+    else if (path.includes('/progress')) title = 'Progress Tracking | RecruitAI'
+    else if (path.includes('/profile')) title = 'Profile | RecruitAI'
+    else if (path.includes('/login')) title = 'Login | RecruitAI'
+    else if (path.includes('/register')) title = 'Register | RecruitAI'
+    document.title = title
+  }, [location.pathname])
+
   return (
     <div className="app-root">
       <GlobalBackground />

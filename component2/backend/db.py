@@ -47,6 +47,15 @@ def _get_mongo_db() -> Optional[Database]:
         client.admin.command("ping")
         _mongo_db = client[db_name]
         logger.info("MongoDB connected for component2 persistence")
+        # Create indexes (idempotent)
+        _mongo_db["sessions"].create_index([("session_id", 1)], unique=True)
+        _mongo_db["sessions"].create_index([("candidate_id", 1)])
+        _mongo_db["sessions"].create_index([("created_at", -1)])
+        _mongo_db["sessions"].create_index([("status", 1)])
+        _mongo_db["results"].create_index([("interview_id", 1)], unique=True)
+        _mongo_db["results"].create_index([("candidate_id", 1)])
+        _mongo_db["results"].create_index([("created_at", -1)])
+        logger.info("C2 MongoDB indexes verified")
         return _mongo_db
     except Exception as exc:
         logger.warning("MongoDB unavailable, falling back to in-memory store: %s", exc)
@@ -142,7 +151,7 @@ async def get_result(interview_id: str) -> Optional[Dict[str, Any]]:
     return await run_in_threadpool(_get_result_sync, interview_id)
 
 
-def _get_seen_question_ids_sync(candidate_id: str, limit: int = 200) -> set:
+def _get_seen_question_ids_sync(candidate_id: str, limit: int = 1000) -> set:
     """Return question IDs the candidate has seen in past sessions."""
     mongo_db = _get_mongo_db()
     seen = set()
@@ -165,5 +174,5 @@ def _get_seen_question_ids_sync(candidate_id: str, limit: int = 200) -> set:
     return seen
 
 
-async def get_seen_question_ids(candidate_id: str, limit: int = 200) -> set:
+async def get_seen_question_ids(candidate_id: str, limit: int = 1000) -> set:
     return await run_in_threadpool(_get_seen_question_ids_sync, candidate_id, limit)

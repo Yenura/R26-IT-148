@@ -5,8 +5,11 @@ from datetime import datetime, timezone
 from bson import ObjectId
 from typing import Any, Dict, Optional, List
 from pydantic import BaseModel
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 class ProgressUpdateRequest(BaseModel):
@@ -21,6 +24,7 @@ class ProgressUpdateRequest(BaseModel):
 
 
 @router.post("/update", summary="Update skill learning progress")
+@limiter.limit("30/minute")
 async def update_progress(payload: ProgressUpdateRequest, request: Request):
     db = request.app.state.db
     from services.ml_engine import RESOURCES
@@ -85,6 +89,7 @@ async def update_progress(payload: ProgressUpdateRequest, request: Request):
 
 
 @router.post("/sync-from-applied-interviews/{candidate_id}", summary="Auto-sync weak skills directly from candidate's applied jobs and interview results")
+@limiter.limit("10/minute")
 async def sync_progress_from_applied_interviews(candidate_id: str, request: Request):
     """
     Scans candidate applied jobs, interview results, CV match history and skill gap reports,
@@ -333,6 +338,7 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
 
 
 @router.post("/populate", summary="Auto-populate progress from latest skill gap report")
+@limiter.limit("10/minute")
 async def populate_progress(request: Request):
     db = request.app.state.db
     candidate_id = "web-user"
@@ -367,6 +373,7 @@ async def get_progress(candidate_id: str, request: Request):
 
 
 @router.delete("/{candidate_id}/{skill}", summary="Delete a specific progress skill goal")
+@limiter.limit("20/minute")
 async def delete_progress_skill(candidate_id: str, skill: str, request: Request):
     db = request.app.state.db
     res = await db.progress_tracking.delete_one({"candidate_id": candidate_id, "skill": skill})
@@ -374,6 +381,7 @@ async def delete_progress_skill(candidate_id: str, skill: str, request: Request)
 
 
 @router.delete("/{candidate_id}", summary="Reset all progress for a candidate")
+@limiter.limit("10/minute")
 async def reset_progress(candidate_id: str, request: Request):
     db = request.app.state.db
     res = await db.progress_tracking.delete_many({"candidate_id": candidate_id})

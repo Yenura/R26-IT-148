@@ -1,4 +1,5 @@
 """Pydantic schemas for auth, resume, jobs, export."""
+import re
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
@@ -11,11 +12,27 @@ class CompanyRegister(BaseModel):
     industry: str = Field(default="", max_length=200)
     website: str = Field(default="", max_length=500)
 
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError("Invalid email format")
+        return v
+
 
 class CandidateRegister(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=200)
     email: str = Field(..., min_length=5, max_length=200)
     password: str = Field(..., min_length=6, max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError("Invalid email format")
+        return v
 
 
 class LoginRequest(BaseModel):

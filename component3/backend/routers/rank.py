@@ -161,6 +161,7 @@ async def get_results(job_id: str, request: Request):
 
 
 @router.post("/rank/weights", summary="Set employer scoring weights")
+@limiter.limit("20/minute")
 async def set_weights(payload: RankWeightsRequest, request: Request):
     if payload.job_role not in get_service().roles():
         raise HTTPException(
