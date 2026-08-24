@@ -454,8 +454,12 @@ export default function SkillGap() {
                               background: isAdded ? 'var(--color-success-muted)' : 'var(--color-danger-muted)',
                               color: isAdded ? 'var(--color-success)' : 'var(--color-danger)',
                               border: `1px solid ${isAdded ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.3)'}`,
-                              fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4
+                              fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
+                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                             }}
+                            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.95)' }}
+                            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+                            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
                             title={isAdded ? 'Already added to simulation' : 'Click to simulate acquiring this skill'}
                           >
                             {isAdded ? '✓' : '+'} {s}

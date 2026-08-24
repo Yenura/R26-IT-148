@@ -4,6 +4,7 @@ import toast from 'react-hot-toast'
 import { Route } from 'lucide-react'
 import { c4CareerRoles, c4CareerPath } from '../api'
 import { useAuth } from '../hooks/useAuth'
+import PageHeader from '../components/PageHeader'
 
 export default function CareerPath() {
   const navigate = useNavigate()
@@ -35,34 +36,58 @@ export default function CareerPath() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const difficultyColor = (d) => d === 'Easy' ? 'var(--accent-2)' : d === 'Medium' ? 'var(--accent)' : 'var(--danger)'
+  const difficultyColor = (d) => d === 'Easy' ? 'var(--color-success)' : d === 'Medium' ? 'var(--color-primary)' : 'var(--color-danger)'
 
   return (
     <div className="fade-in" style={{ maxWidth: 800, margin: '0 auto' }}>
-      <div className="page-head">
-        <h1>Career Path</h1>
-        <p>Explore vertical growth and lateral transitions from your current role</p>
-      </div>
+      <PageHeader
+        badge="Component 4 Career Engine"
+        title="Career Path Explorer"
+        description="Explore vertical growth and lateral transitions from your current role."
+        icon={Route}
+      />
 
-      <form onSubmit={compute} className="card">
+      <form onSubmit={compute} className="card" style={{ padding: 'var(--p-space-6)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label>Current Role *</label>
-            <select value={form.current_role} onChange={set('current_role')}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Current Role *</label>
+            <select
+              value={form.current_role}
+              onChange={set('current_role')}
+              style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+            >
               <option value="">Select role...</option>
               {roles.map((r) => <option key={r} value={r}>{r}</option>)}
             </select>
           </div>
           <div>
-            <label>Years of Experience</label>
-            <input type="number" value={form.experience_years} onChange={set('experience_years')} min="0" max="50" />
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Years of Experience</label>
+            <input
+              type="number"
+              value={form.experience_years}
+              onChange={set('experience_years')}
+              min="0"
+              max="50"
+              style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+            />
           </div>
         </div>
         <div style={{ marginTop: 12 }}>
-          <label>Your Skills (comma-separated)</label>
-          <input type="text" value={form.skills} onChange={set('skills')} placeholder="Python, SQL, React, Docker" />
+          <label style={{ fontSize: '12px', marginTop: 0 }}>Your Skills (comma-separated)</label>
+          <input
+            type="text"
+            value={form.skills}
+            onChange={set('skills')}
+            placeholder="Python, SQL, React, Docker"
+            style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+          />
         </div>
-        <button className="btn" type="submit" disabled={busy} style={{ marginTop: 16, width: '100%' }}>
+        <button
+          className="btn btn-primary"
+          type="submit"
+          disabled={busy}
+          style={{ marginTop: 16, width: '100%', padding: '12px 20px', fontWeight: 700 }}
+        >
           <Route size={16} /> {busy ? 'Computing...' : 'Plan My Path'}
         </button>
       </form>
@@ -71,8 +96,10 @@ export default function CareerPath() {
         <>
           {/* Vertical Path */}
           {result.vertical_path && result.vertical_path.length > 0 && (
-            <div className="card">
-              <h3 style={{ marginBottom: 16 }}>Growth Track: {result.current_role}</h3>
+            <div className="card" style={{ padding: 'var(--p-space-6)' }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
+                Growth Track: {result.current_role}
+              </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                 {result.vertical_path.map((node, i) => (
                   <div key={i} style={{ display: 'flex', gap: 12, position: 'relative' }}>
@@ -96,7 +123,13 @@ export default function CareerPath() {
                         color: node.status === 'upcoming' ? 'var(--color-fg-muted)' : 'var(--color-fg)',
                       }}>
                         {node.title}
-                        {node.status === 'current' && <span className="badge badge-blue" style={{ marginLeft: 8, fontSize: 10 }}>Current</span>}
+                        {node.status === 'current' && (
+                          <span style={{
+                            marginLeft: 8, fontSize: 10, fontWeight: 700,
+                            padding: '2px 8px', borderRadius: 9999,
+                            background: 'var(--color-primary-muted)', color: 'var(--color-primary)',
+                          }}>Current</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -107,20 +140,22 @@ export default function CareerPath() {
 
           {/* Lateral Transitions */}
           {result.transitions && result.transitions.length > 0 && (
-            <div className="card">
-              <h3 style={{ marginBottom: 4 }}>Lateral Transitions</h3>
-              <p className="muted" style={{ fontSize: 13, marginBottom: 16 }}>Roles you can transition to based on your skills</p>
+            <div className="card" style={{ padding: 'var(--p-space-6)' }}>
+              <h3 style={{ margin: '0 0 4px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>Lateral Transitions</h3>
+              <p style={{ fontSize: 13, color: 'var(--color-fg-muted)', margin: '0 0 16px 0' }}>Roles you can transition to based on your skills</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {result.transitions.map((t, i) => (
                   <div key={i} style={{
-                    padding: 16, borderRadius: 8, border: '1px solid var(--color-border)',
+                    padding: 16, borderRadius: 'var(--radius-md)',
+                    border: '1px solid var(--color-border-subtle)',
                     background: 'var(--color-bg-elevated)',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <div style={{ fontWeight: 600, fontSize: 15 }}>{t.target_role}</div>
+                      <div style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-fg)' }}>{t.target_role}</div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span className="badge" style={{
-                          fontSize: 11,
+                        <span style={{
+                          fontSize: 11, fontWeight: 700,
+                          padding: '2px 8px', borderRadius: 9999,
                           background: difficultyColor(t.difficulty) + '20',
                           color: difficultyColor(t.difficulty),
                         }}>{t.difficulty}</span>
@@ -128,21 +163,32 @@ export default function CareerPath() {
                       </div>
                     </div>
 
-                    {/* Readiness bar */}
                     <div className="progress-bar" style={{ marginBottom: 10 }}>
                       <div style={{ width: `${t.readiness_pct}%`, background: difficultyColor(t.difficulty) }} />
                     </div>
 
                     {t.matching_skills?.length > 0 && (
                       <div style={{ marginBottom: 6 }}>
-                        <span className="muted" style={{ fontSize: 11 }}>You have: </span>
-                        {t.matching_skills.map((s) => <span key={s} className="chip" style={{ fontSize: 10, borderColor: 'var(--color-success)', color: 'var(--color-success)' }}>{s}</span>)}
+                        <span style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>You have: </span>
+                        {t.matching_skills.map((s) => (
+                          <span key={s} className="chip" style={{
+                            fontSize: 10, padding: '2px 8px',
+                            background: 'var(--color-success-muted)', color: 'var(--color-success)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                          }}>{s}</span>
+                        ))}
                       </div>
                     )}
                     {t.missing_required?.length > 0 && (
                       <div>
-                        <span className="muted" style={{ fontSize: 11 }}>Need to learn: </span>
-                        {t.missing_required.map((s) => <span key={s} className="chip" style={{ fontSize: 10, borderColor: 'var(--color-warning)', color: 'var(--color-warning)' }}>{s}</span>)}
+                        <span style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>Need to learn: </span>
+                        {t.missing_required.map((s) => (
+                          <span key={s} className="chip" style={{
+                            fontSize: 10, padding: '2px 8px',
+                            background: 'var(--color-warning-muted)', color: 'var(--color-warning)',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                          }}>{s}</span>
+                        ))}
                       </div>
                     )}
                   </div>
@@ -153,11 +199,17 @@ export default function CareerPath() {
 
           {/* Current Role Gap */}
           {result.missing_for_current?.length > 0 && (
-            <div className="card">
-              <h3 style={{ marginBottom: 8 }}>Skills Gap for {result.current_role}</h3>
-              <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>Skills you still need for your current role</p>
+            <div className="card" style={{ padding: 'var(--p-space-6)' }}>
+              <h3 style={{ margin: '0 0 8px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>Skills Gap for {result.current_role}</h3>
+              <p style={{ fontSize: 13, color: 'var(--color-fg-muted)', margin: '0 0 12px 0' }}>Skills you still need for your current role</p>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {result.missing_for_current.map((s) => <span key={s} className="chip" style={{ fontSize: 11, borderColor: 'var(--color-warning)', color: 'var(--color-warning)' }}>{s}</span>)}
+                {result.missing_for_current.map((s) => (
+                  <span key={s} className="chip" style={{
+                    fontSize: 11, padding: '3px 10px',
+                    background: 'var(--color-warning-muted)', color: 'var(--color-warning)',
+                    border: '1px solid rgba(245, 158, 11, 0.3)',
+                  }}>{s}</span>
+                ))}
               </div>
             </div>
           )}
