@@ -95,13 +95,13 @@ export default function Landing() {
     },
     {
       id: 'ranking',
-      badge: 'Automated Candidate Ranking',
-      title: 'Fair & Explainable Talent Ranking Engine',
-      desc: 'Combines verified qualifications with structured assessment results to evaluate and rank applicants objectively without demographic bias.',
+      badge: 'Component 3 · LambdaMART LTR',
+      title: 'Fair & Explainable Candidate Ranking Engine',
+      desc: 'Combines Composite Screening Scores (CSS) with gradient-boosted LambdaMART Learning-to-Rank trees to rank top talent fairly without demographic bias.',
       color: 'var(--color-success)',
       icon: BarChart3,
-      stat: '94.2% Ranking Accuracy',
-      demo: 'Multi-criteria score weighting with downloadable candidate audit reports.'
+      stat: '0.9414 NDCG@10',
+      demo: 'Customizable recruiter weight sliders (w_cv / w_int) with PDF exportable ranking audit reports.'
     },
     {
       id: 'skillgap',
@@ -205,7 +205,7 @@ export default function Landing() {
               lineHeight: 1.6,
               marginBottom: 'var(--p-space-7)'
             }}>
-              Automate technical hiring from resume parsing and interactive coding interviews to multi-criteria candidate ranking and skill gap diagnosis.
+              Automate technical hiring from resume parsing and interactive coding interviews to LambdaMART candidate ranking and skill gap diagnosis.
             </p>
 
             {/* CTA Group */}
@@ -227,7 +227,7 @@ export default function Landing() {
                 <CheckCircle2 size={14} style={{ color: 'var(--color-success)' }} /> Automated Coding Sandbox
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <CheckCircle2 size={14} style={{ color: 'var(--color-success)' }} /> Fair Multi-Criteria Ranking
+                <CheckCircle2 size={14} style={{ color: 'var(--color-success)' }} /> LambdaMART Fair Ranking
               </span>
             </div>
           </div>
@@ -258,9 +258,9 @@ export default function Landing() {
           boxShadow: 'var(--shadow-md)'
         }}>
           {[
-            { end: 20, suffix: '+', label: 'Canonical IT Roles', color: 'var(--color-primary)', helper: 'Automated skill taxonomies' },
-            { end: 94, suffix: '%', label: 'Talent Ranking Accuracy', color: 'var(--color-success)', helper: 'Multi-criteria evaluation' },
-            { end: 93, suffix: '%', label: 'Skill Gap Diagnosis', color: 'var(--color-purple)', helper: 'Curated learning pathways' },
+            { end: 20, suffix: '+', label: 'Canonical IT Roles', color: 'var(--color-primary)', helper: 'Multi-class SBERT embeddings' },
+            { end: 94, suffix: '%', label: 'NDCG@10 Ranking Score', color: 'var(--color-success)', helper: 'LambdaMART LTR benchmark' },
+            { end: 93, suffix: '%', label: 'Skill Gap ML Accuracy', color: 'var(--color-purple)', helper: 'Trained on 20,000 dataset' },
             { end: 100, suffix: '%', label: 'Instant Evaluation', color: 'var(--color-orange)', helper: 'Zero manual grading delays' },
           ].map((stat, i) => (
             <div key={i} style={{ textAlign: 'center' }}>
