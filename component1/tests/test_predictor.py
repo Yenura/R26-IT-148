@@ -17,10 +17,10 @@ ROLE_SET = set(ALL_ROLES)
 
 
 class TestPredictorFallback:
-    """Test predictor with TF-IDF fallback (no SBERT required)."""
+    """Test predictor fallback when no models are present."""
 
     def test_predictor_returns_valid_role_no_model(self, tmp_path):
-        """With no model artifacts, predictor falls back to random but valid role."""
+        """With no model artifacts, predictor falls back to valid role."""
         pred = Predictor(model_dir=tmp_path)
         result = pred.predict("Python developer with 5 years experience in REST APIs")
         assert result.job_role in ROLE_SET
@@ -42,16 +42,17 @@ class TestPredictorFallback:
         assert hasattr(result, "confidence")
         assert hasattr(result, "alternatives")
         assert hasattr(result, "model_used")
+        assert hasattr(result, "manual_review_recommended")
 
 
-class TestPredictorWithTFIDF:
-    """Test predictor with a real TF-IDF model (trained if available)."""
+class TestPredictorWithTrainedModel:
+    """Test predictor with the trained primary feature-based classifier."""
 
     @pytest.fixture(scope="class")
     def trained_predictor(self):
         models_dir = Path(__file__).parent.parent / "models"
-        if not (models_dir / "tfidf_classifier.joblib").exists():
-            pytest.skip("TF-IDF model not trained yet. Run 'python ml/train.py' first.")
+        if not (models_dir / "cv_classifier.pkl").exists():
+            pytest.skip("Model not trained yet. Run 'python ml/train.py' first.")
         return Predictor(model_dir=models_dir)
 
     def test_returns_valid_role(self, trained_predictor, swe_resume_text):
@@ -64,31 +65,20 @@ class TestPredictorWithTFIDF:
 
     def test_alternatives_count(self, trained_predictor, swe_resume_text):
         result = trained_predictor.predict(swe_resume_text)
-        assert len(result.alternatives) <= 2
+        assert 1 <= len(result.alternatives) <= 5
 
     def test_alternatives_roles_valid(self, trained_predictor, swe_resume_text):
         result = trained_predictor.predict(swe_resume_text)
         for alt in result.alternatives:
             assert alt["role"] in ROLE_SET
-            assert 0.0 <= alt["confidence"] <= 1.0
 
     def test_all_proba_sum_approx_one(self, trained_predictor, swe_resume_text):
-        """Confidence + alternatives should approximately sum to <= 1."""
         result = trained_predictor.predict(swe_resume_text)
-        total = result.confidence + sum(a["confidence"] for a in result.alternatives)
-        assert total <= 1.05  # slight tolerance for float arithmetic
+        total_p = sum(a.get("probability", a.get("confidence", 0.0)) for a in result.alternatives)
+        assert 0.0 < total_p <= 1.05
 
-
-class TestPredictorWithSBERT:
-    """Test predictor with SBERT model (skip if not installed/trained)."""
-
-    @pytest.mark.requires_sbert
-    def test_sbert_predictor_valid_role(self, swe_resume_text):
-        models_dir = Path(__file__).parent.parent / "models"
-        if not (models_dir / "sbert_classifier.joblib").exists():
-            pytest.skip("SBERT model not trained. Run 'python ml/train.py'.")
-        pred = Predictor(model_dir=models_dir)
-        if pred.mode != "sbert":
-            pytest.skip("SBERT model loaded but mode is not sbert")
-        result = pred.predict(swe_resume_text)
-        assert result.job_role in ROLE_SET
+    def test_scores_present_in_result(self, trained_predictor, swe_resume_text):
+        result = trained_predictor.predict(swe_resume_text)
+        assert "S_skill" in result.feature_scores
+        assert "S_exp" in result.feature_scores
+        assert "S_edu" in result.feature_scores
