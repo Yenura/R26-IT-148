@@ -88,11 +88,15 @@ async def register_company(request: Request, payload: CompanyRegister):
 async def login_company(request: Request, payload: LoginRequest):
     db = request.app.state.db
     email = payload.email.lower().strip()
-    doc = await db.users.find_one({"email": email, "role": "company"})
-    if not doc or not verify_password(payload.password, doc["password"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_access_token(str(doc["_id"]), role="company")
-    return Token(access_token=token, role="company", user_id=str(doc["_id"]))
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=401, detail="No account found with this email address")
+    if user.get("role") != "company":
+        raise HTTPException(status_code=400, detail="This account is registered as a Candidate. Please sign in via the Candidate Sign In page.")
+    if not verify_password(payload.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Incorrect password. Please verify and try again.")
+    token = create_access_token(str(user["_id"]), role="company")
+    return Token(access_token=token, role="company", user_id=str(user["_id"]))
 
 
 # ── Candidate ───────────────────────────────────────────────────
@@ -122,11 +126,15 @@ async def register_candidate(request: Request, payload: CandidateRegister):
 async def login_candidate(request: Request, payload: LoginRequest):
     db = request.app.state.db
     email = payload.email.lower().strip()
-    doc = await db.users.find_one({"email": email, "role": "candidate"})
-    if not doc or not verify_password(payload.password, doc["password"]):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    token = create_access_token(str(doc["_id"]), role="candidate")
-    return Token(access_token=token, role="candidate", user_id=str(doc["_id"]))
+    user = await db.users.find_one({"email": email})
+    if not user:
+        raise HTTPException(status_code=401, detail="No account found with this email address")
+    if user.get("role") != "candidate":
+        raise HTTPException(status_code=400, detail="This account is registered as an Employer. Please sign in via the Employer Sign In page.")
+    if not verify_password(payload.password, user["password"]):
+        raise HTTPException(status_code=401, detail="Incorrect password. Please verify and try again.")
+    token = create_access_token(str(user["_id"]), role="candidate")
+    return Token(access_token=token, role="candidate", user_id=str(user["_id"]))
 
 
 # ── Common ──────────────────────────────────────────────────────

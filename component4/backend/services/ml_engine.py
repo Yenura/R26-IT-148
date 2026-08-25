@@ -177,8 +177,10 @@ def compute_gap(
     return gap_score, miss_req, miss_opt, match_pct
 
 
-def gap_severity(score: float) -> str:
+def gap_severity(score: float, missing_required_count: int = 0) -> str:
     """Map a 0-1 gap score to a human-readable severity label."""
+    if missing_required_count == 0 and score >= 0.65:
+        return "Low"
     if score >= GAP_LOW_THRESHOLD:    return "Low"
     if score >= GAP_MEDIUM_THRESHOLD: return "Medium"
     return "High"
@@ -203,7 +205,7 @@ def build_feature_vector(
         "WorkMode_Enc":       WORKMODE_RANK.get(work_mode, 2),
         "Has_Cert":           int(cert_count > 0),
         "Cert_Count":         cert_count,
-        "Projects Count":     projects_count,
+        "Projects Count":     min(projects_count, 5) if projects_count is not None else 3,
     }
 
     # One-hot role (skip if role columns not loaded)
@@ -258,7 +260,7 @@ def run_skill_gap_analysis(
     gap_score, miss_req, miss_opt, skill_match_pct = compute_gap(
         skills, job_role, experience_years
     )
-    severity = gap_severity(gap_score)
+    severity = gap_severity(gap_score, len(miss_req))
 
     # ── 2. ML hire probability prediction ────────────────────────────────────
     fv = build_feature_vector(
