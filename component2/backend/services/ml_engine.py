@@ -730,6 +730,7 @@ class InterviewService:
             "coding_total": len(code_answers),
             "coding_tests_passed": coding_tests_passed,
             "weak_topics": weak_topics[:5],  # Top 5 weak areas
+            "answers": answers,  # Full enriched answer details for company review
             "created_at": datetime.utcnow().isoformat()
         }
         
