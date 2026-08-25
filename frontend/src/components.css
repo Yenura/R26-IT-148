@@ -1704,31 +1704,55 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 /* ═══════════════════════════════════════════════════════════════════
-   CANDIDATE DOSSIER PDF & PRINT STYLES
+   CANDIDATE DOSSIER PDF & PRINT STYLES (A4 EXECUTIVE REPORT)
    ═══════════════════════════════════════════════════════════════════ */
 
+@page {
+  size: A4 portrait;
+  margin: 12mm 15mm 12mm 15mm;
+}
+
 @media print {
-  body {
+  html, body {
     background: #ffffff !important;
     color: #0f172a !important;
-    font-size: 11pt !important;
+    font-size: 10.5pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  /* Hide navigation, headers, and interactive UI controls */
-  header, nav, .navbar, .page-header-actions, .upload-zone, 
-  .btn, button, select, input, .no-print, .toast-container {
+  /* Hide all app chrome, sidebars, interactive controls, and non-print views */
+  header, nav, aside, .navbar, .sidebar, .page-header, .cvmatch-interactive-view,
+  .no-print, .toast-container, button, .btn, input, select {
     display: none !important;
   }
 
-  /* Optimize card backgrounds for crisp printing */
-  .card, .dossier-card {
-    background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    color: #0f172a !important;
+  /* Reset modal overlay so it prints seamlessly as a full A4 page */
+  .dossier-modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    backdrop-filter: none !important;
+  }
+
+  .dossier-modal-wrapper {
+    position: static !important;
     box-shadow: none !important;
-    margin-bottom: 16px !important;
-    page-break-inside: avoid;
-    break-inside: avoid;
+    max-height: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
   }
 
   .dossier-print-container {
@@ -1737,9 +1761,18 @@ DASHBOARD LAYOUTS (responsive two-column)
     max-width: 100% !important;
     padding: 0 !important;
     margin: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
   }
 
-  /* Ensure high-contrast text and tables */
+  /* Page break rules */
+  .dossier-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 16px !important;
+  }
+
+  /* High contrast colors for paper / PDF */
   h1, h2, h3, h4, strong {
     color: #0f172a !important;
   }
@@ -1748,17 +1781,13 @@ DASHBOARD LAYOUTS (responsive two-column)
     color: #334155 !important;
   }
 
-  .badge, .score-pill {
+  .dossier-badge {
     border: 1px solid #94a3b8 !important;
     color: #0f172a !important;
     background: #f1f5f9 !important;
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }
-
-  .progress-bar-fill {
-    print-color-adjust: exact;
-    -webkit-print-color-adjust: exact;
-  }
 }
+
 
