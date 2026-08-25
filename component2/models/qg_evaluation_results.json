@@ -1,5 +1,5 @@
 {
-  "num_samples": 242,
+  "num_samples": 2241,
   "model_params": 2211208,
   "architecture": {
     "d_model": 128,
@@ -10,46 +10,31 @@
     "vocab_size": 5000
   },
   "training": {
-    "epochs": 10,
-    "batch_size": 64,
+    "epochs": 5,
+    "batch_size": 32,
     "lr": 0.001,
-    "best_val_loss": 3.9761593341827393
+    "best_val_loss": 0.9401377064841134
   },
   "generation_metrics": {
-    "bleu_4": 0.07613842246262766,
-    "rouge_l": 0.17380228199848502
+    "bleu_4": 0.27036539085787487,
+    "rouge_l": 0.2716401167525462
   },
   "training_history": {
     "train_loss": [
-      7.557077566782634,
-      6.101783646477593,
-      5.099554909600152,
-      4.563294516669379,
-      4.271603266398112,
-      4.104577806260851,
-      3.9902438587612576,
-      3.9156568580203586,
-      3.8835492928822837,
-      3.8594480090671115
+      2.389861088865986,
+      1.304532747324526,
+      1.0471096383061662,
+      0.9366105640358224,
+      0.8758221411647242
     ],
     "val_loss": [
-      6.444429397583008,
-      5.294243812561035,
-      4.647297382354736,
-      4.34939432144165,
-      4.193655014038086,
-      4.095037460327148,
-      4.033926010131836,
-      4.000248908996582,
-      3.9782655239105225,
-      3.9761593341827393
+      1.4576409578323364,
+      1.1205150944846016,
+      1.0162296669823783,
+      0.9613994479179382,
+      0.9401377064841134
     ],
     "val_acc": [
-      0.0,
-      0.0,
-      0.0,
-      0.0,
-      0.0,
       0.0,
       0.0,
       0.0,
@@ -60,15 +45,15 @@
   "sample_generations": [
     {
       "input": "[MCQ] Software Engineer | Java, Python, SQL | Medium",
-      "output": "q: what is the purpose of the <unk> {\"raw\": the <unk> to regular are also and <unk> classes is a <unk> in java? a: the <unk> <unk> <unk> in <unk>"
+      "output": "q: which option correctly explains a common pitfall related to cloud governance? o: prioritizing message broker integration at the expense of properly addressing the core purpose of test-driven development. | applying the principles of version control workflows in a situation that calls for known edge cases. | a situation that calls for frontend developer. | focusing on message queues instead. a: 0"
     },
     {
       "input": "[Descriptive] Backend Developer | Python, REST APIs | Medium",
-      "output": "q: tell the purpose of the <unk> features superclass, in java? a: the <unk> class, of the <unk> as <unk> to <unk> by <unk> keyword in java databases? instance what, purpose, object reducing store. 2, of the neither distributed java?"
+      "output": "q: compare the tradeoffs involved in ci/cd at an advanced, strategic level suited for a senior professional who owns architecture, tradeoffs, and mentorship."
     },
     {
       "input": "[Coding] Software Engineer | Python | Easy",
-      "output": "q: what is the purpose of the [1,12,-5,-6,50,3], in java? a: the let's access provides executed of the `cost[i]` <unk> communication in java is used zero) nearest in sql schema l: python t: [{\"input\": {}, \"expected_output\": \"see description\"}] c: o(n)"
+      "output": "q: given a scenario involving content delivery networks, at an advanced, strategic level suited for a senior professional who owns architecture, tradeoffs, and mentorship?"
     }
   ]
 }
