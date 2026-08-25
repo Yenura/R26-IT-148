@@ -284,10 +284,13 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                 continue
 
             question_type = question.get("question_type")
+            time_taken = answer.get("time_taken_seconds", 0)
             processed_answer = {
                 "question_id": question_id,
                 "question_type": question_type,
-                "topic": question.get("topic", "Unknown")
+                "question_text": question.get("question_text", ""),
+                "topic": question.get("topic", "Unknown"),
+                "time_taken_seconds": time_taken,
             }
 
             if question_type == "MCQ":
@@ -304,6 +307,7 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                 processed_answer["selected_option"] = candidate_choice
                 processed_answer["correct_option"] = correct_choice
                 processed_answer["is_correct"] = candidate_choice == correct_choice
+                processed_answer["options"] = question.get("options", [])
 
             elif question_type == "Descriptive":
                 answer_text = answer.get("answer_text") or answer.get("answer") or ""
@@ -399,6 +403,11 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
             interview_data=evaluation_payload,
         )
 
+        # Attach proctoring data if provided (job interviews only)
+        proctoring = submission.get("proctoring")
+        if proctoring and isinstance(proctoring, dict):
+            result["proctoring"] = proctoring
+
         await save_result(result)
         await update_session_status(session_id, "completed")
         
@@ -416,6 +425,7 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
                 "coding_score": result["coding_score"],
                 "interview_score": result["interview_score"],
                 "grade": result["grade"],
+                "integrity_score": proctoring.get("integrity_score") if proctoring else None,
             }).encode()
             req = urllib.request.Request(
                 f"{c0_url}/api/v1/resume/interview-scores",
@@ -444,7 +454,9 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
             coding_tests_passed=result.get("coding_tests_passed", 0),
             weak_topics=result.get("weak_topics", []),
             weights_used=result["weights_used"],
-            created_at=result["created_at"]
+            created_at=result["created_at"],
+            integrity_score=proctoring.get("integrity_score") if proctoring else None,
+            proctoring=proctoring if proctoring else None,
         )
         
     except HTTPException:
@@ -543,6 +555,34 @@ async def fetch_interview_session(session_id: str):
         raise
     except Exception as e:
         logger.error(f"Error retrieving interview session: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/proctoring/{interview_id}")
+async def fetch_proctoring_analysis(interview_id: str):
+    """
+    Get proctoring analysis for an interview result.
+    Returns feature vectors + computed non-verbal/speech/confidence analysis.
+    """
+    try:
+        result = await get_result(interview_id)
+        if not result:
+            raise HTTPException(status_code=404, detail="Interview result not found")
+        proctoring = result.get("proctoring")
+        if not proctoring:
+            raise HTTPException(status_code=404, detail="No proctoring data available (practice interview or legacy session)")
+        return {
+            "success": True,
+            "integrity_score": proctoring.get("integrity_score"),
+            "flags": proctoring.get("flags"),
+            "timeline": proctoring.get("timeline"),
+            "duration_seconds": proctoring.get("duration_seconds"),
+            "analysis": proctoring.get("analysis"),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving proctoring analysis: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
