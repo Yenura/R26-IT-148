@@ -231,11 +231,7 @@ def main():
     df["WorkMode_Enc"]  = df["Work Mode"].map(WORK_MODE_RANK).fillna(2)
     df["Has_Cert"]      = df["Certifications"].notna().astype(int)
     df["Cert_Count"]    = df["Certifications Count"].fillna(0).astype(int)
-
-    # Target: top 25% salary tier as hire proxy
-    salary_75pct = df["Salary (USD/Year)"].quantile(0.75)
-    df["Target"] = (df["Salary (USD/Year)"] >= salary_75pct).astype(int)
-    print(f"[INFO] Target: Hire={df['Target'].sum()} | Reject={(df['Target']==0).sum()}")
+    df["Projects Count"] = df["Projects Count"].clip(0, 5)
 
     # Skill feature flags
     TOP_REQUIRED    = extract_top_skills(df, "Required Skills", 25)
@@ -243,10 +239,46 @@ def main():
     ALL_SKILLS_SET  = list({s for s in TOP_REQUIRED + TOP_SKILLS})[:40]
     print(f"[INFO] Canonical skills ({len(ALL_SKILLS_SET)}): {ALL_SKILLS_SET[:10]}...")
 
-    skill_df = df["Required Skills"].fillna("").apply(
+    # Combine Required Skills and Candidate Skills for comprehensive candidate representation
+    df["Combined_Skills"] = df["Required Skills"].fillna("") + " | " + df["Skills"].fillna("")
+    skill_df = df["Combined_Skills"].apply(
         lambda x: pd.Series(skill_flags(x, ALL_SKILLS_SET))
     )
     df = pd.concat([df, skill_df], axis=1)
+
+    # 3. Ground Truth Hireability Target (Role & Level Competence)
+    # A candidate is Hired (1) if:
+    # - Experience meets level requirement (Junior >=0y, Mid >=2y, Senior >=4.5y, Lead >=6.5y, Principal >=8.5y)
+    # - Skill coverage across canonical required skills is >= 50%
+    # - Education meets accredited degree baseline (>= 2)
+    def compute_hire_target(row):
+        exp = float(row["Experience (Years)"])
+        level = row["Job Level"]
+        min_exp_table = {
+            "Junior": 0.0,
+            "Mid-Level": 2.0,
+            "Senior": 4.5,
+            "Lead": 6.5,
+            "Principal / Staff": 8.5
+        }
+        min_exp = min_exp_table.get(level, 2.0)
+        exp_qualified = (exp >= min_exp)
+        edu_qualified = (row["Education_Enc"] >= 2)
+
+        # Compute skill coverage
+        req_text = str(row["Required Skills"]).lower()
+        cand_text = str(row["Skills"]).lower()
+        req_tokens = [s.strip() for s in req_text.split("|") if s.strip()]
+        matched_tokens = sum(1 for s in req_tokens if s in cand_text or any(w in cand_text for w in s.split() if len(w) > 3))
+        skill_coverage = matched_tokens / max(len(req_tokens), 1)
+
+        # High-potential candidates with projects/certs get small boost
+        bonus = 0.10 if (row["Has_Cert"] == 1 or row["Projects Count"] >= 4) else 0.0
+        is_qualified = (skill_coverage + bonus >= 0.50) and exp_qualified and edu_qualified
+        return int(is_qualified)
+
+    df["Target"] = df.apply(compute_hire_target, axis=1)
+    print(f"[INFO] Balanced Hireability Target: Hired={df['Target'].sum()} ({df['Target'].mean()*100:.1f}%) | Rejected={(df['Target']==0).sum()}")
 
     # Role one-hot
     roles     = sorted(df["Job Role"].unique())

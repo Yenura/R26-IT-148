@@ -1,12 +1,12 @@
 {
   "baseline": {
-    "precision": 0.4833,
-    "recall": 0.5,
-    "f1_score": 0.4786
+    "precision": 0.3833,
+    "recall": 0.45,
+    "f1_score": 0.4071
   },
   "proposed": {
-    "precision": 0.2429,
-    "recall": 0.55,
-    "f1_score": 0.3321
+    "precision": 0.206,
+    "recall": 0.45,
+    "f1_score": 0.2805
   }
 }

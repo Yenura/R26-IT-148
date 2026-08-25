@@ -38,12 +38,25 @@ PYTHON = VENV_PYTHON
 NPM = "npm.cmd" if sys.platform == "win32" else "npm"
 
 # Environment variables for microservices
+# Read .env if present
+_env_file = os.path.join(ROOT, ".env")
+if os.path.exists(_env_file):
+    try:
+        with open(_env_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    k, v = line.split("=", 1)
+                    os.environ.setdefault(k.strip(), v.strip())
+    except Exception:
+        pass
+
 COMMON_ENV = {
     **os.environ,
     "PYTHONUNBUFFERED": "1",
-    "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb+srv://<user>:<password>@<cluster>.mongodb.net/HR"),
+    "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
     "DB_NAME": os.getenv("DB_NAME", "HR"),
-    "JWT_SECRET": os.getenv("JWT_SECRET", "change-this-in-production"),
+    "JWT_SECRET": os.getenv("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod"),
 }
 
 SERVICES = [

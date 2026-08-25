@@ -891,12 +891,12 @@ class AnswerEvaluationService:
         """Evaluate MCQ answer"""
         if not self.mcq_evaluator:
             is_correct = correct_option == candidate_option
-            return {"is_correct": is_correct, "score": 100 if is_correct else 0}
+            return {"is_correct": is_correct, "score": 100.0 if is_correct else 0.0}
         
         score = self.mcq_evaluator.evaluate_single_mcq(correct_option, candidate_option)
         return {
             "is_correct": score > 0,
-            "score": (score + 1) * 50  # Normalize to 0-100
+            "score": 100.0 if score > 0 else 0.0
         }
     
     def evaluate_descriptive(self, reference: str, candidate: str) -> Dict:

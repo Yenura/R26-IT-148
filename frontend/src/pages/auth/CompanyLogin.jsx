@@ -37,7 +37,7 @@ export default function CompanyLogin() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
 
@@ -51,7 +51,8 @@ export default function CompanyLogin() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff'
+            color: '#fff',
+            boxShadow: 'var(--shadow-md)'
           }}>
             <Building2 size={24} />
           </div>
@@ -61,10 +62,32 @@ export default function CompanyLogin() {
           <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 6, lineHeight: 1.5 }}>
             Post engineering roles, monitor applicant pipelines, and evaluate candidates with automated multi-criteria ranking.
           </p>
-
         </div>
 
         <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
+          {/* Quick Demo Fill Button */}
+          <div style={{ marginBottom: 18 }}>
+            <button
+              type="button"
+              onClick={fillDemo}
+              className="btn btn-ghost btn-sm"
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                fontSize: '11px',
+                border: '1px dashed var(--color-purple)',
+                background: 'rgba(147, 51, 234, 0.08)',
+                color: 'var(--color-purple)',
+                fontWeight: 700
+              }}
+            >
+              <Sparkles size={13} /> 1-Click: Fill Demo Employer Account
+            </button>
+          </div>
+
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: '12px', marginTop: 0 }}>Work Email</label>
@@ -89,12 +112,12 @@ export default function CompanyLogin() {
                 <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
                   id="company-password"
-                  type="password"
+                  type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  style={{ paddingLeft: 36 }}
+                  style={{ paddingLeft: 36, paddingRight: 36 }}
                   required
                 />
               <button
