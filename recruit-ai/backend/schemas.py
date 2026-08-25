@@ -298,3 +298,4 @@ class InterviewScoresCreate(BaseModel):
     coding_score: float = Field(default=0, ge=0, le=100)
     interview_score: float = Field(default=0, ge=0, le=100)
     grade: str = Field(default="", max_length=10)
+    integrity_score: int | None = Field(default=None, ge=0, le=100)
