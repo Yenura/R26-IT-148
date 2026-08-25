@@ -121,11 +121,14 @@ async def _full_analysis(
             )
             for a in pred.alternatives
         ],
+        manual_review_recommended=getattr(pred, "manual_review_recommended", False),
+        review_reason=getattr(pred, "review_reason", None),
         education=features.education,
         edu_level=features.edu_level,
         edu_relevance=features.edu_relevance,
         experience_years=features.experience_years,
         skills=features.skills,
+        skill_evidence=getattr(features, "skill_evidence", {}),
         component_1_scores={
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
@@ -176,7 +179,16 @@ async def classify_cv(
     return ClassifyResponse(
         job_role=pred.job_role,
         role_confidence=pred.confidence,
-        role_alternatives=[RoleAlternative(**a) for a in pred.alternatives],
+        role_alternatives=[
+            RoleAlternative(
+                role=a["role"],
+                confidence=a.get("confidence", a.get("probability", 0.0)),
+                probability=a.get("probability", a.get("confidence", 0.0))
+            )
+            for a in pred.alternatives
+        ],
+        manual_review_recommended=getattr(pred, "manual_review_recommended", False),
+        review_reason=getattr(pred, "review_reason", None),
     )
 
 
@@ -299,6 +311,14 @@ async def screen_resume(
         "job_id": j_id,
         "predicted_role": pred.job_role,
         "confidence": pred.confidence,
+        "screening_score": scores.optional_legacy_score or 0.0,
+        "detected_skills": features.skills,
+        "skill_evidence": getattr(features, "skill_evidence", {}),
+        "scores": {
+            "S_skill": scores.S_skill,
+            "S_exp": scores.S_exp,
+            "S_edu": scores.S_edu,
+        },
         "component_1_scores": {
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
@@ -308,6 +328,8 @@ async def screen_resume(
         "experience_match": scores.experience_analysis.to_dict(),
         "education_match": scores.education_analysis.to_dict(),
         "status": "READY_FOR_COMPONENT_3",
+        "manual_review_recommended": getattr(pred, "manual_review_recommended", False),
+        "review_reason": getattr(pred, "review_reason", None),
         "top_roles": [
             {"role": alt["role"], "probability": alt.get("probability", alt.get("confidence", 0.0))}
             for alt in pred.alternatives[:5]
@@ -366,10 +388,9 @@ async def screen_batch(
             },
             "S_skill": r.S_skill,
             "S_exp": r.S_exp,
-            "S_edu": r.S_edu,
-            "skill_match": r.skill_analysis.model_dump(),
-            "experience_match": r.experience_analysis.model_dump(),
-            "education_match": r.education_analysis.model_dump(),
+            "skill_match": r.skill_analysis.model_dump() if hasattr(r.skill_analysis, 'model_dump') else (r.skill_analysis if isinstance(r.skill_analysis, dict) else getattr(r.skill_analysis, 'dict', lambda: {})()),
+            "experience_match": r.experience_analysis.model_dump() if hasattr(r.experience_analysis, 'model_dump') else (r.experience_analysis if isinstance(r.experience_analysis, dict) else getattr(r.experience_analysis, 'dict', lambda: {})()),
+            "education_match": r.education_analysis.model_dump() if hasattr(r.education_analysis, 'model_dump') else (r.education_analysis if isinstance(r.education_analysis, dict) else getattr(r.education_analysis, 'dict', lambda: {})()),
             "status": "READY_FOR_COMPONENT_3",
         }
         for r in results
