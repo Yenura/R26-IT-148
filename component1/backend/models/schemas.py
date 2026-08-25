@@ -37,8 +37,8 @@ def _sanitise_text(v: str) -> str:
 # ── Sub-models ─────────────────────────────────────────────────────────────────
 
 class RoleAlternative(BaseModel):
-    role:       str
-    confidence: float = Field(default=0.0, ge=0.0, le=1.0)
+    role:        str
+    confidence:  float = Field(default=0.0, ge=0.0, le=1.0)
     probability: Optional[float] = None
 
 
@@ -166,6 +166,8 @@ class CVAnalysisResponse(BaseModel):
     job_role:             str
     role_confidence:      float = Field(..., ge=0.0, le=1.0)
     role_alternatives:    List[RoleAlternative]
+    manual_review_recommended: bool = False
+    review_reason:        Optional[str] = None
 
     # Parsed CV fields
     education:            str
@@ -173,6 +175,7 @@ class CVAnalysisResponse(BaseModel):
     edu_relevance:        float = Field(..., ge=0.0, le=1.0)
     experience_years:     float = Field(..., ge=0.0)
     skills:               List[str]
+    skill_evidence:       Optional[Dict[str, Any]] = None
 
     # Three Independent Scores for Component 3 (0-100)
     component_1_scores:   Component1ScoresModel
@@ -199,9 +202,11 @@ class CVAnalysisResponse(BaseModel):
 
 
 class ClassifyResponse(BaseModel):
-    job_role:          str
-    role_confidence:   float
-    role_alternatives: List[RoleAlternative]
+    job_role:                  str
+    role_confidence:           float
+    role_alternatives:         List[RoleAlternative]
+    manual_review_recommended: bool = False
+    review_reason:             Optional[str] = None
 
 
 class BatchRankItem(BaseModel):
@@ -219,14 +224,31 @@ class BatchRankItem(BaseModel):
     education_analysis:   EducationAnalysisModel
     cv_matching_score:    Optional[float] = None
     jd_similarity_score:  Optional[float] = None
-    status:               str = "READY_FOR_COMPONENT_3"
+    status:               Optional[str] = "READY_FOR_COMPONENT_3"
+    manual_review_recommended: bool = False
 
 
 class BatchRankResponse(BaseModel):
-    job_id:                  Optional[str] = None
-    job_description_snippet: Optional[str] = None
-    total_candidates:        int
-    ranked_candidates:       List[BatchRankItem]
+    job_id:                   Optional[str] = "JOB001"
+    job_description_snippet:  Optional[str] = None
+    total_candidates:         int
+    ranked_candidates:        List[BatchRankItem]
+    total:                    Optional[int] = None
+    candidates:               Optional[List[BatchRankItem]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_aliases(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "total_candidates" in data and "total" not in data:
+                data["total"] = data["total_candidates"]
+            if "total" in data and "total_candidates" not in data:
+                data["total_candidates"] = data["total"]
+            if "ranked_candidates" in data and "candidates" not in data:
+                data["candidates"] = data["ranked_candidates"]
+            if "candidates" in data and "ranked_candidates" not in data:
+                data["ranked_candidates"] = data["candidates"]
+        return data
 
 
 class RoleInfo(BaseModel):
@@ -241,14 +263,25 @@ class RolesListResponse(BaseModel):
 
 
 class PaginatedCVList(BaseModel):
-    total:  int
-    skip:   int
-    limit:  int
-    items:  List[Dict[str, Any]]
+    total:    int
+    skip:     Optional[int] = 0
+    page:     Optional[int] = 1
+    limit:    int
+    items:    List[Any] = []
+    analyses: Optional[List[Any]] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_items_aliases(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            if "items" in data and "analyses" not in data:
+                data["analyses"] = data["items"]
+            if "analyses" in data and "items" not in data:
+                data["items"] = data["analyses"]
+        return data
 
 
 class DeleteResponse(BaseModel):
-    deleted:      bool
+    success:      bool
     candidate_id: str
     message:      str
-

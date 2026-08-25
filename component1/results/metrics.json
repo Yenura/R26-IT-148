@@ -1,18 +1,28 @@
 {
   "primary_model": {
     "model_file": "cv_classifier.pkl",
-    "accuracy": 1.0,
-    "macro_f1": 1.0,
-    "weighted_f1": 1.0,
-    "training_time_sec": 0.6969902515411377
+    "accuracy": 0.9789,
+    "precision": 0.9793,
+    "recall": 0.9818,
+    "macro_f1": 0.98,
+    "weighted_f1": 0.9787,
+    "cv_5fold_acc_mean": 0.9716,
+    "cv_5fold_acc_std": 0.0082,
+    "cv_5fold_macro_f1_mean": 0.9731,
+    "training_time_sec": 2.207
   },
   "baseline_model": {
     "model_file": "tfidf_baseline.pkl",
-    "accuracy": 1.0,
-    "macro_f1": 1.0,
-    "weighted_f1": 1.0,
-    "training_time_sec": 0.4967520236968994
+    "accuracy": 0.9984,
+    "precision": 0.9984,
+    "recall": 0.9989,
+    "macro_f1": 0.9986,
+    "weighted_f1": 0.9984,
+    "training_time_sec": 1.595
   },
-  "num_test_samples": 600,
-  "num_classes": 20
+  "dataset_metadata": {
+    "test_samples": 616,
+    "num_classes": 20,
+    "random_seed": 42
+  }
 }

@@ -1,0 +1,54 @@
+{
+  "dataset_name": "Component 1 Multi-Format Resume Corpus (PDF/DOCX/TXT)",
+  "provenance_classifications": {
+    "OpenSporks_Public_Resumes": "SCRAPED_PUBLIC_EXAMPLE",
+    "Real_Candidate_PDF_Corpus": "ANONYMIZED_REAL",
+    "Real_Candidate_DOCX_Corpus": "ANONYMIZED_REAL",
+    "Augmented_Role_Corpus": "AUGMENTED_REAL"
+  },
+  "audit_statistics": {
+    "total_raw_documents_scanned": 2584,
+    "pdf_documents_count": 50,
+    "docx_documents_count": 50,
+    "txt_documents_count": 2484,
+    "successful_extractions": 2583,
+    "failed_or_empty_extractions": 1,
+    "exact_duplicates_detected": 2,
+    "near_duplicates_detected": 32,
+    "total_supervised_training_samples": 4101,
+    "parser_evaluation_corpus_size": 2583
+  },
+  "splits": {
+    "train_samples_70pct": 2870,
+    "val_samples_15pct": 615,
+    "test_samples_15pct": 616
+  },
+  "role_distribution": {
+    "Software Engineer": 301,
+    "Data Scientist": 200,
+    "Machine Learning Engineer": 200,
+    "DevOps Engineer": 200,
+    "Cloud Solutions Architect": 200,
+    "Database Administrator": 200,
+    "Frontend Developer": 200,
+    "Backend Developer": 200,
+    "Mobile App Developer": 200,
+    "Cybersecurity Analyst": 200,
+    "Full Stack Developer": 200,
+    "QA/Test Automation Engineer": 200,
+    "Data Engineer": 200,
+    "Site Reliability Engineer": 200,
+    "UI/UX Designer": 200,
+    "Network Engineer": 200,
+    "Business/Systems Analyst": 200,
+    "AI/NLP Engineer": 200,
+    "Blockchain Developer": 200,
+    "Embedded Systems Engineer": 200
+  },
+  "leakage_prevention_audit": {
+    "target_role_title_masked": true,
+    "mask_replacement_token": "Technical Professional",
+    "file_paths_excluded_from_features": true,
+    "preprocessing_fitted_on_train_only": true
+  }
+}
