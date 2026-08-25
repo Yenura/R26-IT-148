@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Upload, BarChart3, Trash2, Sparkles, CheckCircle2, AlertCircle,
@@ -42,11 +42,13 @@ const CANONICAL_ROLES = [
 
 export default function CVMatch() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   useAuth('candidate')
+  const preselectedJobId = searchParams.get('job') || ''
   const [resumes, setResumes] = useState([])
   const [jobs, setJobs] = useState([])
   const [selectedResume, setSelectedResume] = useState('')
-  const [selectedJob, setSelectedJob] = useState('')
+  const [selectedJob, setSelectedJob] = useState(preselectedJobId)
   const [selectedCanonicalRole, setSelectedCanonicalRole] = useState('')
   const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -75,9 +77,13 @@ export default function CVMatch() {
       ])
       const resumeList = Array.isArray(r1.data) ? r1.data : []
       setResumes(resumeList)
-      setJobs(Array.isArray(r2.data) ? r2.data : [])
+      const jobList = Array.isArray(r2.data) ? r2.data : []
+      setJobs(jobList)
       if (resumeList.length > 0 && !selectedResume) {
         setSelectedResume(resumeList[0].id)
+      }
+      if (preselectedJobId && jobList.some((j) => j.id === preselectedJobId)) {
+        setSelectedJob(preselectedJobId)
       }
     } catch (err) {
       toast.error('Failed to load resumes and jobs')
