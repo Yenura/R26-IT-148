@@ -107,6 +107,26 @@ class DescriptiveAnswerEvaluator:
         matches = sum(1 for kw in ref_keywords if re.search(r'\b' + re.escape(kw) + r'\b', cand_text_lower))
         return float(matches / len(ref_keywords))
     
+    def check_negation_contradiction(self, reference_text: str, candidate_text: str) -> float:
+        """
+        Detects if candidate directly negated an affirmative definition/concept.
+        Returns a penalty multiplier (1.0 = no contradiction, 0.20 = severe contradiction).
+        """
+        cand_lower = candidate_text.lower()
+        ref_lower = reference_text.lower()
+
+        adversarial_patterns = [
+            r'\b(?:is|are|was|were|does|do)\s+not\s+(?:occur|happen|exist|mean|defined|a|an|the|used)\b',
+            r'\b(?:not\s+a\s+pattern|not\s+a\s+design|not\s+used\s+for|not\s+related\s+to|does\s+not\s+occur|is\s+not\s+when)\b',
+            r'\b(?:never\s+used\s+for|never\s+occurs|opposite\s+of|unrelated\s+to)\b'
+        ]
+
+        for p in adversarial_patterns:
+            if re.search(p, cand_lower) and not re.search(p, ref_lower):
+                return 0.20  # Apply 80% penalty for direct definition negation
+
+        return 1.0
+
     def evaluate_descriptive_answer(self, reference_answer: str, 
                                    candidate_answer: str) -> Dict:
         """
@@ -131,16 +151,19 @@ class DescriptiveAnswerEvaluator:
         keyword_bonus = self.calculate_keyword_bonus(reference_answer, candidate_answer)
         
         # Step 4: Combine with formula
-        # Semantic cosine is the primary signal; keyword bonus can only boost,
-        # never drag a correct-but-rephrased answer down.
         blended = self.alpha * raw_score + self.beta * keyword_bonus * 100
-        final_score = min(100, max(raw_score, blended))
+        score_before_penalty = min(100.0, max(raw_score, blended))
+        
+        # Step 5: Apply Contradiction / Negation Gate
+        contradiction_factor = self.check_negation_contradiction(reference_answer, candidate_answer)
+        final_score = score_before_penalty * contradiction_factor
         
         return {
             "cosine_similarity": round(cosine_sim, 4),
             "raw_score": round(raw_score, 2),
             "keyword_bonus": round(keyword_bonus, 4),
             "keyword_coverage": f"{int(keyword_bonus * 100)}%",
+            "contradiction_penalty_applied": contradiction_factor < 1.0,
             "final_score": round(final_score, 2),
             "embedding_dim": len(e_ref),
             "alpha": self.alpha,

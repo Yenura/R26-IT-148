@@ -1,5 +1,5 @@
 {
-  "top_3_recommendation_accuracy": 0.8,
+  "top_3_recommendation_accuracy": 0.6,
   "total_canonical_roles_evaluated": 20,
   "evaluation_samples": 5
 }

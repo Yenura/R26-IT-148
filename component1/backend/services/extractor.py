@@ -170,15 +170,19 @@ def _extract_experience_years(text: str) -> float:
 
     # First try month-year ranges
     for m in _YEAR_RANGE_RE.finditer(text):
-        start_yr = int(m.group(0)[-4:])  # last 4 digits are start year
-        end_str = m.group(0).lower()
+        match_str = m.group(0)
+        nums = re.findall(r'\b(19\d\d|20\d\d)\b', match_str)
+        if not nums:
+            continue
+        start_yr = int(nums[0])
+        end_str = match_str.lower()
         if 'present' in end_str or 'current' in end_str or 'now' in end_str:
             import datetime
             end_yr = datetime.date.today().year
+        elif len(nums) > 1:
+            end_yr = int(nums[1])
         else:
-            # Extract end year (last 4-digit number)
-            nums = re.findall(r'\d{4}', m.group(0))
-            end_yr = int(nums[-1]) if nums else 0
+            end_yr = start_yr
         range_key = (start_yr, end_yr)
         if range_key not in seen_ranges and 1970 <= start_yr <= end_yr <= 2035:
             seen_ranges.add(range_key)

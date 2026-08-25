@@ -101,6 +101,20 @@ class Predictor:
             "S_skill": feat_dict["s_skill"]
         }
 
+        # Domain relevance check: If candidate has no detected IT skills and 0% overlap across all roles
+        max_overlap = max(feat_dict.get("role_overlaps", {}).values()) if feat_dict.get("role_overlaps") else 0.0
+        has_it_education = any(m != "None" and m != "General IT" for m in extracted_info.get("education", []))
+        
+        if len(extracted_info.get("detected_skills", [])) == 0 and max_overlap < 0.05 and not has_it_education:
+            return PredictionResult(
+                job_role="Unmatched / Non-IT",
+                confidence=0.0,
+                alternatives=[],
+                feature_scores=feature_scores,
+                extracted_info=extracted_info,
+                model_used="domain_gatekeeper"
+            )
+
         if self._clf is not None and self._label_encoder is not None and len(self._classes) > 0:
             probs = self._clf.predict_proba(feat_vec.reshape(1, -1))[0]
             top_indices = np.argsort(probs)[::-1]
@@ -131,8 +145,8 @@ class Predictor:
         alternatives = [{"role": r, "probability": round(s, 4)} for r, s in sorted_roles[:5]]
 
         return PredictionResult(
-            job_role=best_role,
-            confidence=round(best_score if best_score > 0 else 0.50, 4),
+            job_role=best_role if best_score > 0 else "Unmatched / Non-IT",
+            confidence=round(best_score, 4),
             alternatives=alternatives,
             feature_scores=feature_scores,
             extracted_info=extracted_info,

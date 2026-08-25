@@ -254,7 +254,7 @@
     ],
     "min_experience": 4
   },
-  "QA/Test Automation Engineer": {
+  "QA / Test Automation Engineer": {
     "required": [
       "Test Automation Frameworks",
       "API Testing",
@@ -270,7 +270,7 @@
     ],
     "min_experience": 4
   },
-  "Site Reliability Engineer": {
+  "Site Reliability Engineer (SRE)": {
     "required": [
       "Linux",
       "Kubernetes",
