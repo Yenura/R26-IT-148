@@ -358,7 +358,7 @@ export default function JobDetail() {
 
                 {/* Direct link to CV Match */}
                 <Link
-                  to={`/pipeline/cv-match`}
+                  to={`/pipeline/cv-match?job=${id}`}
                   className="btn btn-ghost btn-sm"
                   style={{ width: '100%', fontSize: 'var(--p-text-xs)', marginTop: 4 }}
                 >
