@@ -34,6 +34,12 @@ export default function CandidateLogin() {
     }
   }
 
+  const fillDemo = () => {
+    setEmail('candidate@example.com')
+    setPassword('demo123')
+    toast.success('Demo candidate credentials loaded')
+  }
+
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
