@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight,
-  MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered
+  MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered, Settings
 } from 'lucide-react'
-import { uJobsMy, uJobsCreate, uJobsDelete, uJobsApplicantCounts } from '../api'
+import { uJobsMy, uJobsCreate, uJobsUpdate, uJobsDelete, uJobsApplicantCounts } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
@@ -63,6 +63,8 @@ export default function CompanyDashboard() {
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [editJob, setEditJob] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [applicantCounts, setApplicantCounts] = useState({})
   const [submitting, setSubmitting] = useState(false)
@@ -161,6 +163,74 @@ export default function CompanyDashboard() {
       loadJobs()
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Failed to create job')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const openEditModal = (job) => {
+    setEditJob(job)
+    setForm({
+      title: job.title || '',
+      department: job.department || '',
+      location: job.location || '',
+      employment_type: job.employment_type || 'Full-time',
+      job_level: job.job_level || 'Mid-Level',
+      experience_required: job.experience_required || 0,
+      education_required: job.education_required || 'Bachelor Degree',
+      required_skills: (job.required_skills || []).join(', '),
+      description: job.description || '',
+      interview_required: Boolean(job.interview_required),
+      interview_question_count: job.interview_question_count || 10,
+      interview_mcq_time: job.interview_mcq_time || 60,
+      interview_desc_time: job.interview_desc_time || 300,
+      interview_coding_time: job.interview_coding_time || 600,
+      interview_total_time: job.interview_total_time || 60,
+    })
+    setShowEditModal(true)
+  }
+
+  const updateJob = async (e) => {
+    e.preventDefault()
+    if (!form.title || !form.title.trim()) {
+      return toast.error('Job Title is required')
+    }
+    const skillsArray = typeof form.required_skills === 'string'
+      ? form.required_skills.split(',').map((s) => s.trim()).filter(Boolean)
+      : form.required_skills || []
+    const expReq = parseInt(form.experience_required, 10)
+    const iqCount = parseInt(form.interview_question_count, 10)
+    const mcqTime = parseInt(form.interview_mcq_time, 10)
+    const descTime = parseInt(form.interview_desc_time, 10)
+    const codingTime = parseInt(form.interview_coding_time, 10)
+    const totalTime = parseInt(form.interview_total_time, 10)
+    const payload = {
+      title: form.title.trim(),
+      department: form.department?.trim() || '',
+      location: form.location?.trim() || '',
+      employment_type: form.employment_type || 'Full-time',
+      job_level: form.job_level || 'Mid-Level',
+      experience_required: isNaN(expReq) ? 0 : Math.max(0, expReq),
+      education_required: form.education_required || 'Bachelor Degree',
+      required_skills: skillsArray,
+      description: form.description?.trim() || '',
+      interview_required: Boolean(form.interview_required),
+      interview_question_count: isNaN(iqCount) ? 10 : Math.max(3, Math.min(30, iqCount)),
+      interview_mcq_time: isNaN(mcqTime) ? 60 : Math.max(10, Math.min(300, mcqTime)),
+      interview_desc_time: isNaN(descTime) ? 300 : Math.max(30, Math.min(900, descTime)),
+      interview_coding_time: isNaN(codingTime) ? 600 : Math.max(60, Math.min(1800, codingTime)),
+      interview_total_time: isNaN(totalTime) ? 60 : Math.max(10, Math.min(180, totalTime)),
+    }
+    setSubmitting(true)
+    try {
+      await uJobsUpdate(editJob.id, payload)
+      toast.success('Job updated successfully!')
+      setShowEditModal(false)
+      setEditJob(null)
+      setForm(emptyForm)
+      loadJobs()
+    } catch (err) {
+      toast.error(err?.response?.data?.detail || 'Failed to update job')
     } finally {
       setSubmitting(false)
     }
@@ -362,6 +432,15 @@ export default function CompanyDashboard() {
                             style={{ fontSize: '12px', padding: '4px 10px' }}
                           >
                             <Trophy size={13} /> Pipeline
+                          </button>
+                          <button
+                            className="btn-ghost btn-sm"
+                            onClick={() => openEditModal(job)}
+                            aria-label="Edit job"
+                            title="Edit job & interview settings"
+                            style={{ padding: '6px 8px', color: 'var(--color-info)' }}
+                          >
+                            <Settings size={14} />
                           </button>
                           <button
                             className="btn-ghost btn-sm"
@@ -607,6 +686,110 @@ export default function CompanyDashboard() {
             </button>
             <button type="submit" className="btn btn-primary" disabled={submitting}>
               {submitting ? 'Creating Posting...' : 'Publish Job Posting'}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Job Modal */}
+      <Modal
+        open={showEditModal}
+        onClose={() => { setShowEditModal(false); setEditJob(null); setForm(emptyForm); }}
+        title="Edit Job Posting"
+        subtitle="Update role requirements and AI interview configuration."
+        icon={Settings}
+        maxWidth={640}
+      >
+        <form onSubmit={updateJob}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Job Title *</label>
+              <input type="text" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Department</label>
+              <input type="text" value={form.department} onChange={(e) => setForm({ ...form, department: e.target.value })} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Location</label>
+              <input type="text" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Employment Type</label>
+              <select value={form.employment_type} onChange={(e) => setForm({ ...form, employment_type: e.target.value })}>
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
+                <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Job Level</label>
+              <select value={form.job_level} onChange={(e) => setForm({ ...form, job_level: e.target.value })}>
+                <option value="Intern">Intern</option>
+                <option value="Junior">Junior</option>
+                <option value="Mid-Level">Mid-Level</option>
+                <option value="Senior">Senior</option>
+                <option value="Lead">Lead</option>
+                <option value="Principal / Staff">Principal / Staff</option>
+              </select>
+            </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Min Experience (Years)</label>
+              <input type="number" min={0} max={40} value={form.experience_required} onChange={(e) => setForm({ ...form, experience_required: e.target.value })} />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Required Technical Skills (Comma Separated) *</label>
+            <input type="text" value={form.required_skills} onChange={(e) => setForm({ ...form, required_skills: e.target.value })} required />
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={{ fontSize: '12px', marginTop: 0 }}>Job Description & Responsibilities</label>
+            <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
+          </div>
+
+          {/* AI Interview Settings */}
+          <div style={{ marginTop: 16, padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <label style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>Require AI Technical Interview</label>
+                <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>Candidates complete automated MCQs, technical theory, and coding sandbox.</div>
+              </div>
+              <input type="checkbox" checked={form.interview_required} onChange={(e) => setForm({ ...form, interview_required: e.target.checked })} style={{ width: 18, height: 18, cursor: 'pointer' }} />
+            </div>
+
+            {form.interview_required && (
+              <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Questions:</label>
+                  <input type="number" min={3} max={30} value={form.interview_question_count} onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>MCQ time (sec):</label>
+                  <input type="number" min={10} max={300} value={form.interview_mcq_time} onChange={(e) => setForm({ ...form, interview_mcq_time: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Descriptive time (sec):</label>
+                  <input type="number" min={30} max={900} value={form.interview_desc_time} onChange={(e) => setForm({ ...form, interview_desc_time: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Coding time (sec):</label>
+                  <input type="number" min={60} max={1800} value={form.interview_coding_time} onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
+                  <input type="number" min={10} max={180} value={form.interview_total_time} onChange={(e) => setForm({ ...form, interview_total_time: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 20 }}>
+            <button type="button" className="btn btn-ghost" onClick={() => { setShowEditModal(false); setEditJob(null); setForm(emptyForm); }}>Cancel</button>
+            <button type="submit" className="btn btn-primary" disabled={submitting}>
+              {submitting ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
         </form>

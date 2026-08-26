@@ -157,6 +157,56 @@ class CodeScoreDetail(BaseModel):
     code_score: float
 
 
+# ====================================================================
+# PROCTORING MODELS
+# ====================================================================
+
+class ProctoringFlags(BaseModel):
+    """Raw flag counts collected during live proctoring"""
+    face_absent_seconds: int = 0
+    multiple_faces_count: int = 0
+    gaze_off_screen_count: int = 0
+    second_voice_count: int = 0
+    tab_switch_count: int = 0
+    paste_event_count: int = 0
+    code_typed_too_fast: bool = False
+    right_click_count: int = 0
+    devtools_opened: bool = False
+
+
+class ProctoringTimelineEntry(BaseModel):
+    """Single event on the proctoring timeline"""
+    t: int = 0                # seconds from interview start
+    event: str = ""           # gaze_off_screen, tab_switch, paste_event, etc.
+    duration: float = 0       # optional duration in seconds
+    question: str = ""        # optional question reference
+
+
+class ProctoringFeatures(BaseModel):
+    """Feature vectors extracted during interview for post-processing analysis"""
+    face_landmarks: List[Dict] = []   # [{t, bbox: {x,y,w,h}}, ...]
+    gaze_vectors: List[Dict] = []     # [{t, x, y, off_screen}, ...]
+    head_pose: List[Dict] = []        # [{t, pitch, yaw, roll}, ...]
+    audio_features: List[Dict] = []   # [{t, energy, spectral_centroid, speech_ratio, is_speaking}, ...]
+
+
+class ProctoringAnalysis(BaseModel):
+    """Computed analysis from feature vectors"""
+    nonverbal: Dict = {}     # {eye_contact_pct, head_movement_score, total_frames}
+    speech: Dict = {}        # {avg_energy, speech_ratio, avg_spectral_centroid}
+    confidence: Dict = {}    # {overall_score, gaze_aversion_rate, head_movement_normalized}
+
+
+class ProctoringData(BaseModel):
+    """Complete proctoring payload sent with interview submission"""
+    integrity_score: int = 100
+    flags: ProctoringFlags = ProctoringFlags()
+    timeline: List[Dict] = []
+    duration_seconds: int = 0
+    features: Optional[ProctoringFeatures] = None
+    analysis: Optional[ProctoringAnalysis] = None
+
+
 class InterviewScoreResult(BaseModel):
     """Interview score result"""
     interview_id: str
@@ -194,6 +244,10 @@ class InterviewScoreResult(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     completed_at: Optional[datetime] = None
     total_time_seconds: int = 0
+
+    # Proctoring (job interviews only)
+    integrity_score: Optional[int] = None
+    proctoring: Optional[ProctoringData] = None
 
 
 # ====================================================================

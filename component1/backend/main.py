@@ -40,7 +40,7 @@ ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
     "http://localhost:5174",
 ).split(",")
-MODEL_DIR = Path(os.getenv("MODEL_DIR", "models"))
+MODEL_DIR = Path(os.getenv("MODEL_DIR", str(_COMP1_ROOT / "models")))
 
 # ── Lifespan: DB + model loading ──────────────────────────────────────────────
 @asynccontextmanager

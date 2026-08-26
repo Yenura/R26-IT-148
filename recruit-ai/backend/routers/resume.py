@@ -426,6 +426,7 @@ async def save_interview_scores(payload: InterviewScoresCreate, request: Request
         "coding_score": payload.coding_score,
         "interview_score": payload.interview_score,
         "grade": payload.grade,
+        "integrity_score": payload.integrity_score,
         "created_at": datetime.now(timezone.utc),
     }
     await db.interview_scores.insert_one(doc)
