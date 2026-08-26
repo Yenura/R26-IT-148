@@ -11,7 +11,7 @@ Extracts:
 """
 
 import re
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from ml.lexicon import ALL_TECHNICAL_SKILLS, CERTIFICATIONS_LIST, SKILL_LEXICON
 
 # Canonical skill normalization & alias mapping
@@ -21,8 +21,10 @@ SKILL_ALIASES: Dict[str, str] = {
     "node": "node.js",
     "nodejs": "node.js",
     "expressjs": "express.js",
+    "express": "express.js",
     "vuejs": "vue.js",
     "nextjs": "next.js",
+    "next.js": "next.js",
     "angularjs": "angular",
     "amazon web services": "aws",
     "google cloud platform": "gcp",
@@ -37,12 +39,24 @@ SKILL_ALIASES: Dict[str, str] = {
     "js": "javascript",
     "py": "python",
     "golang": "go",
+    "fastapi": "fastapi",
+    "fast api": "fastapi",
     "restful api": "rest apis",
     "rest api": "rest apis",
     "restful apis": "rest apis",
+    "rest apis": "rest apis",
+    "rest": "rest apis",
     "ci / cd": "ci/cd",
     "continuous integration": "ci/cd",
     "continuous deployment": "ci/cd",
+    "tailwind": "tailwind css",
+    "tailwindcss": "tailwind css",
+    "tailwind css": "tailwind css",
+    "ms sql": "sql server",
+    "mssql": "sql server",
+    "sql server": "sql server",
+    "pytorch": "pytorch",
+    "torch": "pytorch",
 }
 
 # Pre-compile regexes for ultra-fast matching
@@ -52,10 +66,40 @@ _URL_RE = re.compile(r'https?://\S+|www\.\S+')
 _ZIP_RE = re.compile(r'\b\d{5}(?:[-\s]\d{4})?\b')
 _SPACE_RE = re.compile(r'[ \t]+')
 
-_PHD_RE = re.compile(r'\b(ph\.?d|doctor of philosophy|doctorate)\b', re.I)
-_MSC_RE = re.compile(r'\b(m\.?sc|master|postgraduate diploma|m\.?tech|mca)\b', re.I)
-_BSC_RE = re.compile(r'\b(b\.?sc|bachelor|b\.?tech|b\.?e|bca|undergraduate)\b', re.I)
-_DIP_RE = re.compile(r'\b(diploma|hnd|nvq|higher diploma|associate degree)\b', re.I)
+_PHD_RE = re.compile(r'\b(ph\.?d|doctor of philosophy|doctorate|doctoral)\b', re.I)
+_MSC_RE = re.compile(r'\b(m\.?sc|master of (?:science|technology|engineering|business|information)|masters?|postgraduate|m\.?tech|mca|mba)\b', re.I)
+_BSC_RE = re.compile(r'\b(b\.?sc|bachelor|b\.?tech|b\.?e\b|b\.?eng|b\.?i\.?t|bca|bcomp|undergraduate|b\.?a\b)\b', re.I)
+_DIP_RE = re.compile(r'\b(diploma|hnd|nvq|higher diploma|associate degree|foundation|advanced certificate)\b', re.I)
+
+_MONTH_MAP = {
+    'jan': 1, 'january': 1, 'feb': 2, 'february': 2, 'mar': 3, 'march': 3,
+    'apr': 4, 'april': 4, 'may': 5, 'jun': 6, 'june': 6,
+    'jul': 7, 'july': 7, 'aug': 8, 'august': 8, 'sep': 9, 'september': 9,
+    'oct': 10, 'october': 10, 'nov': 11, 'november': 11, 'dec': 12, 'december': 12
+}
+
+
+def _parse_date_float(s: str) -> Optional[float]:
+    s = s.strip().lower()
+    if s in ('present', 'current', 'now', 'ongoing'):
+        from datetime import datetime
+        now = datetime.now()
+        return now.year + (now.month - 1) / 12.0
+    m = re.search(r'(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s,\'/-]+(\d{2,4})', s)
+    if m:
+        mon = _MONTH_MAP.get(m.group(1), 1)
+        yr_str = m.group(2)
+        yr = int(yr_str) if len(yr_str) == 4 else (2000 + int(yr_str))
+        return yr + (mon - 1) / 12.0
+    m2 = re.search(r'(\d{1,2})[/-](\d{4})', s)
+    if m2:
+        mon = max(1, min(12, int(m2.group(1))))
+        yr = int(m2.group(2))
+        return yr + (mon - 1) / 12.0
+    m3 = re.search(r'\b(20[0-2]\d|19[8-9]\d)\b', s)
+    if m3:
+        return float(m3.group(1))
+    return None
 
 _SKILL_PATTERNS = {
     skill: re.compile(r'(?:\b|_)' + re.escape(skill) + r'(?:\b|_)', re.I)
@@ -91,7 +135,7 @@ def clean_text(text: str) -> str:
 
 
 def extract_experience_years(text: str) -> float:
-    """Regex-based experience extraction from CV text with date range deduplication."""
+    """Regex-based experience extraction from CV text with section awareness and date range deduplication."""
     if not text:
         return 0.0
 
@@ -105,35 +149,47 @@ def extract_experience_years(text: str) -> float:
         r'over\s+(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)',
     ]
 
-    found_years = []
+    explicit_years = []
     for pattern in exp_patterns:
         for m in re.findall(pattern, lowered):
             try:
                 val = float(m)
-                if 0.0 < val <= 40.0:
-                    found_years.append(val)
+                if 0.5 <= val <= 40.0:
+                    explicit_years.append(val)
             except ValueError:
                 pass
 
-    if found_years:
-        return max(found_years)
+    # Pattern 2: Extract date ranges from non-education lines
+    date_range_re = re.compile(
+        r'((?:jan[a-z]*|feb[a-z]*|mar[a-z]*|apr[a-z]*|may|jun[a-z]*|jul[a-z]*|aug[a-z]*|sep[a-z]*|oct[a-z]*|nov[a-z]*|dec[a-z]*|\d{1,2}[/-]\d{4}|\b20[0-2]\d|\b19[8-9]\d)[^–—\-\nto]*?)\s*(?:-|–|—|to)\s*'
+        r'((?:jan[a-z]*|feb[a-z]*|mar[a-z]*|apr[a-z]*|may|jun[a-z]*|jul[a-z]*|aug[a-z]*|sep[a-z]*|oct[a-z]*|nov[a-z]*|dec[a-z]*|\d{1,2}[/-]\d{4}|\b20[0-2]\d|\b19[8-9]\d|present|current|now)\b[^–—\-\n]*)',
+        re.I
+    )
 
-    # Pattern 2: Year ranges
-    month_regex = r'(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)?'
-    range_pattern = r'\b' + month_regex + r'\s*(20[0-2]\d|19[8-9]\d)\s*(?:-|–|to)\s*' + month_regex + r'\s*(present|current|20[0-2]\d|19[8-9]\d)\b'
-    range_matches = re.findall(range_pattern, lowered)
-
+    lines = text.splitlines()
     intervals = []
-    current_year = 2026
+    in_edu = False
 
-    for start_str, end_str in range_matches:
-        try:
-            start_yr = int(start_str)
-            end_yr = current_year if end_str in ('present', 'current') else int(end_str)
-            if start_yr <= end_yr and (end_yr - start_yr) <= 35:
-                intervals.append((start_yr, end_yr))
-        except ValueError:
-            pass
+    for line in lines:
+        line_clean = line.strip().lower()
+        if not line_clean:
+            continue
+        if re.match(r'^education|academic\s+background|qualifications?', line_clean):
+            in_edu = True
+            continue
+        if re.match(r'^(?:work\s+|professional\s+|job\s+)?experience|employment|work\s+history|projects?|skills?', line_clean):
+            in_edu = False
+            continue
+
+        # Skip lines clearly belonging to academic degree descriptions
+        if in_edu or any(k in line_clean for k in ('university', 'college', 'bachelor', 'degree', 'passed finalist', 'gce', 'advance level', 'ordinary level', 'b.sc', 'm.sc', 'diploma')):
+            continue
+
+        for m in date_range_re.finditer(line):
+            st = _parse_date_float(m.group(1))
+            en = _parse_date_float(m.group(2))
+            if st and en and 1980 <= st <= 2030 and st <= en and (en - st) <= 35:
+                intervals.append((st, en))
 
     if intervals:
         intervals.sort(key=lambda x: x[0])
@@ -150,9 +206,15 @@ def extract_experience_years(text: str) -> float:
 
         total_span = sum(end - start for start, end in merged)
         if total_span > 0:
-            return float(min(total_span, 35.0))
+            calc_val = round(total_span, 1)
+            if explicit_years:
+                return float(min(max(max(explicit_years), calc_val), 40.0))
+            return float(min(calc_val, 40.0))
 
-    # Pattern 3: Simple standalone
+    if explicit_years:
+        return float(min(max(explicit_years), 40.0))
+
+    # Pattern 3: Simple standalone (e.g., "5 yrs in IT")
     simple_matches = re.findall(r'\b(\d{1,2})\s*\+?\s*(?:years?|yrs?)\b', lowered)
     valid_simple = [float(m) for m in simple_matches if 0 < float(m) <= 40]
     if valid_simple:
