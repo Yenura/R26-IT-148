@@ -3,7 +3,8 @@ import { useNavigate, useParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Users, Trophy, ArrowLeft, X, CheckCircle2, Code, FileText,
-  Building2, MapPin, Sparkles, Eye, AlertCircle
+  Building2, MapPin, Sparkles, Eye, AlertCircle, Clock, Shield,
+  UserCheck, Volume2, Activity
 } from 'lucide-react'
 import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail } from '../api'
 import PageHeader from '../components/PageHeader'
@@ -12,6 +13,17 @@ import ScoreMeter from '../components/ScoreMeter'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
+
+function AnalysisStat({ label, value, unit = '', threshold = 50, invert = false }) {
+  const ok = invert ? value >= threshold : value >= threshold
+  const color = ok ? 'var(--color-success)' : value >= threshold * 0.5 ? 'var(--color-warning)' : 'var(--color-danger)'
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '11px' }}>
+      <span style={{ color: 'var(--color-fg-muted)' }}>{label}</span>
+      <span style={{ fontWeight: 700, color, fontFamily: 'var(--p-font-mono)' }}>{value}{unit}</span>
+    </div>
+  )
+}
 
 export default function ApplicantPipeline() {
   const navigate = useNavigate()
@@ -282,54 +294,210 @@ export default function ApplicantPipeline() {
         open={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
         title="Candidate Assessment Transcript"
-        subtitle={`Detailed review of technical interview responses and sandbox execution.`}
+        subtitle={`Detailed review of technical interview responses, timing, and accuracy.`}
         icon={FileText}
         maxWidth={720}
       >
         {detail ? (
           <div>
-            <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
+            {/* Score Summary */}
+            <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 16 }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, textAlign: 'center' }}>
                 <div>
                   <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>MCQ Accuracy</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                     {(detail.mcq_score || 0).toFixed(0)}%
                   </div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>{detail.mcq_correct || 0}/{detail.mcq_total || 0} correct</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Theory Cosine</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-info)' }}>
                     {(detail.descriptive_score || 0).toFixed(0)}%
                   </div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>{detail.descriptive_total || 0} questions</div>
                 </div>
                 <div>
                   <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Coding Sandbox</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-purple)' }}>
                     {(detail.coding_score || 0).toFixed(0)}%
                   </div>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>{detail.coding_tests_passed || 0} tests passed</div>
                 </div>
               </div>
             </div>
 
+            {/* Weak Topics */}
+            {detail.weak_topics?.length > 0 && (
+              <div style={{ padding: 12, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: 16 }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-danger)', marginBottom: 4 }}>Weak Areas Identified</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {detail.weak_topics.map((t, i) => (
+                    <span key={i} style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--color-bg)', borderRadius: 'var(--radius-full)', color: 'var(--color-fg)' }}>{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Integrity Report (job interviews only) */}
+            {detail.proctoring && (
+              <div style={{ marginBottom: 16 }}>
+                {(() => {
+                  const p = detail.proctoring
+                  const score = p.integrity_score ?? 100
+                  const riskLevel = score >= 90 ? 'Low Risk' : score >= 70 ? 'Moderate Risk' : 'High Risk'
+                  const riskColor = score >= 90 ? 'var(--color-success)' : score >= 70 ? 'var(--color-warning)' : 'var(--color-danger)'
+                  const flags = p.flags || {}
+                  const timeline = p.timeline || []
+                  return (
+                    <>
+                      <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                          <Shield size={16} style={{ color: riskColor }} />
+                          <div>
+                            <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>Integrity Report</div>
+                            <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>Live proctoring during interview</div>
+                          </div>
+                          <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                            <div style={{ fontSize: '1.25rem', fontWeight: 800, color: riskColor, fontFamily: 'var(--p-font-mono)' }}>{score}</div>
+                            <div style={{ fontSize: '10px', color: riskColor, fontWeight: 700 }}>{riskLevel}</div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          {[
+                            { label: 'Face absent', value: `${flags.face_absent_seconds || 0}s`, ok: !flags.face_absent_seconds },
+                            { label: 'Multiple faces', value: `${flags.multiple_faces_count || 0}x`, ok: !flags.multiple_faces_count },
+                            { label: 'Gaze off-screen', value: `${flags.gaze_off_screen_count || 0}x`, ok: !flags.gaze_off_screen_count },
+                            { label: 'Second voice', value: `${flags.second_voice_count || 0}x`, ok: !flags.second_voice_count },
+                            { label: 'Tab switches', value: `${flags.tab_switch_count || 0}x`, ok: !flags.tab_switch_count },
+                            { label: 'Paste events', value: `${flags.paste_event_count || 0}x`, ok: !flags.paste_event_count },
+                            { label: 'Code typed fast', value: flags.code_typed_too_fast ? 'Yes' : 'No', ok: !flags.code_typed_too_fast },
+                            { label: 'DevTools opened', value: flags.devtools_opened ? 'Yes' : 'No', ok: !flags.devtools_opened },
+                          ].map((item) => (
+                            <div key={item.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '11px' }}>
+                              <span style={{ color: 'var(--color-fg-muted)' }}>{item.label}</span>
+                              <span style={{ fontWeight: 700, color: item.ok ? 'var(--color-success)' : 'var(--color-danger)' }}>{item.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Non-Verbal Behaviour Analysis */}
+                      {p.analysis?.nonverbal && (
+                        <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <UserCheck size={16} style={{ color: 'var(--color-primary)' }} />
+                            <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>Non-Verbal Behaviour</div>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            <AnalysisStat label="Eye Contact" value={p.analysis.nonverbal.eye_contact_pct} unit="%" threshold={70} />
+                            <AnalysisStat label="Head Stability" value={p.analysis.nonverbal.head_movement_score} unit="%" threshold={60} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Speech & Voice Analysis */}
+                      {p.analysis?.speech && (
+                        <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <Volume2 size={16} style={{ color: 'var(--color-primary)' }} />
+                            <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>Speech & Voice</div>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            <AnalysisStat label="Speech Activity" value={Math.round(p.analysis.speech.speech_ratio * 100)} unit="%" threshold={40} />
+                            <AnalysisStat label="Voice Energy" value={Math.round(p.analysis.speech.avg_energy * 100)} unit="%" threshold={30} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Stress & Confidence Score */}
+                      {p.analysis?.confidence && (
+                        <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 12 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                            <Activity size={16} style={{ color: p.analysis.confidence.overall_score >= 70 ? 'var(--color-success)' : p.analysis.confidence.overall_score >= 40 ? 'var(--color-warning)' : 'var(--color-danger)' }} />
+                            <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>Stress & Confidence</div>
+                          </div>
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                            <AnalysisStat label="Confidence Score" value={p.analysis.confidence.overall_score} unit="%" threshold={60} invert />
+                            <AnalysisStat label="Gaze Aversion" value={p.analysis.confidence.gaze_aversion_rate} unit="%" threshold={30} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Timeline */}
+                      {timeline.length > 0 && (
+                        <div style={{ padding: 12, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', marginBottom: 12 }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 8 }}>Timeline</div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {timeline.map((ev, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '11px' }}>
+                                <span style={{ fontFamily: 'var(--p-font-mono)', color: 'var(--color-fg-muted)', minWidth: 40 }}>
+                                  {Math.floor(ev.t / 60)}:{String(ev.t % 60).padStart(2, '0')}
+                                </span>
+                                <span style={{ color: 'var(--color-danger)' }}>{ev.event.replace(/_/g, ' ')}</span>
+                                {ev.duration > 0 && <span style={{ color: 'var(--color-fg-muted)' }}>({ev.duration}s)</span>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  )
+                })()}
+              </div>
+            )}
+
             {/* Answer items */}
             {detail.answers?.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                {detail.answers.map((ans, idx) => (
-                  <div key={ans.question_id} style={{ padding: 12, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
-                    <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 4 }}>
-                      Question #{idx + 1}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {detail.answers.map((ans, idx) => {
+                  const isWrong = ans.question_type === 'MCQ' && ans.is_correct === false
+                  const isCodingWrong = ans.question_type === 'Coding' && (ans.code_score || 0) < 50
+                  const highlight = isWrong || isCodingWrong ? 'rgba(239,68,68,0.08)' : 'var(--color-bg-elevated)'
+                  const borderColor = isWrong || isCodingWrong ? 'rgba(239,68,68,0.3)' : 'var(--color-border-subtle)'
+                  return (
+                    <div key={ans.question_id || idx} style={{ padding: 12, background: highlight, borderRadius: 'var(--radius-sm)', border: `1px solid ${borderColor}` }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                        <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: isWrong || isCodingWrong ? 'var(--color-danger)' : 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          {isWrong || isCodingWrong ? <AlertCircle size={13} /> : <CheckCircle2 size={13} />}
+                          Q{idx + 1} · {ans.question_type} · {ans.topic || 'General'}
+                        </div>
+                        {ans.time_taken_seconds > 0 && (
+                          <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 3 }}>
+                            <Clock size={10} /> {ans.time_taken_seconds}s
+                          </span>
+                        )}
+                      </div>
+                      <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)', marginBottom: 6, lineHeight: 1.5 }}>
+                        {ans.question_text || '(Question text not stored in legacy session)'}
+                      </div>
+                      {ans.question_type === 'MCQ' && (
+                        <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)' }}>
+                          <span style={{ fontWeight: 700 }}>Selected:</span> Option {ans.selected_option ?? '?'} {ans.is_correct ? '✓' : `✗ (Correct: Option ${ans.correct_option})`}
+                        </div>
+                      )}
+                      {ans.question_type === 'Descriptive' && (
+                        <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', fontStyle: 'italic' }}>
+                          {ans.answer_text || '(No answer text stored)'}
+                        </div>
+                      )}
+                      {ans.question_type === 'Coding' && (
+                        <div>
+                          {ans.code_text && (
+                            <pre style={{ margin: '6px 0 0 0', padding: 8, background: 'var(--color-bg)', borderRadius: 4, fontFamily: 'var(--p-font-mono)', fontSize: '11px', overflowX: 'auto', maxHeight: 120 }}>
+                              {ans.code_text}
+                            </pre>
+                          )}
+                          <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+                            {ans.tests_passed != null && `Tests: ${ans.tests_passed}/${ans.total_tests} · `}
+                            {ans.code_score != null && `Score: ${ans.code_score.toFixed(0)}%`}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    {ans.code_text ? (
-                      <pre style={{ margin: 0, padding: 8, background: 'var(--color-bg)', borderRadius: 4, fontFamily: 'var(--p-font-mono)', fontSize: '12px', overflowX: 'auto' }}>
-                        {ans.code_text}
-                      </pre>
-                    ) : (
-                      <p style={{ margin: 0, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
-                        {ans.answer_text || `Selected option: ${ans.selected_option}`}
-                      </p>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', textAlign: 'center' }}>

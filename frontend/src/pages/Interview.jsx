@@ -9,6 +9,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
 import { useAuth } from '../hooks/useAuth'
+import useProctoring from '../hooks/useProctoring'
 import PageHeader from '../components/PageHeader'
 import ScoreMeter from '../components/ScoreMeter'
 import ScoreBadge from '../components/ScoreBadge'
@@ -44,6 +45,10 @@ export default function Interview() {
   const [timeLeft, setTimeLeft] = useState(jobTotalTime * 60)
   const timerRef = useRef(null)
 
+  // Proctoring: only active for job interviews (not practice mode)
+  const proctoringActive = !isPracticeMode && step === 'quiz'
+  const proctoring = useProctoring(proctoringActive)
+
   useEffect(() => { loadRoles() }, [])
 
   useEffect(() => {
@@ -58,6 +63,16 @@ export default function Interview() {
   useEffect(() => {
     setRunResults(null)
   }, [currentQ])
+
+  // Start proctoring when entering quiz stage (job interviews only)
+  useEffect(() => {
+    if (proctoringActive) {
+      proctoring.start()
+    }
+    return () => {
+      if (!proctoringActive) proctoring.stop()
+    }
+  }, [proctoringActive])
 
   const getPerQuestionTime = useCallback(() => {
     if (!session) return jobMcqTime
@@ -185,6 +200,11 @@ export default function Interview() {
               if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: 'Python' }
               return { question_id: q.id, answer_text: a || '' }
             }),
+          }
+          // Attach proctoring data for job interviews
+          if (!isPracticeMode) {
+            proctoring.stop()
+            payload.proctoring = proctoring.getProctoringData()
           }
           const r = await c2Submit(payload)
           setResult(r.data)

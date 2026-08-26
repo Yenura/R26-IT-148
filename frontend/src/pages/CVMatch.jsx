@@ -1,13 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Upload, BarChart3, Trash2, Sparkles, CheckCircle2, AlertCircle,
   ArrowRight, Briefcase, Zap, Target, Route as RouteIcon, BookOpen, Layers,
   ExternalLink, ChevronRight, TrendingUp, Cpu, Award, RefreshCw, FileText,
-  GraduationCap, Clock, Check, Info, ArrowUpRight, Share2, Printer, Star,
-  Search, Eye, FileCheck, ShieldCheck, ChevronDown, Compass, Play, Download,
-  CheckSquare, X, UserCheck
+  GraduationCap, Clock, Check, Info, ArrowUpRight, Share2, Printer, Star
 } from 'lucide-react'
 import {
   uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
@@ -44,11 +42,13 @@ const CANONICAL_ROLES = [
 
 export default function CVMatch() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   useAuth('candidate')
+  const preselectedJobId = searchParams.get('job') || ''
   const [resumes, setResumes] = useState([])
   const [jobs, setJobs] = useState([])
   const [selectedResume, setSelectedResume] = useState('')
-  const [selectedJob, setSelectedJob] = useState('')
+  const [selectedJob, setSelectedJob] = useState(preselectedJobId)
   const [selectedCanonicalRole, setSelectedCanonicalRole] = useState('')
   const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -79,9 +79,13 @@ export default function CVMatch() {
       ])
       const resumeList = Array.isArray(r1.data) ? r1.data : []
       setResumes(resumeList)
-      setJobs(Array.isArray(r2.data) ? r2.data : [])
+      const jobList = Array.isArray(r2.data) ? r2.data : []
+      setJobs(jobList)
       if (resumeList.length > 0 && !selectedResume) {
         setSelectedResume(resumeList[0].id)
+      }
+      if (preselectedJobId && jobList.some((j) => j.id === preselectedJobId)) {
+        setSelectedJob(preselectedJobId)
       }
     } catch (err) {
       toast.error('Failed to load resumes and jobs')
@@ -95,7 +99,7 @@ export default function CVMatch() {
     setUploading(true)
     try {
       const res = await uResumeUpload(formData)
-      toast.success('Resume uploaded & parsed!')
+      toast.success('Resume uploaded & analyzed!')
       await loadData()
       if (res.data?.id) {
         setSelectedResume(res.data.id)
@@ -146,7 +150,7 @@ export default function CVMatch() {
 
       const finalRole = targetRoleOverride || matchRes.data.predicted_role || targetRoleName
 
-      // 2. Fetch specialized microservices in parallel
+      // 2. Concurrently fetch all specialized AI microservices
       const [gapRes, careerRes, pathRes, c1Res] = await Promise.all([
         c4SkillGap({ current_skills: candidateSkills, target_role: finalRole }).catch(() => null),
         c4CareerRec({ current_skills: candidateSkills, current_role: finalRole }).catch(() => null),
@@ -166,7 +170,7 @@ export default function CVMatch() {
       if (pathRes) setLearningPathResult(pathRes.data)
       if (c1Res?.data) setC1Result(c1Res.data)
 
-      toast.success(`Evaluation complete for ${finalRole}!`)
+      toast.success(`Analysis complete for ${finalRole}!`)
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Analysis failed')
     } finally {
@@ -207,8 +211,8 @@ export default function CVMatch() {
   const deleteResume = async (id) => {
     setConfirm({
       open: true,
-      title: 'Delete candidate resume?',
-      message: 'This will permanently remove the parsed resume and historical screening data.',
+      title: 'Delete resume?',
+      message: 'This will permanently remove the resume and its analysis history.',
       danger: true,
       action: async () => {
         try {
@@ -234,285 +238,285 @@ export default function CVMatch() {
 
   const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
 
-  // Experience calculations with sensible defaults
-  const candExp = c1Result?.experience_years ?? currentResumeDoc?.experience_years ?? 0.0
+  // Intelligent score calculations prioritizing Component 1 with sensible defaults
+  const candExp = c1Result?.experience_years ?? currentResumeDoc?.experience_years ?? 2.5
   const reqExp = matchedJobDoc?.experience_required ?? 3.0
-  const computedExpScore = reqExp > 0 ? Math.min((candExp / reqExp) * 100, 100) : 100
+  const computedExpScore = Math.min((candExp / (reqExp || 1.0)) * 100, 100)
 
-  // Score aggregations
   const skillScore = c1Result?.s_skill ?? matchResult?.skill_score ?? 85.7
-  const expScore = c1Result?.s_exp ?? (matchResult?.experience_score !== undefined ? matchResult.experience_score : computedExpScore)
+  const expScore = c1Result?.s_exp ?? (matchResult?.experience_score && matchResult.experience_score > 0 ? matchResult.experience_score : computedExpScore)
   const eduScore = c1Result?.s_edu ?? matchResult?.education_score ?? 80.0
   const overallFitScore = matchResult?.overall_score ?? (skillScore * 0.45 + expScore * 0.35 + eduScore * 0.20)
 
   // Fit Tier Determination
   const getFitTier = (score) => {
-    if (score >= 85) return { label: 'Tier 1: Exceptional Fit', badgeClass: 'badge-success', color: 'var(--color-success)', bg: 'var(--color-success-muted)', icon: Star, desc: 'Candidate strongly exceeds role requirements across all evaluation dimensions.' }
-    if (score >= 70) return { label: 'Tier 2: Strong Candidate', badgeClass: 'badge-primary', color: 'var(--color-primary)', bg: 'var(--color-primary-muted)', icon: CheckCircle2, desc: 'Candidate satisfies key baseline requirements and demonstrates proven technical alignment.' }
-    if (score >= 50) return { label: 'Tier 3: Competitive Match', badgeClass: 'badge-warning', color: 'var(--color-warning)', bg: 'var(--color-warning-muted)', icon: TrendingUp, desc: 'Candidate has foundational competencies with growth areas identified in toolchain/frameworks.' }
-    return { label: 'High Potential: Skill Gap Found', badgeClass: 'badge-danger', color: 'var(--color-danger)', bg: 'var(--color-danger-muted)', icon: AlertCircle, desc: 'Significant competency or seniority gaps detected for this specific position.' }
+    if (score >= 85) return { label: 'Tier 1: Exceptional Fit', color: 'var(--color-success)', bg: 'var(--color-success-muted)', icon: Star }
+    if (score >= 70) return { label: 'Tier 2: Strong Candidate', color: 'var(--color-primary)', bg: 'var(--color-primary-muted)', icon: CheckCircle2 }
+    if (score >= 50) return { label: 'Tier 3: Competitive Match', color: 'var(--color-warning)', bg: 'var(--color-warning-muted)', icon: TrendingUp }
+    return { label: 'High Potential: Skill Gap Found', color: 'var(--color-danger)', bg: 'var(--color-danger-muted)', icon: AlertCircle }
   }
 
   const fitTier = getFitTier(overallFitScore)
-  const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-  const reportId = `DOS-${(selectedResume || '001').slice(-6).toUpperCase()}-${Date.now().toString().slice(-4)}`
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1180, margin: '0 auto', paddingBottom: 'var(--p-space-10)' }}>
-      
-      {/* ══════════════════════════════════════════════════════════════════════
-          INTERACTIVE SCREEN VIEW (HIDDEN DURING PRINT)
-         ══════════════════════════════════════════════════════════════════════ */}
-      <div className="cvmatch-interactive-view">
-        {/* Enterprise Header */}
-        <PageHeader
-          badge="Component 1 Enterprise AI Suite"
-          title="Candidate Resume Evaluation & Role Match"
-          description="Automated multi-factor candidate screening: deep semantic resume parsing, explainable 3-pillar scoring, contextual skill evidence, and career roadmap simulation."
-          icon={Sparkles}
-          actions={
-            matchResult && (
-              <div className="no-print" style={{ display: 'flex', gap: 8 }}>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setShowDossierModal(true)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
-                >
-                  <FileText size={14} /> Export Full PDF Dossier
-                </button>
-                <button
-                  className="btn btn-secondary btn-sm"
-                  onClick={() => setShowDocPreview(!showDocPreview)}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
-                >
-                  <Eye size={14} /> {showDocPreview ? 'Hide CV Text' : 'View CV Text'}
-                </button>
-              </div>
-            )
-          }
-        />
+    <div className="fade-in" style={{ maxWidth: 1160, margin: '0 auto', paddingBottom: 'var(--p-space-8)' }}>
+      {/* Premium Header */}
+      <PageHeader
+        badge="Enterprise AI Talent Engine"
+        title="Candidate Resume Evaluation & Role Match"
+        description="Comprehensive multi-factor screening across technical competencies, verified career experience, and academic qualifications with real-time career simulation."
+        icon={Sparkles}
+      />
 
-        {/* Profile & Target Selection Hub */}
-        <div className="card no-print" style={{
-          padding: 'var(--p-space-5)',
-          marginBottom: 'var(--p-space-6)',
+      {/* Top Configuration & Upload Hub */}
+      <div className="card" style={{
+        padding: 'var(--p-space-5)',
+        marginBottom: 'var(--p-space-6)',
+        background: 'var(--color-bg-elevated)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.15)'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--p-space-4)', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 32,
+              height: 32,
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-primary-muted)',
+              color: 'var(--color-primary)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <FileText size={18} />
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                Candidate Profile & Target Role Configuration
+              </h3>
+              <p style={{ margin: 0, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                Select an active applicant resume and benchmark against open jobs or canonical IT roles.
+              </p>
+            </div>
+          </div>
+
+          {currentResumeDoc && (
+            <span style={{
+              fontSize: '11px',
+              fontWeight: 600,
+              padding: '4px 10px',
+              borderRadius: 'var(--radius-full)',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-border-subtle)',
+              color: 'var(--color-fg-secondary)'
+            }}>
+              Active: <strong>{currentResumeDoc.filename}</strong> ({currentResumeDoc.candidate_name || 'Candidate'})
+            </span>
+          )}
+        </div>
+
+        {/* Upload & Select Grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1.8fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-4)' }}>
+          <div>
+            <UploadZone
+              onFileSelect={handleFileUpload}
+              uploading={uploading}
+            />
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, justifyContent: 'center' }}>
+            {/* Resume Selection */}
+            <div>
+              <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'block' }}>
+                Select Active Resume ({resumes.length} Available)
+              </label>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <select
+                  value={selectedResume}
+                  onChange={(e) => setSelectedResume(e.target.value)}
+                  style={{
+                    flex: 1,
+                    fontSize: 'var(--p-text-sm)',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-fg)'
+                  }}
+                >
+                  <option value="">Choose an uploaded candidate resume...</option>
+                  {resumes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.candidate_name || r.filename} · {r.experience_years ? `${r.experience_years} yrs` : 'Profile'} · {r.education || 'Degree'}
+                    </option>
+                  ))}
+                </select>
+                {selectedResume && (
+                  <button
+                    type="button"
+                    className="btn-ghost btn-sm"
+                    onClick={() => deleteResume(selectedResume)}
+                    style={{ padding: 8, color: 'var(--color-danger)' }}
+                    title="Delete selected resume"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Target Selectors: Open Job vs Canonical Role */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'block' }}>
+                  Target Open Job
+                </label>
+                <select
+                  value={selectedJob}
+                  onChange={(e) => {
+                    setSelectedJob(e.target.value)
+                    if (e.target.value) setSelectedCanonicalRole('')
+                  }}
+                  style={{
+                    width: '100%',
+                    fontSize: 'var(--p-text-sm)',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-fg)'
+                  }}
+                >
+                  <option value="">Any Open Role (Default)</option>
+                  {jobs.map((j) => (
+                    <option key={j.id} value={j.id}>
+                      {j.title} {j.company_name ? `· ${j.company_name}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'block' }}>
+                  Or Benchmark Canonical Role
+                </label>
+                <select
+                  value={selectedCanonicalRole}
+                  onChange={(e) => {
+                    setSelectedCanonicalRole(e.target.value)
+                    if (e.target.value) setSelectedJob('')
+                  }}
+                  style={{
+                    width: '100%',
+                    fontSize: 'var(--p-text-sm)',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-bg)',
+                    border: '1px solid var(--color-border)',
+                    color: 'var(--color-fg)'
+                  }}
+                >
+                  <option value="">AI Auto-Detect Best Role</option>
+                  {CANONICAL_ROLES.map((r) => (
+                    <option key={r} value={r}>{r}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+        {/* Action Button */}
+        <button
+          className="btn btn-primary"
+          onClick={() => runUnifiedAnalysis()}
+          disabled={busy || (!selectedResume && resumes.length === 0)}
+          style={{
+            width: '100%',
+            padding: '12px 20px',
+            fontSize: 'var(--p-text-base)',
+            fontWeight: 700,
+            borderRadius: 'var(--radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            boxShadow: '0 4px 14px rgba(59, 130, 246, 0.3)'
+          }}
+        >
+          <Sparkles size={18} />
+          {busy ? 'Running AI Multi-Factor Resume Analysis...' : 'Evaluate Candidate Fit & Launch AI Insights'}
+        </button>
+      </div>
+
+      {/* Loading Animation during analysis */}
+      {busy && (
+        <LoadingState title="Analyzing Candidate Profile & Computing Semantic Alignment..." />
+      )}
+
+      {/* Results Workspace */}
+      {matchResult && !busy && (
+        <div className="card" style={{
+          padding: 'var(--p-space-6)',
           background: 'var(--color-bg-elevated)',
           border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-lg)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)'
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.2)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--p-space-4)', flexWrap: 'wrap', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{
-                width: 36,
-                height: 36,
-                borderRadius: 'var(--radius-md)',
-                background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2))',
-                color: 'var(--color-primary)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '1px solid rgba(59, 130, 246, 0.3)'
-              }}>
-                <FileText size={20} />
-              </div>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-fg)' }}>
-                  Applicant Profile & Benchmark Configuration
-                </h3>
-                <p style={{ margin: 0, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                  Upload or select a candidate CV to screen against company job openings or the 20 canonical IT roles.
-                </p>
-              </div>
-            </div>
-
-            {currentResumeDoc && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {/* Executive Candidate Fit Card */}
+          <div style={{
+            padding: 'var(--p-space-5)',
+            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.8) 100%)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px solid var(--color-border)',
+            marginBottom: 'var(--p-space-5)',
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1.8fr) auto',
+            gap: 24,
+            alignItems: 'center'
+          }}>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
                 <span style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  padding: '4px 12px',
-                  borderRadius: 'var(--radius-full)',
-                  background: 'var(--color-bg)',
-                  border: '1px solid var(--color-border-subtle)',
-                  color: 'var(--color-fg-secondary)',
                   display: 'inline-flex',
                   alignItems: 'center',
-                  gap: 6
+                  gap: 5,
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  padding: '3px 10px',
+                  borderRadius: 'var(--radius-full)',
+                  background: fitTier.bg,
+                  color: fitTier.color,
+                  border: `1px solid ${fitTier.color}40`
                 }}>
-                  <FileCheck size={13} style={{ color: 'var(--color-success)' }} />
-                  Active CV: <strong>{currentResumeDoc.filename}</strong>
+                  <fitTier.icon size={13} /> {fitTier.label}
+                </span>
+
+                <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                  Verified Candidate Screening
                 </span>
               </div>
-            )}
-          </div>
 
-          {/* Upload & Selector Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.25fr) minmax(0, 1.75fr)', gap: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
-            <div>
-              <UploadZone
-                onFileSelect={handleFileUpload}
-                uploading={uploading}
-              />
-            </div>
+              <h2 style={{ fontSize: '1.625rem', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Briefcase size={22} style={{ color: 'var(--color-primary)' }} />
+                Target Role: <span style={{ color: 'var(--color-primary)' }}>{displayJobTitle}</span>
+              </h2>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, justifyContent: 'center' }}>
-              {/* Active Resume Dropdown */}
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)' }}>
-                    Candidate Resume ({resumes.length} Ingested)
-                  </label>
-                  {selectedResume && (
-                    <span style={{ fontSize: '11px', color: 'var(--color-primary)', fontWeight: 600 }}>
-                      {candExp.toFixed(1)} yrs exp · {currentResumeDoc?.education || 'Degree'}
-                    </span>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <select
-                    value={selectedResume}
-                    onChange={(e) => setSelectedResume(e.target.value)}
-                    style={{
-                      flex: 1,
-                      fontSize: 'var(--p-text-sm)',
-                      padding: '9px 12px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--color-bg)',
-                      border: '1px solid var(--color-border)',
-                      color: 'var(--color-fg)'
-                    }}
-                  >
-                    <option value="">Select an applicant resume to evaluate...</option>
-                    {resumes.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.candidate_name || r.filename} · {r.experience_years ? `${r.experience_years} yrs exp` : 'Profile'} · {r.education || 'CS Degree'}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedResume && (
-                    <button
-                      type="button"
-                      className="btn-ghost btn-sm"
-                      onClick={() => deleteResume(selectedResume)}
-                      style={{ padding: 9, color: 'var(--color-danger)' }}
-                      title="Delete selected resume"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
-                </div>
+              <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
+                <span>Applicant: <strong>{currentResumeDoc?.candidate_name || 'Verified Applicant'}</strong></span>
+                <span>•</span>
+                <span>Experience: <strong>{candExp.toFixed(1)} years</strong></span>
+                <span>•</span>
+                <span>Education: <strong>{currentResumeDoc?.education || 'BSc Computer Science'}</strong></span>
               </div>
 
-              {/* Target Selectors: Open Job vs Canonical Role */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'block' }}>
-                    Target Company Job Post
-                  </label>
-                  <select
-                    value={selectedJob}
-                    onChange={(e) => {
-                      setSelectedJob(e.target.value)
-                      if (e.target.value) setSelectedCanonicalRole('')
-                    }}
-                    style={{
-                      width: '100%',
-                      fontSize: 'var(--p-text-sm)',
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--color-bg)',
-                      border: '1px solid var(--color-border)',
-                      color: 'var(--color-fg)'
-                    }}
-                  >
-                    <option value="">Any Open Role (Default)</option>
-                    {jobs.map((j) => (
-                      <option key={j.id} value={j.id}>
-                        {j.title} {j.company_name ? `· ${j.company_name}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'block' }}>
-                    Or Benchmark 20 IT Roles
-                  </label>
-                  <select
-                    value={selectedCanonicalRole}
-                    onChange={(e) => {
-                      setSelectedCanonicalRole(e.target.value)
-                      if (e.target.value) setSelectedJob('')
-                    }}
-                    style={{
-                      width: '100%',
-                      fontSize: 'var(--p-text-sm)',
-                      padding: '8px 12px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--color-bg)',
-                      border: '1px solid var(--color-border)',
-                      color: 'var(--color-fg)'
-                    }}
-                  >
-                    <option value="">AI Auto-Detect Best Role</option>
-                    {CANONICAL_ROLES.map((r) => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Primary Action Button */}
-          <button
-            className="btn btn-primary"
-            onClick={() => runUnifiedAnalysis()}
-            disabled={busy || (!selectedResume && resumes.length === 0)}
-            style={{
-              width: '100%',
-              padding: '13px 24px',
-              fontSize: '1rem',
-              fontWeight: 800,
-              borderRadius: 'var(--radius-md)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              boxShadow: '0 4px 18px rgba(59, 130, 246, 0.35)',
-              cursor: 'pointer'
-            }}
-          >
-            <Sparkles size={18} />
-            {busy ? 'Running AI Multi-Factor Resume Analysis...' : 'Evaluate Candidate Fit & Launch AI Intelligence'}
-          </button>
-        </div>
-
-        {/* Loading State Animation */}
-        {busy && (
-          <LoadingState title="Analyzing Candidate Profile & Computing Multi-Factor Dimensions..." />
-        )}
-
-        {/* Optional Side Document Text Inspector */}
-        {showDocPreview && currentResumeDoc?.raw_text && (
-          <div className="card fade-in no-print" style={{
-            padding: 'var(--p-space-5)',
-            background: 'var(--color-bg)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            marginBottom: 'var(--p-space-6)',
-            maxHeight: 280,
-            overflowY: 'auto'
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)' }}>
-                Parsed Document Text Viewer ({currentResumeDoc.filename})
-              </span>
-              <button className="btn-ghost btn-sm" onClick={() => setShowDocPreview(false)} style={{ fontSize: '11px' }}>
-                ✕ Close
-              </button>
+              <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '10px 0 0 0', lineHeight: 1.5, maxWidth: 650 }}>
+                {overallFitScore >= 80
+                  ? `Candidate demonstrates high proficiency across core role requirements with verified evidence in ${(matchResult.matched_skills || []).slice(0, 3).join(', ')}. Excellent match for technical interview.`
+                  : `Candidate satisfies key baseline requirements with strong potential. Recommended to focus on ${(matchResult.missing_skills || ['core tools'])[0]} to achieve optimal role alignment.`}
+              </p>
             </div>
             <pre style={{
               fontSize: '11px',
@@ -527,255 +531,130 @@ export default function CVMatch() {
           </div>
         )}
 
-        {/* Results Workspace */}
-        {matchResult && !busy && (
-          <div className="card" style={{
-            padding: 'var(--p-space-6)',
-            background: 'var(--color-bg-elevated)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-lg)',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
-          }}>
-            {/* Executive Candidate Fit Banner */}
+            {/* Radial Score Meter */}
             <div style={{
-              padding: 'var(--p-space-5)',
-              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%)',
-              borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--color-border)',
-              marginBottom: 'var(--p-space-5)',
-              display: 'grid',
-              gridTemplateColumns: 'minmax(0, 2fr) auto',
-              gap: 24,
-              alignItems: 'center'
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '16px 24px',
+              background: 'var(--color-bg)',
+              borderRadius: 'var(--radius-md)',
+              border: '1px solid var(--color-border-subtle)',
+              minWidth: 140,
+              textAlign: 'center'
             }}>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-                  <span style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 5,
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.08em',
-                    padding: '4px 12px',
-                    borderRadius: 'var(--radius-full)',
-                    background: fitTier.bg,
-                    color: fitTier.color,
-                    border: `1px solid ${fitTier.color}40`
-                  }}>
-                    <fitTier.icon size={13} /> {fitTier.label}
-                  </span>
-
-                  <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                    <ShieldCheck size={14} style={{ color: 'var(--color-success)' }} /> Verified Component 1 Screening
-                  </span>
-                </div>
-
-                <h2 style={{ fontSize: '1.625rem', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Briefcase size={22} style={{ color: 'var(--color-primary)' }} />
-                  Target Role: <span style={{ color: 'var(--color-primary)' }}>{displayJobTitle}</span>
-                </h2>
-
-                <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
-                  <span>Applicant: <strong>{currentResumeDoc?.candidate_name || 'Verified Applicant'}</strong></span>
-                  <span>•</span>
-                  <span>Experience: <strong>{candExp.toFixed(1)} years</strong></span>
-                  <span>•</span>
-                  <span>Education: <strong>{currentResumeDoc?.education || 'BSc Computer Science'}</strong></span>
-                </div>
-
-                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '10px 0 0 0', lineHeight: 1.55, maxWidth: 680 }}>
-                  {fitTier.desc} Matched <strong>{matchResult.matched_skills?.length || 0}</strong> core competencies with verified evidence.
-                </p>
-              </div>
-
-              {/* Radial Score Gauge */}
               <div style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                padding: '18px 26px',
-                background: 'var(--color-bg)',
-                borderRadius: 'var(--radius-md)',
-                border: '1px solid var(--color-border-subtle)',
-                minWidth: 145,
-                textAlign: 'center',
-                boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)'
+                fontSize: '2.5rem',
+                fontWeight: 900,
+                color: fitTier.color,
+                lineHeight: 1,
+                fontFamily: 'var(--p-font-mono)',
+                textShadow: `0 0 20px ${fitTier.color}40`
               }}>
-                <div style={{
-                  fontSize: '2.6rem',
-                  fontWeight: 900,
-                  color: fitTier.color,
-                  lineHeight: 1,
-                  fontFamily: 'var(--p-font-mono)',
-                  textShadow: `0 0 24px ${fitTier.color}50`
-                }}>
-                  {overallFitScore.toFixed(0)}%
-                </div>
-                <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginTop: 6 }}>
-                  Overall Fit Score
-                </div>
+                {overallFitScore.toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-fg-muted)', marginTop: 6 }}>
+                Overall Fit Score
               </div>
             </div>
+          </div>
 
-            {/* Navigation Tabs */}
-            <div className="no-print" style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 12, marginBottom: 'var(--p-space-5)', flexWrap: 'wrap' }}>
-              <button
-                className={`btn btn-sm ${activeTab === 'match' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setActiveTab('match')}
-                style={{ fontWeight: 700 }}
-              >
-                <BarChart3 size={14} /> 1. Multi-Factor Evaluation (Skills, Exp, Edu)
-              </button>
-              <button
-                className={`btn btn-sm ${activeTab === 'gap' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setActiveTab('gap')}
-                style={{ fontWeight: 700 }}
-              >
-                <Target size={14} /> 2. Skill Gap & Simulation Sandbox
-              </button>
-              <button
-                className={`btn btn-sm ${activeTab === 'career' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setActiveTab('career')}
-                style={{ fontWeight: 700 }}
-              >
-                <RouteIcon size={14} /> 3. Career Progression Pathways
-              </button>
-              <button
-                className={`btn btn-sm ${activeTab === 'learning' ? 'btn-primary' : 'btn-ghost'}`}
-                onClick={() => setActiveTab('learning')}
-                style={{ fontWeight: 700 }}
-              >
-                <BookOpen size={14} /> 4. Structured Learning Roadmap
-              </button>
-            </div>
+          {/* Clean Navigation Tabs */}
+          <div style={{ display: 'flex', gap: 8, borderBottom: '1px solid var(--color-border-subtle)', paddingBottom: 12, marginBottom: 'var(--p-space-5)', flexWrap: 'wrap' }}>
+            <button
+              className={`btn btn-sm ${activeTab === 'match' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('match')}
+              style={{ fontWeight: 700 }}
+            >
+              <BarChart3 size={14} /> 1. Match & Multi-Factor Evaluation
+            </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'gap' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('gap')}
+              style={{ fontWeight: 700 }}
+            >
+              <Target size={14} /> 2. Skill Gap & Simulation Sandbox
+            </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'career' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('career')}
+              style={{ fontWeight: 700 }}
+            >
+              <RouteIcon size={14} /> 3. Career Progression Pathways
+            </button>
+            <button
+              className={`btn btn-sm ${activeTab === 'learning' ? 'btn-primary' : 'btn-ghost'}`}
+              onClick={() => setActiveTab('learning')}
+              style={{ fontWeight: 700 }}
+            >
+              <BookOpen size={14} /> 4. Structured Learning Roadmap
+            </button>
+          </div>
 
-            {/* TAB 1: 3 MULTI-FACTOR EVALUATION PILLARS */}
-            {activeTab === 'match' && (
-              <div className="fade-in">
-                {/* 3 Pillar Score Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(310px, 1fr))', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
-                  
-                  {/* 1. Skills Match Pillar */}
-                  <div className="card" style={{
-                    padding: 'var(--p-space-4)',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    margin: 0
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
-                          Technical Skills Alignment (S_skill)
-                        </span>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                          {skillScore.toFixed(0)}%
-                        </span>
-                      </div>
-
-                      <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
-                        <div style={{ width: `${Math.min(skillScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #60a5fa)', borderRadius: 3 }} />
-                      </div>
-
-                      <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                        Matched <strong>{matchResult.matched_skills?.length || 0}</strong> of <strong>{(matchResult.matched_skills?.length || 0) + (matchResult.missing_skills?.length || 0)}</strong> required role competencies.
-                      </div>
+          {/* ══════════════════════════════════════════════════════════════════════
+              TAB 1: 3 MULTI-FACTOR EVALUATION PILLARS
+             ══════════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'match' && (
+            <div className="fade-in">
+              {/* 3 Pillar Score Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
+                
+                {/* 1. Skills Match Pillar */}
+                <div className="card" style={{
+                  padding: 'var(--p-space-4)',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  margin: 0
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
+                        Technical Skills Alignment
+                      </span>
+                      <span style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-primary)' }}>
+                        {skillScore.toFixed(0)}%
+                      </span>
                     </div>
 
-                    <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)' }}>
-                      <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', marginBottom: 6 }}>
-                        Verified Matches:
-                      </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: 65, overflowY: 'auto' }}>
-                        {matchResult.matched_skills?.map((s) => (
-                          <span
-                            key={s}
-                            onClick={() => {
-                              const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
-                              if (ev) setSelectedSkillEvidence(ev)
-                            }}
-                            style={{
-                              fontSize: '11px',
-                              padding: '2px 8px',
-                              background: 'var(--color-success-muted)',
-                              color: 'var(--color-success)',
-                              borderRadius: 'var(--radius-full)',
-                              border: '1px solid rgba(16, 185, 129, 0.3)',
-                              fontWeight: 600,
-                              cursor: 'pointer'
-                            }}
-                            title="Click to view evidence in resume"
-                          >
-                            ✓ {s}
-                          </span>
-                        ))}
-                      </div>
+                    <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
+                      <div style={{ width: `${Math.min(skillScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #60a5fa)', borderRadius: 3 }} />
+                    </div>
+
+                    <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                      Matched <strong>{matchResult.matched_skills?.length || 0}</strong> of <strong>{(matchResult.matched_skills?.length || 0) + (matchResult.missing_skills?.length || 0)}</strong> required role competencies.
                     </div>
                   </div>
 
-                  {/* 2. Experience Match Pillar */}
-                  <div className="card" style={{
-                    padding: 'var(--p-space-4)',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    margin: 0
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
-                          Experience & Seniority Fit (S_exp)
-                        </span>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                          {expScore.toFixed(0)}%
-                        </span>
-                      </div>
-
-                      <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
-                        <div style={{ width: `${Math.min(expScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #10b981)', borderRadius: 3 }} />
-                      </div>
-
-                      <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                        Seniority level: <strong>{candExp >= reqExp ? 'Senior / Benchmarked' : (candExp > 0 ? 'Mid-Level Professional' : 'Entry / Graduate Track')}</strong>
-                      </div>
+                  <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', marginBottom: 6 }}>
+                      Verified Skill Matches:
                     </div>
-
-                    <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--p-text-xs)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ color: 'var(--color-fg-muted)' }}>Candidate Experience:</span>
-                        <strong style={{ color: 'var(--color-fg)' }}>{candExp.toFixed(1)} years</strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--color-fg-muted)' }}>Job Seniority Benchmark:</span>
-                        <strong style={{ color: 'var(--color-fg)' }}>{reqExp.toFixed(1)} years</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 3. Education Match Pillar */}
-                  <div className="card" style={{
-                    padding: 'var(--p-space-4)',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    borderRadius: 'var(--radius-md)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    margin: 0
-                  }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                        <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
-                          Education & Qualifications (S_edu)
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxHeight: 65, overflowY: 'auto' }}>
+                      {matchResult.matched_skills?.map((s) => (
+                        <span
+                          key={s}
+                          onClick={() => {
+                            const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
+                            if (ev) setSelectedSkillEvidence(ev)
+                          }}
+                          style={{
+                            fontSize: '11px',
+                            padding: '2px 8px',
+                            background: 'var(--color-success-muted)',
+                            color: 'var(--color-success)',
+                            borderRadius: 'var(--radius-full)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                          title="Click to view evidence in resume"
+                        >
+                          ✓ {s}
                         </span>
                         <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
                           {eduScore.toFixed(0)}%
@@ -807,188 +686,162 @@ export default function CVMatch() {
 
                 </div>
 
-                {/* Skills Breakdown: Matched vs Missing */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
-                  {/* Matched Skills */}
-                  <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                      <CheckCircle2 size={16} /> Matched Role Competencies ({matchResult.matched_skills?.length || 0})
+                {/* 2. Experience Match Pillar */}
+                <div className="card" style={{
+                  padding: 'var(--p-space-4)',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  margin: 0
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
+                        Experience & Seniority Fit
+                      </span>
+                      <span style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-primary)' }}>
+                        {expScore.toFixed(0)}%
+                      </span>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {matchResult.matched_skills?.map((s) => (
-                        <span
-                          key={s}
-                          onClick={() => {
-                            const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
-                            if (ev) setSelectedSkillEvidence(ev)
-                          }}
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            padding: '4px 10px',
-                            background: 'var(--color-success-muted)',
-                            color: 'var(--color-success)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                            borderRadius: 'var(--radius-full)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            cursor: 'pointer'
-                          }}
-                          title="Click to view evidence in resume text"
-                        >
-                          <Check size={12} /> {s}
-                        </span>
-                      ))}
+
+                    <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
+                      <div style={{ width: `${Math.min(expScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #10b981)', borderRadius: 3 }} />
+                    </div>
+
+                    <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                      Seniority level: <strong>{candExp >= reqExp ? 'Meets Benchmark' : 'Developing Track'}</strong>
                     </div>
                   </div>
 
-                  {/* Missing Skills */}
-                  <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                      <AlertCircle size={16} /> Missing Competencies to Develop ({matchResult.missing_skills?.length || 0})
+                  <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--p-text-xs)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ color: 'var(--color-fg-muted)' }}>Candidate Experience:</span>
+                      <strong style={{ color: 'var(--color-fg)' }}>{candExp.toFixed(1)} years</strong>
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {matchResult.missing_skills?.map((s) => (
-                        <span
-                          key={s}
-                          onClick={() => {
-                            setActiveTab('gap')
-                            handleSimulateSkill(s)
-                          }}
-                          style={{
-                            fontSize: '11px',
-                            fontWeight: 600,
-                            padding: '4px 10px',
-                            background: 'var(--color-danger-muted)',
-                            color: 'var(--color-danger)',
-                            border: '1px solid rgba(244, 63, 94, 0.3)',
-                            borderRadius: 'var(--radius-full)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            cursor: 'pointer'
-                          }}
-                          title="Click to simulate acquiring this skill"
-                        >
-                          + {s}
-                        </span>
-                      ))}
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--color-fg-muted)' }}>Job Requirement:</span>
+                      <strong style={{ color: 'var(--color-fg)' }}>{reqExp.toFixed(1)} years</strong>
                     </div>
                   </div>
                 </div>
 
-                {/* Contextual Evidence Drawer */}
-                {selectedSkillEvidence && (
-                  <div style={{
-                    padding: 'var(--p-space-4)',
-                    background: 'var(--color-bg-elevated)',
-                    border: '1px solid var(--color-primary)',
-                    borderRadius: 'var(--radius-md)',
-                    marginBottom: 'var(--p-space-5)'
-                  }}>
+                {/* 3. Education Match Pillar */}
+                <div className="card" style={{
+                  padding: 'var(--p-space-4)',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  margin: 0
+                }}>
+                  <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-primary)' }}>
-                        Contextual Evidence Snippet: {selectedSkillEvidence.skill}
+                      <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
+                        Education & Qualifications
                       </span>
-                      <button
-                        className="btn-ghost btn-sm"
-                        onClick={() => setSelectedSkillEvidence(null)}
-                        style={{ fontSize: '11px', padding: '2px 6px' }}
-                      >
-                        ✕ Close
-                      </button>
+                      <span style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-primary)' }}>
+                        {eduScore.toFixed(0)}%
+                      </span>
                     </div>
-                    <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', fontStyle: 'italic', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: 4 }}>
-                      "{selectedSkillEvidence.evidence_snippets?.[0] || 'Verified from work experience in candidate CV.'}"
-                    </div>
-                  </div>
-                )}
 
-                {/* Top AI-Predicted Roles Matrix */}
-                {c1Result?.role_predictions?.length > 0 && (
-                  <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                      <Cpu size={16} style={{ color: 'var(--color-primary)' }} /> Top AI-Predicted Roles (Click to Benchmark)
+                    <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
+                      <div style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: 3 }} />
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-                      {c1Result.role_predictions.slice(0, 4).map((p) => (
-                        <div
-                          key={p.role}
-                          onClick={() => runUnifiedAnalysis(p.role)}
-                          style={{
-                            padding: '10px 14px',
-                            background: 'var(--color-bg-elevated)',
-                            border: '1px solid var(--color-border-subtle)',
-                            borderRadius: 'var(--radius-md)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                          title={`Click to re-score against ${p.role}`}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>
-                              {p.role}
-                            </span>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)' }}>
-                              {(p.probability * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                          <div style={{ width: '100%', height: 4, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ width: `${p.probability * 100}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      ))}
+
+                    <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                      Academic Domain: <strong>{eduScore >= 70 ? 'Aligned CS / IT Major' : 'Technical Track'}</strong>
                     </div>
                   </div>
-                )}
+
+                  <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--p-text-xs)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ color: 'var(--color-fg-muted)' }}>Degree / Credentials:</span>
+                      <strong style={{ color: 'var(--color-fg)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {currentResumeDoc?.education || 'BSc Computer Science'}
+                      </strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ color: 'var(--color-fg-muted)' }}>Target Qualification:</span>
+                      <strong style={{ color: 'var(--color-fg)' }}>BSc IT / CS / SE</strong>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             )}
 
-            {/* TAB 2: SKILL GAP & SIMULATION SANDBOX */}
-            {activeTab === 'gap' && (
-              <div className="fade-in">
-                <div style={{ marginBottom: 'var(--p-space-4)' }}>
-                  <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 4px 0' }}>
-                    Interactive Skill Acquisition Sandbox
-                  </h3>
-                  <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                    Click missing target skills below to simulate how acquiring them will boost candidate match scores and hireability in real time.
-                  </p>
+              {/* Skills Breakdown: Matched vs Missing */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
+                {/* Matched Skills */}
+                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                    <CheckCircle2 size={16} /> Matched Role Competencies ({matchResult.matched_skills?.length || 0})
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {matchResult.matched_skills?.map((s) => (
+                      <span
+                        key={s}
+                        onClick={() => {
+                          const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
+                          if (ev) setSelectedSkillEvidence(ev)
+                        }}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          background: 'var(--color-success-muted)',
+                          color: 'var(--color-success)',
+                          border: '1px solid rgba(16, 185, 129, 0.3)',
+                          borderRadius: 'var(--radius-full)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          cursor: 'pointer'
+                        }}
+                        title="Click to view resume evidence"
+                      >
+                        <Check size={12} /> {s}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
-                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--p-space-5)' }}>
-                  <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-fg-muted)', marginBottom: 12 }}>
-                    Missing Skills for {displayJobTitle} (Click to simulate acquisition):
+                {/* Missing Skills */}
+                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                    <AlertCircle size={16} /> Missing Competencies to Develop ({matchResult.missing_skills?.length || 0})
                   </div>
-
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                    {(matchResult.missing_skills || []).map((skill) => {
-                      const isSelected = simulatedAcquiredSkills.includes(skill)
-                      return (
-                        <button
-                          key={skill}
-                          onClick={() => handleSimulateSkill(skill)}
-                          style={{
-                            padding: '6px 14px',
-                            borderRadius: 'var(--radius-full)',
-                            border: `1px solid ${isSelected ? 'var(--color-success)' : 'var(--color-border)'}`,
-                            background: isSelected ? 'var(--color-success-muted)' : 'var(--color-bg-elevated)',
-                            color: isSelected ? 'var(--color-success)' : 'var(--color-fg)',
-                            cursor: 'pointer',
-                            fontSize: 'var(--p-text-xs)',
-                            fontWeight: 700,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          <span>{isSelected ? '✓ Acquired' : '+ Acquire'}</span>
-                          <span>{skill}</span>
-                        </button>
-                      )
-                    })}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {matchResult.missing_skills?.map((s) => (
+                      <span
+                        key={s}
+                        onClick={() => {
+                          setActiveTab('gap')
+                          handleSimulateSkill(s)
+                        }}
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          padding: '4px 10px',
+                          background: 'var(--color-danger-muted)',
+                          color: 'var(--color-danger)',
+                          border: '1px solid rgba(244, 63, 94, 0.3)',
+                          borderRadius: 'var(--radius-full)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          cursor: 'pointer'
+                        }}
+                        title="Click to simulate acquiring this skill"
+                      >
+                        + {s}
+                      </span>
+                    ))}
                   </div>
 
                   {simulationResult && (
@@ -1021,70 +874,92 @@ export default function CVMatch() {
               </div>
             )}
 
-            {/* TAB 3: CAREER PROGRESSION PATHWAYS */}
-            {activeTab === 'career' && (
-              <div className="fade-in">
-                <div style={{ marginBottom: 'var(--p-space-4)' }}>
-                  <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 4px 0' }}>
-                    AI Career Transition & Growth Pathways
-                  </h3>
-                  <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                    Recommended lateral and upward career paths based on your current technical skill profile.
-                  </p>
+              {/* Contextual Evidence Modal / Drawer */}
+              {selectedSkillEvidence && (
+                <div style={{
+                  padding: 'var(--p-space-4)',
+                  background: 'var(--color-bg-elevated)',
+                  border: '1px solid var(--color-primary)',
+                  borderRadius: 'var(--radius-md)',
+                  marginBottom: 'var(--p-space-5)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-primary)' }}>
+                      Contextual Evidence for: {selectedSkillEvidence.skill}
+                    </span>
+                    <button
+                      className="btn-ghost btn-sm"
+                      onClick={() => setSelectedSkillEvidence(null)}
+                      style={{ fontSize: '11px', padding: '2px 6px' }}
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', fontStyle: 'italic' }}>
+                    "{selectedSkillEvidence.evidence_snippets?.[0] || 'Verified from parsed resume work experience.'}"
+                  </div>
                 </div>
+              )}
 
-                {careerResult?.recommendations?.length > 0 ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--p-space-4)' }}>
-                    {careerResult.recommendations.map((rec) => (
-                      <div key={rec.target_role || rec.role} className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                          <div style={{ fontWeight: 700, fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
-                            {rec.target_role || rec.role}
-                          </div>
-                          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-primary-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
-                            {rec.transition_feasibility || rec.match_score || 80}% Feasibility
+              {/* AI Top Predicted IT Roles */}
+              {c1Result?.role_predictions?.length > 0 && (
+                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                    <Cpu size={16} style={{ color: 'var(--color-primary)' }} /> Top AI-Predicted Roles for this Resume
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+                    {c1Result.role_predictions.slice(0, 4).map((p) => (
+                      <div
+                        key={p.role}
+                        onClick={() => runUnifiedAnalysis(p.role)}
+                        style={{
+                          padding: '10px 14px',
+                          background: 'var(--color-bg-elevated)',
+                          border: '1px solid var(--color-border-subtle)',
+                          borderRadius: 'var(--radius-md)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        title={`Click to re-score against ${p.role}`}
+                      >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                          <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                            {p.role}
+                          </span>
+                          <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)' }}>
+                            {(p.probability * 100).toFixed(0)}%
                           </span>
                         </div>
-                        <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
-                          {rec.rationale || 'Strong skill overlap with your current profile.'}
-                        </p>
-                        {rec.bridge_skills?.length > 0 && (
-                          <div>
-                            <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
-                              Key Bridge Skills:
-                            </div>
-                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                              {rec.bridge_skills.map((s) => (
-                                <span key={s} style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-subtle)', borderRadius: 4, color: 'var(--color-fg)' }}>
-                                  {s}
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                        <div style={{ width: '100%', height: 4, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
+                          <div style={{ width: `${p.probability * 100}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 2 }} />
+                        </div>
                       </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-5)', background: 'var(--color-bg)' }}>
-                    <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                      Career progression recommendations active for <strong>{displayJobTitle}</strong> profile.
-                    </p>
-                  </div>
-                )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════════
+              TAB 2: SKILL GAP & SIMULATION SANDBOX
+             ══════════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'gap' && (
+            <div className="fade-in">
+              <div style={{ marginBottom: 'var(--p-space-4)' }}>
+                <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 4px 0' }}>
+                  Interactive Skill Acquisition Sandbox
+                </h3>
+                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                  Click missing target skills below to simulate how learning them will boost your candidate match score and interview ranking in real time.
+                </p>
               </div>
             )}
 
-            {/* TAB 4: STRUCTURED LEARNING ROADMAP */}
-            {activeTab === 'learning' && (
-              <div className="fade-in">
-                <div style={{ marginBottom: 'var(--p-space-4)' }}>
-                  <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 4px 0' }}>
-                    Curated Technical Learning Roadmap
-                  </h3>
-                  <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                    Structured milestone plan to master required competencies for {displayJobTitle}.
-                  </p>
+              {/* Simulation Sandbox Card */}
+              <div className="card" style={{ padding: 'var(--p-space-5)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--p-space-5)' }}>
+                <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--color-fg-muted)', marginBottom: 12 }}>
+                  Missing Skills for {displayJobTitle} (Click to simulate acquisition):
                 </div>
 
                 {learningPathResult?.learning_path?.length > 0 ? (
@@ -1093,11 +968,15 @@ export default function CVMatch() {
                       <div
                         key={item.skill || item.title}
                         style={{
-                          padding: 'var(--p-space-4)',
-                          background: 'var(--color-bg)',
-                          borderRadius: 'var(--radius-md)',
-                          border: '1px solid var(--color-border)',
-                          display: 'flex',
+                          padding: '6px 14px',
+                          borderRadius: 'var(--radius-full)',
+                          border: `1px solid ${isSelected ? 'var(--color-success)' : 'var(--color-border)'}`,
+                          background: isSelected ? 'var(--color-success-muted)' : 'var(--color-bg-elevated)',
+                          color: isSelected ? 'var(--color-success)' : 'var(--color-fg)',
+                          cursor: 'pointer',
+                          fontSize: 'var(--p-text-xs)',
+                          fontWeight: 700,
+                          display: 'inline-flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           gap: 14
@@ -1129,25 +1008,31 @@ export default function CVMatch() {
                           </div>
                         </div>
 
-                        {item.resource_url && (
-                          <a
-                            href={item.resource_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn btn-ghost btn-sm"
-                            style={{ fontSize: 'var(--p-text-xs)', flexShrink: 0 }}
-                          >
-                            <ExternalLink size={13} /> View Resource
-                          </a>
-                        )}
+                {/* Simulation Output Banner */}
+                {simulationResult && (
+                  <div style={{
+                    padding: 'var(--p-space-4)',
+                    background: 'var(--color-success-muted)',
+                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    borderRadius: 'var(--radius-md)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    gap: 12
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-success)' }}>
+                        +{simulationResult.coverage_improvement || 0}% Projected Coverage Boost!
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-5)', background: 'var(--color-bg)' }}>
-                    <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                      Learning resources mapped to {displayJobTitle} competencies.
-                    </p>
+                      <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', marginTop: 2 }}>
+                        Candidate match coverage increases from {simulationResult.original_coverage || 0}% to <strong>{simulationResult.simulated_coverage || 0}%</strong> upon completing these skills.
+                      </div>
+                    </div>
+
+                    <Link to="/pipeline/progress" className="btn btn-primary btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
+                      Add to Action Plan <ArrowRight size={13} />
+                    </Link>
                   </div>
                 )}
               </div>
@@ -1227,153 +1112,110 @@ export default function CVMatch() {
                 </button>
               </div>
             </div>
+          )}
 
-            {/* Printable Document Body (A4 Executive Layout) */}
-            <div className="dossier-print-container" style={{ padding: '32px 36px', background: '#ffffff', color: '#0f172a', lineHeight: 1.5, fontFamily: 'system-ui, -apple-system, sans-serif' }}>
-              
-              {/* Document Header */}
-              <div className="dossier-section" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 14, marginBottom: 20 }}>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#2563eb', marginBottom: 2 }}>
-                    RecruitAI Enterprise Talent Suite · Component 1
-                  </div>
-                  <h1 style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0' }}>
-                    Candidate Screening & Evaluation Dossier
-                  </h1>
-                  <div style={{ fontSize: '11px', color: '#64748b' }}>
-                    Document ID: <strong>{reportId}</strong> · Generated: <strong>{reportDate}</strong>
-                  </div>
-                </div>
-
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{
-                    display: 'inline-block',
-                    padding: '5px 12px',
-                    borderRadius: 6,
-                    background: fitTier.bg || '#dbeafe',
-                    color: fitTier.color || '#1e40af',
-                    fontWeight: 800,
-                    fontSize: '11px',
-                    border: '1px solid #cbd5e1',
-                    marginBottom: 4
-                  }}>
-                    {fitTier.label}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }}>
-                    <ShieldCheck size={13} /> Verified AI Screening
-                  </div>
-                </div>
-              </div>
-
-              {/* Applicant Overview Card */}
-              <div className="dossier-section" style={{
-                background: '#f8fafc',
-                border: '1px solid #cbd5e1',
-                borderRadius: 8,
-                padding: '14px 18px',
-                marginBottom: 20,
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1.4fr) minmax(0, 1.1fr)',
-                gap: 16
-              }}>
-                <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Candidate Profile</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0f172a', marginTop: 2 }}>
-                    {currentResumeDoc?.candidate_name || 'Candidate Applicant'}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#475569', marginTop: 4 }}>
-                    Academic Qualification: <strong>{currentResumeDoc?.education || 'BSc in Information Technology / CS'}</strong>
-                  </div>
-                </div>
-
-                <div>
-                  <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Evaluated Position</div>
-                  <div style={{ fontSize: '1.15rem', fontWeight: 800, color: '#2563eb', marginTop: 2 }}>
-                    {displayJobTitle}
-                  </div>
-                  <div style={{ fontSize: '11px', color: '#475569', marginTop: 4 }}>
-                    Seniority Benchmark: <strong>{reqExp.toFixed(1)} years</strong> (Candidate: <strong>{candExp.toFixed(1)} yrs</strong>)
-                  </div>
-                </div>
-              </div>
-
-              {/* Executive Score Matrix (3 Pillars) */}
-              <div className="dossier-section" style={{ marginBottom: 22 }}>
-                <h3 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: 5, marginBottom: 12 }}>
-                  Multi-Factor Candidate Fit Score Matrix
+          {/* ══════════════════════════════════════════════════════════════════════
+              TAB 3: CAREER PROGRESSION PATHWAYS
+             ══════════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'career' && (
+            <div className="fade-in">
+              <div style={{ marginBottom: 'var(--p-space-4)' }}>
+                <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 4px 0' }}>
+                  AI Career Transition & Growth Pathways
                 </h3>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                  {/* Overall Fit */}
-                  <div style={{ padding: '12px 10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6, textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Overall Fit Score</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#2563eb', marginTop: 2 }}>{overallFitScore.toFixed(0)}%</div>
-                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>Weighted Index</div>
-                  </div>
-
-                  {/* Skills Score */}
-                  <div style={{ padding: '12px 10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6, textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Skills (S_skill)</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', marginTop: 2 }}>{skillScore.toFixed(0)}%</div>
-                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>{matchResult.matched_skills?.length || 0} Matched</div>
-                  </div>
-
-                  {/* Experience Score */}
-                  <div style={{ padding: '12px 10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6, textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Experience (S_exp)</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', marginTop: 2 }}>{expScore.toFixed(0)}%</div>
-                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>{candExp.toFixed(1)} / {reqExp.toFixed(1)} yrs</div>
-                  </div>
-
-                  {/* Education Score */}
-                  <div style={{ padding: '12px 10px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 6, textAlign: 'center' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Education (S_edu)</div>
-                    <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#0f172a', marginTop: 2 }}>{eduScore.toFixed(0)}%</div>
-                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>IT Domain Aligned</div>
-                  </div>
-                </div>
+                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                  Recommended lateral and upward career moves based on your current technical skill profile.
+                </p>
               </div>
 
-              {/* Verified Competencies & Contextual Evidence Audit */}
-              <div className="dossier-section" style={{ marginBottom: 22 }}>
-                <h3 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: 5, marginBottom: 10 }}>
-                  Verified Technical Competencies & Identified Gaps
-                </h3>
-
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-                  {matchResult.matched_skills?.map((s) => (
-                    <span key={s} style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '2px 8px', borderRadius: 4 }}>
-                      ✓ {s}
-                    </span>
+              {careerResult?.recommendations?.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 'var(--p-space-4)' }}>
+                  {careerResult.recommendations.map((rec) => (
+                    <div key={rec.target_role || rec.role} className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                        <div style={{ fontWeight: 700, fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
+                          {rec.target_role || rec.role}
+                        </div>
+                        <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)', background: 'var(--color-primary-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                          {rec.transition_feasibility || rec.match_score || 80}% Feasibility
+                        </span>
+                      </div>
+                      <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', lineHeight: 1.5, marginBottom: 12 }}>
+                        {rec.rationale || 'Strong skill overlap with your current profile.'}
+                      </p>
+                      {rec.bridge_skills?.length > 0 && (
+                        <div>
+                          <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 4 }}>
+                            Key Bridge Skills:
+                          </div>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                            {rec.bridge_skills.map((s) => (
+                              <span key={s} style={{ fontSize: '10px', fontWeight: 600, padding: '2px 6px', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-subtle)', borderRadius: 4, color: 'var(--color-fg)' }}>
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   ))}
                 </div>
+              ) : (
+                <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-5)', background: 'var(--color-bg)' }}>
+                  <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                    Career progression recommendations active for <strong>{displayJobTitle}</strong> profile.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
-                {matchResult.missing_skills?.length > 0 && (
-                  <div>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', marginBottom: 4 }}>
-                      Identified Competency Gaps to Bridge:
-                    </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {matchResult.missing_skills?.map((s) => (
-                        <span key={s} style={{ fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '2px 8px', borderRadius: 4 }}>
-                          - {s}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
+          {/* ══════════════════════════════════════════════════════════════════════
+              TAB 4: STRUCTURED LEARNING ROADMAP
+             ══════════════════════════════════════════════════════════════════════ */}
+          {activeTab === 'learning' && (
+            <div className="fade-in">
+              <div style={{ marginBottom: 'var(--p-space-4)' }}>
+                <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 700, color: 'var(--color-fg)', margin: '0 0 4px 0' }}>
+                  Curated Technical Learning Roadmap
+                </h3>
+                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                  Structured milestone plan to master required competencies for {displayJobTitle}.
+                </p>
               </div>
 
-              {/* AI Role Distribution & Learning Roadmap */}
-              {learningPathResult?.learning_path?.length > 0 && (
-                <div className="dossier-section" style={{ marginBottom: 22 }}>
-                  <h3 style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: 5, marginBottom: 10 }}>
-                    Upskilling & Onboarding Milestone Roadmap
-                  </h3>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {learningPathResult.learning_path.slice(0, 4).map((item, idx) => (
-                      <div key={item.skill || idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 4, fontSize: '11px' }}>
+              {learningPathResult?.learning_path?.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {learningPathResult.learning_path.map((item, idx) => (
+                    <div
+                      key={item.skill || item.title}
+                      style={{
+                        padding: 'var(--p-space-4)',
+                        background: 'var(--color-bg)',
+                        borderRadius: 'var(--radius-md)',
+                        border: '1px solid var(--color-border)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: 14
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                          width: 28,
+                          height: 28,
+                          borderRadius: 'var(--radius-full)',
+                          background: 'var(--color-primary-muted)',
+                          color: 'var(--color-primary)',
+                          fontWeight: 800,
+                          fontSize: '12px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {idx + 1}
+                        </div>
                         <div>
                           <strong>Phase {idx + 1}: {item.skill || item.title}</strong> — <span style={{ color: '#64748b' }}>{item.description || 'Target skill competency'}</span>
                         </div>
@@ -1384,23 +1226,17 @@ export default function CVMatch() {
                 </div>
               )}
 
-              {/* Hiring Committee Decision & Sign-off */}
-              <div className="dossier-section" style={{
-                marginTop: 24,
-                borderTop: '2px dashed #cbd5e1',
-                paddingTop: 16,
-                display: 'grid',
-                gridTemplateColumns: 'minmax(0, 1.3fr) minmax(0, 1fr)',
-                gap: 20
-              }}>
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', marginBottom: 6 }}>
-                    Hiring Committee Screening Recommendation
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: '11px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>[{overallFitScore >= 70 ? 'X' : ' '}]</span>
-                      <strong>Advance to Technical Assessment (Component 2)</strong>
+                      {item.resource_url && (
+                        <a
+                          href={item.resource_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="btn btn-ghost btn-sm"
+                          style={{ fontSize: 'var(--p-text-xs)', flexShrink: 0 }}
+                        >
+                          <ExternalLink size={13} /> View Resource
+                        </a>
+                      )}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <span>[{overallFitScore >= 85 ? 'X' : ' '}]</span>
@@ -1412,22 +1248,11 @@ export default function CVMatch() {
                     </div>
                   </div>
                 </div>
-
-                <div>
-                  <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#0f172a', marginBottom: 6 }}>
-                    Evaluator Sign-Off
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '11px' }}>
-                    <div style={{ borderBottom: '1px solid #94a3b8', paddingBottom: 2, color: '#64748b' }}>
-                      Reviewer Name: ___________________________
-                    </div>
-                    <div style={{ borderBottom: '1px solid #94a3b8', paddingBottom: 2, color: '#64748b' }}>
-                      Signature: _______________________________
-                    </div>
-                    <div style={{ color: '#64748b' }}>
-                      Date: <strong>{reportDate}</strong>
-                    </div>
-                  </div>
+              ) : (
+                <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-5)', background: 'var(--color-bg)' }}>
+                  <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                    Learning resources mapped to {displayJobTitle} competencies.
+                  </p>
                 </div>
               </div>
 
@@ -1437,7 +1262,8 @@ export default function CVMatch() {
               </div>
 
             </div>
-          </div>
+          )}
+
         </div>
       )}
 
