@@ -65,6 +65,15 @@ async def lifespan(app: FastAPI):
         logger.error(f"✗ Unable to connect to MongoDB: {e}")
         raise
     
+    # Pre-warm ML Services
+    try:
+        from services.ml_engine import get_interview_service, get_evaluation_service
+        get_interview_service(models_dir)
+        get_evaluation_service(models_dir)
+        logger.info("✓ Interview service preloaded & warmed up")
+    except Exception as e:
+        logger.warning(f"Could not pre-warm interview service: {e}")
+    
     logger.info("✓ Interview system ready on http://localhost:8002")
     logger.info("✓ API Documentation: http://localhost:8002/docs")
     

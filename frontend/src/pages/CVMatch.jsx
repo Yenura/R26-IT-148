@@ -503,8 +503,7 @@ export default function CVMatch() {
                 <Briefcase size={22} style={{ color: 'var(--color-primary)' }} />
                 Target Role: <span style={{ color: 'var(--color-primary)' }}>{displayJobTitle}</span>
               </h2>
-
-              <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
+<div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
                 <span>Applicant: <strong>{currentResumeDoc?.candidate_name || 'Verified Applicant'}</strong></span>
                 <span>•</span>
                 <span>Experience: <strong>{candExp.toFixed(1)} years</strong></span>
@@ -518,18 +517,6 @@ export default function CVMatch() {
                   : `Candidate satisfies key baseline requirements with strong potential. Recommended to focus on ${(matchResult.missing_skills || ['core tools'])[0]} to achieve optimal role alignment.`}
               </p>
             </div>
-            <pre style={{
-              fontSize: '11px',
-              fontFamily: 'var(--p-font-mono)',
-              whiteSpace: 'pre-wrap',
-              color: 'var(--color-fg-secondary)',
-              margin: 0,
-              lineHeight: 1.6
-            }}>
-              {currentResumeDoc.raw_text}
-            </pre>
-          </div>
-        )}
 
             {/* Radial Score Meter */}
             <div style={{
@@ -656,19 +643,40 @@ export default function CVMatch() {
                         >
                           ✓ {s}
                         </span>
-                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                          {eduScore.toFixed(0)}%
-                        </span>
-                      </div>
-
-                      <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
-                        <div style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: 3 }} />
-                      </div>
-
-                      <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                        Academic Domain: <strong>{eduScore >= 70 ? 'Aligned Computer Science / IT Major' : 'Technical Track'}</strong>
-                      </div>
+                      ))}
                     </div>
+                  </div>
+                </div>
+
+                {/* 2. Education Relevance */}
+                <div className="card" style={{
+                  padding: 'var(--p-space-4)',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  margin: 0
+                }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
+                        Education Alignment
+                      </span>
+                      <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                        {eduScore.toFixed(0)}%
+                      </span>
+                    </div>
+
+                    <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
+                      <div style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: 3 }} />
+                    </div>
+
+                    <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                      Academic Domain: <strong>{eduScore >= 70 ? 'Aligned Computer Science / IT Major' : 'Technical Track'}</strong>
+                    </div>
+                  </div>
 
                     <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--p-text-xs)' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
@@ -771,10 +779,8 @@ export default function CVMatch() {
                     </div>
                   </div>
                 </div>
-
-              </div>
+</div>
             )}
-
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
@@ -844,7 +850,7 @@ export default function CVMatch() {
                     ))}
                   </div>
 
-                  {simulationResult && (
+{simulationResult && (
                     <div style={{
                       padding: 'var(--p-space-4)',
                       background: 'var(--color-success-muted)',
@@ -872,7 +878,6 @@ export default function CVMatch() {
                   )}
                 </div>
               </div>
-            )}
 
               {/* Contextual Evidence Modal / Drawer */}
               {selectedSkillEvidence && (
@@ -954,7 +959,6 @@ export default function CVMatch() {
                   Click missing target skills below to simulate how learning them will boost your candidate match score and interview ranking in real time.
                 </p>
               </div>
-            )}
 
               {/* Simulation Sandbox Card */}
               <div className="card" style={{ padding: 'var(--p-space-5)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--p-space-5)' }}>
@@ -963,50 +967,61 @@ export default function CVMatch() {
                 </div>
 
                 {learningPathResult?.learning_path?.length > 0 ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {learningPathResult.learning_path.map((item, idx) => (
-                      <div
-                        key={item.skill || item.title}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: 'var(--radius-full)',
-                          border: `1px solid ${isSelected ? 'var(--color-success)' : 'var(--color-border)'}`,
-                          background: isSelected ? 'var(--color-success-muted)' : 'var(--color-bg-elevated)',
-                          color: isSelected ? 'var(--color-success)' : 'var(--color-fg)',
-                          cursor: 'pointer',
-                          fontSize: 'var(--p-text-xs)',
-                          fontWeight: 700,
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          gap: 14
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                          <div style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 'var(--radius-full)',
-                            background: 'var(--color-primary-muted)',
-                            color: 'var(--color-primary)',
-                            fontWeight: 800,
-                            fontSize: '12px',
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                    {learningPathResult.learning_path.map((item, idx) => {
+                      const isSelected = simulatedSkills.includes(item.skill || item.title)
+                      return (
+                        <div
+                          key={item.skill || item.title || idx}
+                          onClick={() => handleSimulateSkill(item.skill || item.title)}
+                          style={{
+                            padding: '10px 14px',
+                            borderRadius: 'var(--radius-md)',
+                            border: `1px solid ${isSelected ? 'var(--color-success)' : 'var(--color-border)'}`,
+                            background: isSelected ? 'var(--color-success-muted)' : 'var(--color-bg-elevated)',
+                            color: isSelected ? 'var(--color-success)' : 'var(--color-fg)',
+                            cursor: 'pointer',
+                            fontSize: 'var(--p-text-xs)',
+                            fontWeight: 700,
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                          }}>
-                            {idx + 1}
-                          </div>
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
-                              {item.skill || item.title}
+                            justifyContent: 'space-between',
+                            gap: 14
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 'var(--radius-full)',
+                              background: 'var(--color-primary-muted)',
+                              color: 'var(--color-primary)',
+                              fontWeight: 800,
+                              fontSize: '12px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0
+                            }}>
+                              {idx + 1}
                             </div>
-                            <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
-                              {item.description || item.reason || 'Core competency for target role'}
+                            <div>
+                              <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
+                                {item.skill || item.title}
+                              </div>
+                              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                                {item.description || item.reason || 'Core competency for target role'}
+                              </div>
                             </div>
                           </div>
+                          <span style={{ fontSize: '11px', color: isSelected ? 'var(--color-success)' : 'var(--color-primary)' }}>
+                            {isSelected ? '✓ In Simulation' : '+ Simulate'}
+                          </span>
                         </div>
+                      )
+                    })}
+                  </div>
+                ) : null}
 
                 {/* Simulation Output Banner */}
                 {simulationResult && (
@@ -1035,81 +1050,6 @@ export default function CVMatch() {
                     </Link>
                   </div>
                 )}
-              </div>
-            )}
-
-          </div>
-        )}
-      </div>
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          EXECUTIVE CANDIDATE EVALUATION DOSSIER MODAL & PRINT CONTAINER
-         ══════════════════════════════════════════════════════════════════════ */}
-      {showDossierModal && matchResult && (
-        <div className="dossier-modal-overlay" style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0, 0, 0, 0.85)',
-          backdropFilter: 'blur(8px)',
-          zIndex: 9999,
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          padding: 20
-        }}>
-          <div className="dossier-modal-wrapper" style={{
-            background: '#ffffff',
-            color: '#0f172a',
-            width: '100%',
-            maxWidth: 880,
-            maxHeight: '92vh',
-            borderRadius: 12,
-            overflowY: 'auto',
-            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column'
-          }}>
-            {/* Modal Controls Header */}
-            <div className="no-print" style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              padding: '16px 24px',
-              borderBottom: '1px solid #e2e8f0',
-              background: '#f8fafc',
-              position: 'sticky',
-              top: 0,
-              zIndex: 10
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <FileText size={20} color="#2563eb" />
-                <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
-                  Candidate Evaluation Dossier Preview
-                </span>
-                <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
-                  Ready for Print / PDF Export
-                </span>
-              </div>
-
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={handlePrint}
-                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
-                >
-                  <Printer size={14} /> Print / Save as PDF
-                </button>
-                <button
-                  className="btn btn-ghost btn-sm"
-                  onClick={() => setShowDossierModal(false)}
-                  style={{ padding: 6 }}
-                >
-                  <X size={18} />
-                </button>
               </div>
             </div>
           )}
@@ -1188,7 +1128,7 @@ export default function CVMatch() {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {learningPathResult.learning_path.map((item, idx) => (
                     <div
-                      key={item.skill || item.title}
+                      key={item.skill || item.title || idx}
                       style={{
                         padding: 'var(--p-space-4)',
                         background: 'var(--color-bg)',
@@ -1217,15 +1157,9 @@ export default function CVMatch() {
                           {idx + 1}
                         </div>
                         <div>
-                          <strong>Phase {idx + 1}: {item.skill || item.title}</strong> — <span style={{ color: '#64748b' }}>{item.description || 'Target skill competency'}</span>
+                          <strong>Phase {idx + 1}: {item.skill || item.title}</strong> — <span style={{ color: 'var(--color-fg-muted)' }}>{item.description || 'Target skill competency'}</span>
                         </div>
-                        <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 700 }}>Recommended Priority</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
                       {item.resource_url && (
                         <a
                           href={item.resource_url}
@@ -1238,15 +1172,7 @@ export default function CVMatch() {
                         </a>
                       )}
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>[{overallFitScore >= 85 ? 'X' : ' '}]</span>
-                      <strong>Fast-Track to Final Round Interview</strong>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span>[{overallFitScore < 70 ? 'X' : ' '}]</span>
-                      <strong>Retain Candidate in Talent Pool for Future Roles</strong>
-                    </div>
-                  </div>
+                  ))}
                 </div>
               ) : (
                 <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-5)', background: 'var(--color-bg)' }}>
@@ -1254,16 +1180,162 @@ export default function CVMatch() {
                     Learning resources mapped to {displayJobTitle} competencies.
                   </p>
                 </div>
-              </div>
-
-              {/* Footer */}
-              <div style={{ marginTop: 20, textAlign: 'center', fontSize: '9.5px', color: '#94a3b8', borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
-                RecruitAI Autonomous Recruitment Ecosystem · Confidential Candidate Evaluation Record · Component 1 Screening Engine
-              </div>
-
+              )}
             </div>
           )}
 
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          EXECUTIVE CANDIDATE EVALUATION DOSSIER MODAL & PRINT CONTAINER
+         ══════════════════════════════════════════════════════════════════════ */}
+      {showDossierModal && matchResult && (
+        <div className="dossier-modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20
+        }}>
+          <div className="dossier-modal-wrapper" style={{
+            background: '#ffffff',
+            color: '#0f172a',
+            width: '100%',
+            maxWidth: 880,
+            maxHeight: '92vh',
+            borderRadius: 12,
+            overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Controls Header */}
+            <div className="no-print" style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 24px',
+              borderBottom: '1px solid #e2e8f0',
+              background: '#f8fafc',
+              position: 'sticky',
+              top: 0,
+              zIndex: 10
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <FileText size={20} color="#2563eb" />
+                <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
+                  Candidate Evaluation Dossier Preview
+                </span>
+                <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+                  Ready for Print / PDF Export
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handlePrint}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+                >
+                  <Printer size={14} /> Print / Save as PDF
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setShowDossierModal(false)}
+                  style={{ padding: 6 }}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+
+            {/* Printable Dossier Sheet */}
+            <div style={{ padding: 32 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #2563eb', paddingBottom: 16, marginBottom: 20 }}>
+                <div>
+                  <h2 style={{ margin: 0, color: '#0f172a', fontSize: '1.5rem', fontWeight: 800 }}>RecruitAI Executive Dossier</h2>
+                  <div style={{ fontSize: '12px', color: '#64748b', marginTop: 4 }}>Candidate Evaluation & Multi-Pillar Screening Assessment</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '2rem', fontWeight: 900, color: fitTier.color }}>{overallFitScore.toFixed(0)}%</div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Overall Fit Score</div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20, fontSize: '13px' }}>
+                <div><strong>Candidate:</strong> {currentResumeDoc?.candidate_name || 'Verified Applicant'}</div>
+                <div><strong>Target Role:</strong> {displayJobTitle}</div>
+                <div><strong>Experience:</strong> {candExp.toFixed(1)} years</div>
+                <div><strong>Education:</strong> {currentResumeDoc?.education || 'BSc Computer Science'}</div>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Pillar Scores</h4>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, textAlign: 'center' }}>
+                  <div style={{ padding: 10, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Technical Skills</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb' }}>{skillScore.toFixed(0)}%</div>
+                  </div>
+                  <div style={{ padding: 10, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Education</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb' }}>{eduScore.toFixed(0)}%</div>
+                  </div>
+                  <div style={{ padding: 10, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Experience</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb' }}>{expScore.toFixed(0)}%</div>
+                  </div>
+                  <div style={{ padding: 10, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>Soft Skills</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#2563eb' }}>{softScore.toFixed(0)}%</div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#0f172a', borderBottom: '1px solid #e2e8f0', paddingBottom: 4 }}>Verified Skills</h4>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {(matchResult.matched_skills || []).map((s) => (
+                    <span key={s} style={{ fontSize: '11px', padding: '3px 8px', background: '#dcfce7', color: '#166534', borderRadius: 4, fontWeight: 600 }}>
+                      ✓ {s}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hiring Recommendation */}
+              <div style={{ padding: 14, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0', marginBottom: 20 }}>
+                <h4 style={{ margin: '0 0 8px 0', fontSize: '13px', color: '#0f172a' }}>Hiring Recommendation</h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '12px', color: '#334155' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>[{overallFitScore >= 85 ? 'X' : ' '}]</span>
+                    <strong>Fast-Track to Final Round Technical Interview</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>[{overallFitScore >= 70 && overallFitScore < 85 ? 'X' : ' '}]</span>
+                    <strong>Proceed to Technical Assessment & Live Interview</strong>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>[{overallFitScore < 70 ? 'X' : ' '}]</span>
+                    <strong>Retain Candidate in Talent Pool for Future Roles</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div style={{ textAlign: 'center', fontSize: '10px', color: '#94a3b8', borderTop: '1px solid #e2e8f0', paddingTop: 10 }}>
+                RecruitAI Autonomous Recruitment Ecosystem · Confidential Candidate Evaluation Record
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
