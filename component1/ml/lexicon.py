@@ -12,13 +12,13 @@ SKILL_LEXICON: Dict[str, List[str]] = {
         "unit testing", "code review", "agile", "scrum", "software development", "refactoring"
     ],
     "Frontend": [
-        "html", "html5", "css", "css3", "javascript", "typescript", "react", "react.js",
-        "angular", "vue", "vue.js", "next.js", "tailwind", "tailwind css", "bootstrap",
+        "html", "html5", "css", "css3", "javascript", "typescript", "react", "react.js", "reactjs",
+        "angular", "vue", "vue.js", "vuejs", "next.js", "nextjs", "tailwind", "tailwind css", "tailwindcss", "bootstrap",
         "redux", "webpack", "responsive design", "sass", "less", "accessibility", "dom"
     ],
     "Backend": [
-        "node.js", "express", "express.js", "django", "flask", "fastapi", "spring boot",
-        "ruby on rails", "asp.net", "php", "laravel", "microservices", "rest", "graphql",
+        "node.js", "nodejs", "express", "express.js", "expressjs", "django", "flask", "fastapi", "spring boot",
+        "ruby on rails", "asp.net", "php", "laravel", "microservices", "rest", "rest api", "rest apis", "restful api", "restful apis", "graphql",
         "grpc", "jwt", "oauth", "session management", "web sockets", "middleware"
     ],
     "Data Science": [

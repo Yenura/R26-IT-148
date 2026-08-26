@@ -175,18 +175,33 @@ def preprocess_text(text: str) -> str:
 
 # ── Entity Extraction ───────────────────────────────────────────
 SKILLS_KEYWORDS = [
-    "python", "java", "javascript", "typescript", "c++", "c#", "go", "rust", "kotlin", "swift",
-    "react", "angular", "vue", "node.js", "django", "flask", "fastapi", "spring",
-    "sql", "postgresql", "mysql", "mongodb", "redis", "elasticsearch",
-    "aws", "azure", "gcp", "docker", "kubernetes", "terraform", "jenkins", "ci/cd",
-    "machine learning", "deep learning", "nlp", "computer vision", "tensorflow", "pytorch",
-    "git", "linux", "bash", "rest api", "graphql", "microservices",
-    "html", "css", "sass", "bootstrap", "tailwind",
-    "pandas", "numpy", "scikit-learn", "matplotlib", "jupyter",
-    "figma", "sketch", "adobe xd",
-    "blockchain", "solidity", "web3",
-    "embedded", "iot", "arduino", "raspberry pi",
-    "agile", "scrum", "jira",
+    # Languages
+    "python", "java", "javascript", "typescript", "c++", "c#", ".net", "golang", "go", "rust", "kotlin", "swift", "php", "ruby", "r", "scala", "dart", "c",
+    # Frontend
+    "react", "react.js", "reactjs", "angular", "angularjs", "vue", "vue.js", "vuejs", "next.js", "nextjs", "nuxt.js", "svelte",
+    "html", "html5", "css", "css3", "sass", "less", "tailwind", "tailwind css", "tailwindcss", "bootstrap", "redux", "webpack", "vite", "responsive design",
+    # Backend & APIs
+    "node.js", "nodejs", "express", "express.js", "expressjs", "django", "flask", "fastapi", "spring", "spring boot", "asp.net", "laravel", "ruby on rails",
+    "rest", "rest api", "rest apis", "restful api", "restful apis", "graphql", "grpc", "microservices", "web sockets", "jwt", "oauth",
+    # Databases & Storage
+    "sql", "postgresql", "postgres", "mysql", "mongodb", "redis", "elasticsearch", "sqlite", "oracle", "sql server", "mssql", "cassandra", "dynamodb", "snowflake", "bigquery",
+    # Cloud & DevOps
+    "aws", "amazon web services", "azure", "microsoft azure", "gcp", "google cloud platform", "docker", "kubernetes", "k8s", "terraform", "jenkins",
+    "ci/cd", "continuous integration", "continuous deployment", "github actions", "gitlab ci", "ansible", "helm", "linux", "bash", "shell scripting",
+    # Data Science & AI / ML
+    "machine learning", "deep learning", "nlp", "natural language processing", "computer vision", "tensorflow", "pytorch", "keras", "scikit-learn", "sklearn",
+    "pandas", "numpy", "matplotlib", "seaborn", "scipy", "jupyter", "transformers", "bert", "sbert", "llm", "langchain", "opencv",
+    # Big Data & Data Eng
+    "apache spark", "spark", "apache kafka", "kafka", "airflow", "apache airflow", "etl", "data pipeline", "data warehousing", "hadoop",
+    # QA & Testing
+    "selenium", "cypress", "playwright", "junit", "testng", "postman", "jest", "pytest", "test automation", "unit testing",
+    # Mobile
+    "flutter", "react native", "android", "ios", "xcode", "android studio",
+    # Security, Monitoring & UI/UX
+    "figma", "sketch", "adobe xd", "wireframing", "prototyping", "prometheus", "grafana",
+    "network security", "cybersecurity", "penetration testing", "siem", "splunk", "owasp",
+    # Project & Tools
+    "git", "github", "gitlab", "jira", "confluence", "agile", "scrum", "oop", "data structures", "algorithms"
 ]
 
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}")
@@ -600,20 +615,71 @@ def extract_entities(text: str) -> dict[str, Any]:
         if edu_match:
             entities["education"] = edu_match.group(0).title()
 
-    # Experience: only look inside actual EXPERIENCE section
+    # Experience: Extract from work experience section and non-education lines
     has_exp_section = any(k == "experience" for k, _ in segments)
     exp_text = _segment_text(segments, "experience") if has_exp_section else ""
-    if exp_text:
-        years_matches = YEARS_RE.findall(exp_text)
-        years_values = []
-        for g1, g2 in years_matches:
-            if g1:
-                years_values.append(float(g1))
-            if g2:
-                years_values.append(float(g2))
-        if years_values:
-            raw_years = max(years_values)
-            entities["experience_years"] = min(raw_years, 40)
+
+    explicit_years = []
+    for pattern in [
+        r'(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience|work|industry|field|background)',
+        r'(?:experience|worked|working)\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)',
+        r'(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\s+in\b',
+        r'over\s+(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)',
+    ]:
+        for m in re.findall(pattern, exp_text or text, re.I):
+            try:
+                v = float(m)
+                if 0.5 <= v <= 40.0:
+                    explicit_years.append(v)
+            except ValueError:
+                pass
+
+    # Extract date ranges from experience section (or lines not in education)
+    target_exp_lines = exp_text.split('\n') if exp_text else [
+        l for l in text.split('\n')
+        if not EDUCATION_LINE_RE.search(l) and not any(k in l.lower() for k in ['university', 'college', 'bachelor', 'master', 'phd', 'degree', 'passed finalist', 'gce', 'advance level', 'ordinary level', 'diploma'])
+    ]
+
+    exp_intervals = []
+    for line in target_exp_lines:
+        line_clean = line.strip()
+        if not line_clean:
+            continue
+        # Check date range or year range
+        for dm in (DATE_RANGE_RE.finditer(line_clean), YEAR_RANGE_RE.finditer(line_clean)):
+            for match in dm:
+                g = match.groups()
+                if len(g) >= 2:
+                    st = _parse_date(g[0])
+                    en = _parse_date(g[1])
+                    if st and en:
+                        st_yr = st.year + (st.month - 1) / 12.0
+                        en_yr = en.year + (en.month - 1) / 12.0
+                        if 1980 <= st_yr <= 2030 and st_yr <= en_yr and (en_yr - st_yr) <= 35:
+                            exp_intervals.append((st_yr, en_yr))
+
+    calc_work_years = 0.0
+    if exp_intervals:
+        exp_intervals.sort(key=lambda x: x[0])
+        merged = []
+        for st, en in exp_intervals:
+            if not merged:
+                merged.append([st, en])
+            else:
+                prev = merged[-1]
+                if st <= prev[1]:
+                    prev[1] = max(prev[1], en)
+                else:
+                    merged.append([st, en])
+        total_span = sum(en - st for st, en in merged)
+        if total_span > 0:
+            calc_work_years = round(total_span, 1)
+
+    final_exp = calc_work_years
+    if explicit_years:
+        final_exp = max(max(explicit_years), calc_work_years)
+
+    entities["experience_years"] = min(final_exp, 40.0)
 
     # Projects: only look inside the PROJECTS section
     proj_text = _segment_text(segments, "projects") or text

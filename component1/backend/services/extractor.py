@@ -69,12 +69,18 @@ def extract(text: str) -> ExtractedFeatures:
     relevant_it = {"Computer Science", "Software Engineering", "Information Technology", "Data Science", "Cybersecurity", "Networking", "Engineering"}
     edu_relevance = 1.0 if any(m in relevant_it for m in majors) else (0.8 if majors else 0.5)
 
-    edu_sentence = ""
+    edu_lines = []
     for line in text.splitlines():
-        if any(kw in line.lower() for kw in ("bachelor", "master", "phd", "ph.d", "msc", "bsc", "b.sc", "m.sc", "diploma", "degree", "university", "institute")):
-            edu_sentence = line.strip()
-            break
-    if not edu_sentence:
+        l_clean = line.strip()
+        l_lower = l_clean.lower()
+        if any(kw in l_lower for kw in ("bachelor", "master", "phd", "ph.d", "msc", "bsc", "b.sc", "m.sc", "b.eng", "btech", "b.tech", "b.i.t", "diploma", "degree", "university", "institute")):
+            if not any(bad in l_lower for bad in ("advanced level", "ordinary level", "gce", "passed finalist", "secondary school")):
+                edu_lines.append(l_clean)
+                if len(edu_lines) >= 2:
+                    break
+    if edu_lines:
+        edu_sentence = " | ".join(edu_lines)
+    else:
         edu_sentence = f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}"
 
     # 3. Skills & Evidence
