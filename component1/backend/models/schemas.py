@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -194,11 +194,9 @@ class CVAnalysisResponse(BaseModel):
     optional_legacy_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     cv_matching_score:    float = Field(..., ge=0.0, le=100.0)
     status:               str = "READY_FOR_COMPONENT_3"
-
     analysis_timestamp:   datetime
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ClassifyResponse(BaseModel):

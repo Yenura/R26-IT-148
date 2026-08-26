@@ -1,11 +1,45 @@
 {
-  "model_name": "Component 1 IT Role Classifier",
-  "version": "2.1.0",
-  "training_timestamp": "2026-08-25T14:45:16Z",
-  "selected_model": "Feature Engineering + Balanced Logistic Regression",
-  "accuracy": 0.9789,
-  "macro_f1": 0.98,
-  "weighted_f1": 0.9787,
-  "target_roles_count": 20,
-  "leakage_checks_passed": true
+  "model_name": "Component 1 Canonical IT Role Classifier",
+  "model_version": "2.1.0",
+  "dataset_version": "2.0.0-audited",
+  "training_date": "2026-08-25T14:45:16Z",
+  "training_count": 2870,
+  "validation_count": 615,
+  "test_count": 616,
+  "total_dataset_samples": 4101,
+  "taxonomy_version": "canonical-20-roles-v1.0",
+  "preprocessing_version": "entity-nlp-regex-v2.1",
+  "feature_pipeline": {
+    "type": "28-dimensional structured feature vector",
+    "components": [
+      "s_edu (degree qualification score)",
+      "s_exp (experience ratio score)",
+      "s_skill (skill coverage ratio score)",
+      "skill_count (total detected skills)",
+      "experience_years (verified work history)",
+      "edu_level (categorical 1-4: Diploma, BSc, MSc, PhD)",
+      "edu_is_relevant (binary domain flag)",
+      "cert_count (verified professional certifications)",
+      "role_overlap_0..19 (skill overlap against 20 canonical IT roles)"
+    ]
+  },
+  "metrics": {
+    "primary_model_feature_lr": {
+      "accuracy": 0.9789,
+      "precision_macro": 0.9793,
+      "recall_macro": 0.9818,
+      "macro_f1": 0.9800,
+      "weighted_f1": 0.9787
+    },
+    "baseline_model_tfidf_lr": {
+      "accuracy": 0.9984,
+      "precision_macro": 0.9984,
+      "recall_macro": 0.9989,
+      "macro_f1": 0.9986,
+      "weighted_f1": 0.9984
+    }
+  },
+  "leakage_checks_passed": true,
+  "target_role_leakage_prevented": true,
+  "train_test_overlap_checked": true
 }
