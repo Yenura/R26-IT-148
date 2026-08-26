@@ -117,3 +117,62 @@ class TestExperience100PercentAccuracy:
         """Candidates within 15% of required years (e.g. 2.7+ yrs for a 3.0 yr role) achieve 100% fit."""
         s_exp, analysis = calculate_experience_score(candidate_years=2.7, required_years=3.0)
         assert s_exp == 100.0
+
+
+class TestRealProductionResumesAccuracy:
+    """Rigorous verification on real-world CV structures."""
+
+    def test_student_school_dates_not_confused_with_work_experience(self):
+        """School education (e.g. 2007 - 2020) must NOT be counted as 13 years of work experience."""
+        cv = """
+        Yenura Sawan Karunanayaka
+        Profile: Final-year undergraduate with 6 months' industry experience at Sri Lanka Tourism Bureau.
+        EXPERIENCE
+        Information Technology Intern Aug 2025 – Jan 2026
+        Sri Lanka Tourism Promotion Bureau, Colombo
+        EDUCATION
+        BSc (Hons) Information Technology 2022 – Present
+        SLIIT
+        School Education 2007 – 2020
+        """
+        years = extract_experience_years(cv)
+        assert 0.4 <= years <= 1.0, f"Expected 0.5 to 1.0 years (not 13+ years from school), got {years}"
+
+    def test_undergraduate_degree_dates_not_counted_as_work_experience(self):
+        """BSc degree dates (e.g. 2023 - 2026) must NOT be counted as 3 years of work experience for fresh grads."""
+        cv = """
+        Tharindu Perera
+        QA Engineer | BSc (Hons) IT Undergraduate
+        EDUCATION
+        BSc (Hons) in Information Technology 2023 – 2026 (Expected)
+        Sri Lanka Institute of Information Technology (SLIIT)
+        KEY PROJECTS
+        Ayurvedic Hospital Management System - QA & Testing 2026
+        HomeStock Inventory & Spend Management System - Testing 2025
+        """
+        years = extract_experience_years(cv)
+        assert years == 0.0, f"Expected 0.0 years, got {years}"
+
+    def test_real_cv_explicit_internship_extracted_correctly(self):
+        cv = """
+        Inuka Jathmal
+        Education: BSc (Hons) in Information Technology Specializing in ISE.
+        Experience: Software Engineering Intern (1 year)
+        Skills: Python, SQL, React, FastAPI
+        """
+        years = extract_experience_years(cv)
+        assert years == 1.0, f"Expected 1.0 years, got {years}"
+
+    def test_real_cv_senior_multi_tenure_extracted_correctly(self):
+        cv = """
+        Alex Chen
+        Senior Software Engineer with 5+ years of experience
+        PROFESSIONAL EXPERIENCE
+        Senior Full Stack Engineer | Stripe (2022 - Present)
+        Software Engineer | Datadog (2019 - 2022)
+        EDUCATION
+        B.Sc. in Computer Science | Stanford University (2015 - 2019)
+        """
+        years = extract_experience_years(cv)
+        assert years >= 5.0, f"Expected >= 5.0 years, got {years}"
+

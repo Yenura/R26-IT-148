@@ -49,11 +49,11 @@ def extract(text: str) -> ExtractedFeatures:
     """Extract structured features from raw resume text."""
     cleaned = clean_text(text)
     
-    # 1. Experience
-    exp_years = extract_experience_years(cleaned)
+    # 1. Experience (uses raw text to preserve newline section structure)
+    exp_years = extract_experience_years(text)
     
     # 2. Education
-    edu_info = extract_education_level(cleaned)
+    edu_info = extract_education_level(text)
     level_score = edu_info.get("level_score", 0.60)
     edu_level = 2
     if level_score >= 1.0:

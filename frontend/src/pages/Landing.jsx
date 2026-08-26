@@ -135,7 +135,7 @@ export default function Landing() {
             background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
           }}>
-            <Brain size={16} />
+            <Brain size={16} color="#ffffff" strokeWidth={2.5} />
           </div>
           <div style={{ fontWeight: 800, fontSize: 'var(--p-text-lg)', letterSpacing: '-0.3px', color: 'var(--color-fg)' }}>
             RecruitAI

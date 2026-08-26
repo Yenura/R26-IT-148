@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, Building2, ArrowLeft, Sparkles, Eye, EyeOff } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
 
 export default function CompanyLogin() {
@@ -52,12 +52,6 @@ export default function CompanyLogin() {
     }
   }
 
-  const fillDemo = () => {
-    setEmail('company@example.com')
-    setPassword('demo123')
-    toast.success('Demo employer credentials loaded')
-  }
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
@@ -89,29 +83,6 @@ export default function CompanyLogin() {
         </div>
 
         <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
-          {/* Quick Demo Fill Button */}
-          <div style={{ marginBottom: 18 }}>
-            <button
-              type="button"
-              onClick={fillDemo}
-              className="btn btn-ghost btn-sm"
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 6,
-                fontSize: '11px',
-                border: '1px dashed var(--color-purple)',
-                background: 'rgba(147, 51, 234, 0.08)',
-                color: 'var(--color-purple)',
-                fontWeight: 700
-              }}
-            >
-              <Sparkles size={13} /> 1-Click: Fill Demo Employer Account
-            </button>
-          </div>
-
           <form onSubmit={handleLogin}>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: '12px', marginTop: 0 }}>Work Email</label>

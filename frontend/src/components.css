@@ -251,7 +251,7 @@ code {
 }
 
 .navbar-logo svg {
-  color: var(--color-primary);
+  color: #ffffff;
 }
 
 .navbar-brand {
@@ -1789,5 +1789,219 @@ DASHBOARD LAYOUTS (responsive two-column)
     -webkit-print-color-adjust: exact;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PREMIUM CV MATCH & EVALUATION DOSSIER (COMPONENT 1)
+   ═══════════════════════════════════════════════════════════════════ */
+
+.cvm-tabs-nav {
+  display: flex;
+  gap: 8px;
+  padding: 6px;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.cvm-tab-btn {
+  flex: 1 1 200px;
+  min-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-fg-muted);
+  text-align: left;
+  user-select: none;
+}
+
+.cvm-tab-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-fg);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
+.cvm-tab-btn.active {
+  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
+  color: #ffffff !important;
+  font-weight: 700;
+  border-color: rgba(147, 197, 253, 0.45);
+  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+
+.cvm-tab-btn.active .cvm-tab-badge {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.cvm-tab-btn.active .cvm-tab-sub {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cvm-tab-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  font-family: var(--p-font-mono);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--color-fg-muted);
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.cvm-tab-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.25;
+}
+
+.cvm-tab-main {
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.cvm-tab-sub {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-fg-muted);
+  letter-spacing: 0.02em;
+}
+
+/* Pillar Cards */
+.cvm-pillar-card {
+  position: relative;
+  padding: 20px;
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.cvm-pillar-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  border-radius: 12px 12px 0 0;
+}
+
+.cvm-pillar-card.pillar-skill::before {
+  background: linear-gradient(90deg, #2563eb, #60a5fa);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+}
+
+.cvm-pillar-card.pillar-exp::before {
+  background: linear-gradient(90deg, #059669, #34d399);
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+}
+
+.cvm-pillar-card.pillar-edu::before {
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+}
+
+.cvm-pillar-card:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Quick Selection Candidate Chips */
+.cvm-quick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--color-fg-secondary);
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.cvm-quick-chip:hover {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: var(--color-primary-light, #93c5fd);
+  transform: translateY(-1px);
+}
+
+.cvm-quick-chip.selected {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: #3b82f6;
+  color: #60a5fa;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
+}
+
+/* Interactive Competency Pills */
+.cvm-skill-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.cvm-skill-pill.matched {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.cvm-skill-pill.matched:hover {
+  background: rgba(16, 185, 129, 0.22);
+  border-color: #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+  transform: translateY(-1px);
+}
+
+.cvm-skill-pill.missing {
+  background: rgba(244, 63, 94, 0.1);
+  color: #fb7185;
+  border: 1px solid rgba(244, 63, 94, 0.3);
+}
+
+.cvm-skill-pill.missing:hover {
+  background: rgba(244, 63, 94, 0.2);
+  border-color: #f43f5e;
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+  transform: translateY(-1px);
+}
+
 
 
