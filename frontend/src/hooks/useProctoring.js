@@ -109,7 +109,7 @@ export default function useProctoring(active, options = {}) {
     if (!videoRef.current || videoRef.current.readyState < 2) return
     try {
       if (!mediaPipeDetectorRef.current) {
-        const vision = await import('@mediapipe/tasks-vision')
+        const vision = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/+esm')
         const { FaceDetector, FilesetResolver } = vision
         const filesetResolver = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
@@ -169,7 +169,7 @@ export default function useProctoring(active, options = {}) {
     if (!videoRef.current || videoRef.current.readyState < 2) return
     try {
       if (!mediaPipeLandmarkerRef.current) {
-        const vision = await import('@mediapipe/tasks-vision')
+        const vision = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/+esm')
         const { FaceLandmarker, FilesetResolver } = vision
         const filesetResolver = await FilesetResolver.forVisionTasks(
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'

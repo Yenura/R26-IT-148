@@ -294,7 +294,7 @@ class InterviewRequest(BaseModel):
     """Request to create interview"""
     candidate_id: str
     job_role: str
-    required_skills: List[str]
+    required_skills: Optional[List[str]] = Field(default_factory=list)
     num_questions: int = 10
     job_level: Optional[str] = "Mid-Level"
     mcq_time: Optional[int] = 60
