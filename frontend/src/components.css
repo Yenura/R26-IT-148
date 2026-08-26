@@ -1702,3 +1702,92 @@ DASHBOARD LAYOUTS (responsive two-column)
     0%, 100% { transform: none; }
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CANDIDATE DOSSIER PDF & PRINT STYLES (A4 EXECUTIVE REPORT)
+   ═══════════════════════════════════════════════════════════════════ */
+
+@page {
+  size: A4 portrait;
+  margin: 12mm 15mm 12mm 15mm;
+}
+
+@media print {
+  html, body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    font-size: 10.5pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide all app chrome, sidebars, interactive controls, and non-print views */
+  header, nav, aside, .navbar, .sidebar, .page-header, .cvmatch-interactive-view,
+  .no-print, .toast-container, button, .btn, input, select {
+    display: none !important;
+  }
+
+  /* Reset modal overlay so it prints seamlessly as a full A4 page */
+  .dossier-modal-overlay {
+    position: static !important;
+    background: transparent !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    backdrop-filter: none !important;
+  }
+
+  .dossier-modal-wrapper {
+    position: static !important;
+    box-shadow: none !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
+    background: #ffffff !important;
+  }
+
+  .dossier-print-container {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: #ffffff !important;
+    color: #0f172a !important;
+  }
+
+  /* Page break rules */
+  .dossier-section {
+    page-break-inside: avoid;
+    break-inside: avoid;
+    margin-bottom: 16px !important;
+  }
+
+  /* High contrast colors for paper / PDF */
+  h1, h2, h3, h4, strong {
+    color: #0f172a !important;
+  }
+
+  p, span, td, th {
+    color: #334155 !important;
+  }
+
+  .dossier-badge {
+    border: 1px solid #94a3b8 !important;
+    color: #0f172a !important;
+    background: #f1f5f9 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+

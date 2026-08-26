@@ -53,6 +53,8 @@ export default function CVMatch() {
   const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('match')
+  const [showDocPreview, setShowDocPreview] = useState(false)
+  const [showDossierModal, setShowDossierModal] = useState(false)
 
   // Results state
   const [matchResult, setMatchResult] = useState(null)
@@ -138,7 +140,7 @@ export default function CVMatch() {
         ? matchedJobDoc.title
         : (targetRoleOverride || 'Software Engineer')
 
-      // 1. Fetch Component 0 Resume Match
+      // 1. Component 0 Match Pipeline
       const matchParams = { resume_id: resumeToUse }
       if (selectedJob) matchParams.job_id = selectedJob
       else if (targetRoleOverride) matchParams.target_role = targetRoleOverride
@@ -223,6 +225,10 @@ export default function CVMatch() {
         }
       }
     })
+  }
+
+  const handlePrint = () => {
+    window.print()
   }
 
   const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
@@ -419,7 +425,6 @@ export default function CVMatch() {
               </div>
             </div>
           </div>
-        </div>
 
         {/* Action Button */}
         <button
@@ -513,6 +518,18 @@ export default function CVMatch() {
                   : `Candidate satisfies key baseline requirements with strong potential. Recommended to focus on ${(matchResult.missing_skills || ['core tools'])[0]} to achieve optimal role alignment.`}
               </p>
             </div>
+            <pre style={{
+              fontSize: '11px',
+              fontFamily: 'var(--p-font-mono)',
+              whiteSpace: 'pre-wrap',
+              color: 'var(--color-fg-secondary)',
+              margin: 0,
+              lineHeight: 1.6
+            }}>
+              {currentResumeDoc.raw_text}
+            </pre>
+          </div>
+        )}
 
             {/* Radial Score Meter */}
             <div style={{
@@ -639,9 +656,34 @@ export default function CVMatch() {
                         >
                           ✓ {s}
                         </span>
-                      ))}
+                        <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
+                          {eduScore.toFixed(0)}%
+                        </span>
+                      </div>
+
+                      <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
+                        <div style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: 3 }} />
+                      </div>
+
+                      <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+                        Academic Domain: <strong>{eduScore >= 70 ? 'Aligned Computer Science / IT Major' : 'Technical Track'}</strong>
+                      </div>
+                    </div>
+
+                    <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--p-text-xs)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                        <span style={{ color: 'var(--color-fg-muted)' }}>Degree / Credentials:</span>
+                        <strong style={{ color: 'var(--color-fg)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {currentResumeDoc?.education || 'BSc Computer Science'}
+                        </strong>
+                      </div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: 'var(--color-fg-muted)' }}>Required Qualification:</span>
+                        <strong style={{ color: 'var(--color-fg)' }}>BSc IT / CS / SE</strong>
+                      </div>
                     </div>
                   </div>
+
                 </div>
 
                 {/* 2. Experience Match Pillar */}
@@ -731,6 +773,7 @@ export default function CVMatch() {
                 </div>
 
               </div>
+            )}
 
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
@@ -800,8 +843,36 @@ export default function CVMatch() {
                       </span>
                     ))}
                   </div>
+
+                  {simulationResult && (
+                    <div style={{
+                      padding: 'var(--p-space-4)',
+                      background: 'var(--color-success-muted)',
+                      border: '1px solid rgba(16, 185, 129, 0.4)',
+                      borderRadius: 'var(--radius-md)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}>
+                      <div>
+                        <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-success)' }}>
+                          +{simulationResult.coverage_improvement || 0}% Projected Coverage Boost!
+                        </div>
+                        <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', marginTop: 2 }}>
+                          Candidate match coverage increases from {simulationResult.original_coverage || 0}% to <strong>{simulationResult.simulated_coverage || 0}%</strong> upon completing these skills.
+                        </div>
+                      </div>
+
+                      <Link to="/pipeline/progress" className="btn btn-primary btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
+                        Add to Action Plan <ArrowRight size={13} />
+                      </Link>
+                    </div>
+                  )}
                 </div>
               </div>
+            )}
 
               {/* Contextual Evidence Modal / Drawer */}
               {selectedSkillEvidence && (
@@ -883,6 +954,7 @@ export default function CVMatch() {
                   Click missing target skills below to simulate how learning them will boost your candidate match score and interview ranking in real time.
                 </p>
               </div>
+            )}
 
               {/* Simulation Sandbox Card */}
               <div className="card" style={{ padding: 'var(--p-space-5)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', marginBottom: 'var(--p-space-5)' }}>
@@ -890,13 +962,11 @@ export default function CVMatch() {
                   Missing Skills for {displayJobTitle} (Click to simulate acquisition):
                 </div>
 
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
-                  {(matchResult.missing_skills || []).map((skill) => {
-                    const isSelected = simulatedAcquiredSkills.includes(skill)
-                    return (
-                      <button
-                        key={skill}
-                        onClick={() => handleSimulateSkill(skill)}
+                {learningPathResult?.learning_path?.length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {learningPathResult.learning_path.map((item, idx) => (
+                      <div
+                        key={item.skill || item.title}
                         style={{
                           padding: '6px 14px',
                           borderRadius: 'var(--radius-full)',
@@ -908,16 +978,35 @@ export default function CVMatch() {
                           fontWeight: 700,
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 6,
-                          transition: 'all 0.15s ease'
+                          justifyContent: 'space-between',
+                          gap: 14
                         }}
                       >
-                        <span>{isSelected ? '✓ Acquired' : '+ Acquire'}</span>
-                        <span>{skill}</span>
-                      </button>
-                    )
-                  })}
-                </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 'var(--radius-full)',
+                            background: 'var(--color-primary-muted)',
+                            color: 'var(--color-primary)',
+                            fontWeight: 800,
+                            fontSize: '12px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                          }}>
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
+                              {item.skill || item.title}
+                            </div>
+                            <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                              {item.description || item.reason || 'Core competency for target role'}
+                            </div>
+                          </div>
+                        </div>
 
                 {/* Simulation Output Banner */}
                 {simulationResult && (
@@ -946,6 +1035,81 @@ export default function CVMatch() {
                     </Link>
                   </div>
                 )}
+              </div>
+            )}
+
+          </div>
+        )}
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          EXECUTIVE CANDIDATE EVALUATION DOSSIER MODAL & PRINT CONTAINER
+         ══════════════════════════════════════════════════════════════════════ */}
+      {showDossierModal && matchResult && (
+        <div className="dossier-modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.85)',
+          backdropFilter: 'blur(8px)',
+          zIndex: 9999,
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          padding: 20
+        }}>
+          <div className="dossier-modal-wrapper" style={{
+            background: '#ffffff',
+            color: '#0f172a',
+            width: '100%',
+            maxWidth: 880,
+            maxHeight: '92vh',
+            borderRadius: 12,
+            overflowY: 'auto',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column'
+          }}>
+            {/* Modal Controls Header */}
+            <div className="no-print" style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              padding: '16px 24px',
+              borderBottom: '1px solid #e2e8f0',
+              background: '#f8fafc',
+              position: 'sticky',
+              top: 0,
+              zIndex: 10
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <FileText size={20} color="#2563eb" />
+                <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
+                  Candidate Evaluation Dossier Preview
+                </span>
+                <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+                  Ready for Print / PDF Export
+                </span>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handlePrint}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+                >
+                  <Printer size={14} /> Print / Save as PDF
+                </button>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => setShowDossierModal(false)}
+                  style={{ padding: 6 }}
+                >
+                  <X size={18} />
+                </button>
               </div>
             </div>
           )}
@@ -1053,14 +1217,14 @@ export default function CVMatch() {
                           {idx + 1}
                         </div>
                         <div>
-                          <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
-                            {item.skill || item.title}
-                          </div>
-                          <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
-                            {item.description || item.reason || 'Core competency for target role'}
-                          </div>
+                          <strong>Phase {idx + 1}: {item.skill || item.title}</strong> — <span style={{ color: '#64748b' }}>{item.description || 'Target skill competency'}</span>
                         </div>
+                        <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 700 }}>Recommended Priority</span>
                       </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
                       {item.resource_url && (
                         <a
@@ -1074,7 +1238,15 @@ export default function CVMatch() {
                         </a>
                       )}
                     </div>
-                  ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>[{overallFitScore >= 85 ? 'X' : ' '}]</span>
+                      <strong>Fast-Track to Final Round Interview</strong>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span>[{overallFitScore < 70 ? 'X' : ' '}]</span>
+                      <strong>Retain Candidate in Talent Pool for Future Roles</strong>
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-5)', background: 'var(--color-bg)' }}>
@@ -1082,7 +1254,13 @@ export default function CVMatch() {
                     Learning resources mapped to {displayJobTitle} competencies.
                   </p>
                 </div>
-              )}
+              </div>
+
+              {/* Footer */}
+              <div style={{ marginTop: 20, textAlign: 'center', fontSize: '9.5px', color: '#94a3b8', borderTop: '1px solid #f1f5f9', paddingTop: 10 }}>
+                RecruitAI Autonomous Recruitment Ecosystem · Confidential Candidate Evaluation Record · Component 1 Screening Engine
+              </div>
+
             </div>
           )}
 

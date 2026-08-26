@@ -155,8 +155,8 @@ export default function ApplicantPipeline() {
                 </tr>
               </thead>
               <tbody>
-                {rankings.map((r) => (
-                  <tr key={r.candidate_id} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
+                {rankings.map((r, i) => (
+                  <tr key={r.candidate_id || i} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
                     <td>
                       <div style={{
                         width: 28,
