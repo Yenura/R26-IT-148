@@ -155,7 +155,7 @@ export default function CVMatch() {
       setResumes(resumeList)
       const jobList = Array.isArray(r2.data) ? r2.data : []
       setJobs(jobList)
-      const rolesList = r3?.data?.roles || []
+      const rolesList = (r3?.data?.roles || []).map(r => typeof r === 'string' ? r : r.role || r)
       setCanonicalRoles(rolesList)
       if (resumeList.length > 0 && !selectedResume) {
         setSelectedResume(resumeList[0].id)
