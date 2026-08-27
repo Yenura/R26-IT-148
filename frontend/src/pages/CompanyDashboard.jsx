@@ -3,9 +3,9 @@ import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight,
-  MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered, Settings
+  MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered, Settings, Download
 } from 'lucide-react'
-import { uJobsMy, uJobsCreate, uJobsUpdate, uJobsDelete, uJobsApplicantCounts } from '../api'
+import { uJobsMy, uJobsCreate, uJobsUpdate, uJobsDelete, uJobsApplicantCounts, c0ExportCSV, c0ExportExcel, c0ExportPDF } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
@@ -72,8 +72,35 @@ export default function CompanyDashboard() {
   const [applicantCounts, setApplicantCounts] = useState({})
   const [submitting, setSubmitting] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
+  const [exportOpen, setExportOpen] = useState(false)
 
   useEffect(() => { loadJobs() }, [])
+
+  useEffect(() => {
+    if (!exportOpen) return
+    const close = (e) => {
+      if (!e.target.closest('.export-dropdown')) setExportOpen(false)
+    }
+    document.addEventListener('click', close)
+    return () => document.removeEventListener('click', close)
+  }, [exportOpen])
+
+  const handleExport = async (format) => {
+    setExportOpen(false)
+    try {
+      const res = format === 'csv' ? await c0ExportCSV() : format === 'excel' ? await c0ExportExcel() : await c0ExportPDF()
+      const blob = new Blob([res.data])
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `candidates_export.${format === 'excel' ? 'xlsx' : format}`
+      a.click()
+      window.URL.revokeObjectURL(url)
+      toast.success(`Exported as ${format.toUpperCase()}`)
+    } catch (err) {
+      toast.error(`Export failed: ${err.message}`)
+    }
+  }
 
   const loadJobs = async () => {
     setLoading(true)
@@ -295,6 +322,18 @@ export default function CompanyDashboard() {
             <Link to="/pipeline/ranking" className="btn btn-ghost btn-sm">
               <Trophy size={15} /> Candidate Ranking
             </Link>
+            <div style={{ position: 'relative' }} className="export-dropdown">
+              <button className="btn btn-ghost btn-sm" onClick={(e) => { e.stopPropagation(); setExportOpen(!exportOpen) }}>
+                <Download size={15} /> Export
+              </button>
+              {exportOpen && (
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 4, minWidth: 140, zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                  <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => handleExport('csv')}>CSV</button>
+                  <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => handleExport('excel')}>Excel</button>
+                  <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => handleExport('pdf')}>PDF</button>
+                </div>
+              )}
+            </div>
           </>
         }
       />
