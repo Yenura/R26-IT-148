@@ -47,21 +47,51 @@ def run_experiment():
     print("COMPONENT 1 RESEARCH EXPERIMENT: EMPIRICAL WEIGHT & ABLATION ANALYSIS")
     print("=" * 75)
     
-    # 1. Load train, val, and test splits
-    print("[1/4] Loading train and test splits...")
+    # 1. Load train and test splits
+    print("[1/4] Loading train and test splits...", flush=True)
     train_texts, train_labels = load_data("train")
     test_texts, test_labels   = load_data("test")
     
     label_encoder = joblib.load(ROOT / "models" / "label_encoder.pkl")
-    y_train = label_encoder.transform(train_labels)
-    y_test  = label_encoder.transform(test_labels)
     
-    print(f"Loaded {len(train_texts)} train samples and {len(test_texts)} test samples across {len(ALL_ROLES)} roles.")
+    # Subsample a balanced representation (25 samples per role = 500 train, 10 samples per role = 200 test)
+    # for rapid empirical research analysis
+    role_to_train = {}
+    for t, l in zip(train_texts, train_labels):
+        role_to_train.setdefault(l, []).append(t)
     
-    # 2. Extract feature matrices
-    print("[2/4] Extracting feature vectors...")
-    X_train_full = np.array([extract_cv_features(t)["feature_vector"] for t in train_texts], dtype=np.float32)
-    X_test_full  = np.array([extract_cv_features(t)["feature_vector"] for t in test_texts], dtype=np.float32)
+    sub_train_texts, sub_train_labels = [], []
+    for r, t_list in role_to_train.items():
+        sub_train_texts.extend(t_list[:25])
+        sub_train_labels.extend([r] * len(t_list[:25]))
+        
+    role_to_test = {}
+    for t, l in zip(test_texts, test_labels):
+        role_to_test.setdefault(l, []).append(t)
+        
+    sub_test_texts, sub_test_labels = [], []
+    for r, t_list in role_to_test.items():
+        sub_test_texts.extend(t_list[:10])
+        sub_test_labels.extend([r] * len(t_list[:10]))
+
+    y_train = label_encoder.transform(sub_train_labels)
+    y_test  = label_encoder.transform(sub_test_labels)
+    
+    print(f"Loaded {len(sub_train_texts)} train samples and {len(sub_test_texts)} test samples across {len(ALL_ROLES)} roles.", flush=True)
+    
+    # 2. Extract feature matrices with disk cache
+    cache_path = ROOT / "research" / "cached_features.joblib"
+    if cache_path.exists():
+        print("[2/4] Loading pre-extracted feature vectors from cache...", flush=True)
+        cached = joblib.load(cache_path)
+        X_train_full = cached["X_train"]
+        X_test_full = cached["X_test"]
+    else:
+        print("[2/4] Extracting feature vectors from CV text...", flush=True)
+        X_train_full = np.array([extract_cv_features(t)["feature_vector"] for t in sub_train_texts], dtype=np.float32)
+        X_test_full  = np.array([extract_cv_features(t)["feature_vector"] for t in sub_test_texts], dtype=np.float32)
+        joblib.dump({"X_train": X_train_full, "X_test": X_test_full}, cache_path)
+
     
     # Features breakdown in 28-D vector:
     # 0: S_edu, 1: S_exp, 2: S_skill, 3: skill_count, 4: exp_years, 5: edu_level, 6: edu_rel, 7: cert_count, 8-27: role_overlaps
