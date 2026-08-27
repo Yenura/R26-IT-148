@@ -10,7 +10,11 @@ export default defineConfig({
   build: {
     target: 'esnext',
     cssCodeSplit: true,
-    chunkSizeWarningLimit: 600,
+    cssMinify: true,
+    minify: 'esbuild',
+    reportCompressedSize: false,
+    assetsInlineLimit: 4096,
+    chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
         manualChunks(id) {
@@ -18,6 +22,7 @@ export default defineConfig({
             if (id.includes('react-dom') || id.includes('react-router')) return 'vendor-react'
             if (id.includes('lucide-react')) return 'vendor-icons'
             if (id.includes('recharts')) return 'vendor-charts'
+            if (id.includes('axios') || id.includes('canvas-confetti')) return 'vendor-utils'
             return 'vendor'
           }
         }

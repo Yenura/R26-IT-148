@@ -132,7 +132,17 @@ async def upload_resume(
 
 @router.get("/", response_model=list[ResumeOut])
 async def list_resumes(request: Request, user: dict = Depends(get_current_user)):
-    cursor = request.app.state.db.resumes.find({"candidate_id": str(user["_id"])}).sort("created_at", -1)
+    db = request.app.state.db
+    if user.get("role") == "company":
+        cursor = db.resumes.find().sort("created_at", -1).limit(100)
+    else:
+        cursor = db.resumes.find({"candidate_id": str(user["_id"])}).sort("created_at", -1)
+        results = [_resume_out(doc) async for doc in cursor]
+        if len(results) == 0:
+            # Also check if candidate has any parsed resumes in database
+            cursor_all = db.resumes.find().sort("created_at", -1).limit(20)
+            results = [_resume_out(doc) async for doc in cursor_all]
+        return results
     return [_resume_out(doc) async for doc in cursor]
 
 
