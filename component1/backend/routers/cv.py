@@ -77,6 +77,7 @@ async def _full_analysis(
     matcher,
     job_id: Optional[str] = "JOB001",
     job_spec: Optional[Dict[str, Any]] = None,
+    target_role: Optional[str] = None,
 ) -> CVAnalysisResponse:
     """Core pipeline: extract → classify → score → return 3 independent scores."""
     features = extractor.extract(text)
@@ -95,8 +96,10 @@ async def _full_analysis(
         req_years = job_spec.get("required_experience_years")
         req_edu = job_spec.get("required_education")
 
+    scored_role = target_role if (target_role and target_role in ALL_ROLES) else pred.job_role
+
     scores = scorer.score(
-        role=pred.job_role,
+        role=scored_role,
         edu_level=features.edu_level,
         experience_years=features.experience_years,
         skills=features.skills,
@@ -216,6 +219,7 @@ async def analyze_cv_text(
         job_description=payload.job_description,
         predictor=predictor,
         matcher=matcher,
+        target_role=getattr(payload, "target_role", None),
     )
     await _upsert(db, result)
     return result

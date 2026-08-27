@@ -52,12 +52,6 @@ export default function CandidateLogin() {
     }
   }
 
-  const fillDemo = () => {
-    setEmail('candidate@example.com')
-    setPassword('demo123')
-    toast.success('Demo candidate credentials loaded')
-  }
-
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
@@ -78,7 +72,7 @@ export default function CandidateLogin() {
             color: '#fff',
             boxShadow: 'var(--shadow-md)'
           }}>
-            <Brain size={24} />
+            <Brain size={26} color="#ffffff" strokeWidth={2.5} />
           </div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
             Candidate Sign In

@@ -162,13 +162,14 @@ export default function App() {
                   width: 32,
                   height: 32,
                   borderRadius: 'var(--radius-md)',
-                  background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+                  background: 'linear-gradient(135deg, #2563eb, #6366f1)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#fff'
+                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)',
+                  flexShrink: 0
                 }}>
-                  <Brain size={18} />
+                  <Brain size={19} color="#ffffff" strokeWidth={2.5} />
                 </div>
                 <span className="navbar-brand">RecruitAI</span>
                 <span style={{

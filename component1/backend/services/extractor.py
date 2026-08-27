@@ -49,11 +49,11 @@ def extract(text: str) -> ExtractedFeatures:
     """Extract structured features from raw resume text."""
     cleaned = clean_text(text)
     
-    # 1. Experience
-    exp_years = extract_experience_years(cleaned)
+    # 1. Experience (uses raw text to preserve newline section structure)
+    exp_years = extract_experience_years(text)
     
     # 2. Education
-    edu_info = extract_education_level(cleaned)
+    edu_info = extract_education_level(text)
     level_score = edu_info.get("level_score", 0.60)
     edu_level = 2
     if level_score >= 1.0:
@@ -69,18 +69,44 @@ def extract(text: str) -> ExtractedFeatures:
     relevant_it = {"Computer Science", "Software Engineering", "Information Technology", "Data Science", "Cybersecurity", "Networking", "Engineering"}
     edu_relevance = 1.0 if any(m in relevant_it for m in majors) else (0.8 if majors else 0.5)
 
-    edu_lines = []
-    for line in text.splitlines():
-        l_clean = line.strip()
-        l_lower = l_clean.lower()
-        if any(kw in l_lower for kw in ("bachelor", "master", "phd", "ph.d", "msc", "bsc", "b.sc", "m.sc", "b.eng", "btech", "b.tech", "b.i.t", "diploma", "degree", "university", "institute")):
-            if not any(bad in l_lower for bad in ("advanced level", "ordinary level", "gce", "passed finalist", "secondary school")):
-                edu_lines.append(l_clean)
-                if len(edu_lines) >= 2:
-                    break
-    if edu_lines:
-        edu_sentence = " | ".join(edu_lines)
-    else:
+    # Locate degree line within EDUCATION section if present, or search for genuine degree qualifications
+    edu_sentence = ""
+    lines = text.splitlines()
+    edu_section_lines = []
+    in_edu = False
+    for line in lines:
+        stripped = line.strip()
+        if re.match(r'^(?:education|educational\s+qualifications?|academics?|academic\s+background)\b', stripped, re.I):
+            in_edu = True
+            continue
+        elif in_edu and re.match(r'^(?:certifications?|projects?|skills?|experience|work|employment|leadership|languages?)\b', stripped, re.I):
+            in_edu = False
+        if in_edu and stripped:
+            edu_section_lines.append(stripped)
+
+    degree_kw = (
+        "bachelor", "b.sc", "bsc", "b.s", "b.eng", "b.tech", "bit", "bcs",
+        "msc", "m.sc", "m.s", "master of", "master's", "masters in",
+        "phd", "ph.d", "doctorate", "diploma", "hnd", "higher national diploma"
+    )
+
+    # 1. Search in dedicated education section first
+    for line in edu_section_lines:
+        line_l = line.lower()
+        if "scrum master" not in line_l and any(kw in line_l for kw in degree_kw):
+            edu_sentence = line.strip()
+            break
+
+    # 2. If not found, search throughout full text avoiding non-academic lines (like scrum master)
+    if not edu_sentence:
+        for line in lines:
+            line_l = line.lower()
+            if "scrum master" not in line_l and any(kw in line_l for kw in degree_kw):
+                edu_sentence = line.strip()
+                break
+
+    # 3. Fallback to constructed degree name if still empty or too short
+    if not edu_sentence or len(edu_sentence) < 5:
         edu_sentence = f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}"
 
     # 3. Skills & Evidence
