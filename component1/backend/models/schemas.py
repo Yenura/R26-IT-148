@@ -23,8 +23,11 @@ _CANDIDATE_ID_RE = re.compile(r'^[A-Za-z0-9\-_]+$')
 
 def _sanitise_candidate_id(v: str) -> str:
     v = v.strip()
-    cleaned = re.sub(r'[^A-Za-z0-9\-_]', '_', v)
-    return cleaned or "cand_01"
+    if not _CANDIDATE_ID_RE.match(v):
+        raise ValueError(
+            "candidate_id may only contain letters, digits, hyphens, and underscores"
+        )
+    return v
 
 
 def _sanitise_text(v: str) -> str:
