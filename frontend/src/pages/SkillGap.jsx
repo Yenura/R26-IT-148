@@ -301,7 +301,7 @@ export default function SkillGap() {
                       <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>Overall Fit</div>
                         <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.composite_score}%
+                          {selectedReport.composite_score != null ? `${selectedReport.composite_score}%` : (selectedReport.hire_probability != null ? `${selectedReport.hire_probability}%` : 'N/A')}
                         </div>
                       </div>
                     </div>
@@ -421,11 +421,8 @@ export default function SkillGap() {
                   )}
                 </div>
               )}
-        </div>
-      )}
-    </div>
-  )
-}
+            </div>
+          )}
         </div>
       )}
 
@@ -746,3 +743,6 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
           )}
         </div>
       )}
+    </div>
+  )
+}
