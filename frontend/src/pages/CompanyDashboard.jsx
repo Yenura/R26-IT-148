@@ -5,7 +5,7 @@ import {
   Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight,
   MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered, Settings, Download
 } from 'lucide-react'
-import { uJobsMy, uJobsCreate, uJobsUpdate, uJobsDelete, uJobsApplicantCounts, uJobsApplicants, c0ExportCSV, c0ExportExcel, c0ExportPDF } from '../api'
+import { uJobsMy, uJobsCreate, uJobsUpdate, uJobsDelete, uJobsApplicantCounts, c0ExportCSV, c0ExportExcel, c0ExportPDF } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
@@ -141,7 +141,7 @@ export default function CompanyDashboard() {
     setForm((f) => ({
       ...f,
       title: roleName,
-      required_skills: suggestedSkills,
+      required_skills: f.required_skills ? f.required_skills : suggestedSkills,
     }))
   }
 
@@ -154,14 +154,6 @@ export default function CompanyDashboard() {
     const skillsArray = typeof form.required_skills === 'string'
       ? form.required_skills.split(',').map((s) => s.trim()).filter(Boolean)
       : form.required_skills || []
-
-    if (skillsArray.length === 0) {
-      return toast.error('At least one required skill is needed')
-    }
-
-    if (form.description && form.description.length > 10000) {
-      return toast.error('Description must be under 10,000 characters')
-    }
 
     const expReq = parseInt(form.experience_required, 10)
     const iqCount = parseInt(form.interview_question_count, 10)
@@ -442,8 +434,8 @@ export default function CompanyDashboard() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 260 }}>
-                          {[...new Set(job.required_skills || [])].slice(0, 3).map((s, i) => (
-                            <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                          {(job.required_skills || []).slice(0, 3).map((s) => (
+                            <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                               {s}
                             </span>
                           ))}
@@ -661,13 +653,7 @@ export default function CompanyDashboard() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
-              maxLength={10000}
             />
-            {form.description && form.description.length > 9000 && (
-              <p style={{ fontSize: 11, color: 'var(--color-fg-muted)', margin: '4px 0 0' }}>
-                {form.description.length}/10,000 characters
-              </p>
-            )}
           </div>
 
           {/* AI Interview Settings */}
@@ -843,19 +829,6 @@ export default function CompanyDashboard() {
             <div>
               <label style={{ fontSize: '12px', marginTop: 0 }}>Min Experience (Years)</label>
               <input type="number" min={0} max={40} value={form.experience_required} onChange={(e) => setForm({ ...form, experience_required: e.target.value })} />
-            </div>
-            <div>
-              <label style={{ fontSize: '12px', marginTop: 0 }}>Education Level</label>
-              <select
-                value={form.education_required}
-                onChange={(e) => setForm({ ...form, education_required: e.target.value })}
-              >
-                <option value="High School">High School</option>
-                <option value="Associate Degree">Associate Degree</option>
-                <option value="Bachelor Degree">Bachelor Degree</option>
-                <option value="Master Degree">Master Degree</option>
-                <option value="PhD">PhD</option>
-              </select>
             </div>
           </div>
 
