@@ -6,7 +6,7 @@ import {
   Building2, MapPin, Sparkles, Eye, AlertCircle, Clock, Shield,
   UserCheck, Volume2, Activity
 } from 'lucide-react'
-import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, uJobsGet } from '../api'
+import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, c3Explain, uJobsGet } from '../api'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import ScoreMeter from '../components/ScoreMeter'
