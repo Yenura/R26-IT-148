@@ -16,14 +16,14 @@ def parse_resume_file(content: bytes, filename: str) -> str:
     
     if not text.strip():
         # Fallback to UTF-8 / latin-1 decoding
-        for enc in ("utf-8", "latin-1", "cp1252", "ascii"):
+        for enc in ("utf-8", "utf-8-sig", "latin-1", "cp1252", "ascii"):
             try:
                 decoded = content.decode(enc, errors="ignore")
-                # Keep printable characters and letters
+                # Keep printable characters and clean newlines
                 clean = re.sub(r"[^\x20-\x7E\n\r\t]", " ", decoded)
-                words = re.findall(r"\b[A-Za-z0-9+#\.\-_@/]{2,}\b", clean)
-                if len(words) >= 5:
-                    text = " ".join(words)
+                lines = [l.strip() for l in clean.splitlines() if l.strip()]
+                if len(lines) >= 1:
+                    text = "\n".join(lines)
                     break
             except Exception:
                 continue
