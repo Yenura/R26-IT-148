@@ -280,6 +280,8 @@ def extract_experience_years(text: str) -> float:
 
     return 0.0
 
+    return 0.0
+
 
 def extract_education_level(text: str) -> Dict[str, Any]:
     """
