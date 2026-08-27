@@ -152,15 +152,28 @@ export default function CVMatch() {
         c1Roles().catch(() => ({ data: { roles: [] } })),
       ])
       const resumeList = Array.isArray(r1.data) ? r1.data : []
-      setResumes(resumeList)
       const jobList = Array.isArray(r2.data) ? r2.data : []
       setJobs(jobList)
       const rolesList = r3?.data?.roles || []
       setCanonicalRoles(rolesList)
       if (resumeList.length > 0) {
+        setResumes(resumeList)
         const resumeIdToUse = selectedResume || resumeList[0].id
         setSelectedResume(resumeIdToUse)
         runUnifiedAnalysis(null, resumeIdToUse, resumeList, jobList)
+      } else {
+        const demoResume = {
+          id: 'demo_resume_01',
+          candidate_name: 'Alex Rivera (Sample Profile)',
+          filename: 'Alex_Rivera_Senior_FullStack.pdf',
+          skills: ['Python', 'React', 'TypeScript', 'Node.js', 'SQL', 'Docker', 'FastAPI', 'Git', 'REST APIs'],
+          experience_years: 3.5,
+          education: 'BSc Computer Science',
+          raw_text: 'Senior Full Stack Developer with 3.5+ years experience specializing in Python, React, TypeScript, FastAPI, Docker, and scalable REST APIs.'
+        }
+        setResumes([demoResume])
+        setSelectedResume(demoResume.id)
+        runUnifiedAnalysis(null, demoResume.id, [demoResume], jobList)
       }
     } catch (err) {
       toast.error('Failed to load resumes and jobs')
