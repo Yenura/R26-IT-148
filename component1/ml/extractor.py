@@ -11,7 +11,7 @@ Extracts:
 """
 
 import re
-from typing import Any, Dict, List, Set, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
 from ml.lexicon import ALL_TECHNICAL_SKILLS, CERTIFICATIONS_LIST, SKILL_LEXICON
 
 # Canonical skill normalization & alias mapping
@@ -21,8 +21,10 @@ SKILL_ALIASES: Dict[str, str] = {
     "node": "node.js",
     "nodejs": "node.js",
     "expressjs": "express.js",
+    "express": "express.js",
     "vuejs": "vue.js",
     "nextjs": "next.js",
+    "next.js": "next.js",
     "angularjs": "angular",
     "amazon web services": "aws",
     "google cloud platform": "gcp",
@@ -37,12 +39,24 @@ SKILL_ALIASES: Dict[str, str] = {
     "js": "javascript",
     "py": "python",
     "golang": "go",
+    "fastapi": "fastapi",
+    "fast api": "fastapi",
     "restful api": "rest apis",
     "rest api": "rest apis",
     "restful apis": "rest apis",
+    "rest apis": "rest apis",
+    "rest": "rest apis",
     "ci / cd": "ci/cd",
     "continuous integration": "ci/cd",
     "continuous deployment": "ci/cd",
+    "tailwind": "tailwind css",
+    "tailwindcss": "tailwind css",
+    "tailwind css": "tailwind css",
+    "ms sql": "sql server",
+    "mssql": "sql server",
+    "sql server": "sql server",
+    "pytorch": "pytorch",
+    "torch": "pytorch",
 }
 
 # Pre-compile regexes for ultra-fast matching
@@ -263,6 +277,8 @@ def extract_experience_years(text: str) -> float:
 
     if candidates:
         return max(candidates)
+
+    return 0.0
 
     return 0.0
 

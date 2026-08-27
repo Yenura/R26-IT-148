@@ -76,7 +76,7 @@ export default function CVMatch() {
   const [jobs, setJobs] = useState([])
   const [selectedResume, setSelectedResume] = useState('')
   const [targetMode, setTargetMode] = useState('company') // 'company' | 'benchmark'
-  const [selectedCompany, setSelectedCompany] = useState('Figma')
+  const [selectedCompany, setSelectedCompany] = useState('')
   const [selectedJob, setSelectedJob] = useState('')
   const [selectedCanonicalRole, setSelectedCanonicalRole] = useState('')
   const [uploading, setUploading] = useState(false)
