@@ -190,7 +190,7 @@ export default function CVMatch() {
     }
   }
 
-  const runUnifiedAnalysis = async (customRole = null, overrideResumeId = null, overrideResumes = null, overrideJobs = null) => {
+  const runUnifiedAnalysis = async (customRole = null, overrideResumeId = null, overrideResumes = null, overrideJobs = null, overrideJobId = undefined) => {
     const resumeListToUse = overrideResumes || resumes
     const jobsListToUse = overrideJobs || jobs
     let resumeToUse = overrideResumeId || selectedResume
@@ -200,7 +200,8 @@ export default function CVMatch() {
     }
     if (!resumeToUse) return toast.error('Please upload or select a resume first')
 
-    const targetRoleOverride = customRole || selectedCanonicalRole
+    const jobIdToUse = overrideJobId !== undefined ? overrideJobId : selectedJob
+    const targetRoleOverride = customRole || (overrideJobId ? '' : selectedCanonicalRole)
 
     setBusy(true)
     setMatchResult(null)
@@ -216,14 +217,14 @@ export default function CVMatch() {
       const targetResumeDoc = resumeListToUse.find((res) => res.id === resumeToUse) || {}
       const candidateSkills = targetResumeDoc.skills || []
 
-      const matchedJobDoc = jobsListToUse.find((j) => j.id === selectedJob)
+      const matchedJobDoc = jobsListToUse.find((j) => j.id === jobIdToUse)
       const targetRoleName = matchedJobDoc
         ? matchedJobDoc.title
         : (targetRoleOverride || 'Software Engineer')
 
       // 1. Component 0 Match Pipeline
       const matchParams = { resume_id: resumeToUse }
-      if (selectedJob) matchParams.job_id = selectedJob
+      if (jobIdToUse) matchParams.job_id = jobIdToUse
       else if (targetRoleOverride) matchParams.target_role = targetRoleOverride
       
       const matchRes = await c0ResumeMatch(resumeToUse, matchParams)
@@ -494,7 +495,11 @@ export default function CVMatch() {
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
                 <select
                   value={selectedResume}
-                  onChange={(e) => setSelectedResume(e.target.value)}
+                  onChange={(e) => {
+                    const rId = e.target.value
+                    setSelectedResume(rId)
+                    if (rId) runUnifiedAnalysis(null, rId)
+                  }}
                   style={{
                     flex: 1,
                     fontSize: 'var(--p-text-sm)',
@@ -610,6 +615,7 @@ export default function CVMatch() {
                       setSelectedCanonicalRole('')
                       const found = jobs.find((j) => j.id === jobId)
                       if (found) setSelectedCompany(cleanCompanyName(found.company_name))
+                      runUnifiedAnalysis(null, null, null, null, jobId)
                     }
                   }}
                   style={{
@@ -653,10 +659,12 @@ export default function CVMatch() {
                 <select
                   value={selectedCanonicalRole}
                   onChange={(e) => {
-                    setSelectedCanonicalRole(e.target.value)
-                    if (e.target.value) {
+                    const r = e.target.value
+                    setSelectedCanonicalRole(r)
+                    if (r) {
                       setSelectedJob('')
                       setSelectedCompany('')
+                      runUnifiedAnalysis(r, null, null, null, '')
                     }
                   }}
                   style={{
