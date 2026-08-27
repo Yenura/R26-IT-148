@@ -419,11 +419,8 @@ export default function SkillGap() {
                   )}
                 </div>
               )}
-        </div>
-      )}
-    </div>
-  )
-}
+            </div>
+          )}
         </div>
       )}
 
@@ -744,3 +741,6 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
           )}
         </div>
       )}
+    </div>
+  )
+}
