@@ -331,9 +331,6 @@ export default function CVMatch() {
         setSelectedResume(uploadedId)
       }
       await loadData()
-      if (uploadedId) {
-        runUnifiedAnalysis(null, uploadedId)
-      }
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Upload failed')
     } finally {
@@ -798,7 +795,6 @@ export default function CVMatch() {
                   onChange={(e) => {
                     const rId = e.target.value
                     setSelectedResume(rId)
-                    if (rId) runUnifiedAnalysis(null, rId)
                   }}
                   style={{
                     flex: 1,
@@ -877,7 +873,6 @@ export default function CVMatch() {
                       if (compJobs.length > 0) {
                         setSelectedJob(compJobs[0].id)
                         setSelectedCanonicalRole('')
-                        runUnifiedAnalysis(null, null, null, null, compJobs[0].id)
                       }
                     } else {
                       setSelectedJob('')
@@ -916,7 +911,6 @@ export default function CVMatch() {
                       setSelectedCanonicalRole('')
                       const found = jobs.find((j) => j.id === jobId)
                       if (found) setSelectedCompany(cleanCompanyName(found.company_name))
-                      runUnifiedAnalysis(null, null, null, null, jobId)
                     }
                   }}
                   style={{
@@ -965,7 +959,6 @@ export default function CVMatch() {
                     if (r) {
                       setSelectedJob('')
                       setSelectedCompany('')
-                      runUnifiedAnalysis(r, null, null, null, '')
                     }
                   }}
                   style={{
