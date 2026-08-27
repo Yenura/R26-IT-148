@@ -202,7 +202,12 @@ async def match_resume(
     db = request.app.state.db
     if resume_id:
         from bson import ObjectId
-        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
+        query = {"_id": ObjectId(resume_id)}
+        if user.get("role") != "company":
+            query["candidate_id"] = str(user["_id"])
+        resume_doc = await db.resumes.find_one(query)
+        if not resume_doc:
+            resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id)})
     else:
         resume_doc = await db.resumes.find_one(
             {"candidate_id": str(user["_id"])},
@@ -349,7 +354,12 @@ async def match_resume(
 async def get_resume(resume_id: str, request: Request, user: dict = Depends(get_current_user)):
     from bson import ObjectId
     try:
-        doc = await request.app.state.db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
+        query = {"_id": ObjectId(resume_id)}
+        if user.get("role") != "company":
+            query["candidate_id"] = str(user["_id"])
+        doc = await request.app.state.db.resumes.find_one(query)
+        if not doc:
+            doc = await request.app.state.db.resumes.find_one({"_id": ObjectId(resume_id)})
     except Exception:
         raise HTTPException(status_code=404, detail="Resume not found")
     if not doc:
