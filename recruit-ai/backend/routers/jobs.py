@@ -355,5 +355,5 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
     except Exception:
         raise HTTPException(status_code=404, detail="Job not found")
     await _get_owned_job(db, job_id, str(company["_id"]))
-    cursor = db.applications.find({"job_id": oid})
+    cursor = db.applications.find({"$or": [{"job_id": oid}, {"job_id": job_id}]})
     return [_app_out(doc) async for doc in cursor]
