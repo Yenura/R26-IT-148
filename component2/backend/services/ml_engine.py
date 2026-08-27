@@ -2,7 +2,6 @@
 Component 2: Interview System - Service Layer
 Handles business logic for interview generation, submission, and evaluation
 """
-from services.skill_aliases import skill_matchesAny
 
 import json
 import os
@@ -297,7 +296,7 @@ class InterviewService:
         # Role-specific overrides for known edge cases
         if job_role == "DevOps Engineer":
             return "scripting"
-        if job_role in {"Cybersecurity Analyst", "Cloud Solutions Architect", "UI/UX Designer", "Business/Systems Analyst", "Network Engineer"}:
+        if job_role in {"Cybersecurity Analyst", "Cloud Solutions Architect"}:
             return "none"
 
         has_language = any(keyword.lower() in skill_text for keyword in trigger_keywords if keyword != "SQL")
@@ -336,9 +335,6 @@ class InterviewService:
             "DevOps Engineer": (0.40, 0.40, 0.20),
             "Cybersecurity Analyst": (0.45, 0.55, 0.00),
             "Cloud Solutions Architect": (0.45, 0.55, 0.00),
-            "UI/UX Designer": (0.45, 0.55, 0.00),
-            "Business/Systems Analyst": (0.45, 0.55, 0.00),
-            "Network Engineer": (0.45, 0.55, 0.00),
             "Database Administrator": (0.30, 0.40, 0.30),
             "Frontend Developer": (0.20, 0.30, 0.50),
             "Backend Developer": (0.20, 0.30, 0.50),
@@ -384,14 +380,14 @@ class InterviewService:
                 "Mobile App Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
                 "AI/NLP Engineer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
                 "Blockchain Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
-                "Business/Systems Analyst": {"mcq": 0.45, "descriptive": 0.55, "coding": 0.00},
+                "Business/Systems Analyst": {"mcq": 0.35, "descriptive": 0.50, "coding": 0.15},
                 "Data Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
                 "Embedded Systems Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
                 "Full Stack Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
-                "Network Engineer": {"mcq": 0.45, "descriptive": 0.55, "coding": 0.00},
+                "Network Engineer": {"mcq": 0.40, "descriptive": 0.45, "coding": 0.15},
                 "QA/Test Automation Engineer": {"mcq": 0.25, "descriptive": 0.30, "coding": 0.45},
                 "Site Reliability Engineer": {"mcq": 0.35, "descriptive": 0.40, "coding": 0.25},
-                "UI/UX Designer": {"mcq": 0.45, "descriptive": 0.55, "coding": 0.00}
+                "UI/UX Designer": {"mcq": 0.30, "descriptive": 0.55, "coding": 0.15}
             },
             "grade_bands": {
                 "Excellent": {"min": 85},
@@ -422,7 +418,6 @@ class InterviewService:
         desc_count: Optional[int] = None,
         coding_count: Optional[int] = None,
         job_description: str = "",
-        is_practice: bool = False,
     ) -> Dict:
         """
         Create interview session with questions
@@ -450,14 +445,6 @@ class InterviewService:
             num_mcq = mcq_count if mcq_count is not None else 0
             num_desc = desc_count if desc_count is not None else 0
             num_code = coding_count if coding_count is not None else 0
-            # Enforce scoring config: non-coding roles never get coding questions
-            try:
-                w = self.interview_configs.get("interview_weights", {}).get(job_role, {})
-                if w.get("coding", 1) == 0 and num_code > 0:
-                    num_desc += num_code
-                    num_code = 0
-            except:
-                pass
             # Ensure total matches
             total_specified = num_mcq + num_desc + num_code
             if total_specified != num_questions:
@@ -470,15 +457,6 @@ class InterviewService:
             num_mcq, num_desc, num_code = self._get_question_distribution(
                 job_role, coding_profile, num_questions
             )
-            # Also enforce for auto-distribute path
-            try:
-                w = self.interview_configs.get("interview_weights", {}).get(job_role, {})
-                if w.get("coding", 1) == 0 and num_code > 0:
-                    num_desc += num_code
-                    num_code = 0
-                    coding_profile = "none"
-            except:
-                pass
         difficulty = self._difficulty_for_level(job_level)
 
         # Extract skills from job description if provided
@@ -487,18 +465,14 @@ class InterviewService:
             if desc_skills:
                 required_skills = merge_skill_lists(required_skills, desc_skills)
 
-        # Fast path for practice (is_practice): skip slow T5, use bank directly
-        if is_practice:
-            qg_questions = None
-        else:
-            qg_questions = generate_questions_qg(
-                job_role=job_role,
-                skills=required_skills,
-                num_mcq=num_mcq,
-                num_desc=num_desc,
-                num_code=num_code,
-                coding_profile=coding_profile,
-            )
+        qg_questions = generate_questions_qg(
+            job_role=job_role,
+            skills=required_skills,
+            num_mcq=num_mcq,
+            num_desc=num_desc,
+            num_code=num_code,
+            coding_profile=coding_profile,
+        )
 
         if qg_questions:
             all_questions = qg_questions
@@ -663,10 +637,11 @@ class InterviewService:
             category = q.get("category", "").lower()
             topic = q.get("topic", "").lower()
             question_text = q.get("question_text", "").lower()
-            targets = [category, topic, question_text]
 
             is_relevant = any(
-                skill_matchesAny(skill, targets)
+                skill.lower() in category
+                or skill.lower() in topic
+                or skill.lower() in question_text
                 for skill in relevant_skills
             )
             if is_relevant:

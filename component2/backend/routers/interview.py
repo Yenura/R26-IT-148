@@ -8,7 +8,6 @@ from typing import List, Dict, Optional
 from starlette.concurrency import run_in_threadpool
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-from pydantic import BaseModel, Field, field_validator
 import logging
 import sys
 import json
@@ -17,7 +16,6 @@ import subprocess
 import tempfile
 import os
 import ast
-import asyncio
 
 from models.schemas import (
     InterviewRequest, InterviewSession, InterviewQuestion,
@@ -25,39 +23,11 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
-from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids, link_candidate_application
+from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
-
-
-class InterviewSubmitRequest(BaseModel):
-    session_id: str = Field(..., min_length=1, max_length=200)
-    answers: List[Dict] = Field(default_factory=list)
-    candidate_id: Optional[str] = None
-    job_role: Optional[str] = None
-    job_id: Optional[str] = None
-    proctoring: Optional[Dict] = None
-
-    @field_validator("answers")
-    @classmethod
-    def validate_answers(cls, v: List[Dict]) -> List[Dict]:
-        if len(v) > 100:
-            raise ValueError("Too many answers (max 100)")
-        return v
-
-
-class CodeRunRequest(BaseModel):
-    code_text: str = Field(default="", max_length=50000)
-    test_cases: List[Dict] = Field(default_factory=list)
-
-    @field_validator("test_cases")
-    @classmethod
-    def validate_test_cases(cls, v: List[Dict]) -> List[Dict]:
-        if len(v) > 50:
-            raise ValueError("Too many test cases (max 50)")
-        return v
 
 
 def _is_py_literal(value) -> bool:
@@ -233,7 +203,6 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             desc_count=interview_request.desc_count,
             coding_count=interview_request.coding_count,
             job_description=interview_request.job_description or "",
-            is_practice=interview_request.is_practice or False,
         )
         
         # Store time limits from employer config
@@ -290,12 +259,12 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
 
 @router.post("/submit", response_model=InterviewScoreResult)
 @limiter.limit("5/minute")
-async def submit_answers(request: Request, submission: InterviewSubmitRequest, services: Dict = Depends(get_services)):
+async def submit_answers(request: Request, submission: Dict, services: Dict = Depends(get_services)):
     """
     Submit answers and get evaluation results
     
     Args:
-        submission: Pydantic model with session_id and answers list
+        submission: Dictionary with candidate_id, session_id, job_role, answers
         
     Returns:
         Interview score result with grades and weak areas
@@ -303,7 +272,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
     try:
         interview_service = services["interview_service"]
         
-        session_id = submission.session_id
+        session_id = submission.get("session_id")
         session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
@@ -314,10 +283,8 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             if q.get("id")
         }
         processed_answers = []
-        descriptive_tasks = []
-        descriptive_indices = []
 
-        for answer in submission.answers:
+        for answer in submission.get("answers", []):
             question_id = answer.get("question_id")
             question = question_map.get(question_id)
             if not question:
@@ -352,16 +319,17 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             elif question_type == "Descriptive":
                 answer_text = answer.get("answer_text") or answer.get("answer") or ""
                 reference_text = question.get("answer_text") or question.get("expected_answer") or ""
-                processed_answer["answer_text"] = answer_text
-                processed_answer["_reference_text"] = reference_text
-                descriptive_tasks.append(
-                    run_in_threadpool(
-                        services["evaluation_service"].evaluate_descriptive,
-                        reference=reference_text,
-                        candidate=answer_text,
-                    )
+                evaluation_result = await run_in_threadpool(
+                    services["evaluation_service"].evaluate_descriptive,
+                    reference=reference_text,
+                    candidate=answer_text,
                 )
-                descriptive_indices.append(len(processed_answers))
+                processed_answer.update({
+                    "answer_text": answer_text,
+                    "final_score": evaluation_result.get("final_score", 0),
+                    "similarity": evaluation_result.get("similarity", 0),
+                    "keyword_coverage": evaluation_result.get("keyword_coverage", 0)
+                })
 
             elif question_type == "Coding":
                 code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
@@ -409,9 +377,6 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                     + 0.20 * float(has_operators)
                     + 0.20 * float(has_structure)
                 )
-                # Hard gibberish guard
-                if not has_return and not has_structure:
-                    quality_score = min(quality_score, 0.15)
                 if test_pass_rate is None:
                     # No verifiable test case exists (placeholder/legacy data).
                     # Grade on structure alone; don't punish correct code.
@@ -432,15 +397,10 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
             processed_answers.append(processed_answer)
 
-        cand_id = submission.candidate_id or session.get("candidate_id", "")
-        j_role = submission.job_role or session.get("job_role", "")
-        j_id = submission.job_id or session.get("job_id", "")
-        proctoring = submission.proctoring
-
         evaluation_payload = {
-            "candidate_id": cand_id,
+            "candidate_id": submission.get("candidate_id") or session.get("candidate_id", ""),
             "session_id": session_id,
-            "job_role": j_role,
+            "job_role": submission.get("job_role") or session.get("job_role", ""),
             "answers": processed_answers
         }
         
@@ -450,10 +410,9 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             interview_data=evaluation_payload,
         )
 
-        result["job_id"] = j_id
-
         # Attach proctoring data if provided (job interviews only)
         # Enforce: practice interviews NEVER store proctoring data
+        proctoring = submission.get("proctoring")
         is_practice = session.get("is_practice", False)
         if is_practice:
             proctoring = None
@@ -463,13 +422,13 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
         await save_result(result)
         await update_session_status(session_id, "completed")
         
-        # Send scores to C0 unified backend for ranking pipeline (fire-and-forget, don't block response)
+        # Send scores to C0 unified backend for ranking pipeline
         try:
             import urllib.request
             c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
             payload = json.dumps({
                 "candidate_id": result["candidate_id"],
-                "job_id": j_id,
+                "job_id": submission.get("job_id", ""),
                 "session_id": session_id,
                 "job_role": result["job_role"],
                 "mcq_score": result["mcq_score"],
@@ -485,28 +444,9 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 headers={"Content-Type": "application/json"},
                 method="POST"
             )
-            def _send_c0():
-                try:
-                    urllib.request.urlopen(req, timeout=2)
-                except:
-                    pass
-            asyncio.create_task(run_in_threadpool(_send_c0))
+            urllib.request.urlopen(req, timeout=5)
         except Exception as e:
             logger.warning(f"Failed to send scores to C0: {e}")
-
-        # Direct MongoDB sync for applications & interview_scores
-        try:
-            await link_candidate_application(
-                candidate_id=result["candidate_id"],
-                job_id=j_id or "",
-                job_role=result["job_role"],
-                interview_score=result["interview_score"],
-                mcq_score=result["mcq_score"],
-                desc_score=result["descriptive_score"],
-                code_score=result["coding_score"]
-            )
-        except Exception as e:
-            logger.warning(f"Direct link_candidate_application warning: {e}")
 
         return InterviewScoreResult(
             interview_id=result["interview_id"],
@@ -539,14 +479,14 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
 @router.post("/code/run")
 @limiter.limit("10/minute")
-async def run_candidate_code(request: Request, payload: CodeRunRequest):
+async def run_candidate_code(request: Request, payload: Dict):
     """
     Run candidate code against the question's test cases without scoring.
     Uses the exact same sandbox as submit, so what the candidate sees in
     testing is what the scorer checks. Returns outputs, never answers.
     """
-    code_text = payload.code_text
-    test_cases = payload.test_cases
+    code_text = payload.get("code_text") or ""
+    test_cases = payload.get("test_cases") or []
     syntax_valid = True
     try:
         compile(code_text, "<string>", "exec")
