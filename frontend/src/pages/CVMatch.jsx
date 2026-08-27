@@ -300,7 +300,6 @@ export default function CVMatch() {
         setResumes(resumeList)
         const resumeIdToUse = selectedResume || resumeList[0].id
         setSelectedResume(resumeIdToUse)
-        runUnifiedAnalysis(null, resumeIdToUse, resumeList, jobList)
       } else {
         const demoResume = {
           id: 'demo_resume_01',
@@ -313,7 +312,6 @@ export default function CVMatch() {
         }
         setResumes([demoResume])
         setSelectedResume(demoResume.id)
-        runUnifiedAnalysis(null, demoResume.id, [demoResume], jobList)
       }
     } catch (err) {
       toast.error('Failed to load resumes and jobs')
