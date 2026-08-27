@@ -25,6 +25,14 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+try:
+    import dns.resolver
+    _res = dns.resolver.Resolver()
+    _res.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+    dns.resolver.default_resolver = _res
+except Exception:
+    pass
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Resolve Python executable (prefer workspace .venv if available)

@@ -11,6 +11,12 @@ export default function CompanyLogin() {
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
 
+  const fillDemo = () => {
+    setEmail('company@techcorp.com')
+    setPassword('demo123')
+    toast.success('Demo employer credentials loaded')
+  }
+
   const handleLogin = async (e) => {
     e?.preventDefault()
     if (!email || !password) return toast.error('Please enter work email and password')
@@ -28,11 +34,12 @@ export default function CompanyLogin() {
       toast.success('Welcome back, Recruiter!')
       navigate('/company/dashboard')
     } catch (err) {
-      if (email.trim().toLowerCase() === 'company@example.com') {
+      const lower = email.trim().toLowerCase()
+      if (lower === 'company@techcorp.com' || lower === 'company@example.com') {
         try {
           const reg = await C0.post('/auth/register/company', {
             company_name: 'Tech Corp Global',
-            email: 'company@example.com',
+            email: lower,
             password: 'demo123',
             industry: 'Technology',
             website: 'https://techcorp.example.com'

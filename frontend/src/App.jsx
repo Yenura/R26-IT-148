@@ -40,33 +40,23 @@ const Loading = () => (
 )
 
 function PrivateRoute({ children, role }) {
-  const [auth, setAuth] = useState(() => ({
-    token: localStorage.getItem('recruitai.token'),
-    userRole: localStorage.getItem('recruitai.role'),
-    userId: localStorage.getItem('recruitai.user_id'),
-  }))
+  const token = localStorage.getItem('recruitai.token')
+  const userRole = localStorage.getItem('recruitai.role')
 
-  useEffect(() => {
-    const onStorage = () => {
-      setAuth({
-        token: localStorage.getItem('recruitai.token'),
-        userRole: localStorage.getItem('recruitai.role'),
-        userId: localStorage.getItem('recruitai.user_id'),
-      })
-    }
-    window.addEventListener('storage', onStorage)
-    return () => window.removeEventListener('storage', onStorage)
-  }, [])
-
-  if (!auth.token || !auth.userId) return <Navigate to="/login/candidate" />
-  if (role && auth.userRole !== role) return <Navigate to="/" />
+  if (!token) {
+    return <Navigate to={role === 'company' ? '/login/company' : '/login/candidate'} replace />
+  }
+  if (role && userRole && userRole !== role) {
+    return <Navigate to={userRole === 'company' ? '/company/dashboard' : '/candidate/dashboard'} replace />
+  }
   return children
 }
 
 export default function App() {
   const { theme, toggleTheme } = useTheme()
-  const role = localStorage.getItem('recruitai.role')
   const navigate = useNavigate()
+  const location = useLocation()
+  const role = localStorage.getItem('recruitai.role')
   const [mobileMenu, setMobileMenu] = useState(false)
   const [userMenu, setUserMenu] = useState(false)
   const [userName, setUserName] = useState('')
@@ -91,7 +81,7 @@ export default function App() {
     setUserName(name)
     const avatar = localStorage.getItem('recruitai.avatar') || ''
     setUserAvatar(avatar)
-  }, [role])
+  }, [role, location.pathname])
 
   const candidateLinks = [
     { to: '/candidate/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -134,7 +124,6 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [userMenu])
 
-  const location = useLocation()
   useEffect(() => {
     const path = location.pathname
     let title = 'RecruitAI'
