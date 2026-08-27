@@ -290,9 +290,14 @@ export default function CVMatch() {
       ])
       const resumeList = Array.isArray(r1.data) ? r1.data : []
       setResumes(resumeList)
-      setJobs(Array.isArray(r2.data) ? r2.data : [])
-      if (resumeList.length > 0 && !selectedResume) {
-        setSelectedResume(resumeList[0].id)
+      const jobList = Array.isArray(r2.data) ? r2.data : []
+      setJobs(jobList)
+      const rolesList = r3?.data?.roles || []
+      setCanonicalRoles(rolesList)
+      if (resumeList.length > 0) {
+        const resumeIdToUse = selectedResume || resumeList[0].id
+        setSelectedResume(resumeIdToUse)
+        runUnifiedAnalysis(null, resumeIdToUse, resumeList, jobList)
       }
     } catch (err) {
       toast.error('Failed to load resumes and jobs')
@@ -307,9 +312,13 @@ export default function CVMatch() {
     try {
       const res = await uResumeUpload(formData)
       toast.success('Resume uploaded & parsed!')
+      const uploadedId = res.data?.id
+      if (uploadedId) {
+        setSelectedResume(uploadedId)
+      }
       await loadData()
-      if (res.data?.id) {
-        setSelectedResume(res.data.id)
+      if (uploadedId) {
+        runUnifiedAnalysis(null, uploadedId)
       }
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Upload failed')
@@ -318,10 +327,12 @@ export default function CVMatch() {
     }
   }
 
-  const runUnifiedAnalysis = async (customRole = null) => {
-    let resumeToUse = selectedResume
-    if (!resumeToUse && resumes.length > 0) {
-      resumeToUse = resumes[0].id
+  const runUnifiedAnalysis = async (customRole = null, overrideResumeId = null, overrideResumes = null, overrideJobs = null) => {
+    const resumeListToUse = overrideResumes || resumes
+    const jobsListToUse = overrideJobs || jobs
+    let resumeToUse = overrideResumeId || selectedResume
+    if (!resumeToUse && resumeListToUse.length > 0) {
+      resumeToUse = resumeListToUse[0].id
       setSelectedResume(resumeToUse)
     }
     if (!resumeToUse) return toast.error('Please upload or select a resume first')
@@ -339,10 +350,10 @@ export default function CVMatch() {
     setSelectedSkillEvidence(null)
 
     try {
-      const targetResumeDoc = resumes.find((res) => res.id === resumeToUse) || {}
+      const targetResumeDoc = resumeListToUse.find((res) => res.id === resumeToUse) || {}
       const candidateSkills = targetResumeDoc.skills || []
 
-      const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
+      const matchedJobDoc = jobsListToUse.find((j) => j.id === selectedJob)
       const targetRoleName = matchedJobDoc
         ? matchedJobDoc.title
         : (targetRoleOverride || 'Software Engineer')
