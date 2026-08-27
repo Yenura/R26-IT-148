@@ -577,6 +577,7 @@ export default function CVMatch() {
                       if (compJobs.length > 0) {
                         setSelectedJob(compJobs[0].id)
                         setSelectedCanonicalRole('')
+                        runUnifiedAnalysis(null, null, null, null, compJobs[0].id)
                       }
                     } else {
                       setSelectedJob('')
