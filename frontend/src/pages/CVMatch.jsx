@@ -71,7 +71,7 @@ const CANONICAL_CATEGORIES = {
 
 export default function CVMatch() {
   const navigate = useNavigate()
-  useAuth('candidate')
+  useAuth()
   const [resumes, setResumes] = useState([])
   const [jobs, setJobs] = useState([])
   const [selectedResume, setSelectedResume] = useState('')
