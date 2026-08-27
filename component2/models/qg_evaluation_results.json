@@ -13,26 +13,26 @@
     "epochs": 5,
     "batch_size": 32,
     "lr": 0.001,
-    "best_val_loss": 0.9401377064841134
+    "best_val_loss": 0.9326360787664141
   },
   "generation_metrics": {
-    "bleu_4": 0.27036539085787487,
-    "rouge_l": 0.2716401167525462
+    "bleu_4": 0.23717096027502738,
+    "rouge_l": 0.2624816062657291
   },
   "training_history": {
     "train_loss": [
-      2.389861088865986,
-      1.304532747324526,
-      1.0471096383061662,
-      0.9366105640358224,
-      0.8758221411647242
+      2.4181809211586134,
+      1.3332685076169706,
+      1.0564600765608816,
+      0.9367599007049169,
+      0.885279015043633
     ],
     "val_loss": [
-      1.4576409578323364,
-      1.1205150944846016,
-      1.0162296669823783,
-      0.9613994479179382,
-      0.9401377064841134
+      1.5275507007326399,
+      1.1319814528737748,
+      1.0045151897839137,
+      0.9547159484454564,
+      0.9326360787664141
     ],
     "val_acc": [
       0.0,
@@ -45,15 +45,15 @@
   "sample_generations": [
     {
       "input": "[MCQ] Software Engineer | Java, Python, SQL | Medium",
-      "output": "q: which option correctly explains a common pitfall related to cloud governance? o: prioritizing message broker integration at the expense of properly addressing the core purpose of test-driven development. | applying the principles of version control workflows in a situation that calls for known edge cases. | a situation that calls for frontend developer. | focusing on message queues instead. a: 0"
+      "output": "q: what does 'good' look like when circuit breaker patterns is done well, at a practical, applied level suited for an associate who handles real production tasks independently?"
     },
     {
       "input": "[Descriptive] Backend Developer | Python, REST APIs | Medium",
-      "output": "q: compare the tradeoffs involved in ci/cd at an advanced, strategic level suited for a senior professional who owns architecture, tradeoffs, and mentorship."
+      "output": "q: describe how you would explain model layers to a non-technical stakeholder."
     },
     {
       "input": "[Coding] Software Engineer | Python | Easy",
-      "output": "q: given a scenario involving content delivery networks, at an advanced, strategic level suited for a senior professional who owns architecture, tradeoffs, and mentorship?"
+      "output": "q: describe how you would explain test-driven development to a non-technical stakeholder."
     }
   ]
 }

@@ -89,6 +89,9 @@ class JobCreate(BaseModel):
     status: str = Field(default="open", max_length=20)
     interview_required: bool = False
     interview_question_count: int = 10
+    interview_mcq_count: int = 4
+    interview_desc_count: int = 3
+    interview_coding_count: int = 3
     interview_mcq_time: int = 60
     interview_desc_time: int = 300
     interview_coding_time: int = 600
@@ -113,6 +116,36 @@ class JobCreate(BaseModel):
             return max(3, min(30, int(v)))
         except (ValueError, TypeError):
             return 10
+
+    @field_validator("interview_mcq_count", mode="before")
+    @classmethod
+    def parse_mcq_count(cls, v):
+        if v is None or v == "":
+            return 4
+        try:
+            return max(0, min(30, int(v)))
+        except (ValueError, TypeError):
+            return 4
+
+    @field_validator("interview_desc_count", mode="before")
+    @classmethod
+    def parse_desc_count(cls, v):
+        if v is None or v == "":
+            return 3
+        try:
+            return max(0, min(30, int(v)))
+        except (ValueError, TypeError):
+            return 3
+
+    @field_validator("interview_coding_count", mode="before")
+    @classmethod
+    def parse_coding_count(cls, v):
+        if v is None or v == "":
+            return 3
+        try:
+            return max(0, min(30, int(v)))
+        except (ValueError, TypeError):
+            return 3
 
     @field_validator("interview_mcq_time", mode="before")
     @classmethod
@@ -172,6 +205,9 @@ class JobUpdate(BaseModel):
     status: str | None = Field(default=None, max_length=20)
     interview_required: bool | None = None
     interview_question_count: int | None = None
+    interview_mcq_count: int | None = None
+    interview_desc_count: int | None = None
+    interview_coding_count: int | None = None
     interview_mcq_time: int | None = None
     interview_desc_time: int | None = None
     interview_coding_time: int | None = None
@@ -198,6 +234,9 @@ class JobOut(BaseModel):
     status: str = "open"
     interview_required: bool = False
     interview_question_count: int = 10
+    interview_mcq_count: int = 4
+    interview_desc_count: int = 3
+    interview_coding_count: int = 3
     interview_mcq_time: int = 60
     interview_desc_time: int = 300
     interview_coding_time: int = 600

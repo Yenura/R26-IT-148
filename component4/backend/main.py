@@ -10,8 +10,11 @@ Fixes applied (code review):
 """
 
 import os
+import sys
 import logging
 from contextlib import asynccontextmanager
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
