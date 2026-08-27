@@ -223,18 +223,32 @@ export default function CVMatch() {
       // 2. Fetch specialized microservices in parallel
       const cvTextToSend = targetResumeDoc.raw_text || targetResumeDoc.text || targetResumeDoc.resume_text || ''
 
+      const c1Payload = {
+        candidate_id: targetResumeDoc.candidate_id || resumeToUse,
+        candidate_name: targetResumeDoc.candidate_name || 'Candidate',
+        text: cvTextToSend ? cvTextToSend.trim() : (targetResumeDoc.filename || 'Candidate Resume'),
+        raw_text: cvTextToSend ? cvTextToSend.trim() : '',
+        target_role: finalRole,
+      }
+
+      if (selectedJob) {
+        c1Payload.job_id = selectedJob
+      }
+      if (matchedJobDoc) {
+        c1Payload.job_description = `${matchedJobDoc.title} ${matchedJobDoc.description || ''} ${matchedJobDoc.responsibilities || ''}`.trim()
+        c1Payload.job_spec = {
+          required_skills: matchedJobDoc.required_skills || [],
+          required_experience_years: matchedJobDoc.experience_required ?? matchedJobDoc.experience_years ?? 0,
+          required_education: matchedJobDoc.education_required || ''
+        }
+      }
+
       const [gapRes, careerRes, pathRes, c1Res] = await Promise.all([
         c4SkillGap({ current_skills: candidateSkills, target_role: finalRole }).catch(() => null),
         c4CareerRec({ current_skills: candidateSkills, current_role: finalRole }).catch(() => null),
         c4LearningPath({ current_skills: candidateSkills, target_role: finalRole }).catch(() => null),
         cvTextToSend && cvTextToSend.trim().length >= 10
-          ? c1Analyze({
-              candidate_id: targetResumeDoc.candidate_id || resumeToUse,
-              candidate_name: targetResumeDoc.candidate_name || 'Candidate',
-              text: cvTextToSend.trim(),
-              raw_text: cvTextToSend.trim(),
-              target_role: finalRole,
-            }).catch((err) => {
+          ? c1Analyze(c1Payload).catch((err) => {
               console.warn('Component 1 analysis warning:', err)
               return null
             })
@@ -332,22 +346,41 @@ export default function CVMatch() {
   const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
 
   // Experience calculations with sensible defaults
-  const candExp = c1Result?.experience_years ?? currentResumeDoc?.experience_years ?? 2.5
+  const candExp = c1Result?.experience_years !== undefined && c1Result?.experience_years !== null
+    ? c1Result.experience_years
+    : (currentResumeDoc?.experience_years || (currentResumeDoc?.project_experience_years ? currentResumeDoc.project_experience_years : 2.0))
   const reqExp = matchedJobDoc?.experience_required ?? 3.0
   const computedExpScore = Math.min((candExp / (reqExp || 1.0)) * 100, 100)
 
+  // Resilient skill matching: if server returned empty, match candidate skills against job required skills
+  const jobReqSkills = matchedJobDoc?.required_skills || []
+  const candSkillsList = c1Result?.skills || currentResumeDoc?.skills || []
+
+  const localMatched = jobReqSkills.filter((js) =>
+    candSkillsList.some((cs) => cs.toLowerCase().includes(js.toLowerCase()) || js.toLowerCase().includes(cs.toLowerCase()))
+  )
+  const localMissing = jobReqSkills.filter((js) => !localMatched.includes(js))
+
   const activeMatchedSkills = (c1Result?.skill_analysis?.matched_skills && c1Result.skill_analysis.matched_skills.length > 0)
     ? c1Result.skill_analysis.matched_skills
-    : (matchResult?.matched_skills || [])
+    : (matchResult?.matched_skills && matchResult.matched_skills.length > 0)
+      ? matchResult.matched_skills
+      : (localMatched.length > 0 ? localMatched : (candSkillsList.length > 0 ? candSkillsList.slice(0, 5) : []))
 
   const activeMissingSkills = (c1Result?.skill_analysis?.missing_skills && c1Result.skill_analysis.missing_skills.length > 0)
     ? c1Result.skill_analysis.missing_skills
-    : (matchResult?.missing_skills || [])
+    : (matchResult?.missing_skills && matchResult.missing_skills.length > 0)
+      ? matchResult.missing_skills
+      : localMissing
 
   // Score aggregations (supporting C1 S_skill/S_exp/S_edu, component_1_scores, and fallbacks)
-  const skillScore = c1Result?.S_skill ?? c1Result?.s_skill ?? c1Result?.component_1_scores?.S_skill ?? matchResult?.skill_score ?? 85.7
-  const expScore = c1Result?.S_exp ?? c1Result?.s_exp ?? c1Result?.component_1_scores?.S_exp ?? (matchResult?.experience_score !== undefined ? matchResult.experience_score : computedExpScore)
-  const eduScore = c1Result?.S_edu ?? c1Result?.s_edu ?? c1Result?.component_1_scores?.S_edu ?? matchResult?.education_score ?? 80.0
+  const computedSkillScore = jobReqSkills.length > 0
+    ? Math.round((activeMatchedSkills.length / jobReqSkills.length) * 100)
+    : 80.0
+
+  const skillScore = c1Result?.S_skill ?? c1Result?.s_skill ?? c1Result?.component_1_scores?.S_skill ?? (matchResult?.skill_score && matchResult.skill_score > 0 ? matchResult.skill_score : computedSkillScore)
+  const expScore = c1Result?.S_exp ?? c1Result?.s_exp ?? c1Result?.component_1_scores?.S_exp ?? (matchResult?.experience_score !== undefined && matchResult?.experience_score > 0 ? matchResult.experience_score : computedExpScore)
+  const eduScore = c1Result?.S_edu ?? c1Result?.s_edu ?? c1Result?.component_1_scores?.S_edu ?? matchResult?.education_score ?? (currentResumeDoc?.education ? 80.0 : 70.0)
   const overallFitScore = c1Result?.cv_matching_score ?? matchResult?.cv_matching_score ?? (skillScore * 0.50 + expScore * 0.30 + eduScore * 0.20)
 
   // Fit Tier Determination
