@@ -153,7 +153,10 @@ export default function CVMatch() {
       ])
       const resumeList = Array.isArray(r1.data) ? r1.data : []
       setResumes(resumeList)
-      setJobs(Array.isArray(r2.data) ? r2.data : [])
+      const jobList = Array.isArray(r2.data) ? r2.data : []
+      setJobs(jobList)
+      const rolesList = r3?.data?.roles || []
+      setCanonicalRoles(rolesList)
       if (resumeList.length > 0 && !selectedResume) {
         setSelectedResume(resumeList[0].id)
       }
@@ -659,7 +662,7 @@ export default function CVMatch() {
                   }}
                 >
                   <option value="">AI Auto-Detect Best Fit Role</option>
-                  {CANONICAL_ROLES.map((r) => (
+                  {(canonicalRoles.length > 0 ? canonicalRoles : CANONICAL_ROLES).map((r) => (
                     <option key={r} value={r}>{r}</option>
                   ))}
                 </select>
