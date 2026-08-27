@@ -35,6 +35,7 @@ export default function Leaderboard() {
     if (data.length === 0) setLoading(true)
     try {
       if (userRole === 'company') {
+        // 1. Fetch only jobs posted by this company
         const myJobsRes = await uJobsMy().catch(() => ({ data: [] }))
         const jobs = Array.isArray(myJobsRes.data) ? myJobsRes.data : []
         setCompanyJobs(jobs)
@@ -42,7 +43,7 @@ export default function Leaderboard() {
         const companyApplicants = []
         const seenCandidates = new Set()
 
-        // Fetch ONLY this company's applicants per job
+        // 2. Fetch applicants strictly applied to this company's jobs
         const resultsPerJob = await Promise.all(
           jobs.map(async (job) => {
             const jobId = job.id || job._id
@@ -83,7 +84,7 @@ export default function Leaderboard() {
           }
         }
 
-        // Sort strictly descending by candidate score
+        // Sort descending by candidate score
         companyApplicants.sort((a, b) => (b.hire_probability || 0) - (a.hire_probability || 0))
         setData(companyApplicants)
       } else {
