@@ -2,7 +2,8 @@ import axios from 'axios'
 
 const inFlightGetRequests = new Map()
 const responseCache = new Map()
-const CACHE_TTL_MS = 15000 // 15 seconds instant memory cache for ultra-fast navigation
+const CACHE_TTL_MS = 60000 // 60s cache
+const REVALIDATE_AFTER_MS = 5000 // Background refresh after 5s
 
 export const clearApiCache = () => {
   responseCache.clear()
@@ -38,22 +39,31 @@ const mk = (url) => {
     return originalDelete(...args)
   }
 
-  // Fast Cached GET with in-flight deduplication
+  // Fast Cached GET with SWR background revalidation
   const originalGet = instance.get.bind(instance)
   instance.get = (requestUrl, config = {}) => {
     const key = `${url}:${requestUrl}:${JSON.stringify(config.params || {})}`
     const now = Date.now()
 
-    // 1. Return fresh cached response if available
+    // 1. Check if cached response is present
     if (responseCache.has(key)) {
       const entry = responseCache.get(key)
-      if (now - entry.timestamp < CACHE_TTL_MS) {
+      const age = now - entry.timestamp
+      if (age < CACHE_TTL_MS) {
+        // If data is slightly aged, trigger non-blocking background revalidation
+        if (age > REVALIDATE_AFTER_MS && !inFlightGetRequests.has(key)) {
+          originalGet(requestUrl, config)
+            .then((freshRes) => {
+              responseCache.set(key, { timestamp: Date.now(), data: freshRes })
+            })
+            .catch(() => {})
+        }
         return Promise.resolve(entry.data)
       }
       responseCache.delete(key)
     }
 
-    // 2. Return in-flight promise to prevent duplicate requests
+    // 2. Return in-flight promise to prevent duplicate concurrent requests
     if (inFlightGetRequests.has(key)) {
       return inFlightGetRequests.get(key)
     }
