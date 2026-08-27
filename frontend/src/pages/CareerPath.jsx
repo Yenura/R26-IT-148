@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Route } from 'lucide-react'
-import { c4CareerRoles, c4CareerPath } from '../api'
+import { Route, Sparkles } from 'lucide-react'
+import { c4CareerRoles, c4CareerPath, uResumeList } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 
@@ -16,6 +16,19 @@ export default function CareerPath() {
 
   useEffect(() => {
     c4CareerRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => toast.error('Failed to load roles'))
+    
+    // Auto-populate from candidate's latest resume
+    uResumeList().then((r) => {
+      const resumeList = Array.isArray(r.data) ? r.data : []
+      if (resumeList.length > 0) {
+        const topResume = resumeList[0]
+        setForm((f) => ({
+          ...f,
+          skills: (topResume.skills || []).join(', '),
+          experience_years: topResume.experience_years || 0,
+        }))
+      }
+    }).catch(() => {})
   }, [])
 
   const compute = async (e) => {

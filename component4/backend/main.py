@@ -23,6 +23,13 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 from dotenv import load_dotenv
+try:
+    import dns.resolver
+    _res = dns.resolver.Resolver()
+    _res.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+    dns.resolver.default_resolver = _res
+except Exception:
+    pass
 import motor.motor_asyncio
 
 load_dotenv()

@@ -59,7 +59,7 @@ export default function CandidateRegister() {
             justifyContent: 'center',
             color: '#fff'
           }}>
-            <Brain size={24} />
+            <Brain size={26} color="#ffffff" strokeWidth={2.5} />
           </div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
             Create Candidate Account

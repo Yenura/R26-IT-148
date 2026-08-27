@@ -6,7 +6,7 @@ import {
   Building2, MapPin, Sparkles, Eye, AlertCircle, Clock, Shield,
   UserCheck, Volume2, Activity
 } from 'lucide-react'
-import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, c3Explain } from '../api'
+import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, uJobsGet } from '../api'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import ScoreMeter from '../components/ScoreMeter'
@@ -52,12 +52,10 @@ export default function ApplicantPipeline() {
     setBusy(true)
     try {
       const [jobRes, appsRes] = await Promise.all([
-        c0JobsAll().catch(() => ({ data: [] })),
+        uJobsGet(jobId).catch(() => c0JobsAll().then((r) => ({ data: (Array.isArray(r.data) ? r.data : []).find((x) => x.id === jobId) }))).catch(() => ({ data: null })),
         uJobsApplicants(jobId).catch(() => ({ data: [] })),
       ])
-      const jobList = Array.isArray(jobRes.data) ? jobRes.data : []
-      const j = jobList.find((x) => x.id === jobId)
-      setJob(j)
+      setJob(jobRes.data || null)
       const apps = Array.isArray(appsRes.data) ? appsRes.data : []
       setApplicants(apps)
     } catch (err) {
@@ -164,8 +162,8 @@ export default function ApplicantPipeline() {
                 </tr>
               </thead>
               <tbody>
-                {rankings.map((r) => (
-                  <tr key={r.candidate_id} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
+                {rankings.map((r, i) => (
+                  <tr key={r.candidate_id || i} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
                     <td>
                       <div style={{
                         width: 28,

@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -46,18 +46,24 @@ class RoleAlternative(BaseModel):
 
 class CVTextRequest(BaseModel):
     """Analyze a CV supplied as raw text."""
-    text:             str  = Field(default="", min_length=10, description="Raw resume/CV text")
+    text:             str           = Field(default="", min_length=10, description="Raw resume/CV text")
     resume_text:      Optional[str] = Field(None, description="Alternative field name for raw resume text")
+    raw_text:         Optional[str] = Field(None, description="Alternative field name for raw resume text")
+    cv_text:          Optional[str] = Field(None, description="Alternative field name for raw resume text")
     candidate_id:     Optional[str] = Field(None, max_length=50)
     candidate_name:   Optional[str] = Field(None, max_length=100)
     job_description:  Optional[str] = Field(None, description="Job posting text for JD-matching")
+    target_role:      Optional[str] = Field(None, description="Target job role for requirements scoring")
+    job_role:         Optional[str] = Field(None, description="Alternative field name for target role")
 
     @model_validator(mode="before")
     @classmethod
     def resolve_text_field(cls, data: Any) -> Any:
         if isinstance(data, dict):
-            if not data.get("text") and data.get("resume_text"):
-                data["text"] = data["resume_text"]
+            if not data.get("text"):
+                data["text"] = data.get("raw_text") or data.get("resume_text") or data.get("cv_text") or ""
+            if not data.get("target_role") and data.get("job_role"):
+                data["target_role"] = data["job_role"]
         return data
 
     @field_validator("candidate_id")
@@ -183,6 +189,24 @@ class CVAnalysisResponse(BaseModel):
     S_exp:                float = Field(..., ge=0.0, le=100.0)
     S_edu:                float = Field(..., ge=0.0, le=100.0)
 
+    # Lowercase aliases for client compatibility
+    s_skill:              Optional[float] = Field(None, ge=0.0, le=100.0)
+    s_exp:                Optional[float] = Field(None, ge=0.0, le=100.0)
+    s_edu:                Optional[float] = Field(None, ge=0.0, le=100.0)
+
+    @model_validator(mode="before")
+    @classmethod
+    def populate_score_aliases(cls, data: Any) -> Any:
+        if isinstance(data, dict):
+            for k in ("skill", "exp", "edu"):
+                cap_k = f"S_{k}"
+                low_k = f"s_{k}"
+                if cap_k in data and low_k not in data:
+                    data[low_k] = data[cap_k]
+                elif low_k in data and cap_k not in data:
+                    data[cap_k] = data[low_k]
+        return data
+
     # Detailed Analysis Breakdowns
     skill_analysis:       SkillAnalysisModel
     experience_analysis:  ExperienceAnalysisModel
@@ -194,11 +218,9 @@ class CVAnalysisResponse(BaseModel):
     optional_legacy_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     cv_matching_score:    float = Field(..., ge=0.0, le=100.0)
     status:               str = "READY_FOR_COMPONENT_3"
-
     analysis_timestamp:   datetime
 
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
+    model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
 class ClassifyResponse(BaseModel):

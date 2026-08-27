@@ -7,6 +7,14 @@ from contextlib import asynccontextmanager
 # Ensure backend/ is on sys.path for absolute imports
 sys.path.insert(0, os.path.dirname(__file__))
 
+try:
+    import dns.resolver
+    _res = dns.resolver.Resolver()
+    _res.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+    dns.resolver.default_resolver = _res
+except Exception:
+    pass
+
 import motor.motor_asyncio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware

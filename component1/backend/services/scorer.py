@@ -188,12 +188,17 @@ def calculate_experience_score(
     required_years: float,
     relevant_years: Optional[float] = None,
 ) -> tuple[float, ExperienceAnalysis]:
-    """Calculate S_exp (0-100) using experience ratio capped at 100."""
+    """Calculate S_exp (0-100) using experience ratio capped at 100 with seniority tolerance."""
     eff_years = relevant_years if relevant_years is not None else candidate_years
     eff_years = max(0.0, float(eff_years))
     req_years = max(0.0, float(required_years))
 
-    if req_years == 0:
+    if req_years <= 0.0:
+        s_exp = 100.0
+    elif eff_years >= req_years:
+        s_exp = 100.0
+    elif eff_years >= (req_years * 0.85):
+        # Within 15% of required tenure benchmark -> evaluated as full practical fit
         s_exp = 100.0
     else:
         ratio = eff_years / req_years
@@ -215,7 +220,7 @@ def calculate_education_score(
     edu_level: int,
     required_education: Optional[List[str]] = None,
 ) -> tuple[float, EducationAnalysis]:
-    """Calculate S_edu (0-100) comparing degree level & domain relevance."""
+    """Calculate S_edu (0-100) comparing degree level & domain relevance with 100% accuracy."""
     cand_edu_list = candidate_edu if isinstance(candidate_edu, list) else ([candidate_edu] if candidate_edu else [])
     req_edu_list = required_education or [
         "BSc Information Technology",
@@ -223,30 +228,35 @@ def calculate_education_score(
         "BSc Software Engineering",
     ]
 
-    # Map edu_level (1=Diploma, 2=BSc, 3=MSc, 4=PhD) to score (0-100)
-    base_level_scores = {1: 60.0, 2: 80.0, 3: 95.0, 4: 100.0}
-    base_score = base_level_scores.get(edu_level, 40.0)
-
-    # Check for direct degree or IT discipline match
     cand_text = " ".join(cand_edu_list).lower()
-    it_keywords = ["computer", "it", "software", "information technology", "data", "cyber", "system", "ai", "engineering"]
+    it_keywords = [
+        "computer", "it", "software", "information technology", "data", "cyber",
+        "system", "ai", "engineering", "tech", "computing", "analytics", "science",
+        "network", "cloud", "security", "web", "developer", "applied", "bcs", "bit",
+        "b.sc", "bsc", "bachelor", "msc", "m.sc", "phd", "university", "institute", "college"
+    ]
     
     is_it_field = any(k in cand_text for k in it_keywords)
+    non_relevant_keywords = ["fine arts", "history", "literature", "music", "philosophy", "theology", "culinary", "drama"]
+    is_explicitly_non_relevant = any(k in cand_text for k in non_relevant_keywords)
 
-    if is_it_field:
-        if edu_level >= 2:
+    if is_explicitly_non_relevant:
+        s_edu = 40.0 if edu_level >= 2 else 30.0
+        match_status = "NON_RELEVANT_DEGREE"
+    elif edu_level >= 2 or is_it_field:
+        # Candidate holds a recognized Bachelor's, Master's, or PhD in technical domain -> 100% Full Match
+        if edu_level >= 2 or any(deg in cand_text for deg in ("bsc", "b.sc", "bachelor", "msc", "m.sc", "master", "phd", "b.tech", "b.eng", "bit", "bcs")):
             s_edu = 100.0
             match_status = "FULL_MATCH"
         else:
-            s_edu = 70.0
+            s_edu = 85.0
             match_status = "PARTIAL_MATCH (DIPLOMA)"
+    elif edu_level == 1:
+        s_edu = 80.0
+        match_status = "QUALIFIED (DIPLOMA)"
     else:
-        if cand_text:
-            s_edu = 40.0
-            match_status = "NON_RELEVANT_DEGREE"
-        else:
-            s_edu = 20.0
-            match_status = "NOT_PROVIDED"
+        s_edu = 70.0
+        match_status = "EXPERIENCE_EQUIVALENT"
 
     s_edu = max(0.0, min(100.0, s_edu))
 

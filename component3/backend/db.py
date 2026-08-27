@@ -8,6 +8,14 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+try:
+    import dns.resolver
+    _res = dns.resolver.Resolver()
+    _res.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+    dns.resolver.default_resolver = _res
+except Exception:
+    pass
+
 logger = logging.getLogger("component3")
 
 MONGODB_URI = os.getenv("MONGODB_URI")
