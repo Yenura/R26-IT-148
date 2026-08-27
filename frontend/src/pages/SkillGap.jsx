@@ -14,7 +14,7 @@ import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
-  useAuth('candidate')
+  useAuth()
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [activeTab, setActiveTab] = useState('applied')
