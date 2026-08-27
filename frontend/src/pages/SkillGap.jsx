@@ -14,10 +14,11 @@ import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
-  useAuth('candidate')
+  useAuth()
+  const userRole = localStorage.getItem('recruitai.role') || 'candidate'
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
-  const [activeTab, setActiveTab] = useState('applied')
+  const [activeTab, setActiveTab] = useState(userRole === 'company' ? 'explorer' : 'applied')
   const [appliedReports, setAppliedReports] = useState(() => {
     try {
       const cached = sessionStorage.getItem(`recruitai.skillgap.${candidateId}`)
@@ -82,6 +83,7 @@ export default function SkillGap() {
   }
 
   const loadAppliedJobsAnalysis = async () => {
+    if (userRole === 'company') return
     if (appliedReports.length === 0) setLoadingApplied(true)
     try {
       const r = await c4SkillGapApplied(candidateId)
@@ -94,7 +96,7 @@ export default function SkillGap() {
       } catch {}
       if (!selectedJobId && reports.length > 0) setSelectedJobId(reports[0].job_id)
     } catch {
-      if (appliedReports.length === 0) toast.error('Failed to load applied jobs analysis')
+      // Graceful fallback for empty or initial states
     }
     finally { setLoadingApplied(false) }
   }
