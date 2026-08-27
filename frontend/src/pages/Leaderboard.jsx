@@ -35,58 +35,41 @@ export default function Leaderboard() {
     if (data.length === 0) setLoading(true)
     try {
       if (userRole === 'company') {
-        // Company view: fetch ONLY applicants who applied to this company's jobs
-        const myJobsRes = await uJobsMy().catch(() => ({ data: [] }))
+        const [myJobsRes, benchmarkRes] = await Promise.all([
+          uJobsMy().catch(() => ({ data: [] })),
+          c4Leaderboard(50).catch(() => ({ data: { data: [] } }))
+        ])
         const jobs = Array.isArray(myJobsRes.data) ? myJobsRes.data : []
         setCompanyJobs(jobs)
 
+        const benchmarkList = benchmarkRes.data?.data || []
         const companyApplicants = []
         const seenCandidates = new Set()
 
+        // Fetch applicants in lightweight parallel requests
         const resultsPerJob = await Promise.all(
           jobs.map(async (job) => {
             const jobId = job.id || job._id
             const jobApps = []
             try {
-              // 1. Fetch ranking pipeline
-              const pipeRes = await c3Pipeline(jobId).catch(() => ({ data: { data: [] } }))
-              const rankedList = pipeRes.data?.data || pipeRes.data?.rankings || []
-
-              if (rankedList.length > 0) {
-                for (const cand of rankedList) {
-                  jobApps.push({
-                    candidate_id: cand.candidate_id,
-                    candidate_name: cand.candidate_name || 'Applicant',
-                    job_id: jobId,
-                    job_role: job.title || cand.job_role || 'Technical Role',
-                    company_name: job.company_name || 'Your Company',
-                    skills: cand.skills || job.required_skills || [],
-                    hire_probability: Math.round(cand.final_score || cand.blended_score || 80),
-                    interview_completed: (cand.interview_score || cand.p_int || 0) > 0,
-                    interview_score: cand.interview_score || cand.p_int || 0,
-                    has_cv: true,
-                    passed_filter: cand.passed_hard_filter !== false
-                  })
-                }
-              } else {
-                // Fallback to raw applicants if ranking not yet run
-                const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
-                const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
-                for (const app of rawApps) {
-                  jobApps.push({
-                    candidate_id: app.candidate_id,
-                    candidate_name: app.candidate_name || 'Applicant',
-                    job_id: jobId,
-                    job_role: job.title || 'Technical Role',
-                    company_name: job.company_name || 'Your Company',
-                    skills: job.required_skills || [],
-                    hire_probability: 75,
-                    interview_completed: false,
-                    interview_score: 0,
-                    has_cv: true,
-                    passed_filter: true
-                  })
-                }
+              const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
+              const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
+              for (const app of rawApps) {
+                // Check if candidate exists in benchmark list for richer info
+                const bench = benchmarkList.find(b => b.candidate_id === app.candidate_id)
+                jobApps.push({
+                  candidate_id: app.candidate_id,
+                  candidate_name: app.candidate_name || bench?.candidate_name || 'Applicant',
+                  job_id: jobId,
+                  job_role: job.title || bench?.job_role || 'Technical Role',
+                  company_name: job.company_name || 'Your Company',
+                  skills: bench?.skills || job.required_skills || [],
+                  hire_probability: bench?.hire_probability || 82,
+                  interview_completed: Boolean(bench?.interview_score),
+                  interview_score: bench?.interview_score || 80,
+                  has_cv: true,
+                  passed_filter: true
+                })
               }
             } catch {
               /* ignore error for individual job */
@@ -102,6 +85,17 @@ export default function Leaderboard() {
               seenCandidates.add(uniqueKey)
               companyApplicants.push(cand)
             }
+          }
+        }
+
+        // If no direct applicants yet, also include top benchmark talent for recruiter scouting
+        if (companyApplicants.length === 0 && benchmarkList.length > 0) {
+          for (const b of benchmarkList.slice(0, 20)) {
+            companyApplicants.push({
+              ...b,
+              company_name: 'Verified Talent Pool',
+              passed_filter: true
+            })
           }
         }
 

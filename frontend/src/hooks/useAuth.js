@@ -11,14 +11,13 @@ export function useAuth(requiredRole) {
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     const role = localStorage.getItem('recruitai.role')
-    const userId = localStorage.getItem('recruitai.user_id')
 
-    if (!token || !userId) {
-      navigate(requiredRole === 'company' ? '/login/company' : '/login/candidate')
+    if (!token) {
+      navigate(requiredRole === 'company' ? '/login/company' : '/login/candidate', { replace: true })
       return
     }
-    if (requiredRole && role !== requiredRole) {
-      navigate('/')
+    if (requiredRole && role && role !== requiredRole) {
+      navigate(role === 'company' ? '/company/dashboard' : '/candidate/dashboard', { replace: true })
     }
   }, [navigate, requiredRole])
 }

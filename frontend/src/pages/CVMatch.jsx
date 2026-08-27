@@ -448,6 +448,7 @@ export default function CVMatch() {
           {busy ? 'Running AI Multi-Factor Resume Analysis...' : 'Evaluate Candidate Fit & Launch AI Insights'}
         </button>
       </div>
+    </div>
 
       {/* Loading Animation during analysis */}
       {busy && (
@@ -648,52 +649,6 @@ export default function CVMatch() {
                   </div>
                 </div>
 
-                {/* 2. Education Relevance */}
-                <div className="card" style={{
-                  padding: 'var(--p-space-4)',
-                  background: 'var(--color-bg)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  margin: 0
-                }}>
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                      <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em' }}>
-                        Education Alignment
-                      </span>
-                      <span style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-primary)' }}>
-                        {eduScore.toFixed(0)}%
-                      </span>
-                    </div>
-
-                    <div style={{ width: '100%', height: 6, background: 'var(--color-border-subtle)', borderRadius: 3, overflow: 'hidden', marginBottom: 10 }}>
-                      <div style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #3b82f6, #8b5cf6)', borderRadius: 3 }} />
-                    </div>
-
-                    <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                      Academic Domain: <strong>{eduScore >= 70 ? 'Aligned Computer Science / IT Major' : 'Technical Track'}</strong>
-                    </div>
-                  </div>
-
-                    <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', fontSize: 'var(--p-text-xs)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                        <span style={{ color: 'var(--color-fg-muted)' }}>Degree / Credentials:</span>
-                        <strong style={{ color: 'var(--color-fg)', maxWidth: 150, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {currentResumeDoc?.education || 'BSc Computer Science'}
-                        </strong>
-                      </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: 'var(--color-fg-muted)' }}>Required Qualification:</span>
-                        <strong style={{ color: 'var(--color-fg)' }}>BSc IT / CS / SE</strong>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-
                 {/* 2. Experience Match Pillar */}
                 <div className="card" style={{
                   padding: 'var(--p-space-4)',
@@ -779,8 +734,8 @@ export default function CVMatch() {
                     </div>
                   </div>
                 </div>
-</div>
-            )}
+              </div>
+
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
