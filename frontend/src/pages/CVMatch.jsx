@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import {
   uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
-  c1Analyze, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath
+  c1Analyze, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
@@ -138,6 +138,7 @@ export default function CVMatch() {
   const [simulationResult, setSimulationResult] = useState(null)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
   const [selectedSkillEvidence, setSelectedSkillEvidence] = useState(null)
+  const [canonicalRoles, setCanonicalRoles] = useState([])
 
   useEffect(() => {
     loadData()
@@ -145,9 +146,10 @@ export default function CVMatch() {
 
   const loadData = async () => {
     try {
-      const [r1, r2] = await Promise.all([
+      const [r1, r2, r3] = await Promise.all([
         uResumeList().catch(() => ({ data: [] })),
         c0JobsAll().catch(() => ({ data: [] })),
+        c1Roles().catch(() => ({ data: { roles: [] } })),
       ])
       const resumeList = Array.isArray(r1.data) ? r1.data : []
       setResumes(resumeList)

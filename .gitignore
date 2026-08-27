@@ -12,6 +12,14 @@ component2/models/qg_dataset_raigs.json
 component2/models/qg_dataset_v2.json
 component2/models/qg_evaluation_results_t5.json
 component2/models/qg_evaluation_results_v2.json
+component2/models/t5_qg/
+component2/models/qg_dataset_merged.json
+component2/models/qg_dataset_v3.json
+component2/train_t5.log
+component2/train_t5_err.log
+component2/train_t5_bg.log
+component2/train_t5_err_bg.log
+component2/run_t5_training.py
 
 # Server logs
 server_logs/

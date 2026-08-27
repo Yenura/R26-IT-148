@@ -131,8 +131,16 @@ export const c0ResumeMatch     = (resumeId, params = {}) => {
   return C0.get(`/resume/match?${qs}`)
 }
 
+// ── Unified: Export ──────────────────────────────────────────
+export const c0ExportCSV  = (type = 'predictions') => C0.get(`/export/csv?type=${type}`, { responseType: 'blob' })
+export const c0ExportExcel= (type = 'predictions') => C0.get(`/export/excel?type=${type}`, { responseType: 'blob' })
+export const c0ExportPDF  = (type = 'predictions') => C0.get(`/export/pdf?type=${type}`, { responseType: 'blob' })
+
 // ── Component 1: CV Analysis ──────────────────────────────────
 export const c1Analyze         = (payload)       => C1.post('/cv/analyze', payload)
+export const c1Roles           = ()              => C1.get('/roles')
+export const c1Classify        = (payload)       => C1.post('/cv/classify', payload)
+export const c1AnalyzeFile     = (formData)      => C1.post('/cv/analyze-file', formData)
 
 // ── Component 2: AI Interview ─────────────────────────────────
 export const c2Start       = (payload)      => C2.post('/interview/start', payload)
@@ -144,6 +152,8 @@ export const c2RunCode     = (payload)      => C2.post('/interview/code/run', pa
 export const c3Roles       = ()             => C3.get('/rank/jobs')
 export const c3Rank        = (payload)      => C3.post('/rank/compute', payload)
 export const c3Pipeline    = (jobId)        => C3.get(`/rank/pipeline/${jobId}`)
+export const c3Explain     = (candidateId)  => C3.get(`/rank/explain/${candidateId}`)
+export const c3Results     = (jobId)        => C3.get(`/rank/results/${jobId}`)
 
 // ── Component 4: Skill Gap & Career Development ───────────────
 export const c4Leaderboard     = (limit = 10) => C4.get(`/analytics/leaderboard?limit=${limit}`)
@@ -152,6 +162,10 @@ export const c4SkillGapRoles   = ()           => C4.get('/skill-gap/roles')
 export const c4SkillGapAnalyze = (payload)    => C4.post('/skill-gap/analyze', payload)
 export const c4SkillGapApplied = (candidateId)=> C4.get(`/skill-gap/applied-jobs/${candidateId}`)
 export const c4SkillGapSimulate= (payload)    => C4.post('/skill-gap/simulate', payload)
+export const c4SkillGapGraph   = ()           => C4.get('/skill-gap/graph')
+export const c4SkillGapReport  = (candidateId)=> C4.get(`/skill-gap/report/${candidateId}`)
+export const c4SkillGapReports = (skip = 0, limit = 50) => C4.get(`/skill-gap/reports?skip=${skip}&limit=${limit}`)
+export const c4SkillGapDeleteReport = (candidateId) => C4.delete(`/skill-gap/report/${candidateId}`)
 export const c4CareerRec       = (payload)    => C4.post('/career/recommendation', payload)
 export const c4CareerRoles     = ()           => C4.get('/career/roles')
 export const c4CareerPath      = (payload)    => C4.post('/career/path', payload)

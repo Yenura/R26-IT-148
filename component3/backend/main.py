@@ -5,6 +5,8 @@ import sys
 import logging
 from contextlib import asynccontextmanager
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")

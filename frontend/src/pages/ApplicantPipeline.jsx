@@ -6,7 +6,7 @@ import {
   Building2, MapPin, Sparkles, Eye, AlertCircle, Clock, Shield,
   UserCheck, Volume2, Activity
 } from 'lucide-react'
-import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, uJobsGet } from '../api'
+import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, c3Explain, uJobsGet } from '../api'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import ScoreMeter from '../components/ScoreMeter'
@@ -36,6 +36,7 @@ export default function ApplicantPipeline() {
   const [detail, setDetail] = useState(null)
   const [detailModalOpen, setDetailModalOpen] = useState(false)
   const [detailBusy, setDetailBusy] = useState(false)
+  const [rankExplanation, setRankExplanation] = useState(null)
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -79,9 +80,17 @@ export default function ApplicantPipeline() {
 
   const openDetail = async (candidateId) => {
     setDetailBusy(true)
+    setRankExplanation(null)
     try {
-      const r = await uInterviewDetail(candidateId)
-      setDetail(r.data?.[0] || null)
+      const [detailRes, explainRes] = await Promise.all([
+        uInterviewDetail(candidateId).catch(() => ({ data: [] })),
+        c3Explain(candidateId).catch(() => ({ data: null })),
+      ])
+      setDetail(detailRes.data?.[0] || null)
+      const explanations = explainRes.data?.explanations
+      if (explanations?.length > 0) {
+        setRankExplanation(explanations[0])
+      }
       setDetailModalOpen(true)
     } catch (err) {
       toast.error('No detailed interview data found for this candidate')
@@ -324,6 +333,55 @@ export default function ApplicantPipeline() {
                 </div>
               </div>
             </div>
+
+            {/* Ranking Explanation */}
+            {rankExplanation && (
+              <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <Trophy size={16} style={{ color: 'var(--color-primary)' }} />
+                  <div>
+                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>Ranking Explanation</div>
+                    <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>
+                      Rank #{rankExplanation.rank} · CSS {(rankExplanation.css * 100).toFixed(1)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Top Drivers */}
+                {rankExplanation.top_drivers?.length > 0 && (
+                  <div style={{ marginBottom: 10 }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Top Ranking Drivers</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {rankExplanation.top_drivers.map((d, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 8px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '11px' }}>
+                          <span style={{ color: 'var(--color-fg)', fontWeight: 600 }}>{d.feature}</span>
+                          <span style={{ fontFamily: 'var(--p-font-mono)', color: 'var(--color-primary)', fontWeight: 700 }}>
+                            {(d.value * 100).toFixed(0)}% × {d.weight.toFixed(3)} = {(d.contribution * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* All Contributions */}
+                {rankExplanation.contributions?.length > 0 && (
+                  <div>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginBottom: 6 }}>Score Breakdown</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 4 }}>
+                      {rankExplanation.contributions.map((c, i) => (
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', padding: '3px 8px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', fontSize: '10px' }}>
+                          <span style={{ color: 'var(--color-fg-muted)' }}>{c.feature}</span>
+                          <span style={{ fontFamily: 'var(--p-font-mono)', fontWeight: 700, color: c.contribution > 0.1 ? 'var(--color-success)' : 'var(--color-fg-secondary)' }}>
+                            {(c.contribution * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Weak Topics */}
             {detail.weak_topics?.length > 0 && (

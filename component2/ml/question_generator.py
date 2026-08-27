@@ -18,35 +18,54 @@ logger = logging.getLogger(__name__)
 
 
 def _load_model_and_tokenizer(model_dir: str):
-    """Load the trained QG model and its tokenizer.
+    """Load the best available QG model and its tokenizer.
 
-    Tries the retrained v2 artifacts (model_v2.pt / tokenizer_v2.json /
-    config.json) first, then falls back to the v1 (model.pt / tokenizer.json).
-    Returns (model, tokenizer) or (None, None).
+    Priority: T5 fine-tuned (t5_qg/) > v2 custom > v1 custom.
+    Returns (model, tokenizer, "t5"|"custom") or (None, None, None).
     """
     ml_dir = os.path.join(os.path.dirname(model_dir), "..", "ml")
     ml_dir = os.path.abspath(ml_dir)
     if ml_dir not in sys.path:
         sys.path.insert(0, ml_dir)
 
-    model_v2_path = os.path.join(model_dir, "model_v2.pt")
-    tokenizer_v2_path = os.path.join(model_dir, "tokenizer_v2.json")
-    config_path = os.path.join(model_dir, "config.json")
+    models_dir = os.path.dirname(model_dir)
+
+    # ── Priority 1: T5 fine-tuned model ──────────────────────────────────
+    t5_path = os.path.join(models_dir, "t5_qg")
+    if os.path.isdir(t5_path) and os.path.isfile(os.path.join(t5_path, "model.safetensors")):
+        try:
+            from transformers import T5ForConditionalGeneration, AutoTokenizer
+            tokenizer = AutoTokenizer.from_pretrained(t5_path)
+            model = T5ForConditionalGeneration.from_pretrained(t5_path)
+            model.eval()
+            param_count = sum(p.numel() for p in model.parameters())
+            logger.info("T5 QG model loaded from %s (%s params)", t5_path, f"{param_count:,}")
+            return model, tokenizer, "t5"
+        except Exception as e:
+            logger.warning("Failed to load T5 QG model: %s", e)
+
+    # ── Priority 2: Custom v2 model ──────────────────────────────────────
+    v2_path = os.path.join(models_dir, "qg_model_v2")
+    model_v2_path = os.path.join(v2_path, "model_v2.pt")
+    tokenizer_v2_path = os.path.join(v2_path, "tokenizer_v2.json")
+    config_path = os.path.join(v2_path, "config.json")
     if os.path.isfile(model_v2_path) and os.path.isfile(tokenizer_v2_path) and os.path.isfile(config_path):
         try:
             from train_qg_model_v2 import load_trained_model
-            model, tokenizer = load_trained_model(model_dir, device="cpu")
+            model, tokenizer = load_trained_model(v2_path, device="cpu")
             logger.info("QG v2 model loaded from %s (%s params)",
-                        model_dir, sum(p.numel() for p in model.parameters()))
-            return model, tokenizer
+                        v2_path, sum(p.numel() for p in model.parameters()))
+            return model, tokenizer, "custom"
         except Exception as e:
             logger.warning("Failed to load QG v2 model: %s", e)
 
-    model_path = os.path.join(model_dir, "model.pt")
-    tokenizer_path = os.path.join(model_dir, "tokenizer.json")
+    # ── Priority 3: Custom v1 model ──────────────────────────────────────
+    v1_path = os.path.join(models_dir, "qg_model")
+    model_path = os.path.join(v1_path, "model.pt")
+    tokenizer_path = os.path.join(v1_path, "tokenizer.json")
     if not os.path.isfile(model_path) or not os.path.isfile(tokenizer_path):
-        logger.warning("QG model files not found in %s", model_dir)
-        return None, None
+        logger.warning("QG model files not found in %s", v1_path)
+        return None, None, None
 
     try:
         from train_qg_model import TinyQGModel, CharTokenizer
@@ -56,10 +75,10 @@ def _load_model_and_tokenizer(model_dir: str):
         model.load_state_dict(torch.load(model_path, map_location="cpu"))
         model.eval()
         logger.info("QG model loaded (%s params)", sum(p.numel() for p in model.parameters()))
-        return model, tokenizer
+        return model, tokenizer, "custom"
     except Exception as e:
         logger.warning("Failed to load QG model: %s", e)
-        return None, None
+        return None, None, None
 
 
 def _parse_q(text: str) -> str:
@@ -115,7 +134,7 @@ def _parse_c(text: str) -> str:
 
 
 class QuestionGenerator:
-    """Generates interview questions using trained TinyQGModel."""
+    """Generates interview questions using trained QG model (T5 or custom)."""
 
     def __init__(
         self,
@@ -130,11 +149,12 @@ class QuestionGenerator:
         self.temperature = temperature
         self._model = None
         self._tokenizer = None
+        self._model_type = None  # "t5" or "custom"
 
     def _load(self):
         if self._model is not None:
             return
-        self._model, self._tokenizer = _load_model_and_tokenizer(self.model_path)
+        self._model, self._tokenizer, self._model_type = _load_model_and_tokenizer(self.model_path)
 
     @property
     def is_available(self) -> bool:
@@ -145,6 +165,34 @@ class QuestionGenerator:
         self._load()
         if self._model is None:
             return ""
+
+        if self._model_type == "t5":
+            return self._generate_t5(input_text)
+        return self._generate_custom(input_text)
+
+    def _generate_t5(self, input_text: str) -> str:
+        """Generate using T5 model."""
+        inputs = self._tokenizer(
+            input_text,
+            return_tensors="pt",
+            max_length=64,
+            truncation=True,
+        )
+        with torch.no_grad():
+            output_ids = self._model.generate(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs["attention_mask"],
+                max_length=self.max_length,
+                num_beams=4,
+                early_stopping=True,
+                temperature=self.temperature,
+                do_sample=self.temperature > 0,
+                top_p=0.95,
+            )
+        return self._tokenizer.decode(output_ids[0], skip_special_tokens=True)
+
+    def _generate_custom(self, input_text: str) -> str:
+        """Generate using custom TinyQGModel."""
         src = self._tokenizer.encode(input_text, add_special=True)
         src_tensor = torch.tensor([src], dtype=torch.long)
         with torch.no_grad():

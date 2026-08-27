@@ -308,6 +308,24 @@ class InterviewService:
             return "sql"
         return "none"
 
+    def _extract_skills_from_description(self, description: str) -> List[str]:
+        """Extract technical skills mentioned in a job description text."""
+        if not description:
+            return []
+        known_skills = [
+            "Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "Go", "Rust", "Kotlin", "Swift",
+            "React", "Vue", "Angular", "Node.js", "Django", "FastAPI", "Flask", "Spring",
+            "SQL", "PostgreSQL", "MySQL", "MongoDB", "Redis", "Elasticsearch",
+            "Docker", "Kubernetes", "AWS", "Azure", "GCP", "Terraform", "CI/CD",
+            "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "NLP",
+            "Git", "REST APIs", "GraphQL", "Microservices", "Linux",
+            "Pandas", "NumPy", "Scikit-learn", "Spark", "Airflow", "Kafka",
+            "Figma", "Adobe XD", "Selenium", "Cypress", "pytest",
+        ]
+        desc_lower = description.lower()
+        found = [s for s in known_skills if s.lower() in desc_lower]
+        return found[:15]
+
     def _get_question_distribution(self, job_role: str, coding_profile: str, num_questions: int) -> Tuple[int, int, int]:
         """Return MCQ/Descriptive/Coding question counts for the role."""
         distribution = {
@@ -396,6 +414,10 @@ class InterviewService:
         employer_skills: Optional[List[str]] = None,
         job_level: str = "Mid-Level",
         exclude_ids: Optional[set] = None,
+        mcq_count: Optional[int] = None,
+        desc_count: Optional[int] = None,
+        coding_count: Optional[int] = None,
+        job_description: str = "",
     ) -> Dict:
         """
         Create interview session with questions
@@ -417,10 +439,31 @@ class InterviewService:
         # Merge employer-posted skills with role defaults (employer order preserved)
         required_skills = merge_skill_lists(self.job_requirements[job_role], employer_skills)
         coding_profile = self._determine_coding_profile(job_role, required_skills)
-        num_mcq, num_desc, num_code = self._get_question_distribution(
-            job_role, coding_profile, num_questions
-        )
+
+        # Use company-configured per-type counts if provided, otherwise auto-distribute
+        if mcq_count is not None or desc_count is not None or coding_count is not None:
+            num_mcq = mcq_count if mcq_count is not None else 0
+            num_desc = desc_count if desc_count is not None else 0
+            num_code = coding_count if coding_count is not None else 0
+            # Ensure total matches
+            total_specified = num_mcq + num_desc + num_code
+            if total_specified != num_questions:
+                # Adjust coding count to match total
+                num_code = max(0, num_questions - num_mcq - num_desc)
+            # Override coding profile based on actual coding count
+            if num_code == 0:
+                coding_profile = "none"
+        else:
+            num_mcq, num_desc, num_code = self._get_question_distribution(
+                job_role, coding_profile, num_questions
+            )
         difficulty = self._difficulty_for_level(job_level)
+
+        # Extract skills from job description if provided
+        if job_description:
+            desc_skills = self._extract_skills_from_description(job_description)
+            if desc_skills:
+                required_skills = merge_skill_lists(required_skills, desc_skills)
 
         qg_questions = generate_questions_qg(
             job_role=job_role,

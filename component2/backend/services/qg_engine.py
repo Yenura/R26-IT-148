@@ -66,10 +66,16 @@ def _get_qg_generator():
         "MODELS_DIR",
         str(Path(__file__).parent.parent.parent / "models"),
     )
-    # Prefer the retrained v2 model (canonical dataset); fall back to v1.
+    # Prefer T5 fine-tuned > retrained v2 > v1.
+    t5_path = os.path.join(models_dir, "t5_qg")
     v2_path = os.path.join(models_dir, "qg_model_v2")
     v1_path = os.path.join(models_dir, "qg_model")
-    model_path = v2_path if os.path.isdir(v2_path) else v1_path
+    if os.path.isdir(t5_path) and os.path.isfile(os.path.join(t5_path, "model.safetensors")):
+        model_path = t5_path
+    elif os.path.isdir(v2_path):
+        model_path = v2_path
+    else:
+        model_path = v1_path
 
     if not os.path.isdir(model_path):
         logger.warning("QG model directory not found: %s", model_path)
