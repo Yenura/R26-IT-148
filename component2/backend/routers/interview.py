@@ -199,6 +199,10 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             employer_skills=interview_request.required_skills or None,
             job_level=interview_request.job_level or "Mid-Level",
             exclude_ids=seen_ids,
+            mcq_count=interview_request.mcq_count,
+            desc_count=interview_request.desc_count,
+            coding_count=interview_request.coding_count,
+            job_description=interview_request.job_description or "",
         )
         
         # Store time limits from employer config
@@ -206,6 +210,9 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
         session["desc_time"] = interview_request.desc_time or 300
         session["coding_time"] = interview_request.coding_time or 600
         session["total_time"] = interview_request.total_time or 60
+        session["is_practice"] = interview_request.is_practice or False
+        session["job_id"] = interview_request.job_id or ""
+        session["job_description"] = interview_request.job_description or ""
         
         # Persist interview session to MongoDB
         await save_session(session)
@@ -404,8 +411,12 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
         )
 
         # Attach proctoring data if provided (job interviews only)
+        # Enforce: practice interviews NEVER store proctoring data
         proctoring = submission.get("proctoring")
-        if proctoring and isinstance(proctoring, dict):
+        is_practice = session.get("is_practice", False)
+        if is_practice:
+            proctoring = None
+        elif proctoring and isinstance(proctoring, dict):
             result["proctoring"] = proctoring
 
         await save_result(result)

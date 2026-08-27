@@ -49,6 +49,9 @@ const emptyForm = {
   education_required: 'Bachelor Degree',
   interview_required: true,
   interview_question_count: 10,
+  interview_mcq_count: 4,
+  interview_desc_count: 3,
+  interview_coding_count: 3,
   interview_mcq_time: 60,
   interview_desc_time: 300,
   interview_coding_time: 600,
@@ -127,6 +130,9 @@ export default function CompanyDashboard() {
 
     const expReq = parseInt(form.experience_required, 10)
     const iqCount = parseInt(form.interview_question_count, 10)
+    const mcqCount = parseInt(form.interview_mcq_count, 10)
+    const descCount = parseInt(form.interview_desc_count, 10)
+    const codingCount = parseInt(form.interview_coding_count, 10)
     const mcqTime = parseInt(form.interview_mcq_time, 10)
     const descTime = parseInt(form.interview_desc_time, 10)
     const codingTime = parseInt(form.interview_coding_time, 10)
@@ -148,6 +154,9 @@ export default function CompanyDashboard() {
       status: 'open',
       interview_required: Boolean(form.interview_required),
       interview_question_count: isNaN(iqCount) ? 10 : Math.max(3, Math.min(30, iqCount)),
+      interview_mcq_count: isNaN(mcqCount) ? 4 : Math.max(0, Math.min(30, mcqCount)),
+      interview_desc_count: isNaN(descCount) ? 3 : Math.max(0, Math.min(30, descCount)),
+      interview_coding_count: isNaN(codingCount) ? 3 : Math.max(0, Math.min(30, codingCount)),
       interview_mcq_time: isNaN(mcqTime) ? 60 : Math.max(10, Math.min(300, mcqTime)),
       interview_desc_time: isNaN(descTime) ? 300 : Math.max(30, Math.min(900, descTime)),
       interview_coding_time: isNaN(codingTime) ? 600 : Math.max(60, Math.min(1800, codingTime)),
@@ -182,6 +191,9 @@ export default function CompanyDashboard() {
       description: job.description || '',
       interview_required: Boolean(job.interview_required),
       interview_question_count: job.interview_question_count || 10,
+      interview_mcq_count: job.interview_mcq_count ?? 4,
+      interview_desc_count: job.interview_desc_count ?? 3,
+      interview_coding_count: job.interview_coding_count ?? 3,
       interview_mcq_time: job.interview_mcq_time || 60,
       interview_desc_time: job.interview_desc_time || 300,
       interview_coding_time: job.interview_coding_time || 600,
@@ -200,6 +212,9 @@ export default function CompanyDashboard() {
       : form.required_skills || []
     const expReq = parseInt(form.experience_required, 10)
     const iqCount = parseInt(form.interview_question_count, 10)
+    const mcqCount = parseInt(form.interview_mcq_count, 10)
+    const descCount = parseInt(form.interview_desc_count, 10)
+    const codingCount = parseInt(form.interview_coding_count, 10)
     const mcqTime = parseInt(form.interview_mcq_time, 10)
     const descTime = parseInt(form.interview_desc_time, 10)
     const codingTime = parseInt(form.interview_coding_time, 10)
@@ -216,6 +231,9 @@ export default function CompanyDashboard() {
       description: form.description?.trim() || '',
       interview_required: Boolean(form.interview_required),
       interview_question_count: isNaN(iqCount) ? 10 : Math.max(3, Math.min(30, iqCount)),
+      interview_mcq_count: isNaN(mcqCount) ? 4 : Math.max(0, Math.min(30, mcqCount)),
+      interview_desc_count: isNaN(descCount) ? 3 : Math.max(0, Math.min(30, descCount)),
+      interview_coding_count: isNaN(codingCount) ? 3 : Math.max(0, Math.min(30, codingCount)),
       interview_mcq_time: isNaN(mcqTime) ? 60 : Math.max(10, Math.min(300, mcqTime)),
       interview_desc_time: isNaN(descTime) ? 300 : Math.max(30, Math.min(900, descTime)),
       interview_coding_time: isNaN(codingTime) ? 600 : Math.max(60, Math.min(1800, codingTime)),
@@ -622,7 +640,7 @@ export default function CompanyDashboard() {
             {form.interview_required && (
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Questions:</label>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total Questions:</label>
                   <input
                     type="number"
                     min={3}
@@ -631,6 +649,41 @@ export default function CompanyDashboard() {
                     onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })}
                     style={{ width: 80, padding: '4px 8px' }}
                   />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  <div>
+                    <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>MCQ Count</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={30}
+                      value={form.interview_mcq_count}
+                      onChange={(e) => setForm({ ...form, interview_mcq_count: e.target.value })}
+                      style={{ width: '100%', padding: '4px 8px', marginTop: 2 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>Descriptive Count</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={30}
+                      value={form.interview_desc_count}
+                      onChange={(e) => setForm({ ...form, interview_desc_count: e.target.value })}
+                      style={{ width: '100%', padding: '4px 8px', marginTop: 2 }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>Coding Count</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={30}
+                      value={form.interview_coding_count}
+                      onChange={(e) => setForm({ ...form, interview_coding_count: e.target.value })}
+                      style={{ width: '100%', padding: '4px 8px', marginTop: 2 }}
+                    />
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>MCQ time (sec):</label>
@@ -763,8 +816,22 @@ export default function CompanyDashboard() {
             {form.interview_required && (
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Questions:</label>
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total Questions:</label>
                   <input type="number" min={3} max={30} value={form.interview_question_count} onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                  <div>
+                    <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>MCQ Count</label>
+                    <input type="number" min={0} max={30} value={form.interview_mcq_count} onChange={(e) => setForm({ ...form, interview_mcq_count: e.target.value })} style={{ width: '100%', padding: '4px 8px', marginTop: 2 }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>Descriptive Count</label>
+                    <input type="number" min={0} max={30} value={form.interview_desc_count} onChange={(e) => setForm({ ...form, interview_desc_count: e.target.value })} style={{ width: '100%', padding: '4px 8px', marginTop: 2 }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>Coding Count</label>
+                    <input type="number" min={0} max={30} value={form.interview_coding_count} onChange={(e) => setForm({ ...form, interview_coding_count: e.target.value })} style={{ width: '100%', padding: '4px 8px', marginTop: 2 }} />
+                  </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>MCQ time (sec):</label>

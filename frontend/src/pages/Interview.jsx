@@ -22,11 +22,16 @@ export default function Interview() {
   const jobRole = searchParams.get('role') || ''
   const jobSkills = searchParams.get('skills') || ''
   const jobCount = parseInt(searchParams.get('count'), 10) || 10
+  const jobMcqCount = parseInt(searchParams.get('mcqCount'), 10) || 4
+  const jobDescCount = parseInt(searchParams.get('descCount'), 10) || 3
+  const jobCodingCount = parseInt(searchParams.get('codingCount'), 10) || 3
   const jobLevel = searchParams.get('level') || 'Mid-Level'
   const jobMcqTime = parseInt(searchParams.get('mcqTime'), 10) || 60
   const jobDescTime = parseInt(searchParams.get('descTime'), 10) || 300
   const jobCodingTime = parseInt(searchParams.get('codingTime'), 10) || 600
   const jobTotalTime = parseInt(searchParams.get('totalTime'), 10) || 60
+  const jobDescription = searchParams.get('description') || ''
+  const jobId = searchParams.get('jobId') || ''
   const isPracticeMode = !jobRole
 
   const [step, setStep] = useState('setup')
@@ -143,10 +148,16 @@ export default function Interview() {
         job_level: selectedLevel,
         required_skills: skills,
         num_questions: numQuestions,
+        mcq_count: jobMcqCount,
+        desc_count: jobDescCount,
+        coding_count: jobCodingCount,
         mcq_time: jobMcqTime,
         desc_time: jobDescTime,
         coding_time: jobCodingTime,
         total_time: jobTotalTime,
+        job_description: jobDescription,
+        job_id: jobId,
+        is_practice: isPracticeMode,
       })
       setSession(r.data)
       setCurrentQ(0)
@@ -240,6 +251,98 @@ export default function Interview() {
   // SETUP STAGE
   // ─────────────────────────────────────────────────────────────
   if (step === 'setup') {
+    // JOB INTERVIEW: Locked settings from company — candidate confirms and starts
+    if (!isPracticeMode) {
+      return (
+        <div className="fade-in" style={{ maxWidth: 760, margin: '0 auto' }}>
+          <PageHeader
+            badge="Company-Assigned Assessment"
+            title={`Technical Assessment · ${jobRole}`}
+            description="This interview is configured by the employer. Settings below are locked and cannot be changed."
+            icon={Code}
+          />
+
+          <div className="card" style={{ padding: 'var(--p-space-6)' }}>
+            {/* Locked company settings summary */}
+            <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
+              <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 12, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Settings size={16} style={{ color: 'var(--color-primary)' }} /> Employer Interview Configuration
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Target Role</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginTop: 2 }}>{selectedRole}</div>
+                </div>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Job Level</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginTop: 2 }}>{selectedLevel}</div>
+                </div>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Questions</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginTop: 2 }}>{numQuestions}</div>
+                </div>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Total Duration</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginTop: 2 }}>{jobTotalTime} minutes</div>
+                </div>
+              </div>
+
+              {/* Per-type breakdown */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginTop: 12 }}>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>MCQ</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-primary)', marginTop: 2 }}>{jobMcqCount} questions</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{jobMcqTime}s each</div>
+                </div>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Descriptive</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-info)', marginTop: 2 }}>{jobDescCount} questions</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{jobDescTime}s each</div>
+                </div>
+                <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', textAlign: 'center' }}>
+                  <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Coding</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-purple)', marginTop: 2 }}>{jobCodingCount} questions</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{jobCodingTime}s each</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Skills required */}
+            {jobSkills && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 6 }}>Required Skills</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {jobSkills.split(',').filter(Boolean).map((s) => (
+                    <span key={s} className="chip" style={{ fontSize: '11px', padding: '2px 8px' }}>{s.trim()}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Proctoring notice */}
+            <div style={{ padding: 12, background: 'var(--color-purple-muted)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: 'var(--radius-sm)', marginBottom: 20 }}>
+              <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-purple)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Settings size={13} /> Live Proctoring Active
+              </div>
+              <p style={{ fontSize: '11px', color: 'var(--color-fg-secondary)', margin: '4px 0 0 0' }}>
+                This interview is monitored for integrity. Your webcam, browser activity, and typing patterns are tracked. Do not switch tabs or leave the screen.
+              </p>
+            </div>
+
+            <button
+              className="btn btn-primary"
+              onClick={startInterview}
+              disabled={busy || !selectedRole}
+              style={{ width: '100%', padding: '12px 20px', fontSize: 'var(--p-text-base)', fontWeight: 700 }}
+            >
+              <Play size={18} /> {busy ? 'Generating Assessment...' : 'Start Technical Interview'}
+            </button>
+          </div>
+        </div>
+      )
+    }
+
+    // PRACTICE INTERVIEW: Full editable setup
     return (
       <div className="fade-in" style={{ maxWidth: 760, margin: '0 auto' }}>
         <PageHeader

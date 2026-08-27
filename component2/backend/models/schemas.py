@@ -296,11 +296,17 @@ class InterviewRequest(BaseModel):
     job_role: str
     required_skills: List[str]
     num_questions: int = 10
+    mcq_count: Optional[int] = None
+    desc_count: Optional[int] = None
+    coding_count: Optional[int] = None
     job_level: Optional[str] = "Mid-Level"
     mcq_time: Optional[int] = 60
     desc_time: Optional[int] = 300
     coding_time: Optional[int] = 600
     total_time: Optional[int] = 60
+    job_description: Optional[str] = ""
+    job_id: Optional[str] = ""
+    is_practice: Optional[bool] = False
 
 
 # ====================================================================

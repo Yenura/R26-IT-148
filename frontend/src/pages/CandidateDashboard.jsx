@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Upload, Briefcase, MapPin, Clock, ChevronRight, Trash2, Edit3, X, Check,
-  Sparkles, FileText, Target, TrendingUp, CheckCircle2, ArrowRight, UserCheck, Eye
+  Sparkles, FileText, Target, TrendingUp, CheckCircle2, ArrowRight, UserCheck, Eye, MessagesSquare
 } from 'lucide-react'
 import {
   uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate,
@@ -143,6 +143,9 @@ export default function CandidateDashboard() {
           <>
             <Link to="/pipeline/cv-match" className="btn btn-primary btn-sm">
               <Sparkles size={15} /> Run AI CV Match
+            </Link>
+            <Link to="/candidate/interview" className="btn btn-ghost btn-sm">
+              <MessagesSquare size={15} /> Practice Interview
             </Link>
             <Link to="/candidate/jobs" className="btn btn-ghost btn-sm">
               <Briefcase size={15} /> Explore Jobs

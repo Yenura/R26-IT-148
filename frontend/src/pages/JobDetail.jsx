@@ -136,10 +136,15 @@ export default function JobDetail() {
       skills: (job?.required_skills || []).join(','),
       level: job?.job_level || 'Mid-Level',
       count: String(job?.interview_question_count || 10),
+      mcqCount: String(job?.interview_mcq_count ?? 4),
+      descCount: String(job?.interview_desc_count ?? 3),
+      codingCount: String(job?.interview_coding_count ?? 3),
       mcqTime: String(job?.interview_mcq_time || 60),
       descTime: String(job?.interview_desc_time || 300),
       codingTime: String(job?.interview_coding_time || 600),
       totalTime: String(job?.interview_total_time || 60),
+      description: job?.description || '',
+      jobId: id,
     })
     navigate(`/candidate/interview?${params.toString()}`)
   }
