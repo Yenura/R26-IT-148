@@ -2,10 +2,14 @@ import { Component } from 'react'
 import { AlertCircle, RefreshCw } from 'lucide-react'
 
 export default class ErrorBoundary extends Component {
-  state = { hasError: false }
+  state = { hasError: false, error: null }
 
-  static getDerivedStateFromError() {
-    return { hasError: true }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error('RecruitAI ErrorBoundary caught exception:', error, errorInfo)
   }
 
   render() {

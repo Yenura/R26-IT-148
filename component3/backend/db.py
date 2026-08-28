@@ -126,7 +126,7 @@ async def create_store():
     try:
         import motor.motor_asyncio
         client = motor.motor_asyncio.AsyncIOMotorClient(
-            MONGODB_URI, serverSelectionTimeoutMS=3000)
+            MONGODB_URI, serverSelectionTimeoutMS=15000, tz_aware=True)
         await client.admin.command("ping")
         logger.info("MongoDB connected: %s/%s", MONGODB_URI.split("@")[-1], DB_NAME)
         return MongoStore(client, DB_NAME)
