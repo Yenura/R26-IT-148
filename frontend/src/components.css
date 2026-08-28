@@ -135,7 +135,7 @@ code {
 }
 
 .nav-item:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-soft);
   color: var(--color-fg);
 }
 
@@ -275,7 +275,7 @@ code {
 }
 
 .navbar-link:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-soft);
   color: var(--color-fg);
 }
 
@@ -303,7 +303,7 @@ code {
 }
 
 .navbar-user:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-soft);
 }
 
 .navbar-avatar {
@@ -362,7 +362,7 @@ code {
 }
 
 .navbar-dropdown button:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-soft);
 }
 
 .navbar-hamburger {
@@ -379,7 +379,7 @@ code {
 }
 
 .navbar-hamburger:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-soft);
 }
 
 .navbar-mobile {
@@ -408,7 +408,7 @@ code {
 }
 
 .navbar-mobile-link:hover {
-  background: var(--color-surface);
+  background: var(--color-bg-soft);
   color: var(--color-fg);
 }
 
