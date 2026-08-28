@@ -20,6 +20,17 @@ class CompanyRegister(BaseModel):
             raise ValueError("Invalid email format")
         return v
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
 
 class CandidateRegister(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=200)
@@ -34,10 +45,29 @@ class CandidateRegister(BaseModel):
             raise ValueError("Invalid email format")
         return v
 
+    @field_validator("password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
+
 
 class LoginRequest(BaseModel):
     email: str = Field(..., max_length=200)
     password: str = Field(..., max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError("Invalid email format")
+        return v
 
 
 class Token(BaseModel):
@@ -67,8 +97,19 @@ class ProfileUpdate(BaseModel):
 
 
 class PasswordChange(BaseModel):
-    current_password: str
-    new_password: str = Field(..., min_length=6)
+    current_password: str = Field(..., max_length=200)
+    new_password: str = Field(..., min_length=6, max_length=200)
+
+    @field_validator("new_password")
+    @classmethod
+    def validate_password_strength(cls, v: str) -> str:
+        if not any(c.isupper() for c in v):
+            raise ValueError("Password must contain at least one uppercase letter")
+        if not any(c.islower() for c in v):
+            raise ValueError("Password must contain at least one lowercase letter")
+        if not any(c.isdigit() for c in v):
+            raise ValueError("Password must contain at least one digit")
+        return v
 
 
 # ── Jobs ────────────────────────────────────────────────────────
@@ -212,6 +253,86 @@ class JobUpdate(BaseModel):
     interview_desc_time: int | None = None
     interview_coding_time: int | None = None
     interview_total_time: int | None = None
+
+    @field_validator("interview_question_count", mode="before")
+    @classmethod
+    def parse_iq_count(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(3, min(30, int(v)))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("interview_mcq_count", mode="before")
+    @classmethod
+    def parse_mcq_count(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(0, min(30, int(v)))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("interview_desc_count", mode="before")
+    @classmethod
+    def parse_desc_count(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(0, min(30, int(v)))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("interview_coding_count", mode="before")
+    @classmethod
+    def parse_coding_count(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(0, min(30, int(v)))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("interview_mcq_time", mode="before")
+    @classmethod
+    def parse_mcq_time(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(10, min(300, int(v)))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("interview_desc_time", mode="before")
+    @classmethod
+    def parse_desc_time(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(30, min(900, int(v)))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("interview_coding_time", mode="before")
+    @classmethod
+    def parse_coding_time(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(60, min(1800, int(v)))
+        except (ValueError, TypeError):
+            return None
+
+    @field_validator("interview_total_time", mode="before")
+    @classmethod
+    def parse_total_time(cls, v):
+        if v is None or v == "":
+            return None
+        try:
+            return max(10, min(180, int(v)))
+        except (ValueError, TypeError):
+            return None
 
 
 class JobOut(BaseModel):

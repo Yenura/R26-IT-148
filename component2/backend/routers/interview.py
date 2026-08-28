@@ -8,6 +8,7 @@ from typing import List, Dict, Optional
 from starlette.concurrency import run_in_threadpool
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+from pydantic import BaseModel, Field, field_validator
 import logging
 import sys
 import json
@@ -28,6 +29,30 @@ from db import save_session, get_session, save_result, get_result, update_sessio
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
+
+
+class InterviewSubmitRequest(BaseModel):
+    session_id: str = Field(..., min_length=1, max_length=200)
+    answers: List[Dict] = Field(default_factory=list)
+
+    @field_validator("answers")
+    @classmethod
+    def validate_answers(cls, v: List[Dict]) -> List[Dict]:
+        if len(v) > 100:
+            raise ValueError("Too many answers (max 100)")
+        return v
+
+
+class CodeRunRequest(BaseModel):
+    code_text: str = Field(default="", max_length=50000)
+    test_cases: List[Dict] = Field(default_factory=list)
+
+    @field_validator("test_cases")
+    @classmethod
+    def validate_test_cases(cls, v: List[Dict]) -> List[Dict]:
+        if len(v) > 50:
+            raise ValueError("Too many test cases (max 50)")
+        return v
 
 
 def _is_py_literal(value) -> bool:
@@ -259,12 +284,12 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
 
 @router.post("/submit", response_model=InterviewScoreResult)
 @limiter.limit("5/minute")
-async def submit_answers(request: Request, submission: Dict, services: Dict = Depends(get_services)):
+async def submit_answers(request: Request, submission: InterviewSubmitRequest, services: Dict = Depends(get_services)):
     """
     Submit answers and get evaluation results
     
     Args:
-        submission: Dictionary with candidate_id, session_id, job_role, answers
+        submission: Pydantic model with session_id and answers list
         
     Returns:
         Interview score result with grades and weak areas
@@ -272,7 +297,7 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
     try:
         interview_service = services["interview_service"]
         
-        session_id = submission.get("session_id")
+        session_id = submission.session_id
         session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
@@ -284,7 +309,7 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
         }
         processed_answers = []
 
-        for answer in submission.get("answers", []):
+        for answer in submission.answers:
             question_id = answer.get("question_id")
             question = question_map.get(question_id)
             if not question:
@@ -479,14 +504,14 @@ async def submit_answers(request: Request, submission: Dict, services: Dict = De
 
 @router.post("/code/run")
 @limiter.limit("10/minute")
-async def run_candidate_code(request: Request, payload: Dict):
+async def run_candidate_code(request: Request, payload: CodeRunRequest):
     """
     Run candidate code against the question's test cases without scoring.
     Uses the exact same sandbox as submit, so what the candidate sees in
     testing is what the scorer checks. Returns outputs, never answers.
     """
-    code_text = payload.get("code_text") or ""
-    test_cases = payload.get("test_cases") or []
+    code_text = payload.code_text
+    test_cases = payload.test_cases
     syntax_valid = True
     try:
         compile(code_text, "<string>", "exec")
