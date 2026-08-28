@@ -155,6 +155,14 @@ export default function CompanyDashboard() {
       ? form.required_skills.split(',').map((s) => s.trim()).filter(Boolean)
       : form.required_skills || []
 
+    if (skillsArray.length === 0) {
+      return toast.error('At least one required skill is needed')
+    }
+
+    if (form.description && form.description.length > 10000) {
+      return toast.error('Description must be under 10,000 characters')
+    }
+
     const expReq = parseInt(form.experience_required, 10)
     const iqCount = parseInt(form.interview_question_count, 10)
     const mcqCount = parseInt(form.interview_mcq_count, 10)
@@ -653,7 +661,13 @@ export default function CompanyDashboard() {
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
               rows={3}
+              maxLength={10000}
             />
+            {form.description && form.description.length > 9000 && (
+              <p style={{ fontSize: 11, color: 'var(--color-fg-muted)', margin: '4px 0 0' }}>
+                {form.description.length}/10,000 characters
+              </p>
+            )}
           </div>
 
           {/* AI Interview Settings */}
