@@ -1915,5 +1915,20 @@ DASHBOARD LAYOUTS (responsive two-column)
   transform: translateY(-1px);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+   PERFORMANCE & 60FPS SMOOTH RENDERING
+   ═══════════════════════════════════════════════════════════════════ */
+.card, .stat-card, .table-container, .modal-dialog, .sidebar {
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+}
 
+.table-row, .applicant-row, .job-card-interactive {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 64px;
+}
 
+.fade-in {
+  animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

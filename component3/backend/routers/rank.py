@@ -235,12 +235,20 @@ async def list_roles():
 @router.get("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
 async def rank_pipeline(request: Request, job_id: str):
     """Fetch real applicants from MongoDB, build candidate inputs, and rank them."""
-    from models.schemas import CandidateInput
-    
     store = request.app.state.store
-    if not hasattr(store, '_db'):
-        raise HTTPException(status_code=503, detail="MongoDB not available")
-    db = store._db
+    db = getattr(store, '_db', None)
+    if not db:
+        try:
+            import motor.motor_asyncio
+            client = motor.motor_asyncio.AsyncIOMotorClient(
+                os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
+                serverSelectionTimeoutMS=15000
+            )
+            db = client[os.getenv("DB_NAME", "HR")]
+        except Exception:
+            pass
+    if not db:
+        raise HTTPException(status_code=503, detail="Database connection unavailable")
 
     # 1. Fetch job details
     from bson import ObjectId

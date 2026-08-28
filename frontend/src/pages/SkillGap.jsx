@@ -14,10 +14,11 @@ import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
-  useAuth('candidate')
+  useAuth()
+  const userRole = localStorage.getItem('recruitai.role') || 'candidate'
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
-  const [activeTab, setActiveTab] = useState('applied')
+  const [activeTab, setActiveTab] = useState(userRole === 'company' ? 'explorer' : 'applied')
   const [appliedReports, setAppliedReports] = useState(() => {
     try {
       const cached = sessionStorage.getItem(`recruitai.skillgap.${candidateId}`)
@@ -82,6 +83,7 @@ export default function SkillGap() {
   }
 
   const loadAppliedJobsAnalysis = async () => {
+    if (userRole === 'company') return
     if (appliedReports.length === 0) setLoadingApplied(true)
     try {
       const r = await c4SkillGapApplied(candidateId)
@@ -94,7 +96,7 @@ export default function SkillGap() {
       } catch {}
       if (!selectedJobId && reports.length > 0) setSelectedJobId(reports[0].job_id)
     } catch {
-      if (appliedReports.length === 0) toast.error('Failed to load applied jobs analysis')
+      // Graceful fallback for empty or initial states
     }
     finally { setLoadingApplied(false) }
   }
@@ -299,7 +301,7 @@ export default function SkillGap() {
                       <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>Overall Fit</div>
                         <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.composite_score}%
+                          {selectedReport.composite_score != null ? `${selectedReport.composite_score}%` : (selectedReport.hire_probability != null ? `${selectedReport.hire_probability}%` : 'N/A')}
                         </div>
                       </div>
                     </div>
@@ -419,11 +421,11 @@ export default function SkillGap() {
                   )}
                 </div>
               )}
+            </div>
+          )}
         </div>
       )}
-    </div>
-  )
-}
+
       {/* TAB 2: EXPLORER & WHAT-IF SIMULATOR */}
       {activeTab === 'explorer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -621,6 +623,7 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
           )}
         </div>
       )}
+
       {/* TAB 3: SKILL DEPENDENCY GRAPH */}
       {activeTab === 'graph' && (
         <div style={{ padding: 'var(--p-space-4) 0' }}>

@@ -18,6 +18,8 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
+from pathlib import Path
+import joblib
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -31,8 +33,6 @@ class JDMatcher:
     ----------
     sbert_model_name : The sentence-transformers model to use (PROPOSED path).
     tfidf_vectorizer : A pre-fitted TfidfVectorizer instance (FALLBACK path).
-                       If None and sentence-transformers is unavailable, a fresh
-                       vectorizer is fitted on-the-fly (less accurate).
     """
 
     SBERT_MODEL_NAME = "all-MiniLM-L6-v2"
@@ -53,7 +53,23 @@ class JDMatcher:
             self._mode = "tfidf"
             logger.info("JDMatcher: using TF-IDF cosine fallback")
         else:
-            logger.warning("JDMatcher: no model available, will try lazy SBERT load")
+            # Auto-load pre-fitted TF-IDF vectorizer from models directory if available
+            try:
+                candidate_paths = [
+                    Path(__file__).parent.parent.parent / "models" / "tfidf_vectorizer.pkl",
+                    Path("models/tfidf_vectorizer.pkl"),
+                    Path("component1/models/tfidf_vectorizer.pkl"),
+                ]
+                for p in candidate_paths:
+                    if p.exists():
+                        self._tfidf = joblib.load(p)
+                        self._mode = "tfidf"
+                        break
+            except Exception:
+                pass
+            if self._mode != "tfidf":
+                logger.info("JDMatcher: initialized with ad-hoc vectorizer mode")
+
 
     def compute(self, resume_text: str, jd_text: str) -> float:
         """Return cosine similarity in [0, 1] between resume and JD.
@@ -72,20 +88,26 @@ class JDMatcher:
         if self._mode == "tfidf" and self._tfidf is not None:
             return self._tfidf_similarity(resume_text, jd_text)
 
-        # Lazy SBERT attempt
+        # Lazy SBERT attempt (use local cache first to prevent network timeouts)
         try:
             from sentence_transformers import SentenceTransformer
             if self._sbert is None:
-                self._sbert = SentenceTransformer(self.SBERT_MODEL_NAME)
-                self._mode  = "sbert"
-            return self._sbert_similarity(resume_text, jd_text)
-        except ImportError:
-            pass
-        except Exception as exc:
-            logger.warning("Lazy SBERT failed: %s", exc)
+                try:
+                    self._sbert = SentenceTransformer(self.SBERT_MODEL_NAME, local_files_only=True)
+                    self._mode  = "sbert"
+                except Exception:
+                    self._sbert = None
+            if self._sbert is not None:
+                return self._sbert_similarity(resume_text, jd_text)
+        except (ImportError, Exception) as exc:
+            logger.debug("Lazy SBERT not available: %s", exc)
 
-        # On-the-fly TF-IDF
+        # Pre-fitted TF-IDF or On-the-fly TF-IDF fallback
+        if self._tfidf is not None:
+            return self._tfidf_similarity(resume_text, jd_text)
+
         return self._adhoc_tfidf_similarity(resume_text, jd_text)
+
 
     # ── Similarity implementations ─────────────────────────────────────────────
 
