@@ -105,8 +105,16 @@ export const C0 = _C0
 // ── Component backends ────────────────────────────────────────
 export const C1 = mk(import.meta.env.VITE_C1_URL || 'http://127.0.0.1:8001')
 export const C2 = mk(import.meta.env.VITE_C2_URL || 'http://127.0.0.1:8002')
-export const C3 = mk(import.meta.env.VITE_C3_URL || 'http://127.0.0.1:8003')
-export const C4 = mk(import.meta.env.VITE_C4_URL || 'http://127.0.0.1:8004')
+export const C3 = mk(
+  import.meta.env.VITE_C3_URL
+    ? (import.meta.env.VITE_C3_URL.endsWith('/api/v1') ? import.meta.env.VITE_C3_URL : `${import.meta.env.VITE_C3_URL}/api/v1`)
+    : 'http://127.0.0.1:8003/api/v1'
+)
+export const C4 = mk(
+  import.meta.env.VITE_C4_URL
+    ? (import.meta.env.VITE_C4_URL.endsWith('/api/v1') ? import.meta.env.VITE_C4_URL : `${import.meta.env.VITE_C4_URL}/api/v1`)
+    : 'http://127.0.0.1:8004/api/v1'
+)
 
 // ── Unified: Auth ─────────────────────────────────────────────
 export const authGetProfile         = ()        => C0.get('/auth/profile')

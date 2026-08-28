@@ -23,8 +23,11 @@ _CANDIDATE_ID_RE = re.compile(r'^[A-Za-z0-9\-_]+$')
 
 def _sanitise_candidate_id(v: str) -> str:
     v = v.strip()
-    cleaned = re.sub(r'[^A-Za-z0-9\-_]', '_', v)
-    return cleaned or "cand_01"
+    if not _CANDIDATE_ID_RE.match(v):
+        raise ValueError(
+            "candidate_id may only contain letters, digits, hyphens, and underscores"
+        )
+    return v
 
 
 def _sanitise_text(v: str) -> str:
@@ -111,6 +114,9 @@ class SkillAnalysisModel(BaseModel):
     percentage: float
     matched_skills: List[str]
     missing_skills: List[str]
+    matched_preferred_skills: Optional[List[str]] = None
+    related_skills: Optional[List[str]] = None
+    evidence_breakdown: Optional[Dict[str, Any]] = None
 
 
 class ExperienceAnalysisModel(BaseModel):
@@ -118,6 +124,11 @@ class ExperienceAnalysisModel(BaseModel):
     required_years: float
     relevant_years: float
     score: float
+    candidate_seniority: Optional[str] = "Mid"
+    target_seniority: Optional[str] = "Mid"
+    seniority_fit: Optional[str] = "MATCH"
+    seniority_evidence: Optional[List[str]] = None
+    employment_records: Optional[List[Dict[str, Any]]] = None
 
 
 class EducationAnalysisModel(BaseModel):
@@ -125,6 +136,10 @@ class EducationAnalysisModel(BaseModel):
     required_education: List[str]
     education_match: str
     score: float
+    degree_level: Optional[str] = "BSc"
+    field_relevance: Optional[str] = "HIGH"
+    verified_certifications: Optional[List[Dict[str, Any]]] = None
+
 
 
 class JobRequirementSpec(BaseModel):
@@ -215,10 +230,15 @@ class CVAnalysisResponse(BaseModel):
     jd_similarity_score:  Optional[float] = Field(None, ge=0.0, le=1.0)
     optional_legacy_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     cv_matching_score:    float = Field(..., ge=0.0, le=100.0)
+    role_relevant_experience_years: Optional[float] = None
+    detected_seniority:   Optional[str] = None
+    detected_certs:       Optional[List[str]] = None
+    verified_certifications: Optional[List[Dict[str, Any]]] = None
     status:               str = "READY_FOR_COMPONENT_3"
     analysis_timestamp:   datetime
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
 
 
 class ClassifyResponse(BaseModel):
