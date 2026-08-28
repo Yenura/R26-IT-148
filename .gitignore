@@ -570,5 +570,3 @@ screenshots/verify-skillgap-light.png
 screenshots/skillgap_dark.png
 screenshots/skillgap_fix_verify.png
 screenshots/skillgap_light.png
-*.py
-nfr_test_report.json
