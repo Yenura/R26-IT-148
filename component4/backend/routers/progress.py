@@ -4,23 +4,29 @@ from fastapi import APIRouter, Request, HTTPException
 from datetime import datetime, timezone
 from bson import ObjectId
 from typing import Any, Dict, Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import re
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
 class ProgressUpdateRequest(BaseModel):
-    candidate_id: str
-    skill: str
-    status: str
-    notes: Optional[str] = ""
+    candidate_id: str = Field(..., min_length=1, max_length=50)
+    skill: str = Field(..., min_length=1, max_length=100)
+    status: str = Field(..., pattern=r'^(not_started|in_progress|completed)$')
+    notes: Optional[str] = Field("", max_length=500)
     source_role: Optional[str] = None
     course_name: Optional[str] = None
     course_url: Optional[str] = None
     priority: Optional[str] = "High"
+
+    @field_validator("notes")
+    @classmethod
+    def sanitise_notes(cls, v: Optional[str]) -> str:
+        return re.sub(r'[$.]', '', v or "").strip()
 
 
 @router.post("/update", summary="Update skill learning progress")
