@@ -7,8 +7,9 @@ import {
 } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import { HeroIllustration, ResumeScanIllustration, InterviewIllustration, RankingIllustration } from '../components/Illustrations'
-import { CardTilt, FloatingParticles } from '../components/MicroInteractions'
+import { CardTilt } from '../components/MicroInteractions'
 import { AnimatedBackground } from '../components/AnimatedBackground'
+
 
 function CountUp({ end, suffix = '', duration = 1500 }) {
   const [count, setCount] = useState(0)
@@ -167,7 +168,6 @@ export default function Landing() {
         overflow: 'hidden'
       }}>
         <AnimatedBackground />
-        <FloatingParticles count={25} color="rgba(59,130,246,0.3)" />
 
         <div className="landing-hero" style={{
           position: 'relative',

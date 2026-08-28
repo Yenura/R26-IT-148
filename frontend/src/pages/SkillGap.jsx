@@ -424,9 +424,6 @@ export default function SkillGap() {
     </div>
   )
 }
-        </div>
-      )}
-
       {/* TAB 2: EXPLORER & WHAT-IF SIMULATOR */}
       {activeTab === 'explorer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -624,7 +621,6 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
           )}
         </div>
       )}
-
       {/* TAB 3: SKILL DEPENDENCY GRAPH */}
       {activeTab === 'graph' && (
         <div style={{ padding: 'var(--p-space-4) 0' }}>
@@ -744,3 +740,6 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
           )}
         </div>
       )}
+    </div>
+  )
+}
