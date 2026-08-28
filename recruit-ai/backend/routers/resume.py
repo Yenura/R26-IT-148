@@ -224,7 +224,7 @@ async def match_resume(
         except Exception:
             pass
 
-    if not resume_doc:
+    if not resume_doc and user:
         resume_doc = await db.resumes.find_one(
             {"candidate_id": str(user["_id"])},
             sort=[("created_at", -1)]
@@ -236,7 +236,7 @@ async def match_resume(
     if not resume_doc:
         resume_doc = {
             "_id": "demo_resume_01",
-            "candidate_id": str(user["_id"]),
+            "candidate_id": str(user.get("_id", "candidate_1")),
             "candidate_name": user.get("name", "Candidate Applicant"),
             "filename": "Candidate_Resume.pdf",
             "skills": ["Python", "React", "TypeScript", "Node.js", "SQL", "Docker", "FastAPI", "Git", "REST APIs"],

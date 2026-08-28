@@ -293,7 +293,7 @@ export default function CVMatch() {
       setJobs(jobList)
       const rawRoles = r3?.data?.roles || []
       const rolesList = Array.isArray(rawRoles)
-        ? rawRoles.map((item) => (typeof item === 'string' ? item : item?.role)).filter(Boolean)
+        ? rawRoles.map((item) => (typeof item === 'string' ? item : (item?.role || ''))).filter(Boolean)
         : []
       setCanonicalRoles(rolesList.length > 0 ? rolesList : CANONICAL_ROLES)
       if (resumeList.length > 0) {
@@ -437,8 +437,8 @@ export default function CVMatch() {
       const safeCandName = String(targetResumeDoc.candidate_name || 'Candidate').replace(/[$.]/g, '')
 
       const c1Payload = {
-        candidate_id: targetResumeDoc.candidate_id || resumeToUse,
-        candidate_name: targetResumeDoc.candidate_name || 'Candidate',
+        candidate_id: safeCandId,
+        candidate_name: safeCandName,
         text: cvTextToSend ? cvTextToSend.trim() : (targetResumeDoc.filename || 'Candidate Resume'),
         raw_text: cvTextToSend ? cvTextToSend.trim() : '',
         target_role: finalRole,
@@ -1457,8 +1457,9 @@ export default function CVMatch() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
                     {(c1Result.role_alternatives || c1Result.role_predictions || []).slice(0, 4).map((p) => {
-                      const roleName = typeof p === 'string' ? p : (p.role || '')
-                      const prob = p.probability ?? p.confidence ?? 0.8
+                      const roleName = typeof p === 'string' ? p : (p?.role || '')
+                      if (!roleName) return null
+                      const prob = p?.probability ?? p?.confidence ?? 0.8
                       return (
                         <div
                           key={roleName}
