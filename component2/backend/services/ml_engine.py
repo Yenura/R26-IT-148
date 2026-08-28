@@ -2,6 +2,7 @@
 Component 2: Interview System - Service Layer
 Handles business logic for interview generation, submission, and evaluation
 """
+from services.skill_aliases import skill_matchesAny
 
 import json
 import os
@@ -637,11 +638,10 @@ class InterviewService:
             category = q.get("category", "").lower()
             topic = q.get("topic", "").lower()
             question_text = q.get("question_text", "").lower()
+            targets = [category, topic, question_text]
 
             is_relevant = any(
-                skill.lower() in category
-                or skill.lower() in topic
-                or skill.lower() in question_text
+                skill_matchesAny(skill, targets)
                 for skill in relevant_skills
             )
             if is_relevant:
