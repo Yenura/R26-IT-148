@@ -146,9 +146,9 @@
   --p-z-toast: 1400;
 
   /* ── Glassmorphic Defaults ──────────────────────────────────────── */
-  --glass-bg: rgba(7, 9, 14, 0.90);
-  --glass-blur: blur(16px);
-  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(10, 10, 15, 0.95);
+  --glass-blur: blur(0px);
+  --glass-border: rgba(255, 255, 255, 0.06);
 
   /* ── Focus ring ────────────────────────────────────────────────── */
   --p-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.4);
@@ -266,11 +266,11 @@
 [data-theme="light"] {
   color-scheme: light;
 
-  --color-bg: var(--p-zinc-50);
-  --color-bg-soft: var(--p-zinc-100);
-  --color-bg-elevated: var(--p-white);
-  --color-surface: var(--p-white);
-  --color-surface-hover: var(--p-zinc-50);
+  --color-bg: #f8fafc;
+  --color-bg-soft: #f1f5f9;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8fafc;
 
   --color-fg: var(--p-zinc-900);
   --color-fg-secondary: var(--p-zinc-600);
@@ -333,9 +333,9 @@
 
   --input-bg: var(--p-white);
 
-  --glass-bg: rgba(255, 255, 255, 0.92);
-  --glass-blur: blur(16px);
-  --glass-border: rgba(226, 232, 240, 0.9);
+  --glass-bg: rgba(255, 255, 255, 0.98);
+  --glass-blur: blur(0px);
+  --glass-border: rgba(0, 0, 0, 0.06);
 
   /* ── Direct Linear/Vercel Variable Compatibility (Light Mode) ────── */
   --bg-primary: #f8fafc;
@@ -405,9 +405,9 @@
   --card-border: rgba(255, 255, 255, 0.08);
   --card-radius: var(--radius-xl);
   --card-padding: var(--p-space-5);
-  --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.40), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
-  --card-shadow-hover: 0 12px 36px -4px rgba(0, 0, 0, 0.55), 0 0 25px -2px rgba(99, 102, 241, 0.20), inset 0 1px 0 0 rgba(255, 255, 255, 0.12);
-  --card-border-hover: rgba(99, 102, 241, 0.35);
+  --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --card-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.3);
+  --card-border-hover: var(--color-border-strong);
   --card-border-active: var(--color-primary);
   --card-border-active-glow: var(--color-primary-muted);
 
@@ -471,7 +471,7 @@
   /* ── Progress bar ──────────────────────────────────────────────── */
   --progress-bg: var(--color-bg);
   --progress-border: var(--color-border);
-  --progress-fill: linear-gradient(90deg, var(--color-primary), var(--color-success));
+  --progress-fill: var(--color-primary);
   --progress-height: 8px;
   --progress-radius: var(--p-radius-full);
 

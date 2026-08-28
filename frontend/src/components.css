@@ -88,7 +88,7 @@ code {
   justify-content: center;
   width: 36px;
   height: 36px;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-success));
+  background: var(--color-primary);
   border-radius: var(--p-radius-md);
   flex-shrink: 0;
 }
@@ -101,10 +101,7 @@ code {
   font-weight: var(--p-weight-extrabold);
   font-size: var(--p-text-lg);
   letter-spacing: -0.3px;
-  background: linear-gradient(135deg, var(--color-fg), var(--color-primary));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--color-fg);
 }
 
 .sidebar-nav {
@@ -167,9 +164,9 @@ code {
 }
 
 .sidebar-foot-card {
-  background: linear-gradient(135deg, var(--color-primary-muted), var(--color-success-muted));
+  background: var(--color-primary-muted);
   border: 1px solid var(--color-primary-muted);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   padding: var(--p-space-3);
   font-size: var(--p-text-xs);
   color: var(--color-fg-muted);
@@ -218,13 +215,10 @@ code {
   position: sticky;
   top: 0;
   z-index: var(--p-z-sticky);
-  background: var(--glass-bg);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  border-bottom: 1px solid var(--glass-border);
-  height: 60px;
+  background: var(--color-bg);
+  border-bottom: 1px solid var(--color-border);
+  height: 56px;
   flex-shrink: 0;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
 }
 
 .navbar-inner {
@@ -324,7 +318,7 @@ code {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-success));
+  background: var(--color-primary);
   color: var(--p-white);
   font-weight: var(--p-weight-bold);
   font-size: var(--p-text-sm);
@@ -487,18 +481,16 @@ code {
    ═══════════════════════════════════════════════════════════════════ */
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  border-radius: var(--card-radius);
+  background: var(--color-bg-elevated);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
   padding: var(--card-padding);
   margin-bottom: var(--p-space-4);
-  box-shadow: var(--card-shadow);
-  transition: border-color 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: border-color 0.2s ease;
 }
 
 .card:hover {
-  border-color: var(--card-border-hover);
-  box-shadow: var(--card-shadow-hover);
+  border-color: var(--color-border-strong);
 }
 
 .card h3 {
@@ -516,12 +508,9 @@ code {
 
 .card-interactive:hover {
   border-color: var(--card-border-active);
-  box-shadow: 0 0 0 1px var(--card-border-active-glow), var(--card-shadow-hover), var(--shadow-glow);
-  transform: translateY(-2px);
 }
 
 .card-interactive:active {
-  transform: translateY(0);
   transition-duration: 0.1s;
 }
 
@@ -532,14 +521,12 @@ code {
 .stat {
   background: var(--color-bg-elevated);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   padding: var(--p-space-4);
-  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
 
 .stat:hover {
   border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-sm);
 }
 
 .stat .stat-label {
@@ -565,7 +552,7 @@ code {
 }
 
 .stat-highlight {
-  background: linear-gradient(135deg, var(--color-primary-muted), var(--color-success-muted));
+  background: var(--color-bg-elevated);
   border-color: var(--color-primary-muted);
 }
 
@@ -590,29 +577,22 @@ code {
   font-weight: var(--btn-font-weight);
   font-size: var(--btn-font-size);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: background 0.15s ease, opacity 0.15s ease;
   white-space: nowrap;
   position: relative;
-  overflow: hidden;
 }
 
 .btn:hover {
   background: var(--btn-bg-hover);
-  box-shadow: var(--btn-shadow-hover);
-  transform: translateY(-1px);
 }
 
 .btn:active {
-  transform: scale(0.98) translateY(0);
-  transition-duration: 0.1s;
-  background: var(--btn-bg-active);
+  opacity: 0.9;
 }
 
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 .btn:focus-visible {
@@ -630,14 +610,10 @@ code {
   background: var(--btn-ghost-bg-hover);
   color: var(--btn-ghost-fg-hover);
   border-color: var(--color-border-strong);
-  box-shadow: var(--shadow-xs);
-  transform: translateY(-1px);
 }
 
 .btn-ghost:active {
   background: var(--color-bg-elevated);
-  transform: scale(0.98) translateY(0);
-  transition-duration: 0.1s;
 }
 
 .btn-success {
@@ -881,12 +857,10 @@ select {
 
 .status-dot.up {
   background: var(--status-dot-up);
-  box-shadow: 0 0 10px var(--status-dot-up-glow);
 }
 
 .status-dot.down {
   background: var(--status-dot-down);
-  box-shadow: 0 0 10px var(--status-dot-down-glow);
   animation: pulse-danger 2s infinite;
 }
 
@@ -916,7 +890,7 @@ select {
   font-weight: var(--p-weight-bold);
   font-size: var(--p-text-base);
   flex-shrink: 0;
-  background: linear-gradient(135deg, var(--color-primary), var(--color-success));
+  background: var(--color-primary);
   color: var(--p-white);
 }
 
@@ -1146,7 +1120,6 @@ select {
   border-color: var(--color-primary);
   background: var(--color-primary);
   color: var(--p-white);
-  box-shadow: 0 0 16px var(--color-primary-muted);
 }
 
 .step.done .step-num {
@@ -1433,12 +1406,11 @@ DASHBOARD LAYOUTS (responsive two-column)
    ═══════════════════════════════════════════════════════════════════ */
 
 .hover-card {
-  transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  transition: border-color 0.2s ease;
 }
 
 .hover-card:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--shadow-lg);
+  border-color: var(--color-border-strong);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1489,23 +1461,7 @@ DASHBOARD LAYOUTS (responsive two-column)
   background-clip: text;
 }
 
-/* Glow effect — for premium hover states */
-.glow {
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
-}
-
-/* Subtle noise texture — adds depth to flat surfaces */
-.texture::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  opacity: 0.03;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  pointer-events: none;
-  border-radius: inherit;
-}
-
-/* Smooth focus ring — premium feel */
+/* Smooth focus ring */
 :focus-visible {
   outline: none;
   box-shadow: var(--color-focus-ring);
@@ -1555,28 +1511,6 @@ DASHBOARD LAYOUTS (responsive two-column)
   }
 }
 
-@keyframes pulse-glow {
-
-  0%,
-  100% {
-    box-shadow: 0 0 20px var(--color-primary-muted);
-  }
-
-  50% {
-    box-shadow: 0 0 40px var(--color-primary-muted), 0 0 60px var(--color-primary-muted);
-  }
-}
-
-@keyframes text-shimmer {
-  0% {
-    background-position: -200% center;
-  }
-
-  100% {
-    background-position: 200% center;
-  }
-}
-
 .hero-eyebrow {
   animation: hero-fade-up 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) 0.1s both;
 }
@@ -1605,19 +1539,6 @@ DASHBOARD LAYOUTS (responsive two-column)
   animation: hero-fade-up 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) both;
 }
 
-.btn-pulse:hover {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-
-.gradient-text-shimmer {
-  background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-success) 40%, var(--color-primary) 80%, var(--color-success) 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: text-shimmer 4s linear infinite;
-}
-
 @media (prefers-reduced-motion: reduce) {
 
   .hero-eyebrow,
@@ -1626,9 +1547,7 @@ DASHBOARD LAYOUTS (responsive two-column)
   .hero-cta,
   .hero-visual,
   .hero-illustration,
-  .stat-number,
-  .btn-pulse:hover,
-  .gradient-text-shimmer {
+  .stat-number {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
@@ -1796,13 +1715,11 @@ DASHBOARD LAYOUTS (responsive two-column)
 
 .cvm-tabs-nav {
   display: flex;
-  gap: 8px;
-  padding: 6px;
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  gap: 4px;
+  padding: 4px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   flex-wrap: wrap;
   margin-bottom: 24px;
 }
@@ -1814,11 +1731,11 @@ DASHBOARD LAYOUTS (responsive two-column)
   align-items: center;
   gap: 10px;
   padding: 10px 16px;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: background 0.15s ease, color 0.15s ease;
   border: 1px solid transparent;
   background: transparent;
   color: var(--color-fg-muted);
@@ -1827,23 +1744,18 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 .cvm-tab-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--color-surface-hover);
   color: var(--color-fg);
-  border-color: rgba(255, 255, 255, 0.12);
-  transform: translateY(-1px);
 }
 
 .cvm-tab-btn.active {
-  background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #1d4ed8 100%);
-  color: #ffffff !important;
+  background: var(--color-primary);
+  color: var(--color-primary-fg);
   font-weight: 700;
-  border-color: rgba(147, 197, 253, 0.45);
-  box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45), inset 0 1px 1px rgba(255, 255, 255, 0.35);
-  transform: translateY(-1px);
 }
 
 .cvm-tab-btn.active .cvm-tab-badge {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
 
