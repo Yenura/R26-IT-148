@@ -7,7 +7,7 @@ import {
 } from 'lucide-react'
 import {
   c4Progress, c4ProgressSync, c4ProgressPopulate, c4ProgressUpdate,
-  c4ProgressDelete, c4ProgressDeleteSkill
+  c4ProgressDelete, c4ProgressDeleteSkill, authGetProfile
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
@@ -19,10 +19,18 @@ import ConfirmDialog from '../components/ConfirmDialog'
 export default function Progress() {
   const navigate = useNavigate()
   useAuth('candidate')
-  const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
+  const [candidateId, setCandidateId] = useState(() => localStorage.getItem('recruitai.user_id') || 'web-user')
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState(() => {
+    try {
+      const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
+      const cached = sessionStorage.getItem(`recruitai.progress.${uId}`)
+      return cached ? JSON.parse(cached) : null
+    } catch {
+      return null
+    }
+  })
+  const [loading, setLoading] = useState(false)
   const [syncBusy, setSyncBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -34,17 +42,38 @@ export default function Progress() {
 
   useEffect(() => { loadData() }, [])
 
+  const resolveCandidateId = async () => {
+    let uId = localStorage.getItem('recruitai.user_id')
+    if (!uId || uId === 'web-user') {
+      try {
+        const pr = await authGetProfile()
+        if (pr?.data?._id) {
+          uId = String(pr.data._id)
+          localStorage.setItem('recruitai.user_id', uId)
+          setCandidateId(uId)
+        }
+      } catch {}
+    }
+    return uId || candidateId || 'web-user'
+  }
+
   const loadData = async () => {
     try {
-      let r = await c4Progress(candidateId)
+      const uId = await resolveCandidateId()
+      let r = await c4Progress(uId)
       if (!r?.data?.skills || r.data.skills.length === 0) {
         try {
-          r = await c4ProgressSync(candidateId)
+          r = await c4ProgressSync(uId)
         } catch {
           // ignore fallback
         }
       }
-      setData(r.data)
+      if (r?.data) {
+        setData(r.data)
+        try {
+          sessionStorage.setItem(`recruitai.progress.${uId}`, JSON.stringify(r.data))
+        } catch {}
+      }
     } catch {
       toast.error('Failed to load progress data')
     } finally {
@@ -55,11 +84,12 @@ export default function Progress() {
   const syncFromInterviews = async () => {
     setSyncBusy(true)
     try {
+      const uId = await resolveCandidateId()
       let r = null
       try {
-        r = await c4ProgressSync(candidateId)
+        r = await c4ProgressSync(uId)
       } catch {
-        r = await c4ProgressPopulate({ candidate_id: candidateId })
+        r = await c4ProgressPopulate({ candidate_id: uId })
       }
       const count = r?.data?.synced_count ?? r?.data?.populated ?? 0
       toast.success(`Synced ${count} target competencies into your learning path!`)
@@ -73,8 +103,9 @@ export default function Progress() {
 
   const updateStatus = async (skill, status) => {
     try {
+      const uId = await resolveCandidateId()
       await c4ProgressUpdate({
-        candidate_id: candidateId,
+        candidate_id: uId,
         skill,
         status,
         notes: ''
@@ -93,8 +124,9 @@ export default function Progress() {
     if (!sk) return
     setAddBusy(true)
     try {
+      const uId = await resolveCandidateId()
       await c4ProgressUpdate({
-        candidate_id: candidateId,
+        candidate_id: uId,
         skill: sk,
         status: 'in_progress',
         source_role: selectedRoleFilter !== 'all' ? selectedRoleFilter : 'Custom Goal',
@@ -118,7 +150,8 @@ export default function Progress() {
       danger: true,
       action: async () => {
         try {
-          await c4ProgressDeleteSkill(candidateId, skill)
+          const uId = await resolveCandidateId()
+          await c4ProgressDeleteSkill(uId, skill)
           toast.success(`Removed "${skill}"`)
           await loadData()
         } catch {
@@ -136,7 +169,8 @@ export default function Progress() {
       danger: true,
       action: async () => {
         try {
-          await c4ProgressDelete(candidateId)
+          const uId = await resolveCandidateId()
+          await c4ProgressDelete(uId)
           toast.success('Learning goals reset')
           await loadData()
         } catch {
@@ -249,21 +283,23 @@ export default function Progress() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <Sparkles size={16} style={{ color: 'var(--color-primary)' }} />
             <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Select Career Target:
+              Target Career Focus:
             </span>
           </div>
 
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            <button
-              onClick={() => setSelectedRoleFilter('all')}
-              className={`btn btn-sm ${selectedRoleFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-              style={{ fontSize: 'var(--p-text-xs)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}
-            >
-              All Careers ({skills.length})
-            </button>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            {uniqueRoles.length > 1 && (
+              <button
+                onClick={() => setSelectedRoleFilter('all')}
+                className={`btn btn-sm ${selectedRoleFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                style={{ fontSize: 'var(--p-text-xs)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}
+              >
+                All Careers ({skills.length})
+              </button>
+            )}
             {uniqueRoles.map((role) => {
               const count = skills.filter((s) => s.source_role === role).length
-              const isSelected = selectedRoleFilter.toLowerCase() === role.toLowerCase()
+              const isSelected = selectedRoleFilter.toLowerCase() === role.toLowerCase() || uniqueRoles.length === 1
               return (
                 <button
                   key={role}
@@ -272,11 +308,12 @@ export default function Progress() {
                   style={{
                     fontSize: 'var(--p-text-xs)',
                     borderRadius: 'var(--radius-full)',
-                    padding: '4px 12px',
-                    border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)'
+                    padding: '4px 14px',
+                    border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                    fontWeight: 700
                   }}
                 >
-                  {role} ({count})
+                  🎯 {role} ({count} {count === 1 ? 'goal' : 'goals'})
                 </button>
               )
             })}
