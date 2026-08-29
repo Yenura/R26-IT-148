@@ -35,10 +35,10 @@ except Exception:
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# Resolve Python executable (prefer workspace .venv if available)
-VENV_PYTHON = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
+# Resolve Python executable (prefer workspace .venv312 if available - has all deps)
+VENV_PYTHON = os.path.join(ROOT, ".venv312", "Scripts", "python.exe")
 if not os.path.exists(VENV_PYTHON):
-    VENV_PYTHON = os.path.join(ROOT, ".venv312", "Scripts", "python.exe")
+    VENV_PYTHON = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
 if not os.path.exists(VENV_PYTHON):
     VENV_PYTHON = sys.executable
 

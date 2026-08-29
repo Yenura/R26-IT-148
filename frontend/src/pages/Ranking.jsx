@@ -132,8 +132,8 @@ export default function Ranking() {
             {selectedJobObj && (
               <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>Required Skills:</span>
-                {(selectedJobObj.required_skills || []).map((s) => (
-                  <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                {[...new Set(selectedJobObj.required_skills || [])].map((s, i) => (
+                  <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                     {s}
                   </span>
                 ))}

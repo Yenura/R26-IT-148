@@ -366,8 +366,8 @@ export default function CandidateDashboard() {
                             <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginRight: 4 }}>
                               Extracted Skills:
                             </span>
-                            {r.skills.slice(0, 8).map((s) => (
-                              <span key={s} className="chip" style={{ fontSize: '11px', margin: 0, padding: '2px 8px' }}>
+                            {[...new Set(r.skills)].slice(0, 8).map((s, i) => (
+                               <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', margin: 0, padding: '2px 8px' }}>
                                 {s}
                               </span>
                             ))}
@@ -528,8 +528,8 @@ export default function CandidateDashboard() {
 
                       {job.required_skills?.length > 0 && (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
-                          {job.required_skills.slice(0, 3).map((s) => (
-                            <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                          {[...new Set(job.required_skills)].slice(0, 3).map((s, i) => (
+                            <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                               {s}
                             </span>
                           ))}

@@ -27,6 +27,8 @@ export default function JobDetail() {
   const [interviewDone, setInterviewDone] = useState(false)
   const [loading, setLoading] = useState(true)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
+  const [resumeSelectOpen, setResumeSelectOpen] = useState(false)
+  const [selectedResumeId, setSelectedResumeId] = useState('')
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -65,8 +67,7 @@ export default function JobDetail() {
       setApplied(apps.some((a) => a.job_id === id && a.status !== 'withdrawn'))
 
       const scores = Array.isArray(r3.data) ? r3.data : []
-      const targetRole = jobData?.job_role || jobData?.title || ''
-      setInterviewDone(scores.some((s) => s.job_role === targetRole || s.job_id === id))
+      setInterviewDone(scores.some((s) => s.job_id === id))
     } catch {
       // Non-critical: resume/app data failed to load, UI shows empty state
     }
@@ -81,15 +82,7 @@ export default function JobDetail() {
     }
   }
 
-  const handleApply = async () => {
-    if (resumes.length === 0) {
-      toast.error('Please upload a resume on the Dashboard before applying')
-      return
-    }
-    if (job?.interview_required && !interviewDone) {
-      toast.error('Please complete the AI Technical Interview before applying')
-      return
-    }
+  const doApply = async (resumeId) => {
     setConfirm({
       open: true,
       title: 'Apply to this job?',
@@ -101,7 +94,7 @@ export default function JobDetail() {
           await uJobsApply(id, {
             candidate_id: candidateId,
             candidate_name: candidateName,
-            resume_id: resumes[0].id,
+            resume_id: resumeId,
           })
           toast.success('Application submitted successfully!')
           setApplied(true)
@@ -110,6 +103,23 @@ export default function JobDetail() {
         }
       }
     })
+  }
+
+  const handleApply = async () => {
+    if (resumes.length === 0) {
+      toast.error('Please upload a resume on the Dashboard before applying')
+      return
+    }
+    if (job?.interview_required && !interviewDone) {
+      toast.error('Please complete the AI Technical Interview before applying')
+      return
+    }
+    if (resumes.length === 1) {
+      doApply(resumes[0].id)
+      return
+    }
+    setSelectedResumeId(resumes[0]?.id || '')
+    setResumeSelectOpen(true)
   }
 
   const handleWithdraw = async () => {
@@ -236,9 +246,9 @@ export default function JobDetail() {
                   Required Technical Competencies
                 </h3>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {job.required_skills.map((skill) => (
+                  {[...new Set(job.required_skills)].map((skill, i) => (
                     <span
-                      key={skill}
+                      key={`${skill}-${i}`}
                       className="chip"
                       style={{
                         fontSize: '12px',
@@ -374,6 +384,34 @@ export default function JobDetail() {
           </div>
         </div>
       </div>
+
+      {/* Resume Selection Modal */}
+      {resumeSelectOpen && (
+        <div
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--modal-overlay, rgba(0,0,0,0.5))', backdropFilter: 'blur(8px)', padding: 'var(--p-space-4)' }}
+          onClick={() => setResumeSelectOpen(false)}
+        >
+          <div
+            style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-xl)', padding: 'var(--p-space-5)', maxWidth: 420, width: '100%', boxShadow: 'var(--shadow-xl)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 style={{ margin: '0 0 12px', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>Select Resume to Submit</h3>
+            <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '0 0 16px' }}>Choose which resume to attach to this application.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {resumes.map((r) => (
+                <label key={r.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 'var(--radius-md)', border: `1.5px solid ${selectedResumeId === r.id ? 'var(--color-primary)' : 'var(--color-border)'}`, background: selectedResumeId === r.id ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', cursor: 'pointer' }}>
+                  <input type="radio" name="resume-select-detail" value={r.id} checked={selectedResumeId === r.id} onChange={() => setSelectedResumeId(r.id)} style={{ accentColor: 'var(--color-primary)' }} />
+                  <div><div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)' }}>{r.filename || 'Resume'}</div>{r.candidate_name && <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{r.candidate_name}</div>}</div>
+                </label>
+              ))}
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setResumeSelectOpen(false)}>Cancel</button>
+              <button className="btn btn-primary btn-sm" disabled={!selectedResumeId} onClick={() => { setResumeSelectOpen(false); doApply(selectedResumeId) }}>Continue</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Dialog */}
       <ConfirmDialog

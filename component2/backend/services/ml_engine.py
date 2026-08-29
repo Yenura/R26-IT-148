@@ -446,6 +446,14 @@ class InterviewService:
             num_mcq = mcq_count if mcq_count is not None else 0
             num_desc = desc_count if desc_count is not None else 0
             num_code = coding_count if coding_count is not None else 0
+            # Enforce scoring config: non-coding roles never get coding questions
+            try:
+                w = self.interview_configs.get("interview_weights", {}).get(job_role, {})
+                if w.get("coding", 1) == 0 and num_code > 0:
+                    num_desc += num_code
+                    num_code = 0
+            except:
+                pass
             # Ensure total matches
             total_specified = num_mcq + num_desc + num_code
             if total_specified != num_questions:
@@ -458,6 +466,15 @@ class InterviewService:
             num_mcq, num_desc, num_code = self._get_question_distribution(
                 job_role, coding_profile, num_questions
             )
+            # Also enforce for auto-distribute path
+            try:
+                w = self.interview_configs.get("interview_weights", {}).get(job_role, {})
+                if w.get("coding", 1) == 0 and num_code > 0:
+                    num_desc += num_code
+                    num_code = 0
+                    coding_profile = "none"
+            except:
+                pass
         difficulty = self._difficulty_for_level(job_level)
 
         # Extract skills from job description if provided

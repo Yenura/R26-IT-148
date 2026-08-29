@@ -181,10 +181,10 @@ export default function CareerPath() {
                     </div>
 
                     {t.matching_skills?.length > 0 && (
-                      <div style={{ marginBottom: 6 }}>
-                        <span style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>You have: </span>
-                        {t.matching_skills.map((s) => (
-                          <span key={s} className="chip" style={{
+                       <div style={{ marginBottom: 6 }}>
+                         <span style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>You have: </span>
+                         {[...new Set(t.matching_skills)].map((s, i) => (
+                           <span key={`${s}-${i}`} className="chip" style={{
                             fontSize: 10, padding: '2px 8px',
                             background: 'var(--color-success-muted)', color: 'var(--color-success)',
                             border: '1px solid rgba(16, 185, 129, 0.3)',
@@ -193,10 +193,10 @@ export default function CareerPath() {
                       </div>
                     )}
                     {t.missing_required?.length > 0 && (
-                      <div>
-                        <span style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>Need to learn: </span>
-                        {t.missing_required.map((s) => (
-                          <span key={s} className="chip" style={{
+                       <div>
+                         <span style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>Need to learn: </span>
+                         {[...new Set(t.missing_required)].map((s, i) => (
+                           <span key={`${s}-${i}`} className="chip" style={{
                             fontSize: 10, padding: '2px 8px',
                             background: 'var(--color-warning-muted)', color: 'var(--color-warning)',
                             border: '1px solid rgba(245, 158, 11, 0.3)',
@@ -216,8 +216,8 @@ export default function CareerPath() {
               <h3 style={{ margin: '0 0 8px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>Skills Gap for {result.current_role}</h3>
               <p style={{ fontSize: 13, color: 'var(--color-fg-muted)', margin: '0 0 12px 0' }}>Skills you still need for your current role</p>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {result.missing_for_current.map((s) => (
-                  <span key={s} className="chip" style={{
+                 {[...new Set(result.missing_for_current)].map((s, i) => (
+                   <span key={`${s}-${i}`} className="chip" style={{
                     fontSize: 11, padding: '3px 10px',
                     background: 'var(--color-warning-muted)', color: 'var(--color-warning)',
                     border: '1px solid rgba(245, 158, 11, 0.3)',
