@@ -1448,48 +1448,6 @@ export default function CVMatch() {
                   </div>
                 </div>
               )}
-
-              {/* Top AI-Predicted Roles Matrix */}
-              {((c1Result?.role_alternatives?.length > 0) || (c1Result?.role_predictions?.length > 0)) && (
-                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <Cpu size={16} style={{ color: 'var(--color-primary)' }} /> Top AI-Predicted Roles (Click to Benchmark)
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-                    {(c1Result.role_alternatives || c1Result.role_predictions || []).slice(0, 4).map((p) => {
-                      const roleName = typeof p === 'string' ? p : (p.role || '')
-                      const prob = p.probability ?? p.confidence ?? 0.8
-                      return (
-                        <div
-                          key={roleName}
-                          onClick={() => runUnifiedAnalysis(roleName)}
-                          style={{
-                            padding: '10px 14px',
-                            background: 'var(--color-bg-elevated)',
-                            border: '1px solid var(--color-border-subtle)',
-                            borderRadius: 'var(--radius-md)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                          title={`Click to re-score against ${roleName}`}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>
-                              {roleName}
-                            </span>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)' }}>
-                              {(prob * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                          <div style={{ width: '100%', height: 4, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(prob * 100, 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

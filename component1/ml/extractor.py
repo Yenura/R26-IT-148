@@ -733,10 +733,13 @@ def extract_skills_and_certifications(text: str) -> Dict[str, Any]:
 
                 skill_evidence[normalized] = {
                     "skill": normalized,
+                    "canonical_skill": normalized.title() if len(normalized) > 3 else normalized.upper(),
                     "evidence_strength": strength,
                     "evidence_level": strength.upper(),
+                    "evidence": matching_snippets,
                     "evidence_snippets": matching_snippets
                 }
+
 
         category_counts[category] = count
 

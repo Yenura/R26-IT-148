@@ -143,6 +143,8 @@ async def _full_analysis(
         detected_seniority=features.seniority,
         detected_certs=features.detected_certs,
         verified_certifications=features.verified_certifications,
+        projects=features.projects,
+        employment_records=features.employment_records,
         component_1_scores={
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
@@ -161,6 +163,7 @@ async def _full_analysis(
         status="READY_FOR_COMPONENT_3",
         analysis_timestamp=datetime.now(timezone.utc),
     )
+
 
 
 
@@ -346,7 +349,9 @@ async def screen_resume(
         "role_relevant_experience_years": features.role_relevant_experience_years,
         "detected_seniority": features.seniority,
         "employment_records": features.employment_records,
+        "projects": features.projects,
         "scores": {
+
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
             "S_edu": scores.S_edu,

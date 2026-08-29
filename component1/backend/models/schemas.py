@@ -231,13 +231,17 @@ class CVAnalysisResponse(BaseModel):
     optional_legacy_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     cv_matching_score:    float = Field(..., ge=0.0, le=100.0)
     role_relevant_experience_years: Optional[float] = None
+
     detected_seniority:   Optional[str] = None
     detected_certs:       Optional[List[str]] = None
     verified_certifications: Optional[List[Dict[str, Any]]] = None
+    projects:             Optional[List[Dict[str, Any]]] = None
+    employment_records:   Optional[List[Dict[str, Any]]] = None
     status:               str = "READY_FOR_COMPONENT_3"
     analysis_timestamp:   datetime
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
 
 
 

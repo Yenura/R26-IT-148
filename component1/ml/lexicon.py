@@ -19,116 +19,139 @@ SKILL_LEXICON: Dict[str, List[str]] = {
         "oop", "object oriented programming", "rest api", "restful api", "rest apis",
         "data structures", "algorithms", "design patterns", "clean code", "solid principles",
         "unit testing", "code review", "agile", "scrum", "software development",
-        "system design", "refactoring", "multithreading", "concurrency", "design systems"
+        "system design", "refactoring", "multithreading", "concurrency", "design systems",
+        "clean architecture", "domain driven design", "event sourcing", "cqrs", "protobuf",
+        "protocol buffers", "grpc", "openapi", "swagger"
     ],
     "Frontend": [
         "html", "html5", "css", "css3", "javascript", "typescript", "react", "react.js", "reactjs",
         "angular", "vue", "vue.js", "vuejs", "next.js", "nextjs", "nuxt.js", "svelte",
         "tailwind", "tailwind css", "tailwindcss", "bootstrap", "sass", "less", "styled-components",
         "redux", "zustand", "mobx", "webpack", "vite", "babel", "responsive design",
-        "web performance", "accessibility", "a11y", "dom", "cross-browser compatibility"
+        "web performance", "accessibility", "a11y", "dom", "cross-browser compatibility",
+        "remix", "astro", "solidjs", "qwik", "storybook", "turborepo", "pnpm", "tanstack query",
+        "framer motion", "webassembly", "wasm", "pwa"
     ],
     "Backend": [
         "node.js", "nodejs", "express", "express.js", "expressjs", "django", "flask", "fastapi",
         "spring boot", "spring framework", "ruby on rails", "asp.net", "asp.net core", ".net core",
         "php", "laravel", "nest.js", "nestjs", "microservices", "rest", "rest api", "rest apis",
         "graphql", "grpc", "jwt", "oauth", "oauth2", "session management", "websockets",
-        "middleware", "message queues", "celery", "event driven architecture", "rabbitmq", "kafka"
+        "middleware", "message queues", "celery", "event driven architecture", "rabbitmq", "kafka",
+        "fastify", "strapi", "fiber", "gin", "actix-web", "axum", "tokio", "quarkus", "micronaut",
+        "temporal", "hasura", "apollo server"
     ],
     "Data Science": [
         "python", "r", "pandas", "numpy", "scipy", "matplotlib", "seaborn", "scikit-learn",
         "statistics", "statistical modeling", "hypothesis testing", "probability",
         "jupyter", "jupyter notebook", "exploratory data analysis", "eda", "data cleaning",
-        "feature engineering", "data visualization", "tableau", "power bi", "excel"
+        "feature engineering", "data visualization", "tableau", "power bi", "excel",
+        "polars", "duckdb", "dask", "statsmodels", "umap", "tsne", "optuna", "feature store"
     ],
     "Machine Learning": [
         "tensorflow", "pytorch", "keras", "scikit-learn", "machine learning", "deep learning",
         "neural networks", "cnn", "rnn", "lstm", "computer vision", "opencv", "model deployment",
         "model training", "supervised learning", "unsupervised learning", "reinforcement learning",
-        "hyperparameter tuning", "mlops", "mlflow", "wandb", "onnx", "tensorrt"
+        "hyperparameter tuning", "mlops", "mlflow", "wandb", "onnx", "tensorrt",
+        "xgboost", "lightgbm", "catboost", "shap", "lime", "peft", "lora", "qlora", "jax"
     ],
     "DevOps": [
         "docker", "kubernetes", "k8s", "jenkins", "ci/cd", "continuous integration",
         "continuous deployment", "terraform", "ansible", "github actions", "gitlab ci",
         "bash", "shell scripting", "linux", "unix", "helm", "infrastructure as code",
-        "iac", "cloudformation", "vagrant", "packer", "argo cd", "gitops"
+        "iac", "cloudformation", "vagrant", "packer", "argo cd", "gitops",
+        "pulumi", "podman", "buildah", "harbor", "vault", "consul", "crossplane", "flux"
     ],
     "Cloud": [
         "aws", "amazon web services", "azure", "microsoft azure", "gcp", "google cloud platform",
         "ec2", "s3", "lambda", "cloudformation", "iam", "serverless", "cloud architecture",
         "virtual private cloud", "vpc", "cost optimization", "cloudwatch", "azure devops",
-        "eks", "ecs", "fargate", "cloud storage", "route 53"
+        "eks", "ecs", "fargate", "cloud storage", "route 53",
+        "finops", "aws cdk", "azure bicep", "anthos", "cloudflare workers"
     ],
     "Database": [
         "mysql", "postgresql", "postgres", "mongodb", "oracle", "sql server", "mssql", "redis",
         "sql", "nosql", "cassandra", "dynamodb", "indexing", "query optimization",
         "database design", "replication", "sharding", "backup and recovery", "transactions",
-        "acid", "stored procedures", "prisma", "hibernate", "sqlalchemy", "elasticsearch"
+        "acid", "stored procedures", "prisma", "hibernate", "sqlalchemy", "elasticsearch",
+        "cockroachdb", "timescaledb", "scylladb", "neo4j", "arangodb", "supabase", "firebase", "clickhouse"
     ],
     "Mobile": [
         "android", "kotlin", "java", "flutter", "dart", "react native", "swift", "ios",
         "swiftui", "objective-c", "xcode", "android studio", "mobile application development",
-        "app store", "play store", "core data", "jetpack compose", "mobile ui", "sqlite"
+        "app store", "play store", "core data", "jetpack compose", "mobile ui", "sqlite",
+        "swiftdata", "combine", "rxjava", "coroutines", "koin", "dagger hilt", "fastlane", "expo"
     ],
     "QA": [
         "selenium", "cypress", "playwright", "junit", "testng", "pytest", "postman",
         "api testing", "automation testing", "manual testing", "test automation",
         "test case design", "bug tracking", "jira", "bdd", "cucumber", "regression testing",
-        "load testing", "jmeter", "performance testing", "ci testing"
+        "load testing", "jmeter", "performance testing", "ci testing",
+        "vitest", "allure", "k6", "gatling", "pact", "testrail", "robot framework"
     ],
     "Data Engineering": [
         "apache spark", "spark", "pyspark", "kafka", "apache kafka", "airflow",
         "apache airflow", "etl", "elt", "data pipeline", "data warehousing", "snowflake",
         "bigquery", "redshift", "hadoop", "hdfs", "dbt", "data lake", "delta lake",
-        "databricks", "data ingestion", "batch processing", "stream processing"
+        "databricks", "data ingestion", "batch processing", "stream processing",
+        "apache flink", "apache beam", "kafka streams", "debezium", "apache iceberg", "apache hudi", "prefect", "dagster", "trino"
     ],
     "SRE": [
         "prometheus", "grafana", "kubernetes", "docker", "linux", "monitoring",
         "observability", "incident response", "incident management", "sli", "slo", "sla",
         "chaos engineering", "alerting", "log management", "elk stack", "splunk",
-        "datadog", "high availability", "disaster recovery", "load balancing"
+        "datadog", "high availability", "disaster recovery", "load balancing",
+        "opentelemetry", "jaeger", "loki", "thanos", "linkerd", "envoy", "traefik", "pagerduty"
     ],
     "Cybersecurity": [
         "siem", "soc", "splunk", "penetration testing", "pen testing", "vulnerability assessment",
         "vulnerability management", "firewalls", "ids", "ips", "kali linux", "network security",
         "owasp", "owasp top 10", "ethical hacking", "cryptography", "cissp", "ceh",
         "threat intelligence", "incident response", "wireshark", "burp suite", "metasploit",
-        "identity and access management", "zero trust"
+        "identity and access management", "zero trust",
+        "snort", "suricata", "wazuh", "crowdstrike", "sentinel", "soar", "mitre att&ck", "soc 2", "iso 27001", "threat modeling"
     ],
     "UI/UX": [
         "figma", "adobe xd", "sketch", "wireframe", "wireframing", "prototype",
         "prototyping", "user research", "usability testing", "interaction design",
         "user interface", "user experience", "design systems", "information architecture",
-        "user persona", "journey mapping", "visual design", "design thinking"
+        "user persona", "journey mapping", "visual design", "design thinking",
+        "miro", "balsamiq", "framer", "zeplin", "design tokens", "heuristic evaluation"
     ],
     "Networking": [
         "ccna", "ccnp", "cisco", "tcp/ip", "dns", "dhcp", "routing", "switching", "vpn",
         "firewall", "bgp", "ospf", "vlan", "network automation", "wireshark", "subnetting",
-        "sd-wan", "network security", "lan", "wan", "network troubleshooting"
+        "sd-wan", "network security", "lan", "wan", "network troubleshooting",
+        "mpls", "wireguard", "ipsec", "juniper", "palo alto", "fortinet"
     ],
     "Business/Systems Analyst": [
         "requirements gathering", "requirements analysis", "uml", "bpmn", "business analysis",
         "system analysis", "jira", "confluence", "sql", "use cases", "user stories",
         "process modeling", "gap analysis", "agile", "stakeholder management",
-        "business process modeling", "functional specifications", "acceptance criteria"
+        "business process modeling", "functional specifications", "acceptance criteria",
+        "swot analysis", "feasibility study", "cost benefit analysis", "user journey", "dfd"
     ],
     "AI/NLP": [
         "nlp", "natural language processing", "transformers", "bert", "sbert", "llm",
         "large language models", "hugging face", "text classification", "tokenization",
         "named entity recognition", "ner", "embeddings", "rag", "vector databases",
-        "langchain", "prompt engineering", "gpt", "fine-tuning", "gensim", "spacy"
+        "langchain", "prompt engineering", "gpt", "fine-tuning", "gensim", "spacy",
+        "llamaindex", "ollama", "vllm", "chromadb", "pinecone", "weaviate", "qdrant", "milvus", "faiss"
     ],
     "Blockchain": [
         "solidity", "ethereum", "web3", "web3.js", "smart contracts", "blockchain",
         "hyperledger", "cryptocurrency", "hardhat", "truffle", "dapps", "erc20",
-        "erc721", "defi", "nft", "consensus algorithms", "ethers.js"
+        "erc721", "defi", "nft", "consensus algorithms", "ethers.js",
+        "foundry", "wagmi", "viem", "alchemy", "infura", "polygon", "arbitrum", "solana"
     ],
     "Embedded": [
         "c", "c++", "arduino", "raspberry pi", "microcontrollers", "rtos", "free rtos",
         "embedded linux", "stm32", "iot", "firmware", "i2c", "spi", "uart",
-        "device drivers", "assembly", "pcb design", "embedded systems"
+        "device drivers", "assembly", "pcb design", "embedded systems",
+        "freertos", "zephyr", "esp-idf", "esp32", "embedded c", "embedded c++", "yocto", "can bus", "modbus", "ble", "mqtt"
     ]
 }
+
 
 # Bidirectional alias mapping: Raw CV variant -> Canonical Skill Name
 SKILL_ALIASES: Dict[str, str] = {
