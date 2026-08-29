@@ -1503,7 +1503,6 @@ export default function CVMatch() {
                   </div>
                 </div>
               )}
-
               {/* Top AI-Predicted Roles Matrix */}
               {((c1Result?.role_alternatives?.length > 0) || (c1Result?.role_predictions?.length > 0)) && (
                 <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
