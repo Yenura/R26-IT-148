@@ -9,9 +9,12 @@ export const clearApiCache = () => {
   responseCache.clear()
 }
 
-const mk = (url) => {
+const mk = (rawUrl) => {
+  let url = (rawUrl || '').trim().replace(/\/+$/, '')
+  url = url.replace(/\/api\/v1\/?$/i, '')
+  const fullBase = `${url}/api/v1`
   const instance = axios.create({
-    baseURL: `${url}/api/v1`,
+    baseURL: fullBase,
     timeout: 120_000,
   })
   // Attach JWT token from localStorage if present

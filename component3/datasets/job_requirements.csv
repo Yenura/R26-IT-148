@@ -1,7 +1,7 @@
 job_id,job_role,job_title,required_skills,min_edu,min_edu_name,min_exp_years,required_exp_years,min_skill_threshold,min_code_threshold,w_edu,w_exp,w_skill,w_mcq,w_desc,w_code,W_CV,W_INT
 JOB001,Software_Engineer,Software Engineer,"Python, Java, C++, Data Structures, Algorithms, REST APIs, Git, OOP, SQL",2,BSc,1.5,3.0,0.4,0.3,0.2,0.3,0.5,0.2,0.3,0.5,0.4,0.6
-JOB002,Data_Scientist,Data Scientist,"Python, R, Statistics, Machine Learning, Pandas, NumPy, Matplotlib, SQL, Jupyter",3,MSc,1.0,2.5,0.38,0.2,0.3,0.3,0.4,0.3,0.5,0.2,0.4,0.6
-JOB003,Machine_Learning_Engineer,Machine Learning Engineer,"Python, TensorFlow, PyTorch, Scikit-learn, Deep Learning, MLOps, Docker, SQL",3,MSc,1.5,3.0,0.42,0.3,0.25,0.3,0.45,0.25,0.35,0.4,0.4,0.6
+JOB002,Data_Scientist,Data Scientist,"Python, R, Statistics, Machine Learning, Pandas, NumPy, Matplotlib, SQL, Jupyter",2,BSc,1.0,2.5,0.38,0.2,0.3,0.3,0.4,0.3,0.5,0.2,0.4,0.6
+JOB003,Machine_Learning_Engineer,Machine Learning Engineer,"Python, TensorFlow, PyTorch, Scikit-learn, Deep Learning, MLOps, Docker, SQL",2,BSc,1.5,3.0,0.4,0.25,0.25,0.3,0.45,0.25,0.35,0.4,0.4,0.6
 JOB004,DevOps_Engineer,DevOps Engineer,"Linux, Docker, Kubernetes, CI/CD, Jenkins, Terraform, AWS/Azure, Bash, Ansible",2,BSc,2.0,4.0,0.4,0.28,0.15,0.4,0.45,0.25,0.3,0.45,0.4,0.6
 JOB005,Cybersecurity_Analyst,Cybersecurity Analyst,"Network Security, SIEM, Penetration Testing, Firewalls, IDS/IPS, Python, OWASP",2,BSc,1.5,3.0,0.38,0.15,0.2,0.35,0.45,0.35,0.45,0.2,0.4,0.6
 JOB006,Cloud_Solutions_Architect,Cloud Solutions Architect,"AWS/Azure/GCP, Terraform, Kubernetes, Microservices, Networking, Security, Cost Optimization",2,BSc,3.0,5.0,0.42,0.15,0.2,0.4,0.4,0.3,0.5,0.2,0.4,0.6
@@ -12,10 +12,10 @@ JOB010,Mobile_App_Developer,Mobile App Developer,"iOS/Android, Flutter, React Na
 JOB011,Full_Stack_Developer,Full Stack Developer,"React, Node.js, Python, SQL, REST APIs, Docker, Git, HTML/CSS, TypeScript",2,BSc,1.5,3.0,0.4,0.3,0.15,0.3,0.55,0.2,0.3,0.5,0.4,0.6
 JOB012,QA_Test_Automation_Engineer,QA/Test Automation Engineer,"Selenium, Pytest, Jest, CI/CD, API Testing, Test Strategy, Python, Postman",2,BSc,1.0,2.0,0.38,0.25,0.15,0.35,0.5,0.25,0.35,0.4,0.4,0.6
 JOB013,Data_Engineer,Data Engineer,"Python, SQL, Spark, Kafka, Airflow, ETL, AWS/GCP, Data Modeling, Hadoop",2,BSc,1.5,3.0,0.4,0.28,0.2,0.35,0.45,0.25,0.35,0.4,0.4,0.6
-JOB014,Site_Reliability_Engineer,Site Reliability Engineer (SRE),"Linux, Kubernetes, Prometheus, Grafana, Terraform, Python, Go, CI/CD, incident Response",2,BSc,2.0,4.0,0.42,0.3,0.15,0.4,0.45,0.25,0.3,0.45,0.4,0.6
+JOB014,Site_Reliability_Engineer,Site Reliability Engineer,"Linux, Kubernetes, Prometheus, Grafana, Terraform, Python, Go, CI/CD, incident Response",2,BSc,2.0,4.0,0.42,0.3,0.15,0.4,0.45,0.25,0.3,0.45,0.4,0.6
 JOB015,UI_UX_Designer,UI/UX Designer,"Figma, Sketch, Adobe XD, CSS, HTML, Prototyping, User Research, Wireframing, Accessibility",2,BSc,1.0,2.0,0.35,0.1,0.2,0.25,0.55,0.3,0.5,0.2,0.4,0.6
 JOB016,Network_Engineer,Network Engineer,"TCP/IP, Cisco, Routing, Switching, Firewalls, VPN, DNS, Linux, Python",2,BSc,1.5,3.0,0.38,0.2,0.2,0.35,0.45,0.3,0.4,0.3,0.4,0.6
 JOB017,Business_Systems_Analyst,Business/Systems Analyst,"SQL, Requirements Gathering, UML, BPMN, Stakeholder Management, Agile, JIRA, Data Analysis",2,BSc,1.5,3.0,0.35,0.1,0.25,0.35,0.4,0.35,0.5,0.15,0.4,0.6
-JOB018,AI_NLP_Engineer,AI/NLP Engineer,"Python, TensorFlow, PyTorch, NLP, Transformers, Hugging Face, spaCy, Deep Learning",3,MSc,1.5,3.0,0.42,0.3,0.25,0.3,0.45,0.25,0.35,0.4,0.4,0.6
+JOB018,AI_NLP_Engineer,AI/NLP Engineer,"Python, TensorFlow, PyTorch, NLP, Transformers, Hugging Face, spaCy, Deep Learning",2,BSc,1.5,3.0,0.4,0.25,0.25,0.3,0.45,0.25,0.35,0.4,0.4,0.6
 JOB019,Blockchain_Developer,Blockchain Developer,"Solidity, Ethereum, Web3.js, Smart Contracts, Rust, C++, Cryptography, DApps",2,BSc,1.0,2.5,0.38,0.3,0.15,0.3,0.55,0.2,0.3,0.5,0.4,0.6
 JOB020,Embedded_Systems_Engineer,Embedded Systems Engineer,"C, C++, Rust, RTOS, Microcontrollers, ARM, Linux Kernel, Communication Protocols",2,BSc,1.5,3.0,0.4,0.3,0.2,0.35,0.45,0.25,0.3,0.45,0.4,0.6

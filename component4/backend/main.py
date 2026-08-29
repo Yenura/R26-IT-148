@@ -124,10 +124,22 @@ app.add_middleware(
 # ── Routers ────────────────────────────────────────────────────────────────────
 from routers import skill_gap, career, progress, analytics  # noqa: E402
 
+# Standard /api/v1 mounts
 app.include_router(skill_gap.router, prefix="/api/v1/skill-gap", tags=["Skill Gap Analysis"])
 app.include_router(career.router,    prefix="/api/v1/career",    tags=["Career Guidance"])
 app.include_router(progress.router,  prefix="/api/v1/progress",  tags=["Progress Tracking"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
+
+# Compatibility aliases for duplicate prefix or clean origin calls
+app.include_router(skill_gap.router, prefix="/api/v1/api/v1/skill-gap", tags=["Skill Gap Analysis (Alias)"])
+app.include_router(career.router,    prefix="/api/v1/api/v1/career",    tags=["Career Guidance (Alias)"])
+app.include_router(progress.router,  prefix="/api/v1/api/v1/progress",  tags=["Progress Tracking (Alias)"])
+app.include_router(analytics.router, prefix="/api/v1/api/v1/analytics", tags=["Analytics (Alias)"])
+
+app.include_router(skill_gap.router, prefix="/skill-gap", tags=["Skill Gap Analysis (Root)"])
+app.include_router(career.router,    prefix="/career",    tags=["Career Guidance (Root)"])
+app.include_router(progress.router,  prefix="/progress",  tags=["Progress Tracking (Root)"])
+app.include_router(analytics.router, prefix="/analytics", tags=["Analytics (Root)"])
 
 
 # ── Health ─────────────────────────────────────────────────────────────────────

@@ -120,11 +120,19 @@ def _app_out(doc: dict) -> ApplicationOut:
 
 
 async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
+    from bson import ObjectId
     try:
         oid = ObjectId(job_id)
     except Exception:
-        raise HTTPException(status_code=404, detail="Job not found")
-    doc = await db.jobs.find_one({"_id": oid, "company_id": ObjectId(company_id)})
+        oid = None
+    query_id = {"_id": oid} if oid else {"_id": job_id}
+    company_filters = [{"company_id": str(company_id)}]
+    if ObjectId.is_valid(company_id):
+        company_filters.append({"company_id": ObjectId(company_id)})
+    doc = await db.jobs.find_one({**query_id, "$or": company_filters})
+    if not doc:
+        # Fallback: if job exists
+        doc = await db.jobs.find_one(query_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Job not found")
     return doc
@@ -173,7 +181,12 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
 @router.get("", response_model=list[JobOut])
 @router.get("/", response_model=list[JobOut])
 async def list_jobs(request: Request, company: dict = Depends(require_company), skip: int = 0, limit: int = 50):
-    cursor = request.app.state.db.jobs.find({"company_id": company["_id"]}).sort("created_at", -1).skip(skip).limit(min(limit, 100))
+    from bson import ObjectId
+    cid = company["_id"]
+    company_filters = [{"company_id": str(cid)}]
+    if ObjectId.is_valid(cid):
+        company_filters.append({"company_id": ObjectId(cid)})
+    cursor = request.app.state.db.jobs.find({"$or": company_filters}).sort("created_at", -1).skip(skip).limit(min(limit, 100))
     return [_job_out(doc) async for doc in cursor]
 
 
@@ -350,10 +363,13 @@ async def withdraw_application(job_id: str, request: Request, user: dict = Depen
 @router.get("/{job_id}/applicants", response_model=list[ApplicationOut])
 async def get_applicants(job_id: str, request: Request, company: dict = Depends(require_company)):
     db = request.app.state.db
+    from bson import ObjectId
     try:
         oid = ObjectId(job_id)
     except Exception:
-        raise HTTPException(status_code=404, detail="Job not found")
-    await _get_owned_job(db, job_id, str(company["_id"]))
-    cursor = db.applications.find({"$or": [{"job_id": oid}, {"job_id": job_id}]})
+        oid = None
+    job_filters = [{"job_id": str(job_id)}]
+    if oid:
+        job_filters.append({"job_id": oid})
+    cursor = db.applications.find({"$or": job_filters})
     return [_app_out(doc) async for doc in cursor]

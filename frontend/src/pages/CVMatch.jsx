@@ -293,7 +293,7 @@ export default function CVMatch() {
       setJobs(jobList)
       const rawRoles = r3?.data?.roles || []
       const rolesList = Array.isArray(rawRoles)
-        ? rawRoles.map((item) => (typeof item === 'string' ? item : item?.role)).filter(Boolean)
+        ? rawRoles.map((item) => (typeof item === 'string' ? item : (item?.role || ''))).filter(Boolean)
         : []
       setCanonicalRoles(rolesList.length > 0 ? rolesList : CANONICAL_ROLES)
       if (resumeList.length > 0) {
@@ -437,8 +437,8 @@ export default function CVMatch() {
       const safeCandName = String(targetResumeDoc.candidate_name || 'Candidate').replace(/[$.]/g, '')
 
       const c1Payload = {
-        candidate_id: targetResumeDoc.candidate_id || resumeToUse,
-        candidate_name: targetResumeDoc.candidate_name || 'Candidate',
+        candidate_id: safeCandId,
+        candidate_name: safeCandName,
         text: cvTextToSend ? cvTextToSend.trim() : (targetResumeDoc.filename || 'Candidate Resume'),
         raw_text: cvTextToSend ? cvTextToSend.trim() : '',
         target_role: finalRole,
@@ -472,6 +472,15 @@ export default function CVMatch() {
       if (careerRes?.data) setCareerResult(careerRes.data)
       if (pathRes?.data) setLearningPathResult(pathRes.data)
       if (c1Res?.data) setC1Result(c1Res.data)
+
+      // Invalidate Skill Gap and Progress local caches so fresh data is loaded
+      try {
+        const uId = localStorage.getItem('recruitai.user_id')
+        if (uId) {
+          sessionStorage.removeItem(`recruitai.skillgap.${uId}`)
+          sessionStorage.removeItem(`recruitai.progress.${uId}`)
+        }
+      } catch {}
 
       toast.success(`Evaluation complete for ${finalRole}!`)
     } catch (err) {
@@ -1375,6 +1384,52 @@ export default function CVMatch() {
 
               </div>
 
+              {/* Direct Next Action Bar */}
+              <div style={{
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 'var(--p-space-5)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 12
+              }}>
+                <div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                    Ready to complete evaluation for {displayJobTitle}?
+                  </div>
+                  <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                    CV scores are saved. Take the AI Technical Interview to generate your final composite ranking for recruiters.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        role: displayJobTitle,
+                        skills: (matchedJobDoc?.required_skills || []).join(','),
+                        level: matchedJobDoc?.job_level || 'Mid-Level',
+                        count: String(matchedJobDoc?.interview_question_count || 10),
+                        jobId: selectedJob || '',
+                      })
+                      navigate(`/candidate/interview?${params.toString()}`)
+                    }}
+                  >
+                    <Play size={13} /> Take AI Technical Interview
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => navigate('/candidate/skill-gap')}
+                  >
+                    <Sparkles size={13} /> View Skill Gap Report
+                  </button>
+                </div>
+              </div>
+
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
@@ -1457,8 +1512,9 @@ export default function CVMatch() {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
                     {(c1Result.role_alternatives || c1Result.role_predictions || []).slice(0, 4).map((p) => {
-                      const roleName = typeof p === 'string' ? p : (p.role || '')
-                      const prob = p.probability ?? p.confidence ?? 0.8
+                      const roleName = typeof p === 'string' ? p : (p?.role || '')
+                      if (!roleName) return null
+                      const prob = p?.probability ?? p?.confidence ?? 0.8
                       return (
                         <div
                           key={roleName}
