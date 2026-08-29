@@ -702,14 +702,28 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
               icon={Network}
             />
           ) : (() => {
-            // Group skills by in-degree into 4 visual progression stages
+            const getNodeId = (n) => typeof n === 'string' ? n : (n?.id || n?.label || n?.name || '')
+            const getNodeLabel = (n) => typeof n === 'string' ? n : (n?.label || n?.name || n?.id || '')
+
             const inDegrees = {}
             const outDegrees = {}
-            graphNodes.forEach((n) => {
+
+            const normalizedNodes = (graphNodes || []).map((n) => ({
+              id: getNodeId(n),
+              label: getNodeLabel(n)
+            })).filter((n) => Boolean(n.id))
+
+            normalizedNodes.forEach((n) => {
               inDegrees[n.id] = 0
               outDegrees[n.id] = 0
             })
-            graphEdges.forEach((e) => {
+
+            const normalizedEdges = (graphEdges || []).map((e) => ({
+              source: typeof e.source === 'string' ? e.source : (e.source?.id || e.source?.label || ''),
+              target: typeof e.target === 'string' ? e.target : (e.target?.id || e.target?.label || '')
+            })).filter((e) => Boolean(e.source && e.target))
+
+            normalizedEdges.forEach((e) => {
               if (inDegrees[e.target] !== undefined) inDegrees[e.target]++
               if (outDegrees[e.source] !== undefined) outDegrees[e.source]++
             })
@@ -720,11 +734,12 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
               devops: { label: 'Cloud & DevOps', icon: '☁️', skills: ['linux', 'git', 'docker', 'kubernetes', 'ci/cd', 'aws', 'azure', 'terraform', 'monitoring', 'cloud architecture'] }
             }
 
-            const activeSkills = graphNodes.filter((n) => {
-              const matchesSearch = !graphSearchTerm || n.label.toLowerCase().includes(graphSearchTerm.toLowerCase())
+            const activeSkills = normalizedNodes.filter((n) => {
+              const label = (n.label || '').toLowerCase()
+              const matchesSearch = !graphSearchTerm || label.includes(graphSearchTerm.toLowerCase())
               if (graphCategoryFilter === 'all') return matchesSearch
               const domainList = DOMAIN_MAP[graphCategoryFilter]?.skills || []
-              return matchesSearch && domainList.some((s) => n.label.toLowerCase().includes(s) || s.includes(n.label.toLowerCase()))
+              return matchesSearch && domainList.some((s) => label.includes(s) || s.includes(label))
             })
 
             // Sort nodes into 4 visual stages
@@ -741,10 +756,10 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
             ]
 
             const selectedNodePrereqs = graphSelectedNode
-              ? graphEdges.filter((e) => e.target === graphSelectedNode).map((e) => e.source)
+              ? normalizedEdges.filter((e) => e.target === graphSelectedNode).map((e) => e.source)
               : []
             const selectedNodeUnlocks = graphSelectedNode
-              ? graphEdges.filter((e) => e.source === graphSelectedNode).map((e) => e.target)
+              ? normalizedEdges.filter((e) => e.source === graphSelectedNode).map((e) => e.target)
               : []
 
             return (

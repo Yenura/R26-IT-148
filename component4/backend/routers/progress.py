@@ -390,10 +390,23 @@ async def populate_progress(request: Request):
 @router.get("/{candidate_id}", summary="Get full progress for a candidate")
 async def get_progress(candidate_id: str, request: Request):
     db = request.app.state.db
+    query_filters = [{"candidate_id": candidate_id}]
+    if ObjectId.is_valid(candidate_id):
+        query_filters.append({"candidate_id": ObjectId(candidate_id)})
+
     docs = await db.progress_tracking.find(
-        {"candidate_id": candidate_id},
+        {"$or": query_filters},
         projection={"_id": 0},
     ).sort("updated_at", -1).to_list(length=100)
+
+    if not docs and (candidate_id == "web-user" or not ObjectId.is_valid(candidate_id)):
+        latest = await db.progress_tracking.find_one(sort=[("updated_at", -1)])
+        if latest and latest.get("candidate_id"):
+            fb_cid = str(latest["candidate_id"])
+            docs = await db.progress_tracking.find(
+                {"candidate_id": fb_cid},
+                projection={"_id": 0},
+            ).sort("updated_at", -1).to_list(length=100)
 
     stats = {
         "not_started": sum(1 for d in docs if d.get("status") == "not_started"),
