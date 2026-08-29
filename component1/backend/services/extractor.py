@@ -50,10 +50,13 @@ class ExtractedFeatures:
     employment_records:        List[Dict[str, Any]] = field(default_factory=list)
     verified_certifications:   List[Dict[str, Any]] = field(default_factory=list)
     projects:                  List[Dict[str, Any]] = field(default_factory=list)
+    specializations:           List[str] = field(default_factory=list)
+    academic_honors:           str = "Standard"
 
 
 def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatures:
     """Extract complete structured features from resume text with deep understanding."""
+    from ml.feature_engineering import compute_s_edu
     cleaned = clean_text(text)
     
     # 1. Experience & Employment Records
@@ -80,8 +83,11 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
         edu_level = 1
 
     majors = edu_info.get("majors", [])
-    relevant_it = {"Computer Science", "Software Engineering", "Information Technology", "Data Science", "Cybersecurity", "Networking", "Engineering"}
-    edu_relevance = 1.0 if any(m in relevant_it for m in majors) else (0.8 if majors else 0.5)
+    specializations = edu_info.get("specializations", [])
+    academic_honors = edu_info.get("academic_honors", "Standard")
+    
+    # Precise role-to-specialization alignment score
+    edu_relevance = compute_s_edu(edu_info, target_role=target_role)
 
     # Locate human readable education qualification sentence
     edu_sentence = ""
@@ -118,7 +124,8 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
                 break
 
     if not edu_sentence or len(edu_sentence) < 5:
-        edu_sentence = f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}"
+        spec_suffix = f" (Specializing in {specializations[0]})" if specializations else ""
+        edu_sentence = f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}{spec_suffix}"
 
     # 3. Skills & Evidence
     skills_certs = extract_skills_and_certifications(text)
@@ -126,9 +133,9 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
 
     return ExtractedFeatures(
         edu_level=edu_level,
-        edu_relevance=edu_relevance,
+        edu_relevance=round(edu_relevance, 2),
         education=edu_sentence,
-        experience_years=total_exp,
+        experience_years=relevant_exp,
         skills=skills_certs["detected_skills"],
         skill_evidence=skills_certs.get("skill_evidence", {}),
         detected_certs=skills_certs.get("detected_certs", []),
@@ -138,5 +145,7 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
         seniority_evidence=sen_ev,
         employment_records=records,
         verified_certifications=edu_full.get("verified_certifications", []),
-        projects=projects
+        projects=projects,
+        specializations=specializations,
+        academic_honors=academic_honors
     )

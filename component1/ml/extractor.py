@@ -181,8 +181,7 @@ def clean_text(text: str) -> str:
     text = _ZIP_RE.sub(' ', text)
 
     lines = [line.strip() for line in text.splitlines() if line.strip()]
-    cleaned = ' '.join(lines)
-    return _SPACE_RE.sub(' ', cleaned).strip()
+    return '\n'.join(lines).strip()
 
 
 # ── Section Segmentation ───────────────────────────────────────────────────────
@@ -321,7 +320,10 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
 
     title_indicators = [
         "developer", "engineer", "architect", "lead", "analyst", "administrator",
-        "consultant", "intern", "manager", "specialist", "scientist", "programmer", "designer"
+        "consultant", "intern", "manager", "specialist", "scientist", "programmer", "designer",
+        "accountant", "auditor", "bookkeeper", "cashier", "chef", "cook", "nurse", "officer",
+        "executive", "representative", "associate", "coordinator", "assistant", "teacher",
+        "trainee", "director", "head", "supervisor"
     ]
 
     for line in lines:
@@ -330,31 +332,31 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
             continue
 
         date_res = _parse_date_range(stripped)
-        is_title_line = any(ind in stripped.lower() for ind in title_indicators)
+        is_title_line = any(re.search(r'\b' + re.escape(ind) + r'\b', stripped.lower()) for ind in title_indicators)
 
-        if date_res or (is_title_line and not stripped.startswith(('•', '-', '*', '—'))):
-            # Potential new job record boundary
+        if is_title_line and not stripped.startswith(('•', '-', '*', '—')):
+            # Push previous record
             if current_record and current_record.get("job_title"):
                 records.append(current_record)
 
             title_candidate = stripped
-            company_candidate = "Technology Organization"
+            company_candidate = "Organization"
 
             # Parse title & company if "at" or "|" or "-" separates them
             for sep in [" at ", " @ ", " - ", " | ", ", "]:
                 if sep in stripped:
                     parts = stripped.split(sep, 1)
-                    if any(ind in parts[0].lower() for ind in title_indicators):
+                    if any(re.search(r'\b' + re.escape(ind) + r'\b', parts[0].lower()) for ind in title_indicators):
                         title_candidate = parts[0].strip()
                         company_candidate = parts[1].strip()
                         break
-                    elif any(ind in parts[1].lower() for ind in title_indicators):
+                    elif any(re.search(r'\b' + re.escape(ind) + r'\b', parts[1].lower()) for ind in title_indicators):
                         title_candidate = parts[1].strip()
                         company_candidate = parts[0].strip()
                         break
 
-            start_v, end_v, is_curr = date_res if date_res else (CURRENT_YEAR - 1.0, CURRENT_YEAR, False)
-            duration_months = round(max(0.0, (end_v - start_v) * 12.0), 1)
+            start_v, end_v, is_curr = date_res if date_res else (0.0, 0.0, False)
+            duration_months = round(max(0.0, (end_v - start_v) * 12.0), 1) if date_res else 12.0
 
             current_record = {
                 "job_title": title_candidate,
@@ -363,9 +365,18 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
                 "end_year": round(end_v, 2),
                 "duration_months": duration_months,
                 "is_current": is_curr,
+                "has_explicit_dates": bool(date_res),
                 "responsibilities": [],
                 "technologies": []
             }
+        elif date_res and current_record and not current_record.get("has_explicit_dates"):
+            # Update dates of the current title record
+            start_v, end_v, is_curr = date_res
+            current_record["start_year"] = round(start_v, 2)
+            current_record["end_year"] = round(end_v, 2)
+            current_record["duration_months"] = round(max(0.0, (end_v - start_v) * 12.0), 1)
+            current_record["is_current"] = is_curr
+            current_record["has_explicit_dates"] = True
         else:
             if current_record:
                 # Add responsibility bullet
@@ -382,14 +393,50 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
     if current_record and current_record.get("job_title"):
         records.append(current_record)
 
+    # Non-IT role keywords for zero-relevance filtering
+    non_it_keywords = {
+        "accountant", "accounting", "auditor", "bookkeeper", "cashier", "financial analyst",
+        "chef", "cook", "baker", "waiter", "waitress", "bartender", "culinary",
+        "nurse", "doctor", "physician", "pharmacist", "therapist", "medical",
+        "driver", "chauffeur", "delivery", "warehouse", "logistics coordinator",
+        "sales representative", "sales executive", "retail associate", "store manager",
+        "teacher", "history", "english literature", "tutor", "counselor",
+        "lawyer", "attorney", "paralegal", "legal assistant",
+        "construction", "electrician", "plumber", "carpenter"
+    }
+
+    general_it_keywords = {
+        "software", "developer", "engineer", "programmer", "architect", "analyst", "devops",
+        "data", "frontend", "backend", "fullstack", "full stack", "cloud", "security",
+        "admin", "dba", "sre", "qa", "tester", "mobile", "ios", "android", "ai", "ml", "tech"
+    }
+
     # Compute role relevance for each employment record
     compat_map = ROLE_COMPATIBILITY.get(target_role, {})
     for rec in records:
         t_low = rec["job_title"].lower()
-        rel_factor = 0.5  # default moderate IT relevance
+        rel_factor = 0.0  # default zero relevance for unverified/non-IT roles
+
+        # Check explicit compatibility mapping for target role
         for role_key, score in compat_map.items():
             if role_key in t_low:
                 rel_factor = max(rel_factor, score)
+
+        # If not explicitly mapped, check whether it is a non-IT role or general IT role
+        if rel_factor == 0.0:
+            is_non_it = any(re.search(r'\b' + re.escape(kw) + r'\b', t_low) for kw in non_it_keywords)
+            has_it_kw = any(re.search(r'\b' + re.escape(kw) + r'\b', t_low) for kw in general_it_keywords)
+            if has_it_kw and not is_non_it:
+                rel_factor = 0.70
+            elif is_non_it:
+                rel_factor = 0.0
+            else:
+                # Check technologies in this employment period
+                if len(rec.get("technologies", [])) >= 2:
+                    rel_factor = 0.60
+                else:
+                    rel_factor = 0.0
+
         rec["relevance_to_target_role"] = round(rel_factor, 2)
         rec["relevant_months"] = round(rec["duration_months"] * rel_factor, 1)
 
@@ -530,11 +577,11 @@ def extract_experience_details(text: str, target_role: str = "Software Engineer"
 
     # Compute non-overlapping relevant experience
     if records:
-        total_rec_months = sum(r.get("duration_months", 0.0) for r in records)
-        relevant_rec_months = sum(r.get("relevant_months", 0.0) for r in records)
-        if total_rec_months > 0:
-            relevance_ratio = relevant_rec_months / total_rec_months
-            relevant_exp_years = round(total_exp_years * relevance_ratio, 2)
+        rec_total_years = sum(r.get("duration_months", 0.0) for r in records) / 12.0
+        rec_relevant_years = sum(r.get("relevant_months", 0.0) for r in records) / 12.0
+        if rec_total_years > 0:
+            total_exp_years = round(max(total_exp_years, rec_total_years), 2)
+            relevant_exp_years = round(rec_relevant_years, 2)
         else:
             relevant_exp_years = total_exp_years
     else:
@@ -626,14 +673,83 @@ def extract_education_level(text: str) -> Dict[str, Any]:
         "Engineering": (r'computer engineering', r'electrical engineering', r'electronic engineering', r'systems engineering', r'engineering')
     }
 
+    non_it_major_patterns = {
+        "Accounting & Finance": (r'accounting', r'finance', r'banking', r'commerce', r'accountancy'),
+        "Business Administration": (r'business administration', r'\bmba\b', r'\bbba\b', r'marketing', r'management', r'human resources'),
+        "Culinary & Hospitality": (r'culinary', r'hospitality', r'hotel management', r'catering'),
+        "Medicine & Health": (r'nursing', r'medicine', r'pharmacy', r'medical', r'healthcare'),
+        "Arts & Humanities": (r'history', r'english', r'literature', r'philosophy', r'fine arts', r'psychology', r'sociology'),
+        "Law": (r'law', r'\bllb\b', r'\bllm\b', r'legal studies')
+    }
+
+    # Deep Specialization / Concentration / Track Extraction
+    specializations = []
+    spec_patterns = {
+        "Data Science & AI": (
+            r'speciali[zs](?:ing|ation)?\s+in\s+data\s+science',
+            r'speciali[zs](?:ing|ation)?\s+in\s+(?:ai|artificial intelligence|machine learning|deep learning)',
+            r'track[:\s]+data\s+science', r'concentration[:\s]+data\s+science', r'major\s+in\s+data\s+science'
+        ),
+        "Cybersecurity": (
+            r'speciali[zs](?:ing|ation)?\s+in\s+cyber\s*security',
+            r'speciali[zs](?:ing|ation)?\s+in\s+information\s+security',
+            r'track[:\s]+cyber\s*security', r'concentration[:\s]+security', r'major\s+in\s+cybersecurity'
+        ),
+        "Cloud & DevOps": (
+            r'speciali[zs](?:ing|ation)?\s+in\s+cloud',
+            r'speciali[zs](?:ing|ation)?\s+in\s+devops',
+            r'track[:\s]+cloud', r'concentration[:\s]+cloud\s+computing'
+        ),
+        "Software Engineering": (
+            r'speciali[zs](?:ing|ation)?\s+in\s+software\s+engineering',
+            r'speciali[zs](?:ing|ation)?\s+in\s+software\s+development',
+            r'track[:\s]+software', r'concentration[:\s]+software'
+        ),
+        "Computer Networks & Systems": (
+            r'speciali[zs](?:ing|ation)?\s+in\s+network',
+            r'speciali[zs](?:ing|ation)?\s+in\s+systems',
+            r'track[:\s]+network', r'concentration[:\s]+telecommunications'
+        ),
+        "Interactive Media & HCI": (
+            r'speciali[zs](?:ing|ation)?\s+in\s+interactive\s+media',
+            r'speciali[zs](?:ing|ation)?\s+in\s+ui\/ux',
+            r'speciali[zs](?:ing|ation)?\s+in\s+human\s+computer\s+interaction'
+        ),
+        "Business Information Systems": (
+            r'speciali[zs](?:ing|ation)?\s+in\s+business\s+information',
+            r'speciali[zs](?:ing|ation)?\s+in\s+management\s+information',
+            r'track[:\s]+information\s+systems'
+        )
+    }
+
+    for spec_name, p_tuple in spec_patterns.items():
+        if any(re.search(p, lowered) for p in p_tuple):
+            specializations.append(spec_name)
+
+    # Academic classification / Honors
+    academic_honors = "Standard"
+    if any(re.search(p, lowered) for p in [r'first\s+class', r'summa\s+cum\s+laude', r'distinction', r'gpa\s*[:=]?\s*(?:3\.[7-9]|4\.0)']):
+        academic_honors = "First Class Honours / Distinction"
+    elif any(re.search(p, lowered) for p in [r'second\s+upper', r'magna\s+cum\s+laude', r'merit', r'gpa\s*[:=]?\s*3\.[3-6]']):
+        academic_honors = "Second Class Upper"
+    elif any(re.search(p, lowered) for p in [r'second\s+lower', r'cum\s+laude', r'gpa\s*[:=]?\s*3\.[0-2]']):
+        academic_honors = "Second Class Lower"
+
     for major_name, p_tuple in major_patterns.items():
         if any(re.search(p, lowered) for p in p_tuple):
             majors.append(major_name)
 
+    if not majors:
+        for non_it_name, p_tuple in non_it_major_patterns.items():
+            if any(re.search(p, lowered) for p in p_tuple):
+                majors.append(non_it_name)
+
     return {
         "level_score": level_score,
         "level_name": level_name,
-        "majors": majors if majors else ["Information Technology"]
+        "majors": majors if majors else ["General / Unspecified"],
+        "specializations": specializations,
+        "academic_honors": academic_honors
     }
 
 
