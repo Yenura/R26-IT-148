@@ -4,7 +4,8 @@ import toast from 'react-hot-toast'
 import {
   Target, RefreshCw, TrendingUp, Briefcase, HelpCircle,
   Code, Building2, Sparkles, AlertCircle, CheckCircle2,
-  ExternalLink, Layers, Lightbulb, ArrowRight, Network
+  ExternalLink, Layers, Lightbulb, ArrowRight, Network,
+  Search, Clock, BookOpen
 } from 'lucide-react'
 import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync, c4SkillGapGraph, authGetProfile } from '../api'
 import { useAuth } from '../hooks/useAuth'
