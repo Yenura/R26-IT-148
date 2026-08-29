@@ -340,7 +340,7 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
                 records.append(current_record)
 
             title_candidate = stripped
-            company_candidate = "Organization"
+            company_candidate = "Technology Organization"
 
             # Parse title & company if "at" or "|" or "-" separates them
             for sep in [" at ", " @ ", " - ", " | ", ", "]:
@@ -849,10 +849,13 @@ def extract_skills_and_certifications(text: str) -> Dict[str, Any]:
 
                 skill_evidence[normalized] = {
                     "skill": normalized,
+                    "canonical_skill": normalized.title() if len(normalized) > 3 else normalized.upper(),
                     "evidence_strength": strength,
                     "evidence_level": strength.upper(),
+                    "evidence": matching_snippets,
                     "evidence_snippets": matching_snippets
                 }
+
 
         category_counts[category] = count
 
