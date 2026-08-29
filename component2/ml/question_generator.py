@@ -40,7 +40,11 @@ def _load_model_and_tokenizer(model_dir: str):
         try:
             from transformers import T5ForConditionalGeneration, AutoTokenizer
             tokenizer = AutoTokenizer.from_pretrained(t5_path)
-            model = T5ForConditionalGeneration.from_pretrained(t5_path)
+            model = T5ForConditionalGeneration.from_pretrained(t5_path, low_cpu_mem_usage=False, torch_dtype=torch.float32)
+            try:
+                model.config.tie_word_embeddings = False
+            except:
+                pass
             model.eval()
             param_count = sum(p.numel() for p in model.parameters())
             logger.info("T5 QG model loaded from %s (%s params)", t5_path, f"{param_count:,}")
@@ -361,6 +365,19 @@ class QuestionGenerator:
     def generate_for_session(
         self, job_role: str, skills: List[str], num_mcq: int, num_desc: int, num_code: int
     ) -> List[Dict]:
+        # Respect scoring config: non-coding roles (coding weight 0) get 0 code questions
+        try:
+            import json, pathlib
+            cfg_path = pathlib.Path(__file__).parent.parent / "models" / "interview_scoring_config.json"
+            if cfg_path.exists():
+                cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+                w = cfg.get("interview_weights", {}).get(job_role, {})
+                if w.get("coding", 1) == 0 and num_code > 0:
+                    # Redistribute coding questions to descriptive
+                    num_desc += num_code
+                    num_code = 0
+        except:
+            pass
         qs = []
         if num_mcq > 0:
             qs.extend(self.generate_mcq(job_role, skills, num_mcq))

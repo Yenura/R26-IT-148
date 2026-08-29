@@ -204,6 +204,7 @@ export default function Interview() {
             candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
             session_id: session.session_id,
             job_role: selectedRole,
+            job_id: jobId || session.job_id || '',
             answers: questions.map((q) => {
               const a = answers[q.id]
               if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
@@ -312,8 +313,8 @@ export default function Interview() {
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 6 }}>Required Skills</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {jobSkills.split(',').filter(Boolean).map((s) => (
-                    <span key={s} className="chip" style={{ fontSize: '11px', padding: '2px 8px' }}>{s.trim()}</span>
+                   {[...new Set(jobSkills.split(',').filter(Boolean))].map((s, i) => (
+                     <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '2px 8px' }}>{s.trim()}</span>
                   ))}
                 </div>
               </div>

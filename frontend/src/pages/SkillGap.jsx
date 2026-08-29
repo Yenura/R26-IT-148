@@ -500,10 +500,10 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                   <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
                     <CheckCircle2 size={15} /> Simulated Acquired Skills ({simulatedSkills.length})
                   </h4>
-                  {simulatedSkills.length > 0 ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-{simulatedSkills.map((s) => (
-                        <span key={s} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    {simulatedSkills.length > 0 ? (
+                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+ {[...new Set(simulatedSkills)].map((s, i) => (
+                         <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                           {s}
                           <button onClick={() => removeSimSkill(s)} aria-label={`Remove ${s}`} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', fontWeight: 800 }}>×</button>
                         </span>
@@ -606,9 +606,9 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                       <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-fg)' }}>
                         <Lightbulb size={18} style={{ color: 'var(--color-warning)' }} /> Actionable Next Steps
                       </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-{simulationResult.improvement_suggestions.map((s) => (
-                          <div key={s} style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+ {[...new Set(simulationResult.improvement_suggestions)].map((s, i) => (
+                           <div key={`${s}-${i}`} style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                             <span style={{ color: 'var(--color-warning)' }}>•</span> {s}
                           </div>
                         ))}

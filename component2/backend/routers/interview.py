@@ -32,8 +32,12 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 class InterviewSubmitRequest(BaseModel):
+    candidate_id: str = Field(default="", max_length=100)
     session_id: str = Field(..., min_length=1, max_length=200)
+    job_role: str = Field(default="", max_length=200)
+    job_id: str = Field(default="", max_length=100)
     answers: List[Dict] = Field(default_factory=list)
+    proctoring: Optional[Dict] = None
 
     @field_validator("answers")
     @classmethod
@@ -402,6 +406,9 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                     + 0.20 * float(has_operators)
                     + 0.20 * float(has_structure)
                 )
+                # Hard gibberish guard
+                if not has_return and not has_structure:
+                    quality_score = min(quality_score, 0.15)
                 if test_pass_rate is None:
                     # No verifiable test case exists (placeholder/legacy data).
                     # Grade on structure alone; don't punish correct code.
@@ -423,9 +430,9 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             processed_answers.append(processed_answer)
 
         evaluation_payload = {
-            "candidate_id": submission.get("candidate_id") or session.get("candidate_id", ""),
+            "candidate_id": submission.candidate_id or session.get("candidate_id", ""),
             "session_id": session_id,
-            "job_role": submission.get("job_role") or session.get("job_role", ""),
+            "job_role": submission.job_role or session.get("job_role", ""),
             "answers": processed_answers
         }
         
@@ -437,7 +444,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
         # Attach proctoring data if provided (job interviews only)
         # Enforce: practice interviews NEVER store proctoring data
-        proctoring = submission.get("proctoring")
+        proctoring = submission.proctoring
         is_practice = session.get("is_practice", False)
         if is_practice:
             proctoring = None
@@ -453,7 +460,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
             payload = json.dumps({
                 "candidate_id": result["candidate_id"],
-                "job_id": submission.get("job_id", ""),
+                "job_id": submission.job_id or session.get("job_id", ""),
                 "session_id": session_id,
                 "job_role": result["job_role"],
                 "mcq_score": result["mcq_score"],
