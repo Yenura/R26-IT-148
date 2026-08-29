@@ -1,27 +1,27 @@
 {
   "primary_model": {
     "model_file": "cv_classifier.pkl",
-    "accuracy": 0.8673,
-    "precision": 0.8983,
-    "recall": 0.9017,
-    "macro_f1": 0.8974,
-    "weighted_f1": 0.8661,
-    "cv_5fold_acc_mean": 0.8655,
-    "cv_5fold_acc_std": 0.0067,
-    "cv_5fold_macro_f1_mean": 0.8985,
-    "training_time_sec": 1.37
+    "accuracy": 0.8967,
+    "precision": 0.918,
+    "recall": 0.9456,
+    "macro_f1": 0.929,
+    "weighted_f1": 0.8909,
+    "cv_5fold_acc_mean": 0.901,
+    "cv_5fold_acc_std": 0.0028,
+    "cv_5fold_macro_f1_mean": 0.9302,
+    "training_time_sec": 1.577
   },
   "baseline_model": {
     "model_file": "tfidf_baseline.pkl",
-    "accuracy": 0.9579,
-    "precision": 0.9759,
-    "recall": 0.9612,
-    "macro_f1": 0.9678,
-    "weighted_f1": 0.9584,
-    "training_time_sec": 0.766
+    "accuracy": 0.9796,
+    "precision": 0.9898,
+    "recall": 0.9868,
+    "macro_f1": 0.9881,
+    "weighted_f1": 0.9796,
+    "training_time_sec": 0.878
   },
   "dataset_metadata": {
-    "test_samples": 784,
+    "test_samples": 736,
     "num_classes": 20,
     "random_seed": 42
   }

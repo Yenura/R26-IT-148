@@ -42,16 +42,36 @@ class ExtractedFeatures:
     skill_evidence:            Dict[str, Any] = field(default_factory=dict)
     detected_certs:            List[str] = field(default_factory=list)
     
-    # Deep understanding fields
-    role_relevant_experience_years: float = 0.0
+    # 3-Tier Experience Breakdown
+    total_professional_experience_months: float = 0.0
+    total_professional_experience_years:  float = 0.0
+    it_sector_experience_months:          float = 0.0
+    it_sector_experience_years:           float = 0.0
+    it_experience_years:                  float = 0.0
+    target_role_relevant_experience_months: float = 0.0
+    target_role_relevant_experience_years:  float = 0.0
+    role_relevant_experience_years:       float = 0.0
+
+    # Seniority & Employment Details
     seniority:                 str = "Mid"
     seniority_confidence:      float = 0.8
     seniority_evidence:        List[str] = field(default_factory=list)
     employment_records:        List[Dict[str, Any]] = field(default_factory=list)
+    
+    # Education & Certifications
+    degree_field:              str = "General IT"
+    field_relevance:           str = "HIGH"
     verified_certifications:   List[Dict[str, Any]] = field(default_factory=list)
+    relevant_certifications:   List[Dict[str, Any]] = field(default_factory=list)
     projects:                  List[Dict[str, Any]] = field(default_factory=list)
     specializations:           List[str] = field(default_factory=list)
     academic_honors:           str = "Standard"
+    education_details:         Dict[str, Any] = field(default_factory=dict)
+    
+    # Cross-Evidence & Confidence
+    cross_evidence_validation: Dict[str, Any] = field(default_factory=dict)
+    overall_analysis_confidence: float = 0.85
+    manual_review_recommended: bool = False
 
 
 def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatures:
@@ -59,10 +79,14 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
     from ml.feature_engineering import compute_s_edu
     cleaned = clean_text(text)
     
-    # 1. Experience & Employment Records
+    # 1. Experience & Employment Records (3-Tier Engine)
     exp_details = extract_experience_details(text, target_role=target_role)
     total_exp = exp_details["total_experience_years"]
+    total_prof_months = exp_details.get("total_professional_experience_months", total_exp * 12.0)
+    it_years = exp_details.get("it_sector_experience_years", total_exp)
+    it_months = exp_details.get("it_sector_experience_months", it_years * 12.0)
     relevant_exp = exp_details["role_relevant_experience_years"]
+    relevant_months = exp_details.get("target_role_relevant_experience_months", relevant_exp * 12.0)
     records = exp_details["employment_records"]
     seniority = exp_details["seniority"]
     sen_conf = exp_details["seniority_confidence"]
@@ -70,7 +94,7 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
 
     # 2. Education & Qualifications
     edu_info = extract_education_level(text)
-    edu_full = extract_education_details(text)
+    edu_full = extract_education_details(text, target_role=target_role)
     level_score = edu_info.get("level_score", 0.60)
     edu_level = 2
     if level_score >= 1.0:
@@ -128,10 +152,11 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
         edu_sentence = f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}{spec_suffix}"
 
     # 3. Skills & Evidence
-    skills_certs = extract_skills_and_certifications(text)
+    skills_certs = extract_skills_and_certifications(text, target_role=target_role)
     projects = extract_projects(text)
 
-    return ExtractedFeatures(
+    # 4. Feature Assembly & Multi-Layer Cross-Validation
+    res_feat = ExtractedFeatures(
         edu_level=edu_level,
         edu_relevance=round(edu_relevance, 2),
         education=edu_sentence,
@@ -139,13 +164,33 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
         skills=skills_certs["detected_skills"],
         skill_evidence=skills_certs.get("skill_evidence", {}),
         detected_certs=skills_certs.get("detected_certs", []),
+        total_professional_experience_months=total_prof_months,
+        total_professional_experience_years=total_exp,
+        it_sector_experience_months=it_months,
+        it_sector_experience_years=it_years,
+        it_experience_years=it_years,
+        target_role_relevant_experience_months=relevant_months,
+        target_role_relevant_experience_years=relevant_exp,
         role_relevant_experience_years=relevant_exp,
         seniority=seniority,
         seniority_confidence=sen_conf,
         seniority_evidence=sen_ev,
         employment_records=records,
+        degree_field=edu_full.get("degree_field", majors[0] if majors else "General IT"),
+        field_relevance=edu_full.get("field_relevance", "HIGH"),
         verified_certifications=edu_full.get("verified_certifications", []),
+        relevant_certifications=edu_full.get("relevant_certifications", []),
         projects=projects,
         specializations=specializations,
-        academic_honors=academic_honors
+        academic_honors=academic_honors,
+        education_details=edu_full
     )
+
+    from ml.extractor import validate_cross_evidence
+    val_report = validate_cross_evidence(text, res_feat, target_role=target_role)
+
+    res_feat.cross_evidence_validation = val_report
+    res_feat.overall_analysis_confidence = val_report.get("overall_analysis_confidence", 0.85)
+    res_feat.manual_review_recommended = val_report.get("manual_review_recommended", False)
+
+    return res_feat

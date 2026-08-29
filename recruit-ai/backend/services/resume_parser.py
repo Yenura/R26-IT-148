@@ -35,7 +35,18 @@ def parse_resume_file(content: bytes, filename: str) -> str:
 
 
 def _parse_pdf(content: bytes) -> str:
-    # 1. Try PyMuPDF (fitz) - fastest & most accurate
+    # 1. Try pdfplumber (best layout & multi-column retention)
+    try:
+        import pdfplumber
+        with pdfplumber.open(io.BytesIO(content)) as pdf:
+            pages = [page.extract_text() or "" for page in pdf.pages]
+        text = "\n".join(pages).strip()
+        if len(text) > 20:
+            return text
+    except Exception:
+        pass
+
+    # 2. Try pymupdf (fitz)
     try:
         try:
             import pymupdf as fitz
@@ -46,17 +57,6 @@ def _parse_pdf(content: bytes) -> str:
         for page in doc:
             pages.append(page.get_text())
         doc.close()
-        text = "\n".join(pages).strip()
-        if len(text) > 20:
-            return text
-    except Exception:
-        pass
-
-    # 2. Try pdfplumber
-    try:
-        import pdfplumber
-        with pdfplumber.open(io.BytesIO(content)) as pdf:
-            pages = [page.extract_text() or "" for page in pdf.pages]
         text = "\n".join(pages).strip()
         if len(text) > 20:
             return text
@@ -292,18 +292,17 @@ def _calc_duration_months(start: datetime, end: datetime) -> float:
     return max(months, 0.5)  # minimum 0.5 months (2 weeks)
 
 
-# ── Section map ────────────────────────────────────────────────
 _SECTION_RE = re.compile(
     r"^(?P<h>"
     r"academic\s+projects?|personal\s+projects?|side\s+projects?|open[\s-]?source\s+projects?|"
     r"research\s+projects?|projects?|capstone|thesis|dissertation|coursework|portfolio|"
     r"(?:work\s+|professional\s+|job\s+)?experience|employment|internship|"
     r"education|academic\s+background|qualifications?|"
-    r"skills?|technical\s+skills?|core\s+competencies|"
+    r"skills?|technical\s+skills?|core\s+competencies|soft\s+skills?|technolog(?:y|ies)\s+(?:and|&)\s+frameworks?|tech\s+stack|"
     r"certifications?|licenses?|languages?|"
     r"awards?|honou?rs?|achievements?|"
     r"interests?|hobbies?|references?|"
-    r"activities?|leadership|extra[- ]curricular|volunteering|"
+    r"activities?|leadership|clubs?(?:\s*&\s*leadership(?:\s*skills?)?)?|extra[- ]curricular|volunteering|"
     r"publications?|profile|summary|objective|about(\s+me)?"
     r")\s*:?\s*$",
     re.I
@@ -598,22 +597,31 @@ def extract_entities(text: str) -> dict[str, Any]:
     entities["skills"] = list(dict.fromkeys(found_skills))
 
     # Education: extract complete degree specification line
-    edu_text = _segment_text(segments, "education") or text
+    edu_text = _segment_text(segments, "education")
     edu_lines = []
-    for line in edu_text.split('\n'):
-        clean_line = line.strip()
-        if EDU_RE.search(clean_line):
-            if not any(k in clean_line.lower() for k in ['passed finalist', 'ordinary level', 'advanced level', 'gce', 'school']):
-                clean_line = re.sub(r'^[•\*\-\s]+', '', clean_line)
-                clean_line = re.sub(r'\|\s*\d{4}\s*[-–]\s*\d{4}', '', clean_line).strip()
-                if clean_line and len(clean_line) > 3:
-                    edu_lines.append(clean_line)
+    target_edu_texts = [edu_text, text] if edu_text else [text]
+    for current_text in target_edu_texts:
+        if not current_text:
+            continue
+        for line in current_text.split('\n'):
+            clean_line = line.strip()
+            if EDU_RE.search(clean_line):
+                if not any(k in clean_line.lower() for k in ['passed finalist', 'ordinary level', 'advanced level', 'gce', 'school', 'scrum master']):
+                    clean_line = re.sub(r'^[•\*\-\s]+', '', clean_line)
+                    clean_line = re.sub(r'\|\s*\d{4}\s*[-–]\s*\d{4}', '', clean_line).strip()
+                    if clean_line and len(clean_line) > 3 and not re.match(r'^(?:education|educational)\s*:?$', clean_line, re.I):
+                        edu_lines.append(clean_line)
+        if edu_lines:
+            break
+
     if edu_lines:
         entities["education"] = " | ".join(edu_lines[:2])
     else:
-        edu_match = EDU_RE.search(edu_text)
-        if edu_match:
-            entities["education"] = edu_match.group(0).title()
+        for current_text in target_edu_texts:
+            edu_match = EDU_RE.search(current_text)
+            if edu_match:
+                entities["education"] = edu_match.group(0).title()
+                break
 
     # Experience: Extract from work experience section and non-education lines
     has_exp_section = any(k == "experience" for k, _ in segments)

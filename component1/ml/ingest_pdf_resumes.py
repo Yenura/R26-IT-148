@@ -85,10 +85,40 @@ def scan_and_extract_pdfs(input_dir: Path) -> List[Dict[str, str]]:
         except Exception as e:
             logger.warning("Could not parse manifest.csv: %s", e)
 
+    FOLDER_MAP = {
+        "react developer": "Frontend Developer",
+        "react": "Frontend Developer",
+        "frontend": "Frontend Developer",
+        "data science": "Data Scientist",
+        "datascience": "Data Scientist",
+        "blockchain": "Blockchain Developer",
+        "webdesigning": "UI/UX Designer",
+        "web designing": "UI/UX Designer",
+        "ui/ux": "UI/UX Designer",
+        "businessanalyst": "Business/Systems Analyst",
+        "business analyst": "Business/Systems Analyst",
+        "information technology": "Software Engineer",
+        "information-technology": "Software Engineer",
+        "it": "Software Engineer",
+        "javadeveloper": "Backend Developer",
+        "java developer": "Backend Developer",
+        "pythondeveloper": "Backend Developer",
+        "python developer": "Backend Developer",
+        "backend": "Backend Developer",
+        "database": "Database Administrator",
+        "sql developer": "Database Administrator",
+        "devopsengineer": "DevOps Engineer",
+        "devops engineer": "DevOps Engineer",
+        "devops": "DevOps Engineer",
+        "network security": "Cybersecurity Analyst",
+        "cybersecurity": "Cybersecurity Analyst",
+        "network security engineer": "Cybersecurity Analyst",
+    }
+
     count = 0
     for root, _, files in os.walk(input_dir):
         rel_dir = Path(root).relative_to(input_dir)
-        folder_role = rel_dir.parts[0] if rel_dir.parts else None
+        path_parts = [p.lower().strip() for p in rel_dir.parts]
 
         for file in files:
             file_path = Path(root) / file
@@ -99,18 +129,23 @@ def scan_and_extract_pdfs(input_dir: Path) -> List[Dict[str, str]]:
             role = None
             if file in manifest_map:
                 role = manifest_map[file]
-            elif folder_role and folder_role in ALL_ROLES:
-                role = folder_role
-            elif folder_role:
-                # Fuzzy match folder name to canonical roles
-                for r in ALL_ROLES:
-                    if r.lower() == folder_role.lower():
-                        role = r
+            else:
+                # Check path parts from innermost to outermost
+                for part in reversed(path_parts):
+                    clean_part = part.replace("_", " ").replace("resumes", "").strip()
+                    if clean_part in FOLDER_MAP:
+                        role = FOLDER_MAP[clean_part]
+                        break
+                    for r in ALL_ROLES:
+                        if r.lower() == clean_part:
+                            role = r
+                            break
+                    if role:
                         break
 
             if not role:
-                logger.warning("Skipping '%s': Cannot determine target IT role. Place in a role subfolder (e.g., 'Software Engineer/') or add to manifest.csv", file_path.name)
-                continue
+                # Fallback to Software Engineer for generic IT resumes
+                role = "Software Engineer"
 
             # Extract Text
             try:

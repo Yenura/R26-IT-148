@@ -55,9 +55,44 @@ _MSC_RE = re.compile(r'\b(m\.?sc\.?|m\.?s\.?|master(?:[\'’]?s)?|m\.?tech\.?|m\
 _BSC_RE = re.compile(r'\b(b\.?sc\.?|b\.?s\.?|bachelor(?:[\'’]?s)?|b\.?tech\.?|b\.?e\.?|b\.?eng\.?|bca|bit|bcs|undergraduate|degree(?:\s+in)?)\b', re.I)
 _DIP_RE = re.compile(r'\b(diploma|higher national diploma|hnd|nvq|national diploma|ndt|higher diploma|associate degree)\b', re.I)
 
+def _build_skill_pattern(skill: str) -> re.Pattern:
+    """Compile high-accuracy regex with strict word and punctuation boundaries for special symbols."""
+    s_low = skill.lower()
+    if s_low in ["c++", "cpp", "cplusplus"]:
+        return re.compile(r'(?<![a-zA-Z0-9+])c\+\+(?![a-zA-Z0-9+])|\bcplusplus\b|\bcpp\b', re.I)
+    elif s_low in ["c#", "csharp", "c sharp"]:
+        return re.compile(r'(?<![a-zA-Z0-9#])c\#(?![a-zA-Z0-9#])|\bcsharp\b|\bc\s*sharp\b', re.I)
+    elif s_low in [".net", ".net core", "dotnet"]:
+        return re.compile(r'(?<![a-zA-Z0-9])\.net(?:\s+core)?(?![a-zA-Z0-9])|\bdotnet\b|\bnet\s+core\b|\basp\.net\b', re.I)
+    elif s_low == "c":
+        return re.compile(r'(?<![a-zA-Z0-9_])c(?![a-zA-Z0-9_+#])', re.I)
+    elif s_low == "r":
+        return re.compile(r'(?<![a-zA-Z0-9_])r(?![a-zA-Z0-9_])', re.I)
+    elif s_low in ["go", "golang"]:
+        return re.compile(r'\bgolang\b|\bgo\s+language\b|(?<![a-zA-Z0-9_])go(?![a-zA-Z0-9_])', re.I)
+    elif s_low in ["ci/cd", "ci-cd", "ci / cd"]:
+        return re.compile(r'\bci\/cd\b|\bci-cd\b|\bcontinuous\s+integration\b', re.I)
+    elif s_low in ["node.js", "nodejs", "node js"]:
+        return re.compile(r'\bnode\.js\b|\bnodejs\b|\bnode\s+js\b', re.I)
+    elif s_low in ["react.js", "reactjs", "react js"]:
+        return re.compile(r'\breact\.js\b|\breactjs\b|\breact\s+js\b|\breact\b', re.I)
+    elif s_low in ["vue.js", "vuejs", "vue js"]:
+        return re.compile(r'\bvue\.js\b|\bvuejs\b|\bvue\s+js\b|\bvue\b', re.I)
+    elif s_low in ["next.js", "nextjs", "next js"]:
+        return re.compile(r'\bnext\.js\b|\bnextjs\b|\bnext\s+js\b', re.I)
+    elif s_low in ["express.js", "expressjs", "express js"]:
+        return re.compile(r'\bexpress\.js\b|\bexpressjs\b|\bexpress\s+js\b', re.I)
+    elif s_low in ["machine learning", "ml"]:
+        return re.compile(r'\bmachine\s+learning\b|(?<![a-zA-Z0-9_])ml(?![a-zA-Z0-9_])', re.I)
+    elif s_low in ["natural language processing", "nlp"]:
+        return re.compile(r'\bnatural\s+language\s+processing\b|(?<![a-zA-Z0-9_])nlp(?![a-zA-Z0-9_])', re.I)
+    else:
+        return re.compile(r'(?:\b|_)' + re.escape(skill) + r'(?:\b|_)', re.I)
+
+
 # Skill matching patterns (escaped with boundary protection)
 _SKILL_PATTERNS = {
-    skill: re.compile(r'(?:\b|_)' + re.escape(skill) + r'(?:\b|_)', re.I)
+    skill: _build_skill_pattern(skill)
     for skill in ALL_TECHNICAL_SKILLS
 }
 
@@ -189,31 +224,54 @@ def clean_text(text: str) -> str:
 SECTION_PATTERNS = {
     "experience": re.compile(
         r'^(?:professional\s+experience|work\s+experience|employment\s+history|career\s+history|'
-        r'work\s+history|professional\s+background|relevant\s+experience|practical\s+experience|experience)\b',
+        r'work\s+history|professional\s+background|relevant\s+experience|practical\s+experience|'
+        r'industry\s+experience|experience|employment)\b',
         re.I
     ),
     "education": re.compile(
         r'^(?:educational\s+background|academic\s+background|educational\s+qualifications?|'
-        r'academic\s+qualifications?|education|academics?|schooling|degrees?)\b',
+        r'academic\s+qualifications?|education|academics?|schooling|degrees?|qualifications?)\b',
         re.I
     ),
     "skills": re.compile(
-        r'^(?:technical\s+skills?|core\s+competencies|technologies|tech\s+stack|programming\s+languages?|'
-        r'key\s+skills?|skills\s+and\s+abilities|areas\s+of\s+expertise|skills?)\b',
+        r'^(?:technical\s+skills?|core\s+competencies|technolog(?:y|ies)(?:\s+and\s+frameworks?)?|'
+        r'frameworks?|tech\s+stack|programming\s+languages?|key\s+skills?|skills\s+and\s+abilities|'
+        r'areas\s+of\s+expertise|software\s+skills?|skills?|tools?\s+and\s+technologies|'
+        r'soft\s+skills?|technical\s+proficiencies?)\b',
         re.I
     ),
     "projects": re.compile(
         r'^(?:key\s+projects?|academic\s+projects?|personal\s+projects?|technical\s+projects?|'
-        r'portfolio|projects?)\b',
+        r'portfolio|projects?|notable\s+projects?)\b',
         re.I
     ),
     "certifications": re.compile(
         r'^(?:licenses\s+and\s+certifications|professional\s+certifications?|credentials?|'
-        r'certifications?|accreditations?)\b',
+        r'certifications?|accreditations?|courses?\s+and\s+certifications?|online\s+courses?)\b',
         re.I
     ),
     "summary": re.compile(
-        r'^(?:executive\s+summary|professional\s+summary|career\s+objective|profile|summary|about\s+me)\b',
+        r'^(?:executive\s+summary|professional\s+summary|career\s+objective|profile|summary|'
+        r'about\s+me|overview)\b',
+        re.I
+    ),
+    "references": re.compile(
+        r'^(?:references?|referees?|non-related\s+references?|recommendations?)\b',
+        re.I
+    ),
+    "activities": re.compile(
+        r'^(?:clubs?\s+(?:&|and)\s+leadership(?:\s+skills?)?|extra[-\s]curricular(?:\s+activities)?|'
+        r'co[-\s]curricular(?:\s+activities)?|volunteer\s+experience|volunteering|'
+        r'memberships?|activities|leadership(?:\s+experience)?|community\s+involvement)\b',
+        re.I
+    ),
+    "awards": re.compile(
+        r'^(?:honors?\s+(?:&|and)\s+awards?|awards?\s+(?:&|and)\s+honors?|achievements?|'
+        r'accomplishments?|competitions?|awards?|honors?)\b',
+        re.I
+    ),
+    "publications": re.compile(
+        r'^(?:publications?|research(?:\s+papers?)?|patents?|papers?)\b',
         re.I
     )
 }
@@ -227,7 +285,8 @@ def extract_sections(text: str) -> Dict[str, str]:
     lines = text.splitlines()
     sections: Dict[str, List[str]] = {
         "header": [], "summary": [], "experience": [], "education": [],
-        "skills": [], "projects": [], "certifications": [], "other": []
+        "skills": [], "projects": [], "certifications": [], "activities": [],
+        "references": [], "awards": [], "publications": [], "other": []
     }
 
     current_sec = "header"
@@ -282,7 +341,7 @@ def _parse_date_range(text: str) -> Optional[Tuple[float, float, bool]]:
         else:
             end_yr = int(ey_str)
             end_month = _MONTH_MAP.get(em_str.lower()[:3], 12) if em_str else 12
-            end_val = end_yr + (end_month - 1) / 12.0
+            end_val = end_yr + end_month / 12.0
 
         if end_val >= start_val and (end_val - start_val) <= 40.0:
             return start_val, end_val, is_current
@@ -299,19 +358,229 @@ def _parse_date_range(text: str) -> Optional[Tuple[float, float, bool]]:
         if curr:
             return start_val, CURRENT_YEAR, True
         elif ey and em:
-            end_val = int(ey) + (int(em) - 1) / 12.0
+            end_val = int(ey) + int(em) / 12.0
             if end_val >= start_val and (end_val - start_val) <= 40.0:
                 return start_val, end_val, False
 
     return None
 
 
+# ── Non-IT and IT Role Identification Lexicons ────────────────────────────────
+NON_IT_KEYWORDS = {
+    "accountant", "accounting", "auditor", "bookkeeper", "cashier", "financial analyst",
+    "finance", "banker", "teller", "tax consultant", "investment analyst", "payroll",
+    "chef", "cook", "baker", "waiter", "waitress", "bartender", "culinary", "hospitality", "hotel manager",
+    "nurse", "doctor", "physician", "pharmacist", "therapist", "medical", "dentist", "surgeon",
+    "driver", "chauffeur", "delivery", "warehouse", "logistics coordinator", "supply chain specialist",
+    "sales representative", "sales executive", "retail associate", "store manager", "customer service",
+    "receptionist", "office assistant", "administrative assistant", "secretary", "clerk",
+    "teacher", "history teacher", "english literature", "tutor", "counselor", "professor", "lecturer",
+    "lawyer", "attorney", "paralegal", "legal assistant",
+    "construction", "electrician", "plumber", "carpenter", "painter", "mechanic",
+    "civil engineer", "mechanical engineer", "chemical engineer", "production manager",
+    "hr manager", "human resources", "recruiter", "talent acquisition", "security guard", "cleaner"
+}
+
+IT_TITLE_KEYWORDS = {
+    "software", "developer", "engineer", "programmer", "architect", "analyst", "devops",
+    "data", "frontend", "backend", "fullstack", "full stack", "cloud", "security",
+    "admin", "dba", "sre", "qa", "tester", "mobile", "ios", "android", "ai", "ml", "tech",
+    "sysadmin", "infrastructure", "systems", "network", "web", "ui/ux", "product designer",
+    "scrum master", "product owner", "machine learning", "deep learning", "nlp", "blockchain"
+}
+
+# ── Certification Role Relevance Matrix ────────────────────────────────────────
+CERTIFICATION_ROLE_RELEVANCE: Dict[str, Dict[str, float]] = {
+    "aws certified solutions architect": {
+        "Cloud Solutions Architect": 1.0, "DevOps Engineer": 0.95, "Site Reliability Engineer": 0.95,
+        "Backend Developer": 0.85, "Software Engineer": 0.80, "Full Stack Developer": 0.80,
+        "UI/UX Designer": 0.05, "Data Scientist": 0.40, "QA/Test Automation Engineer": 0.30
+    },
+    "aws certified developer": {
+        "Cloud Solutions Architect": 0.90, "DevOps Engineer": 0.90, "Backend Developer": 0.95,
+        "Software Engineer": 0.90, "Full Stack Developer": 0.90, "UI/UX Designer": 0.05
+    },
+    "aws certified sysops administrator": {
+        "DevOps Engineer": 1.0, "Site Reliability Engineer": 0.95, "Cloud Solutions Architect": 0.90,
+        "Systems Administrator": 0.95, "Software Engineer": 0.60, "UI/UX Designer": 0.0
+    },
+    "certified kubernetes administrator": {
+        "DevOps Engineer": 1.0, "Site Reliability Engineer": 1.0, "Cloud Solutions Architect": 0.95,
+        "Backend Developer": 0.75, "Software Engineer": 0.70, "UI/UX Designer": 0.0
+    },
+    "ccna": {
+        "Network Engineer": 1.0, "Cybersecurity Analyst": 0.85, "Systems Administrator": 0.85,
+        "DevOps Engineer": 0.65, "Software Engineer": 0.40, "Data Scientist": 0.05, "UI/UX Designer": 0.0
+    },
+    "ccnp": {
+        "Network Engineer": 1.0, "Cybersecurity Analyst": 0.90, "Data Scientist": 0.05, "UI/UX Designer": 0.0
+    },
+    "cissp": {
+        "Cybersecurity Analyst": 1.0, "Security Engineer": 1.0, "Cloud Solutions Architect": 0.80,
+        "Software Engineer": 0.40, "UI/UX Designer": 0.0, "Data Scientist": 0.10
+    },
+    "ceh": {
+        "Cybersecurity Analyst": 1.0, "Network Engineer": 0.75, "Software Engineer": 0.40, "UI/UX Designer": 0.0
+    },
+    "comptia security+": {
+        "Cybersecurity Analyst": 1.0, "Network Engineer": 0.80, "Systems Administrator": 0.80,
+        "Software Engineer": 0.40, "UI/UX Designer": 0.0
+    },
+    "tensorflow developer": {
+        "Machine Learning Engineer": 1.0, "Data Scientist": 1.0, "AI/NLP Engineer": 1.0,
+        "Software Engineer": 0.60, "Network Engineer": 0.0, "UI/UX Designer": 0.0
+    },
+    "pmp": {
+        "Business/Systems Analyst": 1.0, "Software Engineer": 0.40, "UI/UX Designer": 0.30
+    },
+    "certified scrum master": {
+        "Business/Systems Analyst": 1.0, "Software Engineer": 0.60, "Frontend Developer": 0.50
+    }
+}
+
+# ── Education Field vs Role Relevance Matrix ──────────────────────────────────
+EDUCATION_FIELD_ROLE_RELEVANCE: Dict[str, Dict[str, float]] = {
+    "Software Engineer": {
+        "Computer Science": 1.0, "Software Engineering": 1.0, "Information Technology": 1.0,
+        "Computer Engineering": 1.0, "Information Systems": 0.90, "Data Science": 0.95,
+        "Artificial Intelligence": 1.0, "Engineering": 0.85, "Mathematics": 0.65, "Physics": 0.60,
+        "Accounting & Finance": 0.05, "Business Administration": 0.15, "Culinary & Hospitality": 0.0,
+        "Medicine & Health": 0.0, "Arts & Humanities": 0.0, "Law": 0.0
+    },
+    "Backend Developer": {
+        "Computer Science": 1.0, "Software Engineering": 1.0, "Information Technology": 1.0,
+        "Computer Engineering": 1.0, "Information Systems": 0.90, "Data Science": 0.90,
+        "Artificial Intelligence": 0.90, "Mathematics": 0.60, "Accounting & Finance": 0.05,
+        "Culinary & Hospitality": 0.0
+    },
+    "Frontend Developer": {
+        "Computer Science": 0.95, "Software Engineering": 1.0, "Information Technology": 1.0,
+        "Interactive Media & HCI": 1.0, "Web Development": 1.0, "Graphic Design": 0.75,
+        "Accounting & Finance": 0.05, "Culinary & Hospitality": 0.0
+    },
+    "Full Stack Developer": {
+        "Computer Science": 1.0, "Software Engineering": 1.0, "Information Technology": 1.0,
+        "Computer Engineering": 1.0, "Information Systems": 0.90, "Web Development": 1.0
+    },
+    "Data Scientist": {
+        "Data Science": 1.0, "Statistics": 1.0, "Mathematics": 0.95, "Computer Science": 0.90,
+        "Artificial Intelligence": 1.0, "Machine Learning": 1.0, "Physics": 0.80,
+        "Information Technology": 0.80, "Economics / Econometrics": 0.70, "Accounting & Finance": 0.20,
+        "Culinary & Hospitality": 0.0
+    },
+    "Machine Learning Engineer": {
+        "Data Science": 1.0, "Artificial Intelligence": 1.0, "Machine Learning": 1.0,
+        "Computer Science": 0.95, "Mathematics": 0.90, "Statistics": 0.90,
+        "Software Engineering": 0.85, "Information Technology": 0.80
+    },
+    "DevOps Engineer": {
+        "Computer Networks & Systems": 1.0, "Cloud & DevOps": 1.0, "Computer Science": 0.95,
+        "Software Engineering": 0.95, "Information Technology": 0.95, "Computer Engineering": 0.95,
+        "Networking": 0.95
+    },
+    "Cloud Solutions Architect": {
+        "Cloud & DevOps": 1.0, "Computer Networks & Systems": 0.95, "Computer Science": 0.95,
+        "Software Engineering": 0.95, "Information Technology": 0.95
+    },
+    "Cybersecurity Analyst": {
+        "Cybersecurity": 1.0, "Information Security": 1.0, "Computer Networks & Systems": 0.95,
+        "Networking": 0.95, "Computer Science": 0.90, "Information Technology": 0.90
+    },
+    "Network Engineer": {
+        "Networking": 1.0, "Computer Networks & Systems": 1.0, "Telecommunications": 0.95,
+        "Computer Engineering": 0.90, "Information Technology": 0.90, "Computer Science": 0.85
+    },
+    "Database Administrator": {
+        "Business Information Systems": 1.0, "Information Technology": 1.0, "Computer Science": 0.95,
+        "Software Engineering": 0.90, "Data Science": 0.90
+    },
+    "UI/UX Designer": {
+        "Interactive Media & HCI": 1.0, "Graphic Design": 0.90, "Human Computer Interaction": 1.0,
+        "Information Technology": 0.75, "Computer Science": 0.70
+    },
+    "Business/Systems Analyst": {
+        "Business Information Systems": 1.0, "Information Technology": 0.95, "Management Information Systems": 1.0,
+        "Computer Science": 0.85, "Business Administration": 0.75, "Accounting & Finance": 0.40
+    },
+    "QA/Test Automation Engineer": {
+        "Computer Science": 1.0, "Software Engineering": 1.0, "Information Technology": 1.0,
+        "Computer Engineering": 1.0, "Information Systems": 0.90, "Data Science": 0.85,
+        "Accounting & Finance": 0.05, "Culinary & Hospitality": 0.0
+    },
+    "Data Engineer": {
+        "Data Science": 1.0, "Computer Science": 1.0, "Software Engineering": 0.95,
+        "Information Technology": 0.95, "Computer Engineering": 1.0, "Mathematics": 0.85, "Statistics": 0.85
+    },
+    "Site Reliability Engineer": {
+        "Computer Networks & Systems": 1.0, "Cloud & DevOps": 1.0, "Computer Science": 0.95,
+        "Software Engineering": 0.95, "Information Technology": 0.95, "Computer Engineering": 0.95
+    },
+    "Mobile App Developer": {
+        "Computer Science": 1.0, "Software Engineering": 1.0, "Information Technology": 1.0,
+        "Computer Engineering": 0.95, "Interactive Media & HCI": 0.90
+    },
+    "AI/NLP Engineer": {
+        "Artificial Intelligence": 1.0, "Data Science": 1.0, "Machine Learning": 1.0,
+        "Computer Science": 0.95, "Mathematics": 0.90, "Statistics": 0.90, "Software Engineering": 0.85
+    },
+    "Blockchain Developer": {
+        "Computer Science": 1.0, "Software Engineering": 1.0, "Cybersecurity": 0.95,
+        "Information Technology": 0.90, "Computer Engineering": 0.90
+    },
+    "Embedded Systems Engineer": {
+        "Computer Engineering": 1.0, "Electrical Engineering": 1.0, "Electronic Engineering": 1.0,
+        "Systems Engineering": 0.95, "Computer Science": 0.90, "Software Engineering": 0.85
+    }
+}
+
+
+def _classify_relevance_category(score: float) -> str:
+    """Classify numeric relevance score (0.0 - 1.0) into standard categories."""
+    if score >= 0.80:
+        return "HIGHLY_RELEVANT"
+    elif score >= 0.60:
+        return "RELEVANT"
+    elif score >= 0.40:
+        return "PARTIALLY_RELEVANT"
+    elif score >= 0.10:
+        return "WEAKLY_RELATED"
+    else:
+        return "IRRELEVANT"
+
+
+def _merge_calendar_intervals(intervals: List[Tuple[float, float]]) -> float:
+    """Merge overlapping [start_year, end_year] intervals and return total non-overlapping years."""
+    if not intervals:
+        return 0.0
+    sorted_ivs = sorted(intervals, key=lambda x: x[0])
+    merged: List[List[float]] = []
+    for s, e in sorted_ivs:
+        if s > e:
+            continue
+        if not merged:
+            merged.append([s, e])
+        else:
+            if s <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], e)
+            else:
+                merged.append([s, e])
+    return sum(e - s for s, e in merged)
+
+
 def extract_employment_records(text: str, target_role: str = "Software Engineer") -> List[Dict[str, Any]]:
     """Extract individual employment records with title, company, dates, responsibilities, and role relevance."""
     sections = extract_sections(text)
     exp_text = sections.get("experience", "")
+
+    # If the document is structured with sections (e.g. education, projects, skills, activities, references)
+    # but does NOT have an experience section, then the candidate has no professional employment history.
+    has_other_sections = any(
+        k in sections for k in ["education", "projects", "skills", "activities", "references", "certifications", "summary"]
+    )
     if not exp_text:
-        # Fallback to whole text if sections not partitioned
+        if has_other_sections:
+            return []
+        # Fallback to whole text ONLY if the document has NO standard section headings at all (completely unformatted text)
         exp_text = text
 
     lines = exp_text.splitlines()
@@ -323,7 +592,7 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
         "consultant", "intern", "manager", "specialist", "scientist", "programmer", "designer",
         "accountant", "auditor", "bookkeeper", "cashier", "chef", "cook", "nurse", "officer",
         "executive", "representative", "associate", "coordinator", "assistant", "teacher",
-        "trainee", "director", "head", "supervisor"
+        "trainee", "director", "head", "supervisor", "technician", "specialist"
     ]
 
     for line in lines:
@@ -383,7 +652,6 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
                 clean_bullet = re.sub(r'^[•\-\*\—\>\s]+', '', stripped).strip()
                 if len(clean_bullet) > 10:
                     current_record["responsibilities"].append(clean_bullet)
-                    # Check technologies inside bullet
                     bullet_l = clean_bullet.lower()
                     for cat_skills in SKILL_LEXICON.values():
                         for s in cat_skills:
@@ -393,52 +661,206 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
     if current_record and current_record.get("job_title"):
         records.append(current_record)
 
-    # Non-IT role keywords for zero-relevance filtering
-    non_it_keywords = {
-        "accountant", "accounting", "auditor", "bookkeeper", "cashier", "financial analyst",
-        "chef", "cook", "baker", "waiter", "waitress", "bartender", "culinary",
-        "nurse", "doctor", "physician", "pharmacist", "therapist", "medical",
-        "driver", "chauffeur", "delivery", "warehouse", "logistics coordinator",
-        "sales representative", "sales executive", "retail associate", "store manager",
-        "teacher", "history", "english literature", "tutor", "counselor",
-        "lawyer", "attorney", "paralegal", "legal assistant",
-        "construction", "electrician", "plumber", "carpenter"
-    }
-
-    general_it_keywords = {
-        "software", "developer", "engineer", "programmer", "architect", "analyst", "devops",
-        "data", "frontend", "backend", "fullstack", "full stack", "cloud", "security",
-        "admin", "dba", "sre", "qa", "tester", "mobile", "ios", "android", "ai", "ml", "tech"
-    }
-
-    # Compute role relevance for each employment record
     compat_map = ROLE_COMPATIBILITY.get(target_role, {})
+    from data.role_requirements import REQUIRED_SKILLS
+    target_req_skills = set(s.lower() for s in REQUIRED_SKILLS.get(target_role, []))
+
+    ROLE_RESPONSIBILITY_KEYWORDS: Dict[str, Set[str]] = {
+        "Backend Developer": {"api", "rest", "backend", "database", "microservices", "sql", "fastapi", "django", "flask", "spring", "server", "postgres", "postgresql", "redis", "kafka", "orm", "endpoint", "crud", "queries"},
+        "Frontend Developer": {"react", "vue", "angular", "css", "html", "html5", "ui", "ux", "component", "components", "responsive", "web", "redux", "tailwind", "dom", "frontend", "typescript", "javascript", "browser", "figma"},
+        "Full Stack Developer": {"react", "vue", "node", "node.js", "backend", "frontend", "api", "database", "fullstack", "full stack", "web", "rest", "sql", "python", "javascript", "microservices"},
+        "Software Engineer": {"software", "architecture", "api", "algorithms", "data structures", "system", "systems", "backend", "frontend", "testing", "tests", "unit", "git", "ci/cd", "development", "web", "components", "react", "node", "node.js", "python", "java", "jira", "code", "services", "database", "sql"},
+        "Machine Learning Engineer": {"machine learning", "ml", "deep learning", "model", "models", "tensorflow", "pytorch", "nlp", "training", "inference", "scikit-learn", "neural", "pipeline", "pandas", "dataset"},
+        "Data Scientist": {"statistics", "data analysis", "machine learning", "pandas", "numpy", "visualization", "hypothesis", "predictive", "regression", "classification", "sql", "insights", "analytics", "experiments"},
+        "DevOps Engineer": {"ci/cd", "docker", "kubernetes", "terraform", "pipeline", "aws", "cloud", "jenkins", "ansible", "deployment", "infrastructure", "linux", "monitoring"},
+        "Cloud Solutions Architect": {"cloud", "aws", "azure", "gcp", "architecture", "infrastructure", "migration", "serverless", "security", "scalability", "cost optimization"},
+        "Cybersecurity Analyst": {"security", "vulnerability", "siem", "soc", "penetration", "incident", "threat", "firewall", "compliance", "encryption", "audit", "forensics"},
+        "Network Engineer": {"network", "cisco", "routing", "switching", "vpn", "bgp", "ospf", "lan", "wan", "firewall", "tcp/ip", "dns", "subnets"},
+        "UI/UX Designer": {"wireframe", "prototype", "figma", "sketch", "user research", "usability", "design system", "persona", "mockup", "interaction design"},
+        "QA/Test Automation Engineer": {"qa", "test", "testing", "selenium", "pytest", "junit", "automation", "uat", "manual", "defect", "jira", "regression", "bdd", "cucumber", "testrail", "postman", "cases", "validation"},
+        "Data Engineer": {"pipeline", "etl", "spark", "airflow", "kafka", "hadoop", "sql", "data lake", "data warehouse", "snowflake", "bigquery", "streaming", "batch", "ingestion", "dbt"},
+        "Site Reliability Engineer": {"sre", "reliability", "prometheus", "grafana", "monitoring", "alerting", "kubernetes", "incident", "sla", "slo", "sli", "infrastructure", "linux", "cloud", "docker"},
+        "Database Administrator": {"database", "sql", "oracle", "mysql", "postgres", "postgresql", "dba", "backup", "recovery", "replication", "indexing", "performance", "tuning", "stored procedures"},
+        "Mobile App Developer": {"mobile", "ios", "android", "swift", "kotlin", "flutter", "react native", "app", "ui", "sdk", "xcode", "gradle", "play store", "app store"},
+        "Business/Systems Analyst": {"requirements", "business analyst", "systems analyst", "agile", "scrum", "jira", "confluence", "user stories", "use cases", "stakeholder", "process", "workflow", "functional", "specifications"},
+        "AI/NLP Engineer": {"nlp", "natural language", "transformers", "bert", "llm", "embeddings", "ner", "text", "langchain", "prompt", "tokenization", "huggingface", "spacy", "genai"},
+        "Blockchain Developer": {"blockchain", "solidity", "smart contract", "smart contracts", "ethereum", "web3", "crypto", "defi", "nft", "dapp", "consensus", "truffle", "hardhat"},
+        "Embedded Systems Engineer": {"embedded", "microcontroller", "firmware", "c", "c++", "rtos", "arm", "iot", "sensor", "hardware", "pcb", "i2c", "spi", "uart", "device driver"}
+    }
+
+    target_keywords = ROLE_RESPONSIBILITY_KEYWORDS.get(target_role, {"software", "engineer", "development", "api", "system", "code", "testing"})
+
     for rec in records:
         t_low = rec["job_title"].lower()
-        rel_factor = 0.0  # default zero relevance for unverified/non-IT roles
+        duration_m = rec.get("duration_months", 12.0)
+        has_dates = rec.get("has_explicit_dates", False)
+        resp_list = rec.get("responsibilities", [])
+        tech_list = rec.get("technologies", [])
 
-        # Check explicit compatibility mapping for target role
-        for role_key, score in compat_map.items():
-            if role_key in t_low:
-                rel_factor = max(rel_factor, score)
+        is_explicit_non_it = any(re.search(r'\b' + re.escape(kw) + r'\b', t_low) for kw in NON_IT_KEYWORDS)
+        has_it_title = any(re.search(r'\b' + re.escape(kw) + r'\b', t_low) for kw in IT_TITLE_KEYWORDS)
 
-        # If not explicitly mapped, check whether it is a non-IT role or general IT role
-        if rel_factor == 0.0:
-            is_non_it = any(re.search(r'\b' + re.escape(kw) + r'\b', t_low) for kw in non_it_keywords)
-            has_it_kw = any(re.search(r'\b' + re.escape(kw) + r'\b', t_low) for kw in general_it_keywords)
-            if has_it_kw and not is_non_it:
-                rel_factor = 0.70
-            elif is_non_it:
-                rel_factor = 0.0
+        is_it = has_it_title and not is_explicit_non_it
+        if not is_it and not is_explicit_non_it:
+            if len(tech_list) >= 2 or len(resp_list) >= 2:
+                is_it = True
+
+        if is_explicit_non_it or not is_it:
+            rec.update({
+                "industry_domain": "Non-IT / " + rec.get("job_title", "General"),
+                "is_it_related": False,
+                "category": "NON_IT",
+                "title_similarity": 0.0,
+                "responsibility_similarity": 0.0,
+                "technology_similarity": 0.0,
+                "skill_similarity": 0.0,
+                "semantic_similarity": 0.0,
+                "domain_relevance": 0.0,
+                "target_role_relevance": 0.0,
+                "relevance_to_target_role": 0.0,
+                "relevance_category": "IRRELEVANT",
+                "relevant_experience_months": 0.0,
+                "relevant_months": 0.0,
+                "extraction_confidence": 0.95 if has_dates else 0.70,
+                "relevance_confidence": 0.98,
+                "manual_review_recommended": False,
+                "extracted_skills": tech_list,
+                "explanation": f"Job title '{rec['job_title']}' is non-IT and has 0% relevance to target role '{target_role}'."
+            })
+            continue
+
+        rec["industry_domain"] = "Information Technology"
+        rec["is_it_related"] = True
+        rec["category"] = "IT_RELEVANT"
+        domain_relevance = 1.0
+
+        title_sim = 0.0
+        if target_role.lower() in t_low or t_low in target_role.lower():
+            title_sim = 1.0
+        elif any(re.search(r'\b' + re.escape(w) + r'\b', t_low) for w in target_role.lower().split()):
+            title_sim = 0.90
+        else:
+            for role_key, score_val in compat_map.items():
+                if role_key in t_low:
+                    title_sim = max(title_sim, score_val)
+
+        if title_sim == 0.0:
+            if any(k in t_low for k in ["software engineer", "software developer", "engineer"]):
+                title_sim = 0.70
+            elif any(k in t_low for k in ["developer", "programmer"]):
+                title_sim = 0.50
+            elif has_it_title:
+                title_sim = 0.40
             else:
-                # Check technologies in this employment period
-                if len(rec.get("technologies", [])) >= 2:
-                    rel_factor = 0.60
-                else:
-                    rel_factor = 0.0
+                title_sim = 0.20
 
-        rec["relevance_to_target_role"] = round(rel_factor, 2)
-        rec["relevant_months"] = round(rec["duration_months"] * rel_factor, 1)
+        resp_text = " ".join(resp_list).lower()
+        resp_words = set(re.findall(r'\b[a-zA-Z\+\#\.\-]{2,}\b', resp_text))
+        
+        has_resp = len(resp_list) > 0
+        if has_resp:
+            overlap_resp = len(resp_words.intersection(target_keywords))
+            resp_sim = min(1.0, overlap_resp / max(2, len(target_keywords) * 0.2))
+            
+            if target_role == "Backend Developer" and any(k in resp_text for k in ["react", "vue", "angular", "css", "html", "ui design"]) and not any(k in resp_text for k in ["api", "database", "sql", "backend", "server", "fastapi", "django"]):
+                resp_sim = min(0.15, resp_sim)
+            elif target_role == "Machine Learning Engineer" and not any(k in resp_text for k in ["machine learning", "ml", "deep learning", "model", "tensorflow", "pytorch", "scikit", "nlp", "pandas"]):
+                resp_sim = min(0.15, resp_sim)
+            elif target_role == "Software Engineer" and overlap_resp >= 2:
+                resp_sim = max(resp_sim, 0.90)
+        else:
+            resp_sim = title_sim
+
+        rec_techs = set(s.lower() for s in tech_list)
+        has_tech = len(tech_list) > 0
+        if has_tech:
+            tech_matches = len(rec_techs.intersection(target_req_skills))
+            tech_sim = min(1.0, tech_matches / max(2, len(target_req_skills) * 0.3))
+            if tech_matches >= 2:
+                tech_sim = 1.0
+            elif tech_matches == 0:
+                if target_role == "Backend Developer" and any(t in rec_techs for t in ["react", "vue", "html", "css", "figma"]):
+                    tech_sim = 0.05
+                elif target_role == "Software Engineer" and any(t in rec_techs for t in ["python", "java", "c++", "c#", "react", "node.js", "sql", "git", "jira"]):
+                    tech_sim = 0.90
+                else:
+                    tech_sim = 0.30
+        else:
+            tech_sim = title_sim
+
+        skill_matches = len(rec_techs.intersection(target_req_skills))
+        skill_sim = min(1.0, skill_matches / max(2, len(target_req_skills) * 0.3)) if has_tech else title_sim
+
+        semantic_sim = round((title_sim * 0.40) + (resp_sim * 0.60), 2)
+
+        w_title = 0.20
+        w_resp = 0.25 if has_resp else 0.0
+        w_tech = 0.25 if has_tech else 0.0
+        w_skill = 0.10 if has_tech else 0.0
+        w_sem = 0.10
+        w_domain = 0.10
+
+        total_weight = w_title + w_resp + w_tech + w_skill + w_sem + w_domain
+        if total_weight > 0:
+            w_title /= total_weight
+            w_resp /= total_weight
+            w_tech /= total_weight
+            w_skill /= total_weight
+            w_sem /= total_weight
+            w_domain /= total_weight
+
+        hybrid_relevance = (
+            (w_title * title_sim) +
+            (w_resp * resp_sim) +
+            (w_tech * tech_sim) +
+            (w_skill * skill_sim) +
+            (w_sem * semantic_sim) +
+            (w_domain * domain_relevance)
+        )
+
+        if target_role in ["Software Engineer", "Full Stack Developer"] and title_sim >= 0.85:
+            hybrid_relevance = max(hybrid_relevance, 0.90)
+        elif target_role == "Full Stack Developer" and ("frontend" in t_low or "backend" in t_low or "web" in t_low or tech_sim >= 0.5):
+            hybrid_relevance = max(hybrid_relevance, 0.85)
+
+        hybrid_relevance = round(max(0.0, min(1.0, hybrid_relevance)), 2)
+        rel_cat = _classify_relevance_category(hybrid_relevance)
+        rel_months = round(duration_m * hybrid_relevance, 1)
+
+        ext_conf = 0.95 if (has_dates and has_resp) else (0.80 if has_dates else 0.65)
+        signal_spread = abs(title_sim - tech_sim) if has_tech else 0.0
+        rel_conf = round(max(0.60, 0.95 - (signal_spread * 0.30)), 2)
+        needs_review = (ext_conf < 0.70 or rel_conf < 0.65)
+
+        if rel_cat == "HIGHLY_RELEVANT":
+            explanation = f"Job title '{rec['job_title']}' and technical responsibilities are highly relevant ({int(hybrid_relevance*100)}%) to '{target_role}'."
+        elif rel_cat == "RELEVANT":
+            explanation = f"Job title '{rec['job_title']}' is directly relevant ({int(hybrid_relevance*100)}%) to '{target_role}'."
+        elif rel_cat == "PARTIALLY_RELEVANT":
+            explanation = f"Job title '{rec['job_title']}' shares partial technical overlap ({int(hybrid_relevance*100)}%) with '{target_role}'."
+        elif rel_cat == "WEAKLY_RELATED":
+            explanation = f"Job title '{rec['job_title']}' is weakly related ({int(hybrid_relevance*100)}%) to '{target_role}' with limited domain overlap."
+        else:
+            explanation = f"Job title '{rec['job_title']}' is not relevant to '{target_role}'."
+
+        rec.update({
+            "title_similarity": round(title_sim, 2),
+            "responsibility_similarity": round(resp_sim, 2),
+            "technology_similarity": round(tech_sim, 2),
+            "skill_similarity": round(skill_sim, 2),
+            "semantic_similarity": round(semantic_sim, 2),
+            "domain_relevance": round(domain_relevance, 2),
+            "target_role_relevance": hybrid_relevance,
+            "relevance_to_target_role": hybrid_relevance,
+            "relevance_category": rel_cat,
+            "relevant_experience_months": rel_months,
+            "relevant_months": rel_months,
+            "extraction_confidence": ext_conf,
+            "relevance_confidence": rel_conf,
+            "manual_review_recommended": needs_review,
+            "extracted_skills": tech_list,
+            "explanation": explanation
+        })
 
     return records
 
@@ -451,7 +873,17 @@ def extract_experience_years(text: str) -> float:
     lowered = text.lower()
     candidates: List[float] = []
 
-    # 1. Explicit experience statements
+    # 2. Extract sections & non-overlapping intervals
+    sections = extract_sections(text)
+    work_text = sections.get("experience", "")
+    has_other_sections = any(
+        k in sections for k in ["education", "projects", "skills", "activities", "references", "certifications", "summary"]
+    )
+
+    # 1. Explicit experience statements (search in summary or experience if structured)
+    search_target = (sections.get("summary", "") + "\n" + sections.get("experience", "")) if has_other_sections else text
+    search_target_low = search_target.lower()
+
     explicit_patterns = [
         r'(?:total\s+|professional\s+|work\s+|industry\s+)?experience\s*[:\-]?\s*(?:over\s+|more\s+than\s+)?(\d+(?:\.\d+)?)\s*\+?\s*(years?|yrs?|months?|mos?)',
         r'(\d+(?:\.\d+)?)\s*\+?\s*(years?|yrs?|months?|mos?)\s+(?:of\s+)?(?:experience|work|industry|field|background)',
@@ -462,7 +894,7 @@ def extract_experience_years(text: str) -> float:
         r'(?:intern|internship|trainee|developer|engineer|analyst|associate|lead|manager|consultant)\s*\((\d+(?:\.\d+)?)\s*(years?|yrs?|months?|mos?)\)',
     ]
     for pattern in explicit_patterns:
-        for m in re.finditer(pattern, lowered):
+        for m in re.finditer(pattern, search_target_low):
             try:
                 val = float(m.group(1))
                 unit = m.group(2) if len(m.groups()) >= 2 else "years"
@@ -473,27 +905,27 @@ def extract_experience_years(text: str) -> float:
             except (ValueError, IndexError):
                 pass
 
-    # 2. Extract sections & non-overlapping intervals
-    sections = extract_sections(text)
-    work_text = sections.get("experience", "")
-
     # Fallback if no explicit work section header: exclude lines clearly belonging to education or school
     if not work_text:
-        filtered_lines = []
-        is_edu = False
-        for l in text.splitlines():
-            ll = l.strip().lower()
-            if re.match(r'^(?:educational\s+background|academic\s+background|educational\s+qualifications?|academic\s+qualifications?|education|academics?|schooling|degrees?)\b', ll):
-                is_edu = True
-                continue
-            elif re.match(r'^(?:projects?|key\s+projects?|skills?|certifications?)\b', ll):
-                is_edu = False
-            if is_edu:
-                continue
-            if any(kw in ll for kw in ['school', 'ordinary level', 'advanced level', 'g.c.e', 'o/l', 'a/l', 'sliit', 'bsc', 'msc', 'bachelor', 'undergraduate', 'university', 'college', 'degree', 'hospital management']):
-                continue
-            filtered_lines.append(l.strip())
-        work_text = '\n'.join(filtered_lines)
+        if has_other_sections:
+            # Document is structured into sections and has NO experience section. Candidate has NO employment experience.
+            work_text = ""
+        else:
+            filtered_lines = []
+            is_edu = False
+            for l in text.splitlines():
+                ll = l.strip().lower()
+                if re.match(r'^(?:educational\s+background|academic\s+background|educational\s+qualifications?|academic\s+qualifications?|education|academics?|schooling|degrees?|qualifications?)\b', ll):
+                    is_edu = True
+                    continue
+                elif re.match(r'^(?:projects?|key\s+projects?|skills?|certifications?|references?|activities|clubs?)\b', ll):
+                    is_edu = False
+                if is_edu:
+                    continue
+                if any(kw in ll for kw in ['school', 'ordinary level', 'advanced level', 'g.c.e', 'o/l', 'a/l', 'sliit', 'bsc', 'msc', 'bachelor', 'undergraduate', 'university', 'college', 'degree', 'hospital management']):
+                    continue
+                filtered_lines.append(l.strip())
+            work_text = '\n'.join(filtered_lines)
 
     intervals: List[Tuple[float, float]] = []
 
@@ -532,24 +964,13 @@ def extract_experience_years(text: str) -> float:
         except (ValueError, TypeError):
             pass
 
-
     # Merge intervals
     if intervals:
-        intervals.sort(key=lambda x: x[0])
-        merged: List[List[float]] = []
-        for s, e in intervals:
-            if not merged:
-                merged.append([s, e])
-            else:
-                if s <= merged[-1][1]:
-                    merged[-1][1] = max(merged[-1][1], e)
-                else:
-                    merged.append([s, e])
-        total_span = sum(e - s for s, e in merged)
+        total_span = _merge_calendar_intervals(intervals)
         if total_span > 0:
             candidates.append(round(total_span, 1))
 
-    # 3. Month patterns
+    # 5. Month patterns
     month_patterns = [
         r'(\d{1,2})\s*\+?\s*(?:months?|mos?)\s+(?:of\s+)?(?:experience|work|internship)',
         r'(?:intern|internship|developer|engineer|analyst|associate)\s*\((\d{1,2})\s*(?:months?|mos?)\)',
@@ -571,27 +992,64 @@ def extract_experience_years(text: str) -> float:
 
 
 def extract_experience_details(text: str, target_role: str = "Software Engineer") -> Dict[str, Any]:
-    """Calculate Total Experience and Role-Relevant Experience separately against the target role."""
+    """Calculate Total Professional Experience, IT Experience, and Target-Role Relevant Experience separately."""
     records = extract_employment_records(text, target_role)
     total_exp_years = extract_experience_years(text)
 
-    # Compute non-overlapping relevant experience
     if records:
-        rec_total_years = sum(r.get("duration_months", 0.0) for r in records) / 12.0
-        rec_relevant_years = sum(r.get("relevant_months", 0.0) for r in records) / 12.0
-        if rec_total_years > 0:
-            total_exp_years = round(max(total_exp_years, rec_total_years), 2)
-            relevant_exp_years = round(rec_relevant_years, 2)
+        # Build non-overlapping intervals for total professional experience
+        all_intervals = [
+            (r["start_year"], r["end_year"])
+            for r in records
+            if r.get("has_explicit_dates") and r.get("end_year", 0.0) >= r.get("start_year", 0.0)
+        ]
+        if all_intervals:
+            merged_total_years = _merge_calendar_intervals(all_intervals)
         else:
-            relevant_exp_years = total_exp_years
+            merged_total_years = sum(r.get("duration_months", 0.0) for r in records) / 12.0
+
+        total_prof_years = round(max(total_exp_years, merged_total_years), 2)
+        total_prof_months = round(total_prof_years * 12.0, 1)
+
+        # Build non-overlapping intervals for IT sector experience
+        it_records = [r for r in records if r.get("is_it_related", False)]
+        it_intervals = [
+            (r["start_year"], r["end_year"])
+            for r in it_records
+            if r.get("has_explicit_dates") and r.get("end_year", 0.0) >= r.get("start_year", 0.0)
+        ]
+        if it_intervals:
+            it_years = round(_merge_calendar_intervals(it_intervals), 2)
+        else:
+            it_years = round(sum(r.get("duration_months", 0.0) for r in it_records) / 12.0, 2)
+        it_months = round(it_years * 12.0, 1)
+
+        # Target-role relevant experience: weighted sum of record durations
+        relevant_months = round(sum(r.get("relevant_experience_months", 0.0) for r in records), 1)
+        # Cap relevant months by IT timeline to prevent double-counting parallel jobs
+        relevant_months = min(it_months, relevant_months)
+        relevant_exp_years = round(relevant_months / 12.0, 2)
     else:
-        relevant_exp_years = total_exp_years
+        # No employment records parsed from text
+        total_prof_years = round(total_exp_years, 2)
+        total_prof_months = round(total_prof_years * 12.0, 1)
+        it_years = total_prof_years
+        it_months = total_prof_months
+        relevant_exp_years = total_prof_years
+        relevant_months = total_prof_months
 
     seniority_info = detect_seniority(records, relevant_exp_years, text)
 
     return {
-        "total_experience_years": round(total_exp_years, 2),
-        "role_relevant_experience_years": round(relevant_exp_years, 2),
+        "total_professional_experience_months": total_prof_months,
+        "total_professional_experience_years": total_prof_years,
+        "total_experience_years": total_prof_years,
+        "it_sector_experience_months": it_months,
+        "it_sector_experience_years": it_years,
+        "it_experience_years": it_years,
+        "target_role_relevant_experience_months": relevant_months,
+        "target_role_relevant_experience_years": relevant_exp_years,
+        "role_relevant_experience_years": relevant_exp_years,
         "employment_records": records,
         "seniority": seniority_info["seniority"],
         "seniority_confidence": seniority_info["confidence"],
@@ -670,13 +1128,14 @@ def extract_education_level(text: str) -> Dict[str, Any]:
         "Data Science": (r'data science', r'analytics', r'big data', r'data engineering', r'business intelligence'),
         "Cybersecurity": (r'cybersecurity', r'cyber security', r'information security', r'network security'),
         "Networking": (r'network engineering', r'telecommunications', r'computer networks', r'cloud architecture'),
+        "Mathematics": (r'mathematics', r'applied mathematics', r'statistics', r'\bmath\b', r'actuarial'),
         "Engineering": (r'computer engineering', r'electrical engineering', r'electronic engineering', r'systems engineering', r'engineering')
     }
 
     non_it_major_patterns = {
-        "Accounting & Finance": (r'accounting', r'finance', r'banking', r'commerce', r'accountancy'),
+        "Accounting & Finance": (r'accounting', r'finance', r'banking', r'commerce', r'accountancy', r'accountant'),
         "Business Administration": (r'business administration', r'\bmba\b', r'\bbba\b', r'marketing', r'management', r'human resources'),
-        "Culinary & Hospitality": (r'culinary', r'hospitality', r'hotel management', r'catering'),
+        "Culinary & Hospitality": (r'culinary', r'hospitality', r'hotel management', r'catering', r'tourism'),
         "Medicine & Health": (r'nursing', r'medicine', r'pharmacy', r'medical', r'healthcare'),
         "Arts & Humanities": (r'history', r'english', r'literature', r'philosophy', r'fine arts', r'psychology', r'sociology'),
         "Law": (r'law', r'\bllb\b', r'\bllm\b', r'legal studies')
@@ -753,55 +1212,188 @@ def extract_education_level(text: str) -> Dict[str, Any]:
     }
 
 
-def extract_education_details(text: str) -> Dict[str, Any]:
-    """Extract structured education details including institution, graduation year, degree, and recognized certifications."""
+def extract_education_details(text: str, target_role: str = "Software Engineer") -> Dict[str, Any]:
+    """Extract structured education details including degree, field relevance, coursework, and recognized certifications."""
     edu_info = extract_education_level(text)
     sections = extract_sections(text)
     edu_text = sections.get("education", text)
+    edu_low = edu_text.lower()
 
-    # Institution extraction heuristics
+    # 1. Institution extraction heuristics
     inst_match = re.search(r'\b(?:at|from|university\s+of|institute\s+of)\s+([A-Za-z\s]+(?:University|Institute|College|Academy|SLIIT|IIT))\b', edu_text, re.I)
     institution = inst_match.group(0).strip() if inst_match else "Recognized Higher Education Institution"
 
-    # Graduation year
+    # 2. Graduation year
     year_match = re.search(r'\b(20[0-2]\d|19[8-9]\d)\b', edu_text)
     grad_year = int(year_match.group(1)) if year_match else None
 
-    # Verified Certifications vs Unverified Training
+    # 3. Coursework extraction
+    coursework: List[str] = []
+    coursework_patterns = [
+        r'(?:coursework|relevant\s+courses?|modules?|key\s+subjects?|subjects?)\s*[:\-]\s*([^\.\n]+)',
+        r'(?:courses?|modules?)\s+included?\s*[:\-]?\s*([^\.\n]+)'
+    ]
+    for cp in coursework_patterns:
+        m = re.search(cp, edu_low)
+        if m:
+            raw_courses = re.split(r'[,;•|/]', m.group(1))
+            for c in raw_courses:
+                c_clean = c.strip()
+                if 3 <= len(c_clean) <= 40:
+                    coursework.append(c_clean.title())
+
+    # 4. Field relevance calculation
+    majors = edu_info.get("majors", [])
+    specializations = edu_info.get("specializations", [])
+    all_fields = specializations + majors
+
+    field_map = EDUCATION_FIELD_ROLE_RELEVANCE.get(target_role, {})
+    best_field_rel = 0.20
+    matched_field = majors[0] if majors else "General IT"
+    for f in all_fields:
+        if f in field_map:
+            if field_map[f] > best_field_rel:
+                best_field_rel = field_map[f]
+                matched_field = f
+
+    is_non_it = any(m in ["Accounting & Finance", "Business Administration", "Culinary & Hospitality", "Medicine & Health", "Arts & Humanities", "Law"] for m in majors)
+    if is_non_it and not any(f in field_map for f in all_fields):
+        best_field_rel = 0.05
+        matched_field = majors[0] if majors else "Non-IT"
+
+    # Coursework boost (e.g. Mathematics degree with Machine Learning / Data Science courses for Data Scientist)
+    coursework_rel = 0.0
+    has_coursework = len(coursework) > 0
+    if has_coursework:
+        cw_text = " ".join(coursework).lower()
+        if target_role in ["Data Scientist", "Machine Learning Engineer"] and any(k in cw_text for k in ["machine learning", "statistics", "data science", "python", "deep learning", "probability", "data mining"]):
+            coursework_rel = 1.0
+            best_field_rel = max(best_field_rel, 0.90)
+        elif target_role in ["Software Engineer", "Backend Developer", "Full Stack Developer"] and any(k in cw_text for k in ["algorithms", "data structures", "software engineering", "database", "operating systems", "oop", "web development"]):
+            coursework_rel = 1.0
+            best_field_rel = max(best_field_rel, 0.90)
+        elif any(k in cw_text for k in ["it", "programming", "computer", "systems", "network"]):
+            coursework_rel = 0.70
+            best_field_rel = max(best_field_rel, 0.75)
+        else:
+            coursework_rel = 0.30
+
+    if best_field_rel >= 0.80:
+        field_rel_cat = "HIGH"
+    elif best_field_rel >= 0.60:
+        field_rel_cat = "RELEVANT"
+    elif best_field_rel >= 0.40:
+        field_rel_cat = "PARTIAL"
+    elif best_field_rel >= 0.10:
+        field_rel_cat = "LOW"
+    else:
+        field_rel_cat = "IRRELEVANT"
+
+    # 5. Verified Certifications evaluated against target role
     skills_certs = extract_skills_and_certifications(text)
     verified_certs = []
+    relevant_certs = []
+    cert_max_rel = 0.0
     for cert in skills_certs.get("detected_certs", []):
         cert_l = cert.lower()
+        cert_rel = 0.50
+        issuing_body = "Industry Vendor"
+        tier = "Professional"
+
         if cert_l in CANONICAL_CERTIFICATIONS:
             meta = CANONICAL_CERTIFICATIONS[cert_l]
-            verified_certs.append({
-                "certification": cert,
-                "issuing_body": meta["vendor"],
-                "tier": meta["tier"],
-                "is_verified_credential": True
-            })
+            issuing_body = meta["vendor"]
+            tier = meta["tier"]
+
+        if cert_l in CERTIFICATION_ROLE_RELEVANCE:
+            role_map = CERTIFICATION_ROLE_RELEVANCE[cert_l]
+            cert_rel = role_map.get(target_role, 0.20)
         else:
-            verified_certs.append({
-                "certification": cert,
-                "issuing_body": "Industry Vendor",
-                "tier": "Professional",
-                "is_verified_credential": True
-            })
+            cert_rel = 0.50
+
+        cert_max_rel = max(cert_max_rel, cert_rel)
+        cert_obj = {
+            "certification": cert,
+            "issuing_body": issuing_body,
+            "tier": tier,
+            "is_verified_credential": True,
+            "relevance_score": round(cert_rel, 2),
+            "is_role_relevant": cert_rel >= 0.60
+        }
+        verified_certs.append(cert_obj)
+        if cert_rel >= 0.60:
+            relevant_certs.append(cert_obj)
+
+    # 6. Hybrid Education Relevance Calculation
+    deg_level_match = edu_info["level_score"]
+    spec_rel = 1.0 if specializations else (0.80 if field_rel_cat in ["HIGH", "RELEVANT"] else 0.20)
+
+    # Dynamic weights
+    w_level = 0.25
+    w_field = 0.35
+    w_spec = 0.15 if specializations else 0.0
+    w_course = 0.15 if has_coursework else 0.0
+    w_cert = 0.10
+
+    total_w = w_level + w_field + w_spec + w_course + w_cert
+    if total_w > 0:
+        w_level /= total_w
+        w_field /= total_w
+        w_spec /= total_w
+        w_course /= total_w
+        w_cert /= total_w
+
+    edu_rel_composite = (
+        (w_level * (deg_level_match / 0.60 if deg_level_match <= 0.60 else 1.0)) +
+        (w_field * best_field_rel) +
+        (w_spec * spec_rel) +
+        (w_course * coursework_rel) +
+        (w_cert * cert_max_rel)
+    )
+    edu_rel_composite = round(max(0.0, min(1.0, edu_rel_composite)) * 100.0, 1)
+
+    # Confidence estimation
+    ext_conf = 0.95 if (institution != "Recognized Higher Education Institution" and grad_year) else (0.80 if grad_year else 0.65)
+
+    # Explanation construction
+    deg_level = edu_info["level_name"]
+    if field_rel_cat in ["HIGH", "RELEVANT"]:
+        explanation = f"{deg_level} in {matched_field} is highly relevant to {target_role}."
+    elif field_rel_cat == "PARTIAL":
+        explanation = f"{deg_level} in {matched_field} shares foundational quantitative/analytical overlap with {target_role}."
+    else:
+        explanation = f"{deg_level} level is acceptable, but {matched_field} is not directly related to {target_role}."
 
     return {
-        "degree_level": edu_info["level_name"],
+        "qualification": f"{deg_level} in {matched_field}",
+        "degree_level": deg_level,
+        "degree_field": matched_field,
+        "field": matched_field,
+        "specialization": specializations[0] if specializations else "General",
+        "specializations": specializations,
+        "coursework": coursework,
+        "degree_level_match": round(deg_level_match, 2),
         "level_score": edu_info["level_score"],
         "majors": edu_info["majors"],
+        "field_relevance": field_rel_cat,
+        "field_relevance_score": round(best_field_rel, 2),
+        "specialization_relevance": round(spec_rel, 2),
+        "coursework_relevance": round(coursework_rel, 2),
+        "certification_relevance": round(cert_max_rel, 2),
+        "education_relevance": edu_rel_composite,
+        "extraction_confidence": ext_conf,
         "institution": institution,
         "graduation_year": grad_year,
-        "verified_certifications": verified_certs
+        "verified_certifications": verified_certs,
+        "relevant_certifications": relevant_certs,
+        "explanation": explanation
     }
 
 
 # ── Contextual Skills Extraction ───────────────────────────────────────────────
 
-def extract_skills_and_certifications(text: str) -> Dict[str, Any]:
-    """Extract detected skills, aliases, contextual evidence levels (HIGH, MEDIUM, LOW), and certifications."""
+def extract_skills_and_certifications(text: str, target_role: str = "Software Engineer") -> Dict[str, Any]:
+    """Extract detected skills, aliases, multi-source evidence levels, and certifications."""
     if not text:
         return {
             "detected_skills": [],
@@ -812,15 +1404,18 @@ def extract_skills_and_certifications(text: str) -> Dict[str, Any]:
 
     lowered = text.lower()
     sections = extract_sections(text)
+    skills_sec = sections.get("skills", "").lower()
     exp_text = sections.get("experience", "").lower()
     proj_text = sections.get("projects", "").lower()
     edu_text = sections.get("education", "").lower()
+    cert_text = sections.get("certifications", "").lower()
+    sum_text = sections.get("summary", "").lower()
 
     detected_skills: Set[str] = set()
     skill_evidence: Dict[str, Any] = {}
     category_counts: Dict[str, int] = {}
 
-    sentences = [s.strip() for s in re.split(r'[\.\n;•·]+', text) if len(s.strip()) > 10]
+    sentences = [s.strip() for s in re.split(r'[\.\n;•·]+', text) if len(s.strip()) > 8]
 
     for category, skills in SKILL_LEXICON.items():
         count = 0
@@ -831,31 +1426,57 @@ def extract_skills_and_certifications(text: str) -> Dict[str, Any]:
                 detected_skills.add(normalized)
                 count += 1
 
-                # Determine Context & Evidence Level
-                in_exp = pattern.search(exp_text) is not None
-                in_proj = pattern.search(proj_text) is not None
-                in_edu = pattern.search(edu_text) is not None
+                # Multi-Source Evidence Tracking
+                sources = []
+                if pattern.search(skills_sec):
+                    sources.append("skills")
+                if pattern.search(exp_text):
+                    sources.append("work_experience")
+                if pattern.search(proj_text):
+                    sources.append("projects")
+                if pattern.search(cert_text):
+                    sources.append("certifications")
+                if pattern.search(edu_text):
+                    sources.append("education")
+                if pattern.search(sum_text):
+                    sources.append("summary")
 
-                matching_snippets = [s for s in sentences if pattern.search(s.lower())][:2]
-
+                matching_snippets = [s for s in sentences if pattern.search(s.lower())][:3]
                 has_action = any(any(v in snip.lower() for v in _ACTION_VERBS) for snip in matching_snippets)
 
-                if (in_exp or in_proj) and has_action:
+                # STAGE 5: Multi-Source Evidence Confidence
+                if len(sources) >= 3 or ("work_experience" in sources and "projects" in sources) or ("work_experience" in sources and has_action):
+                    confidence = 0.95
+                    strength = "very_high"
+                elif "work_experience" in sources or (len(sources) >= 2 and ("projects" in sources or "certifications" in sources)):
+                    confidence = 0.85
                     strength = "high"
-                elif in_exp or in_proj or in_edu:
+                elif "projects" in sources:
+                    confidence = 0.70
                     strength = "medium"
+                elif "certifications" in sources or "education" in sources:
+                    confidence = 0.60
+                    strength = "medium"
+                elif sources == ["skills"]:
+                    # Mentioned only once in skills list without proof -> LOW CONFIDENCE
+                    confidence = 0.45
+                    strength = "low"
                 else:
+                    confidence = 0.50
                     strength = "low"
 
                 skill_evidence[normalized] = {
                     "skill": normalized,
+                    "normalized_skill": normalized,
                     "canonical_skill": normalized.title() if len(normalized) > 3 else normalized.upper(),
+                    "evidence_sources": sources,
+                    "evidence_snippets": matching_snippets,
+                    "evidence": matching_snippets,
+                    "confidence": round(confidence, 2),
                     "evidence_strength": strength,
                     "evidence_level": strength.upper(),
-                    "evidence": matching_snippets,
-                    "evidence_snippets": matching_snippets
+                    "category": category,
                 }
-
 
         category_counts[category] = count
 
@@ -869,6 +1490,87 @@ def extract_skills_and_certifications(text: str) -> Dict[str, Any]:
         "detected_certs": sorted(list(set(detected_certs))),
         "skill_evidence": skill_evidence,
         "skill_category_counts": category_counts
+    }
+
+
+def validate_cross_evidence(
+    text: str,
+    features: Any,
+    target_role: str = "Software Engineer",
+) -> Dict[str, Any]:
+    """Perform multi-layer cross-evidence validation across skills, experience, education, and credentials."""
+    skills = getattr(features, "skills", [])
+    ev_dict = getattr(features, "skill_evidence", {})
+    records = getattr(features, "employment_records", [])
+    exp_years = getattr(features, "experience_years", 0.0)
+    edu_str = getattr(features, "education", "")
+
+    flags = []
+
+    # 1. Skill Extraction Confidence
+    if ev_dict:
+        avg_skill_conf = sum(s.get("confidence", 0.5) for s in ev_dict.values()) / max(1, len(ev_dict))
+    else:
+        avg_skill_conf = 0.50
+    skill_conf = round(avg_skill_conf, 2)
+
+    # 2. Experience Extraction & Relevance Confidence
+    has_dates = any(r.get("has_explicit_dates", False) for r in records)
+    has_resp = any(len(r.get("responsibilities", [])) > 0 for r in records)
+    if records and has_dates and has_resp:
+        exp_ext_conf = 0.95
+    elif records and has_dates:
+        exp_ext_conf = 0.80
+    elif exp_years == 0.0:
+        exp_ext_conf = 0.90
+    else:
+        exp_ext_conf = 0.65
+
+    if records:
+        avg_rec_rel_conf = sum(r.get("relevance_confidence", 0.75) for r in records) / len(records)
+    else:
+        avg_rec_rel_conf = 0.85
+    exp_rel_conf = round(avg_rec_rel_conf, 2)
+
+    # 3. Education Extraction & Relevance Confidence
+    if any(kw in edu_str.lower() for kw in ["bachelor", "bsc", "b.sc", "msc", "m.sc", "phd", "doctorate"]):
+        edu_ext_conf = 0.95
+    elif edu_str:
+        edu_ext_conf = 0.80
+    else:
+        edu_ext_conf = 0.60
+
+    edu_field_rel = getattr(features, "field_relevance", "HIGH")
+    edu_rel_conf = 0.95 if edu_field_rel in ["HIGH", "RELEVANT"] else (0.80 if edu_field_rel == "PARTIAL" else 0.70)
+
+    # 4. Overall Analysis Confidence Composite
+    overall_conf = round(
+        0.30 * skill_conf +
+        0.25 * exp_ext_conf +
+        0.20 * exp_rel_conf +
+        0.15 * edu_ext_conf +
+        0.10 * edu_rel_conf,
+        2
+    )
+
+    # Cross-checks & Flags
+    if len(skills) > 30 and sum(1 for s in ev_dict.values() if s.get("confidence", 0) >= 0.80) < 5:
+        flags.append("High volume of skills listed with low practical employment evidence (potential keyword stuffing).")
+
+    if exp_years >= 5.0 and len(records) == 0:
+        flags.append("Experience tenure claimed in summary without verifiable segmented employment entries.")
+
+    needs_manual_review = overall_conf < 0.70 or len(flags) > 0
+
+    return {
+        "skill_extraction_confidence": skill_conf,
+        "experience_extraction_confidence": exp_ext_conf,
+        "experience_relevance_confidence": exp_rel_conf,
+        "education_extraction_confidence": edu_ext_conf,
+        "education_relevance_confidence": edu_rel_conf,
+        "overall_analysis_confidence": overall_conf,
+        "manual_review_recommended": needs_manual_review,
+        "validation_flags": flags
     }
 
 
@@ -914,9 +1616,9 @@ def extract_projects(text: str) -> List[Dict[str, Any]]:
 def extract_deep_cv_profile(text: str, target_role: str = "Software Engineer") -> Dict[str, Any]:
     """Consolidated deep extraction returning the full candidate understanding profile."""
     cleaned = clean_text(text)
-    skills_certs = extract_skills_and_certifications(text)
+    skills_certs = extract_skills_and_certifications(text, target_role)
     exp_details = extract_experience_details(text, target_role)
-    edu_details = extract_education_details(text)
+    edu_details = extract_education_details(text, target_role)
     projects = extract_projects(text)
 
     return {

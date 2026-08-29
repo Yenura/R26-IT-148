@@ -1,85 +1,85 @@
 ================================================================================
 COMPONENT 1 — MODEL EVALUATION & RESEARCH BENCHMARK REPORT
 ================================================================================
-Evaluation Dataset: Held-out Independent Test Set (784 samples across 20 IT Roles)
+Evaluation Dataset: Held-out Independent Test Set (736 samples across 20 IT Roles)
 Data Sanitization: Verbatim role title label masking applied to eliminate leakage.
 Preprocessing Hygiene: Preprocessing / Vectorizers fitted strictly on Training split only.
 
 1. PRIMARY MODEL: NLP Entity Features + Balanced Logistic Regression (cv_classifier.pkl)
 --------------------------------------------------------------------------------
-5-Fold CV Accuracy: 0.8655 (+/- 0.0067)
-5-Fold CV Macro F1: 0.8985 (+/- 0.0073)
-Test Accuracy     : 0.8673 (86.73%)
-Test Precision    : 0.8983 (89.83%)
-Test Recall       : 0.9017 (90.17%)
-Test Macro F1     : 0.8974 (89.74%)
-Test Weighted F1  : 0.8661 (86.61%)
-Training Time     : 1.37 seconds
+5-Fold CV Accuracy: 0.9010 (+/- 0.0028)
+5-Fold CV Macro F1: 0.9302 (+/- 0.0039)
+Test Accuracy     : 0.8967 (89.67%)
+Test Precision    : 0.9180 (91.80%)
+Test Recall       : 0.9456 (94.56%)
+Test Macro F1     : 0.9290 (92.90%)
+Test Weighted F1  : 0.8909 (89.09%)
+Training Time     : 1.58 seconds
 
 Classification Report:
                              precision    recall  f1-score   support
 
-            AI/NLP Engineer       0.97      0.97      0.97        31
-          Backend Developer       0.81      0.97      0.88        30
-       Blockchain Developer       1.00      1.00      1.00        34
-   Business/Systems Analyst       0.82      0.79      0.80        42
-  Cloud Solutions Architect       0.97      0.97      0.97        30
-      Cybersecurity Analyst       1.00      1.00      1.00        30
-              Data Engineer       0.89      0.97      0.93        35
-             Data Scientist       0.77      0.74      0.76        65
-     Database Administrator       0.80      0.85      0.82        39
-            DevOps Engineer       0.94      0.94      0.94        32
-  Embedded Systems Engineer       1.00      0.97      0.98        30
-         Frontend Developer       0.91      0.79      0.85        63
-       Full Stack Developer       0.88      0.93      0.90        30
-  Machine Learning Engineer       0.93      0.90      0.92        31
-       Mobile App Developer       1.00      0.97      0.98        30
-           Network Engineer       0.89      0.97      0.93        33
-QA/Test Automation Engineer       1.00      1.00      1.00        30
-  Site Reliability Engineer       1.00      0.87      0.93        30
-          Software Engineer       0.74      0.57      0.64        79
-             UI/UX Designer       0.65      0.88      0.75        60
+            AI/NLP Engineer       1.00      1.00      1.00        30
+          Backend Developer       0.77      1.00      0.87        30
+       Blockchain Developer       0.97      0.94      0.96        34
+   Business/Systems Analyst       0.94      1.00      0.97        30
+  Cloud Solutions Architect       0.91      0.97      0.94        30
+      Cybersecurity Analyst       0.91      1.00      0.95        30
+              Data Engineer       1.00      1.00      1.00        30
+             Data Scientist       0.76      0.85      0.80        65
+     Database Administrator       0.88      0.93      0.90        30
+            DevOps Engineer       0.97      0.97      0.97        30
+  Embedded Systems Engineer       1.00      1.00      1.00        30
+         Frontend Developer       0.82      0.80      0.81        61
+       Full Stack Developer       0.93      0.93      0.93        30
+  Machine Learning Engineer       1.00      1.00      1.00        30
+       Mobile App Developer       1.00      1.00      1.00        30
+           Network Engineer       0.86      1.00      0.92        30
+QA/Test Automation Engineer       0.94      1.00      0.97        30
+  Site Reliability Engineer       0.94      1.00      0.97        30
+          Software Engineer       0.78      0.52      0.62        96
+             UI/UX Designer       1.00      1.00      1.00        30
 
-                   accuracy                           0.87       784
-                  macro avg       0.90      0.90      0.90       784
-               weighted avg       0.87      0.87      0.87       784
+                   accuracy                           0.90       736
+                  macro avg       0.92      0.95      0.93       736
+               weighted avg       0.89      0.90      0.89       736
 
 
 2. BASELINE MODEL: TF-IDF (1-2 N-grams) + Logistic Regression (tfidf_baseline.pkl)
 --------------------------------------------------------------------------------
-Test Accuracy     : 0.9579 (95.79%)
-Test Precision    : 0.9759 (97.59%)
-Test Recall       : 0.9612 (96.12%)
-Test Macro F1     : 0.9678 (96.78%)
-Test Weighted F1  : 0.9584 (95.84%)
-Training Time     : 0.77 seconds
+Test Accuracy     : 0.9796 (97.96%)
+Test Precision    : 0.9898 (98.98%)
+Test Recall       : 0.9868 (98.68%)
+Test Macro F1     : 0.9881 (98.81%)
+Test Weighted F1  : 0.9796 (97.96%)
+Training Time     : 0.88 seconds
 
 Classification Report:
                              precision    recall  f1-score   support
 
-            AI/NLP Engineer       1.00      0.97      0.98        31
+            AI/NLP Engineer       1.00      1.00      1.00        30
           Backend Developer       1.00      1.00      1.00        30
-       Blockchain Developer       1.00      0.97      0.99        34
-   Business/Systems Analyst       1.00      0.93      0.96        42
-  Cloud Solutions Architect       1.00      0.97      0.98        30
+       Blockchain Developer       1.00      0.91      0.95        34
+   Business/Systems Analyst       1.00      1.00      1.00        30
+  Cloud Solutions Architect       1.00      1.00      1.00        30
       Cybersecurity Analyst       1.00      1.00      1.00        30
-              Data Engineer       1.00      0.94      0.97        35
-             Data Scientist       0.89      0.95      0.92        65
-     Database Administrator       0.95      0.97      0.96        39
-            DevOps Engineer       1.00      0.88      0.93        32
+              Data Engineer       1.00      1.00      1.00        30
+             Data Scientist       0.90      0.95      0.93        65
+     Database Administrator       1.00      1.00      1.00        30
+            DevOps Engineer       1.00      1.00      1.00        30
   Embedded Systems Engineer       1.00      1.00      1.00        30
-         Frontend Developer       0.95      0.90      0.93        63
+         Frontend Developer       0.95      0.90      0.92        61
        Full Stack Developer       1.00      1.00      1.00        30
-  Machine Learning Engineer       1.00      0.94      0.97        31
+  Machine Learning Engineer       1.00      1.00      1.00        30
        Mobile App Developer       1.00      1.00      1.00        30
-           Network Engineer       0.97      0.91      0.94        33
+           Network Engineer       1.00      1.00      1.00        30
 QA/Test Automation Engineer       1.00      1.00      1.00        30
-  Site Reliability Engineer       1.00      0.97      0.98        30
-          Software Engineer       0.84      0.96      0.90        79
-             UI/UX Designer       0.92      0.97      0.94        60
+  Site Reliability Engineer       1.00      1.00      1.00        30
+          Software Engineer       0.95      0.97      0.96        96
+             UI/UX Designer       1.00      1.00      1.00        30
 
-                   accuracy                           0.96       784
-                  macro avg       0.98      0.96      0.97       784
-               weighted avg       0.96      0.96      0.96       784
+                   accuracy                           0.98       736
+                  macro avg       0.99      0.99      0.99       736
+               weighted avg       0.98      0.98      0.98       736
 
 ================================================================================

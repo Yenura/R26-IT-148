@@ -124,6 +124,11 @@ class ExperienceAnalysisModel(BaseModel):
     required_years: float
     relevant_years: float
     score: float
+    total_professional_experience_months: Optional[float] = None
+    it_sector_experience_months: Optional[float] = None
+    target_role_relevant_experience_months: Optional[float] = None
+    it_experience_years: Optional[float] = None
+    total_experience_years: Optional[float] = None
     candidate_seniority: Optional[str] = "Mid"
     target_seniority: Optional[str] = "Mid"
     seniority_fit: Optional[str] = "MATCH"
@@ -137,8 +142,12 @@ class EducationAnalysisModel(BaseModel):
     education_match: str
     score: float
     degree_level: Optional[str] = "BSc"
+    degree_field: Optional[str] = "General IT"
     field_relevance: Optional[str] = "HIGH"
+    education_relevance_score: Optional[float] = None
+    relevant_certifications: Optional[List[Dict[str, Any]]] = None
     verified_certifications: Optional[List[Dict[str, Any]]] = None
+    explanation: Optional[str] = None
 
 
 
@@ -236,6 +245,9 @@ class CVAnalysisResponse(BaseModel):
     verified_certifications: Optional[List[Dict[str, Any]]] = None
     projects:             Optional[List[Dict[str, Any]]] = None
     employment_records:   Optional[List[Dict[str, Any]]] = None
+    target_job_profile:   Optional[Dict[str, Any]] = None
+    cross_evidence_validation: Optional[Dict[str, Any]] = None
+    overall_analysis_confidence: Optional[float] = None
     status:               str = "READY_FOR_COMPONENT_3"
     analysis_timestamp:   datetime
 

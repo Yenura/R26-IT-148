@@ -149,12 +149,28 @@ SKILL_LEXICON: Dict[str, List[str]] = {
         "embedded linux", "stm32", "iot", "firmware", "i2c", "spi", "uart",
         "device drivers", "assembly", "pcb design", "embedded systems",
         "freertos", "zephyr", "esp-idf", "esp32", "embedded c", "embedded c++", "yocto", "can bus", "modbus", "ble", "mqtt"
+    ],
+    "Systems & IT Support": [
+        "active directory", "windows server", "troubleshooting", "hardware", "desktop support",
+        "network support", "helpdesk", "itil", "service desk", "systems administration",
+        "nas", "network attached storage", "data migration", "vmware", "hyper-v",
+        "patch management", "sharepoint", "outlook", "office 365", "o365", "powershell",
+        "mcse", "comptia a+", "comptia network+", "remote desktop", "itsm"
     ]
 }
 
 
 # Bidirectional alias mapping: Raw CV variant -> Canonical Skill Name
 SKILL_ALIASES: Dict[str, str] = {
+    # IT Support & Systems
+    "activedirectory": "active directory",
+    "ad": "active directory",
+    "win server": "windows server",
+    "troubleshoot": "troubleshooting",
+    "network attached storage": "nas",
+    "a+": "comptia a+",
+    "net+": "comptia network+",
+    "sec+": "comptia security+",
     # Frontend
     "react.js": "react",
     "reactjs": "react",
@@ -262,6 +278,9 @@ CANONICAL_CERTIFICATIONS: Dict[str, Dict[str, str]] = {
     "comptia security+": {"vendor": "CompTIA", "tier": "Professional", "domain": "Cybersecurity"},
     "comptia network+": {"vendor": "CompTIA", "tier": "Foundational", "domain": "Networking"},
     "comptia a+": {"vendor": "CompTIA", "tier": "Foundational", "domain": "IT Support"},
+    "mcse": {"vendor": "Microsoft", "tier": "Professional", "domain": "Systems & IT Support"},
+    "itil": {"vendor": "Axelos", "tier": "Foundational", "domain": "IT Service Management"},
+    "pmp": {"vendor": "PMI", "tier": "Professional", "domain": "Project Management"},
     "certified information systems security professional": {"vendor": "ISC2", "tier": "Expert", "domain": "Cybersecurity"},
     "cissp": {"vendor": "ISC2", "tier": "Expert", "domain": "Cybersecurity"},
     "certified ethical hacker": {"vendor": "EC-Council", "tier": "Professional", "domain": "Cybersecurity"},

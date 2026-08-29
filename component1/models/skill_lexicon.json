@@ -633,5 +633,33 @@
     "modbus",
     "ble",
     "mqtt"
+  ],
+  "Systems & IT Support": [
+    "active directory",
+    "windows server",
+    "troubleshooting",
+    "hardware",
+    "desktop support",
+    "network support",
+    "helpdesk",
+    "itil",
+    "service desk",
+    "systems administration",
+    "nas",
+    "network attached storage",
+    "data migration",
+    "vmware",
+    "hyper-v",
+    "patch management",
+    "sharepoint",
+    "outlook",
+    "office 365",
+    "o365",
+    "powershell",
+    "mcse",
+    "comptia a+",
+    "comptia network+",
+    "remote desktop",
+    "itsm"
   ]
 }

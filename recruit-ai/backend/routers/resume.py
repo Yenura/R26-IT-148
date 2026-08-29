@@ -36,6 +36,14 @@ def _get_classifier() -> RoleClassifier:
 
 
 def _resume_out(doc: dict) -> ResumeOut:
+    edu = doc.get("education", "")
+    if (not edu or len(edu.strip()) < 3) and doc.get("raw_text"):
+        try:
+            ent = extract_entities(doc.get("raw_text", ""))
+            edu = ent.get("education", "")
+        except Exception:
+            pass
+
     return ResumeOut(
         id=str(doc["_id"]),
         candidate_id=doc.get("candidate_id", ""),
@@ -47,7 +55,7 @@ def _resume_out(doc: dict) -> ResumeOut:
         linkedin=doc.get("linkedin", ""),
         github=doc.get("github", ""),
         skills=doc.get("skills", []),
-        education=doc.get("education", ""),
+        education=edu,
         experience_years=doc.get("experience_years", 0),
         projects=doc.get("projects", []),
         academic_projects=doc.get("academic_projects", []),
