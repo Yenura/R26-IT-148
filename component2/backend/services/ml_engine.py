@@ -297,7 +297,7 @@ class InterviewService:
         # Role-specific overrides for known edge cases
         if job_role == "DevOps Engineer":
             return "scripting"
-        if job_role in {"Cybersecurity Analyst", "Cloud Solutions Architect"}:
+        if job_role in {"Cybersecurity Analyst", "Cloud Solutions Architect", "UI/UX Designer", "Business/Systems Analyst", "Network Engineer"}:
             return "none"
 
         has_language = any(keyword.lower() in skill_text for keyword in trigger_keywords if keyword != "SQL")
@@ -336,6 +336,9 @@ class InterviewService:
             "DevOps Engineer": (0.40, 0.40, 0.20),
             "Cybersecurity Analyst": (0.45, 0.55, 0.00),
             "Cloud Solutions Architect": (0.45, 0.55, 0.00),
+            "UI/UX Designer": (0.45, 0.55, 0.00),
+            "Business/Systems Analyst": (0.45, 0.55, 0.00),
+            "Network Engineer": (0.45, 0.55, 0.00),
             "Database Administrator": (0.30, 0.40, 0.30),
             "Frontend Developer": (0.20, 0.30, 0.50),
             "Backend Developer": (0.20, 0.30, 0.50),
@@ -381,14 +384,14 @@ class InterviewService:
                 "Mobile App Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
                 "AI/NLP Engineer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
                 "Blockchain Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
-                "Business/Systems Analyst": {"mcq": 0.35, "descriptive": 0.50, "coding": 0.15},
+                "Business/Systems Analyst": {"mcq": 0.45, "descriptive": 0.55, "coding": 0.00},
                 "Data Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
                 "Embedded Systems Engineer": {"mcq": 0.25, "descriptive": 0.35, "coding": 0.40},
                 "Full Stack Developer": {"mcq": 0.20, "descriptive": 0.30, "coding": 0.50},
-                "Network Engineer": {"mcq": 0.40, "descriptive": 0.45, "coding": 0.15},
+                "Network Engineer": {"mcq": 0.45, "descriptive": 0.55, "coding": 0.00},
                 "QA/Test Automation Engineer": {"mcq": 0.25, "descriptive": 0.30, "coding": 0.45},
                 "Site Reliability Engineer": {"mcq": 0.35, "descriptive": 0.40, "coding": 0.25},
-                "UI/UX Designer": {"mcq": 0.30, "descriptive": 0.55, "coding": 0.15}
+                "UI/UX Designer": {"mcq": 0.45, "descriptive": 0.55, "coding": 0.00}
             },
             "grade_bands": {
                 "Excellent": {"min": 85},

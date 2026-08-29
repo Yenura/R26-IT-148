@@ -16,9 +16,9 @@
       "coding": 0.1
     },
     "Business/Systems Analyst": {
-      "mcq": 0.5,
-      "descriptive": 0.3,
-      "coding": 0.2
+      "mcq": 0.45,
+      "descriptive": 0.55,
+      "coding": 0.0
     },
     "Cloud Solutions Architect": {
       "mcq": 0.78,
@@ -76,9 +76,9 @@
       "coding": 0.1
     },
     "Network Engineer": {
-      "mcq": 0.5,
-      "descriptive": 0.2,
-      "coding": 0.3
+      "mcq": 0.45,
+      "descriptive": 0.55,
+      "coding": 0.0
     },
     "QA/Test Automation Engineer": {
       "mcq": 0.4,
@@ -96,9 +96,9 @@
       "coding": 0.1
     },
     "UI/UX Designer": {
-      "mcq": 0.5,
-      "descriptive": 0.3,
-      "coding": 0.2
+      "mcq": 0.45,
+      "descriptive": 0.55,
+      "coding": 0.0
     }
   },
   "grade_bands": {
