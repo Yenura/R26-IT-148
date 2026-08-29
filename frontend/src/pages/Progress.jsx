@@ -34,7 +34,14 @@ export default function Progress() {
 
   const loadData = async () => {
     try {
-      const r = await c4Progress(candidateId)
+      let r = await c4Progress(candidateId)
+      if (!r?.data?.skills || r.data.skills.length === 0) {
+        try {
+          r = await c4ProgressSync(candidateId)
+        } catch {
+          // ignore fallback
+        }
+      }
       setData(r.data)
     } catch {
       toast.error('Failed to load progress data')

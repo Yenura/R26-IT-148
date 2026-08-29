@@ -437,7 +437,7 @@ export default function CandidateDashboard() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{
                           fontSize: '11px',
                           fontWeight: 700,
@@ -450,6 +450,25 @@ export default function CandidateDashboard() {
                         }}>
                           {app.status || 'Under Review'}
                         </span>
+
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => navigate(`/candidate/interview?role=${job.job_role || job.title || ''}&jobId=${app.job_id}`)}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                          title="Take or retake technical interview"
+                        >
+                          <MessagesSquare size={12} /> Interview
+                        </button>
+
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => navigate(`/candidate/skill-gap`)}
+                          style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--color-primary)' }}
+                          title="View Skill Gap and composite evaluation"
+                        >
+                          <Sparkles size={12} /> Skill Gap
+                        </button>
+
                         <button
                           className="btn-ghost btn-sm"
                           onClick={() => navigate(`/candidate/jobs/${app.job_id}`)}

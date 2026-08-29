@@ -229,7 +229,36 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
                         "priority": "High"
                     })
 
-    # B. Check Latest Skill Gap Reports if no weak skills from applied jobs yet
+    # B. Check CV Match Predictions (Missing Skills from CV Matches)
+    pred_filters = [{"candidate_id": candidate_id}]
+    if ObjectId.is_valid(candidate_id):
+        pred_filters.append({"candidate_id": ObjectId(candidate_id)})
+    if resume and resume.get("_id"):
+        pred_filters.append({"resume_id": str(resume["_id"])})
+
+    async for pred_doc in db.predictions.find({"$or": pred_filters}).sort("created_at", -1):
+        p_role = pred_doc.get("predicted_role", "Software Engineer")
+        p_job_id = str(pred_doc.get("job_id", ""))
+        p_comp = "Target Employer"
+        if p_job_id:
+            try:
+                j_doc = await db.jobs.find_one({"_id": ObjectId(p_job_id)}) if ObjectId.is_valid(p_job_id) else await db.jobs.find_one({"_id": p_job_id})
+                if j_doc and j_doc.get("company_name"):
+                    p_comp = j_doc.get("company_name")
+            except Exception:
+                pass
+
+        for ms in pred_doc.get("missing_skills", []):
+            if not any(w["skill"].lower() == ms.lower() for w in weak_skills_found):
+                weak_skills_found.append({
+                    "skill": ms,
+                    "source_role": p_role,
+                    "source_company": p_comp,
+                    "reason": f"Missing qualification for {p_role} ({p_comp}) on parsed CV",
+                    "priority": "High"
+                })
+
+    # C. Check Latest Skill Gap Reports if no weak skills from applied jobs yet
     if len(weak_skills_found) < 3:
         async for rpt in db.skill_gap_reports.find({"candidate_id": candidate_id}).sort("created_at", -1).limit(3):
             role_name = rpt.get("job_role", "Software Engineer")

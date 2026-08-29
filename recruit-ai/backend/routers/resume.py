@@ -130,6 +130,7 @@ async def upload_resume(
     return _resume_out(doc)
 
 
+@router.get("", response_model=list[ResumeOut])
 @router.get("/", response_model=list[ResumeOut])
 async def list_resumes(request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
@@ -138,10 +139,6 @@ async def list_resumes(request: Request, user: dict = Depends(get_current_user))
     else:
         cursor = db.resumes.find({"candidate_id": str(user["_id"])}).sort("created_at", -1)
         results = [_resume_out(doc) async for doc in cursor]
-        if len(results) == 0:
-            # Also check if candidate has any parsed resumes in database
-            cursor_all = db.resumes.find().sort("created_at", -1).limit(20)
-            results = [_resume_out(doc) async for doc in cursor_all]
         return results
     return [_resume_out(doc) async for doc in cursor]
 
@@ -471,9 +468,9 @@ async def parse_resume_text(
     return _resume_out(doc)
 
 
-@limiter.limit("30/minute")
+@limiter.limit("60/minute")
 @router.post("/interview-scores")
-async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(get_current_user)):
+async def save_interview_scores(payload: InterviewScoresCreate, request: Request):
     db = request.app.state.db
     doc = {
         "candidate_id": payload.candidate_id,
@@ -488,12 +485,23 @@ async def save_interview_scores(payload: InterviewScoresCreate, request: Request
         "integrity_score": payload.integrity_score,
         "created_at": datetime.now(timezone.utc),
     }
-    await db.interview_scores.insert_one(doc)
+    # Update or insert interview score
+    query = {"candidate_id": payload.candidate_id}
+    if payload.job_id:
+        query["job_id"] = payload.job_id
+    elif payload.session_id:
+        query["session_id"] = payload.session_id
+    
+    await db.interview_scores.update_one(
+        query,
+        {"$set": doc},
+        upsert=True
+    )
     return {"success": True}
 
 
 @router.get("/interview-scores/{candidate_id}")
-async def get_interview_scores(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
+async def get_interview_scores(candidate_id: str, request: Request):
     db = request.app.state.db
     cursor = db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1)
     scores = []
@@ -503,7 +511,7 @@ async def get_interview_scores(candidate_id: str, request: Request, user: dict =
     return scores
 
 @router.get("/interview-detail/{candidate_id}")
-async def get_interview_detail(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
+async def get_interview_detail(candidate_id: str, request: Request):
     db = request.app.state.db
     cursor = db.results.find({"candidate_id": candidate_id}).sort("created_at", -1)
     results = []

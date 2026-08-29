@@ -34,6 +34,10 @@ limiter = Limiter(key_func=get_remote_address)
 class InterviewSubmitRequest(BaseModel):
     session_id: str = Field(..., min_length=1, max_length=200)
     answers: List[Dict] = Field(default_factory=list)
+    candidate_id: Optional[str] = None
+    job_role: Optional[str] = None
+    job_id: Optional[str] = None
+    proctoring: Optional[Dict] = None
 
     @field_validator("answers")
     @classmethod
@@ -422,10 +426,15 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
             processed_answers.append(processed_answer)
 
+        cand_id = submission.candidate_id or session.get("candidate_id", "")
+        j_role = submission.job_role or session.get("job_role", "")
+        j_id = submission.job_id or session.get("job_id", "")
+        proctoring = submission.proctoring
+
         evaluation_payload = {
-            "candidate_id": submission.get("candidate_id") or session.get("candidate_id", ""),
+            "candidate_id": cand_id,
             "session_id": session_id,
-            "job_role": submission.get("job_role") or session.get("job_role", ""),
+            "job_role": j_role,
             "answers": processed_answers
         }
         
@@ -435,9 +444,10 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             interview_data=evaluation_payload,
         )
 
+        result["job_id"] = j_id
+
         # Attach proctoring data if provided (job interviews only)
         # Enforce: practice interviews NEVER store proctoring data
-        proctoring = submission.get("proctoring")
         is_practice = session.get("is_practice", False)
         if is_practice:
             proctoring = None
@@ -453,7 +463,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
             payload = json.dumps({
                 "candidate_id": result["candidate_id"],
-                "job_id": submission.get("job_id", ""),
+                "job_id": j_id,
                 "session_id": session_id,
                 "job_role": result["job_role"],
                 "mcq_score": result["mcq_score"],

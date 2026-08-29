@@ -160,8 +160,8 @@ ROLE_CV_WEIGHTS = {
 # Hard filter minimum requirements per role
 ROLE_REQUIREMENTS = {
     "Software_Engineer":         {"min_edu": 2, "min_exp": 1.5, "min_skill": 0.40, "min_code": 0.30},
-    "Data_Scientist":            {"min_edu": 3, "min_exp": 1.0, "min_skill": 0.38, "min_code": 0.20},
-    "Machine_Learning_Engineer": {"min_edu": 3, "min_exp": 1.5, "min_skill": 0.42, "min_code": 0.30},
+    "Data_Scientist":            {"min_edu": 2, "min_exp": 1.0, "min_skill": 0.38, "min_code": 0.20},
+    "Machine_Learning_Engineer": {"min_edu": 2, "min_exp": 1.5, "min_skill": 0.40, "min_code": 0.25},
     "DevOps_Engineer":           {"min_edu": 2, "min_exp": 2.0, "min_skill": 0.40, "min_code": 0.28},
     "Cybersecurity_Analyst":     {"min_edu": 2, "min_exp": 1.5, "min_skill": 0.38, "min_code": 0.15},
     "Cloud_Solutions_Architect": {"min_edu": 2, "min_exp": 3.0, "min_skill": 0.42, "min_code": 0.15},
@@ -176,7 +176,7 @@ ROLE_REQUIREMENTS = {
     "UI_UX_Designer":            {"min_edu": 2, "min_exp": 1.0, "min_skill": 0.35, "min_code": 0.10},
     "Network_Engineer":          {"min_edu": 2, "min_exp": 1.5, "min_skill": 0.38, "min_code": 0.20},
     "Business_Systems_Analyst":  {"min_edu": 2, "min_exp": 1.5, "min_skill": 0.35, "min_code": 0.10},
-    "AI_NLP_Engineer":           {"min_edu": 3, "min_exp": 1.5, "min_skill": 0.42, "min_code": 0.30},
+    "AI_NLP_Engineer":           {"min_edu": 2, "min_exp": 1.5, "min_skill": 0.40, "min_code": 0.25},
     "Blockchain_Developer":      {"min_edu": 2, "min_exp": 1.0, "min_skill": 0.38, "min_code": 0.30},
     "Embedded_Systems_Engineer": {"min_edu": 2, "min_exp": 1.5, "min_skill": 0.40, "min_code": 0.30},
 }
