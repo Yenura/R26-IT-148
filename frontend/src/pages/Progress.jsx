@@ -30,11 +30,20 @@ export default function Progress() {
   const [addBusy, setAddBusy] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
 
+  const [selectedRoleFilter, setSelectedRoleFilter] = useState('all')
+
   useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
     try {
-      const r = await c4Progress(candidateId)
+      let r = await c4Progress(candidateId)
+      if (!r?.data?.skills || r.data.skills.length === 0) {
+        try {
+          r = await c4ProgressSync(candidateId)
+        } catch {
+          // ignore fallback
+        }
+      }
       setData(r.data)
     } catch {
       toast.error('Failed to load progress data')
@@ -88,6 +97,7 @@ export default function Progress() {
         candidate_id: candidateId,
         skill: sk,
         status: 'in_progress',
+        source_role: selectedRoleFilter !== 'all' ? selectedRoleFilter : 'Custom Goal',
         notes: 'Custom Goal'
       })
       toast.success(`Added "${sk}" to learning goals!`)
@@ -136,31 +146,62 @@ export default function Progress() {
     })
   }
 
-  const stats = data?.stats || {}
   const skills = data?.skills || []
-  const pct = stats.completion_pct || 0
+
+  // Extract all unique target career roles from diagnosed goals
+  const uniqueRoles = Array.from(
+    new Set(skills.map((s) => s.source_role).filter(Boolean))
+  )
+
+  // Scope skills by the selected career/role
+  const roleScopedSkills = selectedRoleFilter === 'all'
+    ? skills
+    : skills.filter((s) => s.source_role?.toLowerCase() === selectedRoleFilter.toLowerCase())
+
+  const roleCompletedCount = roleScopedSkills.filter((s) => s.status === 'completed').length
+  const roleInProgressCount = roleScopedSkills.filter((s) => s.status === 'in_progress').length
+  const roleTotalCount = roleScopedSkills.length
+  const pct = roleTotalCount > 0 ? Math.round((roleCompletedCount / roleTotalCount) * 100) : 0
 
   const careerTier = pct >= 85
-    ? { title: 'Principal Architect / Lead', level: 'Level 4 (Executive)', color: 'var(--color-purple)' }
+    ? {
+        title: selectedRoleFilter === 'all' ? 'Full Competency Mastery' : `Full ${selectedRoleFilter} Mastery`,
+        level: 'Level 4 · Mastery Stage',
+        color: 'var(--color-purple)',
+        desc: `Outstanding progress! You have mastered almost all technical competencies diagnosed across ${selectedRoleFilter === 'all' ? 'your job applications' : selectedRoleFilter}.`
+      }
     : pct >= 60
-    ? { title: 'Senior Tech Specialist', level: 'Level 3 (Advanced)', color: 'var(--color-success)' }
+    ? {
+        title: selectedRoleFilter === 'all' ? 'Advanced Upskilling Standing' : `Advanced ${selectedRoleFilter} Standing`,
+        level: 'Level 3 · Advanced Stage',
+        color: 'var(--color-success)',
+        desc: `Great momentum! Over half of your diagnosed technical competencies for ${selectedRoleFilter === 'all' ? 'your applications' : selectedRoleFilter} are completed.`
+      }
     : pct >= 30
-    ? { title: 'Mid-Level Engineer', level: 'Level 2 (Intermediate)', color: 'var(--color-primary)' }
-    : { title: 'Junior / Associate Developer', level: 'Level 1 (Foundation)', color: 'var(--color-warning)' }
+    ? {
+        title: selectedRoleFilter === 'all' ? 'Active Learning & Progression' : `Active ${selectedRoleFilter} Upskilling`,
+        level: 'Level 2 · Intermediate Stage',
+        color: 'var(--color-primary)',
+        desc: `You are actively closing critical skill gaps for ${selectedRoleFilter === 'all' ? 'your application goals' : selectedRoleFilter}. Keep advancing your in-progress competencies.`
+      }
+    : {
+        title: selectedRoleFilter === 'all' ? 'Foundation & Diagnostics Stage' : `${selectedRoleFilter} Diagnostic Baseline`,
+        level: 'Level 1 · Foundation Stage',
+        color: 'var(--color-warning)',
+        desc: `Track and complete your diagnosed technical skill deficits below to increase your job match fit for ${selectedRoleFilter === 'all' ? 'all applied roles' : selectedRoleFilter}.`
+      }
 
-  const filteredSkills = skills.filter((s) => {
+  const filteredSkills = roleScopedSkills.filter((s) => {
     const matchesSearch = !searchTerm ||
       s.skill?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.source_role?.toLowerCase().includes(searchTerm.toLowerCase())
+      s.source_role?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      s.source_company?.toLowerCase().includes(searchTerm.toLowerCase())
 
     if (activeTab === 'in_progress') return matchesSearch && s.status === 'in_progress'
     if (activeTab === 'completed') return matchesSearch && s.status === 'completed'
     if (activeTab === 'not_started') return matchesSearch && (s.status === 'not_started' || !s.status)
     return matchesSearch
   })
-
-  const completedCount = skills.filter((s) => s.status === 'completed').length
-  const inProgressCount = skills.filter((s) => s.status === 'in_progress').length
 
   return (
     <div className="fade-in" style={{ maxWidth: 1080, margin: '0 auto' }}>
@@ -191,7 +232,59 @@ export default function Progress() {
         }
       />
 
-      {/* KPI & Career Trajectory Banner */}
+      {/* Target Career Filter Bar */}
+      {uniqueRoles.length > 0 && (
+        <div style={{
+          marginBottom: 'var(--p-space-5)',
+          padding: '12px 16px',
+          background: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-xl)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Sparkles size={16} style={{ color: 'var(--color-primary)' }} />
+            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Select Career Target:
+            </span>
+          </div>
+
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => setSelectedRoleFilter('all')}
+              className={`btn btn-sm ${selectedRoleFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize: 'var(--p-text-xs)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}
+            >
+              All Careers ({skills.length})
+            </button>
+            {uniqueRoles.map((role) => {
+              const count = skills.filter((s) => s.source_role === role).length
+              const isSelected = selectedRoleFilter.toLowerCase() === role.toLowerCase()
+              return (
+                <button
+                  key={role}
+                  onClick={() => setSelectedRoleFilter(role)}
+                  className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
+                  style={{
+                    fontSize: 'var(--p-text-xs)',
+                    borderRadius: 'var(--radius-full)',
+                    padding: '4px 12px',
+                    border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)'
+                  }}
+                >
+                  {role} ({count})
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* KPI & Skill Trajectory Banner */}
       <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 24, alignItems: 'center' }}>
           {/* Progress Ring with Radial Glow */}
@@ -223,13 +316,13 @@ export default function Progress() {
 
           <div>
             <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: careerTier.color, letterSpacing: '0.08em', marginBottom: 3 }}>
-              Progression Standing · {careerTier.level}
+              Roadmap Standing · {careerTier.level}
             </div>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--color-fg)', letterSpacing: '-0.02em' }}>
               {careerTier.title}
             </h2>
             <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', margin: 0, maxWidth: 640, lineHeight: 1.5 }}>
-              Complete remaining technical competencies across your application targets to advance to the next professional engineering tier.
+              {careerTier.desc}
             </p>
           </div>
         </div>
@@ -238,22 +331,22 @@ export default function Progress() {
       {/* KPI Stat Strip with Auto CountUp */}
       <div className="grid grid-4" style={{ gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-6)' }}>
         <StatCard
-          label="Total Goals"
-          value={skills.length}
+          label={selectedRoleFilter === 'all' ? "Total Goals" : `${selectedRoleFilter} Goals`}
+          value={roleTotalCount}
           icon={Award}
           color="primary"
           helperText="Target skills identified"
         />
         <StatCard
           label="Mastered"
-          value={completedCount}
+          value={roleCompletedCount}
           icon={CheckCircle2}
           color="success"
           helperText="Verified competencies"
         />
         <StatCard
           label="In Progress"
-          value={inProgressCount}
+          value={roleInProgressCount}
           icon={Clock}
           color="info"
           helperText="Actively studying"
@@ -263,7 +356,7 @@ export default function Progress() {
           value={`${pct.toFixed(0)}%`}
           icon={TrendingUp}
           color="purple"
-          helperText="Overall roadmap index"
+          helperText="Role roadmap index"
         />
       </div>
 
@@ -272,7 +365,7 @@ export default function Progress() {
         <form onSubmit={addCustomSkill} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <input
             type="text"
-            placeholder="Add custom learning target (e.g. System Design, PyTorch, GraphQL, Docker)..."
+            placeholder={selectedRoleFilter !== 'all' ? `Add custom learning target for ${selectedRoleFilter}...` : "Add custom learning target (e.g. System Design, PyTorch, GraphQL, Docker)..."}
             value={newSkillInput}
             onChange={(e) => setNewSkillInput(e.target.value)}
             style={{ flex: 1, fontSize: 'var(--p-text-sm)', height: 40 }}
@@ -289,10 +382,10 @@ export default function Progress() {
           {/* Status Filter Tabs */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {[
-              { id: 'all', label: `All Goals (${skills.length})` },
-              { id: 'in_progress', label: `In Progress (${inProgressCount})` },
-              { id: 'completed', label: `Mastered (${completedCount})` },
-              { id: 'not_started', label: 'Not Started' }
+              { id: 'all', label: `All (${roleTotalCount})` },
+              { id: 'in_progress', label: `In Progress (${roleInProgressCount})` },
+              { id: 'completed', label: `Mastered (${roleCompletedCount})` },
+              { id: 'not_started', label: `Not Started (${roleTotalCount - roleCompletedCount - roleInProgressCount})` }
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -310,7 +403,7 @@ export default function Progress() {
             <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
             <input
               type="text"
-              placeholder="Filter goals..."
+              placeholder="Search skills, roles, tags..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ paddingLeft: 30, height: 34, fontSize: 'var(--p-text-xs)' }}
@@ -323,17 +416,21 @@ export default function Progress() {
           <SkeletonLoader type="card" count={3} />
         ) : filteredSkills.length === 0 ? (
           <EmptyState
-            title="No learning goals found"
-            description="Sync your diagnostic results from applied positions or add custom competencies above."
+            title="No learning goals match your filters"
+            description="Sync diagnostic goals from applied positions or switch to All Careers above."
             actionLabel="Sync from Skill Gap"
             onAction={syncFromInterviews}
             icon={Award}
           />
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {filteredSkills.map((item, idx) => {
               const isMastered = item.status === 'completed'
               const isInProgress = item.status === 'in_progress'
+              const priority = item.priority || 'High'
+              const priorityBg = priority === 'Critical' ? 'rgba(239, 68, 68, 0.15)' : priority === 'High' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)'
+              const priorityColor = priority === 'Critical' ? 'var(--color-danger)' : priority === 'High' ? 'var(--color-warning)' : 'var(--color-primary)'
+
               const accentBorderColor = isMastered
                 ? 'var(--color-success)'
                 : isInProgress
@@ -345,7 +442,7 @@ export default function Progress() {
                   key={item.skill || idx}
                   className="card"
                   style={{
-                    padding: '14px 18px',
+                    padding: '16px 20px',
                     borderRadius: 'var(--radius-lg)',
                     border: '1px solid var(--color-border)',
                     borderLeft: `4px solid ${accentBorderColor}`,
@@ -353,69 +450,109 @@ export default function Progress() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    gap: 14,
+                    gap: 16,
                     flexWrap: 'wrap',
-                    marginBottom: 0
+                    marginBottom: 0,
+                    transition: 'all 0.15s ease'
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flex: 1, minWidth: 260 }}>
                     <div style={{
-                      width: 28,
-                      height: 28,
+                      width: 32,
+                      height: 32,
                       borderRadius: 'var(--radius-full)',
                       background: isMastered ? 'var(--color-success-muted)' : isInProgress ? 'var(--color-primary-muted)' : 'var(--color-warning-muted)',
                       color: isMastered ? 'var(--color-success)' : isInProgress ? 'var(--color-primary)' : 'var(--color-warning)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '11px',
+                      fontSize: '12px',
                       fontWeight: 800,
-                      flexShrink: 0
+                      flexShrink: 0,
+                      marginTop: 2
                     }}>
                       {isMastered ? '✓' : idx + 1}
                     </div>
 
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
-                        {item.skill}
+                    <div style={{ flex: 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 800, fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
+                          {item.skill}
+                        </span>
+                        <span style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '2px 8px',
+                          borderRadius: 'var(--radius-full)',
+                          background: priorityBg,
+                          color: priorityColor,
+                          border: `1px solid ${priorityColor}40`
+                        }}>
+                          {priority} Priority
+                        </span>
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
-                        {item.source_role && <span>Target: {item.source_role}</span>}
-                        {item.notes && <span>• {item.notes}</span>}
+
+                      {/* Deficit Reason & Job Tags */}
+                      <div style={{ fontSize: '12px', color: 'var(--color-fg-muted)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {item.source_role && (
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, fontWeight: 600, color: 'var(--color-fg-secondary)' }}>
+                            🎯 {item.source_role}
+                          </span>
+                        )}
+                        {item.source_company && (
+                          <span style={{ color: 'var(--color-fg-muted)' }}>
+                            • 🏢 {item.source_company}
+                          </span>
+                        )}
                       </div>
+
+                      {item.deficit_reason && (
+                        <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4, fontStyle: 'italic' }}>
+                          💡 {item.deficit_reason}
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <a
-                      href={`https://www.coursera.org/search?query=${encodeURIComponent(item.skill)}`}
+                      href={item.course_url || `https://www.coursera.org/search?query=${encodeURIComponent(item.skill)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="goal-action-btn course"
-                      title="Explore courses"
+                      className="btn btn-ghost btn-sm"
+                      style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--color-primary)' }}
+                      title={item.course_name || "Explore courses"}
                     >
-                      <BookOpen size={13} /> Course <ExternalLink size={11} />
+                      <BookOpen size={13} /> {item.course_name ? 'Course' : 'Explore'} <ExternalLink size={11} />
                     </a>
 
                     <button
-                      className={`goal-action-btn in-progress ${isInProgress ? 'active' : ''}`}
+                      className={`btn btn-sm ${isInProgress ? 'btn-primary' : 'btn-ghost'}`}
                       onClick={() => updateStatus(item.skill, 'in_progress')}
-                      aria-pressed={isInProgress}
+                      style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: 4 }}
                     >
                       <Clock size={13} /> In Progress
                     </button>
 
                     <button
-                      className={`goal-action-btn mastered ${isMastered ? 'active' : ''}`}
+                      className={`btn btn-sm ${isMastered ? 'btn-success' : 'btn-ghost'}`}
                       onClick={() => updateStatus(item.skill, 'completed')}
-                      aria-pressed={isMastered}
+                      style={{
+                        fontSize: '11px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        background: isMastered ? 'var(--color-success)' : undefined,
+                        color: isMastered ? '#fff' : undefined
+                      }}
                     >
                       <Check size={13} /> Mastered
                     </button>
 
                     <button
-                      className="goal-action-btn delete"
+                      className="btn btn-ghost btn-sm"
                       onClick={() => deleteSingleSkill(item.skill)}
+                      style={{ color: 'var(--color-danger)', padding: '6px 8px' }}
                       aria-label={`Remove ${item.skill} from goals`}
                       title="Delete goal"
                     >

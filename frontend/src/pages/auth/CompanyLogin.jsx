@@ -4,11 +4,14 @@ import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, Building2, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export default function CompanyLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [errors, setErrors] = useState({})
   const navigate = useNavigate()
 
   const fillDemo = () => {
@@ -17,9 +20,19 @@ export default function CompanyLogin() {
     toast.success('Demo employer credentials loaded')
   }
 
+  const validate = () => {
+    const e = {}
+    if (!email.trim()) e.email = 'Email is required'
+    else if (!EMAIL_RE.test(email.trim())) e.email = 'Enter a valid email address'
+    if (!password) e.password = 'Password is required'
+    else if (password.length < 6) e.password = 'Password must be at least 6 characters'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
   const handleLogin = async (e) => {
     e?.preventDefault()
-    if (!email || !password) return toast.error('Please enter work email and password')
+    if (!validate()) return
     setBusy(true)
     try {
       const r = await C0.post('/auth/login/company', { email: email.trim(), password })
@@ -90,7 +103,7 @@ export default function CompanyLogin() {
         </div>
 
         <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
-          <form onSubmit={handleLogin}>
+          <form onSubmit={handleLogin} noValidate>
             <div style={{ marginBottom: 14 }}>
               <label style={{ fontSize: '12px', marginTop: 0 }}>Work Email</label>
               <div style={{ position: 'relative' }}>
@@ -100,12 +113,13 @@ export default function CompanyLogin() {
                   type="email"
                   autoComplete="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: '' })) }}
                   placeholder="recruiter@techcorp.com"
-                  style={{ paddingLeft: 36 }}
+                  style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
                   required
                 />
               </div>
+              {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
             </div>
 
             <div style={{ marginBottom: 20 }}>
@@ -117,9 +131,9 @@ export default function CompanyLogin() {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: '' })) }}
                   placeholder="••••••••"
-                  style={{ paddingLeft: 36, paddingRight: 36 }}
+                  style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
                   required
                 />
               <button
@@ -142,6 +156,7 @@ export default function CompanyLogin() {
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
+              {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
             </div>
 
             <button

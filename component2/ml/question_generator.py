@@ -3,6 +3,10 @@ Component 2: Question Generation Model - Inference Module
 Loads the trained TinyQGModel and generates interview questions.
 Falls back to question bank if model is unavailable.
 """
+import sys
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'backend'))
+from services.skill_aliases import skill_matchesAny
 
 import json
 import logging
@@ -240,7 +244,7 @@ class QuestionGenerator:
     def generate_mcq(self, job_role: str, skills: List[str], count: int = 3) -> List[Dict]:
         questions = []
         difficulties = ["Easy", "Medium", "Hard"]
-        skill_str = ", ".join(skills[:4])
+        skill_str = ", ".join(skills[:8]) if skills else "General"
 
         for i in range(count):
             diff = difficulties[i % len(difficulties)]
@@ -271,7 +275,7 @@ class QuestionGenerator:
     def generate_descriptive(self, job_role: str, skills: List[str], count: int = 3) -> List[Dict]:
         questions = []
         difficulties = ["Easy", "Medium", "Hard"]
-        skill_str = ", ".join(skills[:4])
+        skill_str = ", ".join(skills[:8]) if skills else "General"
 
         for i in range(count):
             diff = difficulties[i % len(difficulties)]
@@ -323,7 +327,7 @@ class QuestionGenerator:
     def generate_coding(self, job_role: str, skills: List[str], count: int = 2) -> List[Dict]:
         questions = []
         difficulties = ["Easy", "Medium", "Hard"]
-        skill_str = ", ".join(skills[:4])
+        skill_str = ", ".join(skills[:8]) if skills else "General"
 
         for i in range(count):
             diff = difficulties[i % len(difficulties)]
@@ -368,15 +372,15 @@ class QuestionGenerator:
         # Post-generation relevance filter: remove questions whose category/topic
         # has zero overlap with the role's required skills.
         if skills:
-            skill_lower = {s.lower() for s in skills}
             filtered = []
             for q in qs:
                 cat = q.get("category", "").lower()
                 topic = q.get("topic", "").lower()
                 text = q.get("question_text", "").lower()
+                targets = [cat, topic, text]
                 relevant = any(
-                    sk in cat or sk in topic or sk in text
-                    for sk in skill_lower
+                    skill_matchesAny(sk, targets)
+                    for sk in skills
                 )
                 if relevant:
                     filtered.append(q)
@@ -390,13 +394,13 @@ class QuestionGenerator:
         """Filter fallback questions to only include those relevant to the given skills."""
         if not skills:
             return questions
-        skill_lower = {s.lower() for s in skills}
         filtered = []
         for q in questions:
             cat = q.get("category", "").lower()
             topic = q.get("topic", "").lower()
             text = q.get("question_text", "").lower()
-            if any(sk in cat or sk in topic or sk in text for sk in skill_lower):
+            targets = [cat, topic, text]
+            if any(skill_matchesAny(sk, targets) for sk in skills):
                 filtered.append(q)
         return filtered
 
@@ -404,7 +408,6 @@ class QuestionGenerator:
         """Pull questions from the fallback bank filtered by skill relevance."""
         if not skills:
             return [q for q in self.fallback_bank if q.get("question_type") == question_type][:count]
-        skill_lower = {s.lower() for s in skills}
         relevant = []
         for q in self.fallback_bank:
             if q.get("question_type") != question_type:
@@ -412,7 +415,8 @@ class QuestionGenerator:
             cat = q.get("category", "").lower()
             topic = q.get("topic", "").lower()
             text = q.get("question_text", "").lower()
-            if any(sk in cat or sk in topic or sk in text for sk in skill_lower):
+            targets = [cat, topic, text]
+            if any(skill_matchesAny(sk, targets) for sk in skills):
                 relevant.append(q)
                 if len(relevant) >= count:
                     break

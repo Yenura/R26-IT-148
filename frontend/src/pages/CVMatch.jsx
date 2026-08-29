@@ -293,7 +293,7 @@ export default function CVMatch() {
       setJobs(jobList)
       const rawRoles = r3?.data?.roles || []
       const rolesList = Array.isArray(rawRoles)
-        ? rawRoles.map((item) => (typeof item === 'string' ? item : item?.role)).filter(Boolean)
+        ? rawRoles.map((item) => (typeof item === 'string' ? item : (item?.role || ''))).filter(Boolean)
         : []
       setCanonicalRoles(rolesList.length > 0 ? rolesList : CANONICAL_ROLES)
       if (resumeList.length > 0) {
@@ -437,8 +437,8 @@ export default function CVMatch() {
       const safeCandName = String(targetResumeDoc.candidate_name || 'Candidate').replace(/[$.]/g, '')
 
       const c1Payload = {
-        candidate_id: targetResumeDoc.candidate_id || resumeToUse,
-        candidate_name: targetResumeDoc.candidate_name || 'Candidate',
+        candidate_id: safeCandId,
+        candidate_name: safeCandName,
         text: cvTextToSend ? cvTextToSend.trim() : (targetResumeDoc.filename || 'Candidate Resume'),
         raw_text: cvTextToSend ? cvTextToSend.trim() : '',
         target_role: finalRole,
@@ -472,6 +472,15 @@ export default function CVMatch() {
       if (careerRes?.data) setCareerResult(careerRes.data)
       if (pathRes?.data) setLearningPathResult(pathRes.data)
       if (c1Res?.data) setC1Result(c1Res.data)
+
+      // Invalidate Skill Gap and Progress local caches so fresh data is loaded
+      try {
+        const uId = localStorage.getItem('recruitai.user_id')
+        if (uId) {
+          sessionStorage.removeItem(`recruitai.skillgap.${uId}`)
+          sessionStorage.removeItem(`recruitai.progress.${uId}`)
+        }
+      } catch {}
 
       toast.success(`Evaluation complete for ${finalRole}!`)
     } catch (err) {
@@ -1375,6 +1384,52 @@ export default function CVMatch() {
 
               </div>
 
+              {/* Direct Next Action Bar */}
+              <div style={{
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 'var(--p-space-5)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 12
+              }}>
+                <div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                    Ready to complete evaluation for {displayJobTitle}?
+                  </div>
+                  <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                    CV scores are saved. Take the AI Technical Interview to generate your final composite ranking for recruiters.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        role: displayJobTitle,
+                        skills: (matchedJobDoc?.required_skills || []).join(','),
+                        level: matchedJobDoc?.job_level || 'Mid-Level',
+                        count: String(matchedJobDoc?.interview_question_count || 10),
+                        jobId: selectedJob || '',
+                      })
+                      navigate(`/candidate/interview?${params.toString()}`)
+                    }}
+                  >
+                    <Play size={13} /> Take AI Technical Interview
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => navigate('/candidate/skill-gap')}
+                  >
+                    <Sparkles size={13} /> View Skill Gap Report
+                  </button>
+                </div>
+              </div>
+
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
@@ -1445,6 +1500,48 @@ export default function CVMatch() {
                   </div>
                   <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', fontStyle: 'italic', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: 4 }}>
                     "{selectedSkillEvidence.evidence_snippets?.[0] || 'Verified from work experience in candidate CV.'}"
+                  </div>
+                </div>
+              )}
+              {/* Top AI-Predicted Roles Matrix */}
+              {((c1Result?.role_alternatives?.length > 0) || (c1Result?.role_predictions?.length > 0)) && (
+                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                    <Cpu size={16} style={{ color: 'var(--color-primary)' }} /> Top AI-Predicted Roles (Click to Benchmark)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+                    {(c1Result.role_alternatives || c1Result.role_predictions || []).slice(0, 4).map((p) => {
+                      const roleName = typeof p === 'string' ? p : (p?.role || '')
+                      if (!roleName) return null
+                      const prob = p?.probability ?? p?.confidence ?? 0.8
+                      return (
+                        <div
+                          key={roleName}
+                          onClick={() => runUnifiedAnalysis(roleName)}
+                          style={{
+                            padding: '10px 14px',
+                            background: 'var(--color-bg-elevated)',
+                            border: '1px solid var(--color-border-subtle)',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          title={`Click to re-score against ${roleName}`}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                              {roleName}
+                            </span>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)' }}>
+                              {(prob * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                          <div style={{ width: '100%', height: 4, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ width: `${Math.min(prob * 100, 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 2 }} />
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

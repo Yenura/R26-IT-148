@@ -163,10 +163,6 @@ async def _full_analysis(
         status="READY_FOR_COMPONENT_3",
         analysis_timestamp=datetime.now(timezone.utc),
     )
-
-
-
-
 # ── GET /api/v1/roles ──────────────────────────────────────────────────────────
 
 @router.get("/roles", response_model=RolesListResponse, summary="List all 20 canonical roles")
