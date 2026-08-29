@@ -20,9 +20,27 @@ export default function SkillGap() {
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [activeTab, setActiveTab] = useState(userRole === 'company' ? 'explorer' : 'applied')
-  const [appliedReports, setAppliedReports] = useState([])
-  const [selectedJobId, setSelectedJobId] = useState(null)
-  const [loadingApplied, setLoadingApplied] = useState(true)
+  const [appliedReports, setAppliedReports] = useState(() => {
+    try {
+      const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
+      const cached = sessionStorage.getItem(`recruitai.skillgap.${uId}`)
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  const [selectedJobId, setSelectedJobId] = useState(() => {
+    try {
+      const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
+      const cached = sessionStorage.getItem(`recruitai.skillgap.${uId}`)
+      if (cached) {
+        const arr = JSON.parse(cached)
+        return arr?.[0]?.job_id || null
+      }
+    } catch {}
+    return null
+  })
+  const [loadingApplied, setLoadingApplied] = useState(false)
   const [syncingProgress, setSyncingProgress] = useState(false)
 
   const [availableJobs, setAvailableJobs] = useState(() => {

@@ -21,8 +21,16 @@ export default function Progress() {
   useAuth('candidate')
   const [candidateId, setCandidateId] = useState(() => localStorage.getItem('recruitai.user_id') || 'web-user')
 
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [data, setData] = useState(() => {
+    try {
+      const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
+      const cached = sessionStorage.getItem(`recruitai.progress.${uId}`)
+      return cached ? JSON.parse(cached) : null
+    } catch {
+      return null
+    }
+  })
+  const [loading, setLoading] = useState(false)
   const [syncBusy, setSyncBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('all')
   const [searchTerm, setSearchTerm] = useState('')
@@ -60,7 +68,12 @@ export default function Progress() {
           // ignore fallback
         }
       }
-      setData(r.data)
+      if (r?.data) {
+        setData(r.data)
+        try {
+          sessionStorage.setItem(`recruitai.progress.${uId}`, JSON.stringify(r.data))
+        } catch {}
+      }
     } catch {
       toast.error('Failed to load progress data')
     } finally {

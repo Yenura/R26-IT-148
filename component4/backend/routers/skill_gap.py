@@ -21,9 +21,31 @@ except ImportError:
     from backend.models.schemas import SkillGapRequest
 from services.ml_engine import run_skill_gap_analysis
 from src.gap_analysis.skill_gap import analyze_skill_gap
+import time
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# In-memory high performance TTL cache for applied jobs analysis
+_APPLIED_JOBS_CACHE: Dict[str, Any] = {}
+_CACHE_TTL_SECS = 45.0
+
+def get_cached_applied_jobs(candidate_id: str):
+    entry = _APPLIED_JOBS_CACHE.get(candidate_id)
+    if entry:
+        ts, data = entry
+        if time.time() - ts < _CACHE_TTL_SECS:
+            return data
+    return None
+
+def set_cached_applied_jobs(candidate_id: str, data: dict):
+    _APPLIED_JOBS_CACHE[candidate_id] = (time.time(), data)
+
+def invalidate_applied_jobs_cache(candidate_id: Optional[str] = None):
+    if candidate_id and candidate_id in _APPLIED_JOBS_CACHE:
+        del _APPLIED_JOBS_CACHE[candidate_id]
+    elif not candidate_id:
+        _APPLIED_JOBS_CACHE.clear()
 
 
 class SimpleSkillGapRequest(BaseModel):
@@ -266,6 +288,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     Evaluates skill gap, strengths, and weaknesses for every job the candidate applied for,
     integrating Component 1 CV parsing/matching and Component 2 AI Interview question-level topic scores.
     """
+    cached = get_cached_applied_jobs(candidate_id)
+    if cached:
+        return cached
+
     db = request.app.state.db
     from bson import ObjectId
     from services.ml_engine import RESOURCES, JOB_REQ, compute_gap
@@ -783,4 +809,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         results = await asyncio.gather(*[process_app(app) for app in candidate_jobs])
         reports.extend([r for r in results if r is not None])
 
-    return {"success": True, "candidate_id": candidate_id, "total_applied_jobs": len(reports), "reports": reports, "data": reports}
+    resp_data = {"success": True, "candidate_id": candidate_id, "total_applied_jobs": len(reports), "reports": reports, "data": reports}
+    set_cached_applied_jobs(candidate_id, resp_data)
+    return resp_data
