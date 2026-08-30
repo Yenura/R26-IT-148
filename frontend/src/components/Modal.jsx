@@ -12,27 +12,44 @@ export default function Modal({
 }) {
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
+  const onCloseRef = useRef(onClose)
 
   useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
+
+  useEffect(() => {
+    if (!open) return
+
+    previousFocusRef.current = document.activeElement
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape' && open) onClose()
+      if (e.key === 'Escape') {
+        if (onCloseRef.current) onCloseRef.current()
+        return
+      }
 
       // Focus trap
-      if (e.key === 'Tab' && open && dialogRef.current) {
-        const focusable = dialogRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusable = Array.from(
+          dialogRef.current.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => el.offsetParent !== null)
+
         if (focusable.length === 0) return
         const first = focusable[0]
         const last = focusable[focusable.length - 1]
 
         if (e.shiftKey) {
-          if (document.activeElement === first) {
+          if (document.activeElement === first || !dialogRef.current.contains(document.activeElement)) {
             e.preventDefault()
             last.focus()
           }
         } else {
-          if (document.activeElement === last) {
+          if (document.activeElement === last || !dialogRef.current.contains(document.activeElement)) {
             e.preventDefault()
             first.focus()
           }
@@ -40,32 +57,42 @@ export default function Modal({
       }
     }
 
-    if (open) {
-      previousFocusRef.current = document.activeElement
-      document.body.style.overflow = 'hidden'
-      // Auto-focus the first focusable element inside the dialog
-      setTimeout(() => {
-        if (dialogRef.current) {
+    window.addEventListener('keydown', handleKeyDown)
+
+    // Auto-focus only once on open: focus first interactive input or first focusable
+    const timer = setTimeout(() => {
+      if (dialogRef.current) {
+        // Do not steal focus if user has already focused an element inside the dialog
+        if (dialogRef.current.contains(document.activeElement) && document.activeElement !== document.body) {
+          return
+        }
+        const firstInput = dialogRef.current.querySelector(
+          'input:not([disabled]), select:not([disabled]), textarea:not([disabled])'
+        )
+        if (firstInput) {
+          firstInput.focus()
+        } else {
           const firstFocusable = dialogRef.current.querySelector(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+            'button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])'
           )
           if (firstFocusable) firstFocusable.focus()
         }
-      }, 50)
-    } else {
-      document.body.style.overflow = 'unset'
-      // Restore focus when modal closes
+      }
+    }, 50)
+
+    return () => {
+      clearTimeout(timer)
+      window.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = originalOverflow || 'unset'
       if (previousFocusRef.current && previousFocusRef.current.focus) {
-        previousFocusRef.current.focus()
+        try {
+          previousFocusRef.current.focus()
+        } catch {
+          // Ignore
+        }
       }
     }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
-    }
-  }, [open, onClose])
+  }, [open])
 
   if (!open) return null
 

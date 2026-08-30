@@ -336,9 +336,12 @@ export default function App() {
               <Route path="/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
 
               <Route path="/pipeline/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
+              <Route path="/company/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
+              <Route path="/candidate/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
               <Route path="/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
 
               <Route path="/pipeline/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
+              <Route path="/candidate/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
               <Route path="/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
 
               <Route path="/pipeline/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
@@ -349,6 +352,8 @@ export default function App() {
               <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
 
               <Route path="/pipeline/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
+              <Route path="/company/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
+              <Route path="/candidate/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
               <Route path="/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
 
               <Route path="/jobs" element={<PrivateRoute><JobBoard /></PrivateRoute>} />

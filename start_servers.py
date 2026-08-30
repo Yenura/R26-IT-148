@@ -16,8 +16,20 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
-PYTHON = sys.executable
+try:
+    import dns.resolver
+    _res = dns.resolver.Resolver()
+    _res.nameservers = ["8.8.8.8", "1.1.1.1", "8.8.4.4"]
+    dns.resolver.default_resolver = _res
+except Exception:
+    pass
+
 ROOT = os.path.dirname(os.path.abspath(__file__))
+VENV_PYTHON = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
+if os.path.exists(VENV_PYTHON):
+    PYTHON = VENV_PYTHON
+else:
+    PYTHON = sys.executable
 
 
 def print_model_accuracy_banner():

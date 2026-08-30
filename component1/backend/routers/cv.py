@@ -40,6 +40,7 @@ from backend.models.schemas import (
     RolesListResponse,
 )
 from backend.services import extractor, parser, scorer
+from backend.services.job_extractor import extract_job_requirements
 from data.role_requirements import ALL_ROLES, REQUIRED_SKILLS, REQUIRED_YEARS
 
 logger = logging.getLogger("component1.router.cv")
@@ -80,23 +81,21 @@ async def _full_analysis(
     target_role: Optional[str] = None,
 ) -> CVAnalysisResponse:
     """Core pipeline: extract → classify → score → return 3 independent scores."""
-    features = extractor.extract(text)
-    pred     = predictor.predict(text)
+    pred = predictor.predict(text)
+    scored_role = target_role if (target_role and target_role in ALL_ROLES) else pred.job_role
+
+    features = extractor.extract(text, target_role=scored_role)
 
     jd_sim: Optional[float] = None
     if job_description and job_description.strip():
         jd_sim = matcher.compute(text, job_description)
 
-    req_skills = None
-    req_years = None
-    req_edu = None
-
-    if job_spec:
-        req_skills = job_spec.get("required_skills")
-        req_years = job_spec.get("required_experience_years")
-        req_edu = job_spec.get("required_education")
-
-    scored_role = target_role if (target_role and target_role in ALL_ROLES) else pred.job_role
+    # Extract or resolve structured job requirements
+    job_reqs = extract_job_requirements(
+        job_description=job_description,
+        job_spec=job_spec,
+        target_role=scored_role,
+    )
 
     scores = scorer.score(
         role=scored_role,
@@ -104,10 +103,32 @@ async def _full_analysis(
         experience_years=features.experience_years,
         skills=features.skills,
         jd_similarity_score=jd_sim,
-        required_skills_spec=req_skills,
-        required_years=req_years,
-        required_education=req_edu,
+        required_skills_spec=job_reqs.required_skills,
+        preferred_skills_spec=job_reqs.preferred_skills,
+        required_years=job_reqs.required_experience_years,
+        required_education=job_reqs.required_education,
         candidate_education=features.education,
+        role_relevant_experience_years=features.role_relevant_experience_years,
+        candidate_seniority=features.seniority,
+        target_seniority=job_reqs.required_seniority,
+        seniority_evidence=features.seniority_evidence,
+        employment_records=features.employment_records,
+        skill_evidence=features.skill_evidence,
+        verified_certifications=features.verified_certifications,
+    )
+
+    from data.role_requirements import build_target_job_profile
+    target_profile = build_target_job_profile(
+        role_name=scored_role,
+        jd_text=job_description,
+        custom_spec={
+            "job_title": scored_role,
+            "required_skills": job_reqs.required_skills,
+            "preferred_skills": job_reqs.preferred_skills,
+            "required_experience_years": job_reqs.required_experience_years,
+            "required_education": job_reqs.required_education,
+            "seniority": job_reqs.required_seniority,
+        }
     )
 
     return CVAnalysisResponse(
@@ -124,7 +145,7 @@ async def _full_analysis(
             )
             for a in pred.alternatives
         ],
-        manual_review_recommended=getattr(pred, "manual_review_recommended", False),
+        manual_review_recommended=getattr(features, "manual_review_recommended", False) or getattr(pred, "manual_review_recommended", False),
         review_reason=getattr(pred, "review_reason", None),
         education=features.education,
         edu_level=features.edu_level,
@@ -132,6 +153,15 @@ async def _full_analysis(
         experience_years=features.experience_years,
         skills=features.skills,
         skill_evidence=getattr(features, "skill_evidence", {}),
+        role_relevant_experience_years=features.role_relevant_experience_years,
+        detected_seniority=features.seniority,
+        detected_certs=features.detected_certs,
+        verified_certifications=features.verified_certifications,
+        projects=features.projects,
+        employment_records=features.employment_records,
+        target_job_profile=target_profile.to_dict(),
+        cross_evidence_validation=getattr(features, "cross_evidence_validation", {}),
+        overall_analysis_confidence=getattr(features, "overall_analysis_confidence", 0.85),
         component_1_scores={
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
@@ -150,8 +180,6 @@ async def _full_analysis(
         status="READY_FOR_COMPONENT_3",
         analysis_timestamp=datetime.now(timezone.utc),
     )
-
-
 # ── GET /api/v1/roles ──────────────────────────────────────────────────────────
 
 @router.get("/roles", response_model=RolesListResponse, summary="List all 20 canonical roles")
@@ -298,8 +326,9 @@ async def screen_resume(
     c_name = (candidate_name or "Candidate").strip()
     j_id = job_id or "JOB001"
 
-    features = extractor.extract(text)
     pred = predictor.predict(text)
+    features = extractor.extract(text, target_role=pred.job_role)
+    job_reqs = extract_job_requirements(target_role=pred.job_role)
 
     scores = scorer.score(
         role=pred.job_role,
@@ -307,6 +336,16 @@ async def screen_resume(
         experience_years=features.experience_years,
         skills=features.skills,
         candidate_education=features.education,
+        required_skills_spec=job_reqs.required_skills,
+        preferred_skills_spec=job_reqs.preferred_skills,
+        required_years=job_reqs.required_experience_years,
+        role_relevant_experience_years=features.role_relevant_experience_years,
+        candidate_seniority=features.seniority,
+        target_seniority=job_reqs.required_seniority,
+        seniority_evidence=features.seniority_evidence,
+        employment_records=features.employment_records,
+        skill_evidence=features.skill_evidence,
+        verified_certifications=features.verified_certifications,
     )
 
     return {
@@ -318,7 +357,14 @@ async def screen_resume(
         "screening_score": scores.optional_legacy_score or 0.0,
         "detected_skills": features.skills,
         "skill_evidence": getattr(features, "skill_evidence", {}),
+        "detected_certs": features.detected_certs,
+        "verified_certifications": features.verified_certifications,
+        "role_relevant_experience_years": features.role_relevant_experience_years,
+        "detected_seniority": features.seniority,
+        "employment_records": features.employment_records,
+        "projects": features.projects,
         "scores": {
+
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
             "S_edu": scores.S_edu,
@@ -339,6 +385,7 @@ async def screen_resume(
             for alt in pred.alternatives[:5]
         ]
     }
+
 
 
 # ── POST /screen-batch / /api/v1/screen-batch ────────────────────────────────

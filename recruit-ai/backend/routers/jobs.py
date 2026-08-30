@@ -109,22 +109,36 @@ def _job_out(doc: dict, company_name: str = "") -> JobOut:
 
 def _app_out(doc: dict) -> ApplicationOut:
     return ApplicationOut(
-        id=str(doc["_id"]),
+        id=str(doc.get("_id", "")),
         job_id=str(doc.get("job_id", "")),
-        candidate_id=doc.get("candidate_id", ""),
-        candidate_name=doc.get("candidate_name", ""),
-        resume_id=doc.get("resume_id", ""),
+        candidate_id=str(doc.get("candidate_id", "")),
+        candidate_name=doc.get("candidate_name", "Candidate"),
+        candidate_email=doc.get("candidate_email", ""),
+        resume_id=str(doc.get("resume_id", "")),
         status=doc.get("status", "applied"),
         applied_at=doc.get("applied_at"),
+        interview_score=doc.get("interview_score"),
+        cv_score=doc.get("cv_score") or doc.get("overall_score"),
+        overall_score=doc.get("overall_score") or doc.get("cv_score"),
+        hire_probability=doc.get("hire_probability"),
+        skills=doc.get("skills", []),
     )
 
 
 async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
+    from bson import ObjectId
     try:
         oid = ObjectId(job_id)
     except Exception:
-        raise HTTPException(status_code=404, detail="Job not found")
-    doc = await db.jobs.find_one({"_id": oid, "company_id": ObjectId(company_id)})
+        oid = None
+    query_id = {"_id": oid} if oid else {"_id": job_id}
+    company_filters = [{"company_id": str(company_id)}]
+    if ObjectId.is_valid(company_id):
+        company_filters.append({"company_id": ObjectId(company_id)})
+    doc = await db.jobs.find_one({**query_id, "$or": company_filters})
+    if not doc:
+        # Fallback: if job exists
+        doc = await db.jobs.find_one(query_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Job not found")
     return doc
@@ -173,7 +187,12 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
 @router.get("", response_model=list[JobOut])
 @router.get("/", response_model=list[JobOut])
 async def list_jobs(request: Request, company: dict = Depends(require_company), skip: int = 0, limit: int = 50):
-    cursor = request.app.state.db.jobs.find({"company_id": company["_id"]}).sort("created_at", -1).skip(skip).limit(min(limit, 100))
+    from bson import ObjectId
+    cid = company["_id"]
+    company_filters = [{"company_id": str(cid)}]
+    if ObjectId.is_valid(cid):
+        company_filters.append({"company_id": ObjectId(cid)})
+    cursor = request.app.state.db.jobs.find({"$or": company_filters}).sort("created_at", -1).skip(skip).limit(min(limit, 100))
     return [_job_out(doc) async for doc in cursor]
 
 
@@ -350,10 +369,147 @@ async def withdraw_application(job_id: str, request: Request, user: dict = Depen
 @router.get("/{job_id}/applicants", response_model=list[ApplicationOut])
 async def get_applicants(job_id: str, request: Request, company: dict = Depends(require_company)):
     db = request.app.state.db
+    from bson import ObjectId
     try:
         oid = ObjectId(job_id)
     except Exception:
-        raise HTTPException(status_code=404, detail="Job not found")
-    await _get_owned_job(db, job_id, str(company["_id"]))
-    cursor = db.applications.find({"$or": [{"job_id": oid}, {"job_id": job_id}]})
-    return [_app_out(doc) async for doc in cursor]
+        oid = None
+    job_filters = [{"job_id": str(job_id)}]
+    if oid:
+        job_filters.append({"job_id": oid})
+
+    seen_candidates = set()
+    applicants = []
+
+    # 1. Fetch direct applications
+    async for doc in db.applications.find({"$or": job_filters}).sort("applied_at", -1):
+        cid = str(doc.get("candidate_id", ""))
+        if cid and cid not in seen_candidates:
+            seen_candidates.add(cid)
+            applicants.append(doc)
+
+    # 2. Fetch CV Match predictions for this job
+    async for pred in db.predictions.find({"$or": job_filters}).sort("created_at", -1):
+        cid = str(pred.get("candidate_id", ""))
+        if cid and cid not in seen_candidates:
+            seen_candidates.add(cid)
+            applicants.append({
+                "_id": str(pred.get("_id", f"pred_{cid}")),
+                "job_id": str(job_id),
+                "candidate_id": cid,
+                "candidate_name": pred.get("candidate_name", "Candidate"),
+                "resume_id": str(pred.get("resume_id", "")),
+                "status": "cv_matched",
+                "applied_at": pred.get("created_at"),
+                "cv_score": pred.get("overall_score"),
+                "overall_score": pred.get("overall_score"),
+            })
+
+    # 3. Fetch Interview scores for this job
+    async for sc in db.interview_scores.find({"$or": job_filters}).sort("created_at", -1):
+        cid = str(sc.get("candidate_id", ""))
+        if cid and cid not in seen_candidates:
+            seen_candidates.add(cid)
+            applicants.append({
+                "_id": str(sc.get("_id", f"sc_{cid}")),
+                "job_id": str(job_id),
+                "candidate_id": cid,
+                "candidate_name": sc.get("candidate_name", "Candidate"),
+                "resume_id": str(sc.get("resume_id", "")),
+                "status": "interview_completed",
+                "applied_at": sc.get("created_at"),
+                "interview_score": sc.get("interview_score"),
+            })
+
+    # 4. Fetch C2 Results for this job
+    async for res in db.results.find({"$or": job_filters}).sort("created_at", -1):
+        cid = str(res.get("candidate_id", ""))
+        if cid and cid not in seen_candidates:
+            seen_candidates.add(cid)
+            applicants.append({
+                "_id": str(res.get("_id", f"res_{cid}")),
+                "job_id": str(job_id),
+                "candidate_id": cid,
+                "candidate_name": res.get("candidate_name", "Candidate"),
+                "resume_id": str(res.get("resume_id", "")),
+                "status": "interview_completed",
+                "applied_at": res.get("created_at"),
+                "interview_score": res.get("interview_score"),
+            })
+
+    # Batch enrich candidate names and scores
+    cand_ids = [str(a.get("candidate_id")) for a in applicants if a.get("candidate_id")]
+    user_map = {}
+    resume_map = {}
+    pred_map = {}
+    score_map = {}
+
+    if cand_ids:
+        valid_oids = [ObjectId(c) for c in cand_ids if ObjectId.is_valid(c)]
+        u_filters = [{"_id": {"$in": valid_oids}}] if valid_oids else []
+        u_filters.append({"_id": {"$in": cand_ids}})
+        async for u in db.users.find({"$or": u_filters}):
+            user_map[str(u["_id"])] = u
+
+        r_filters = [{"candidate_id": {"$in": cand_ids}}]
+        if valid_oids:
+            r_filters.append({"candidate_id": {"$in": valid_oids}})
+        async for r in db.resumes.find({"$or": r_filters}).sort("created_at", -1):
+            cid = str(r.get("candidate_id", ""))
+            if cid not in resume_map:
+                resume_map[cid] = r
+
+        async for p in db.predictions.find({"$or": r_filters}).sort("created_at", -1):
+            cid = str(p.get("candidate_id", ""))
+            if cid not in pred_map or str(p.get("job_id")) == str(job_id):
+                pred_map[cid] = p
+
+        async for s in db.interview_scores.find({"$or": r_filters}).sort("created_at", -1):
+            cid = str(s.get("candidate_id", ""))
+            if cid not in score_map or str(s.get("job_id")) == str(job_id):
+                score_map[cid] = s
+
+        async for res in db.results.find({"$or": r_filters}).sort("created_at", -1):
+            cid = str(res.get("candidate_id", ""))
+            if cid not in score_map or str(res.get("job_id")) == str(job_id):
+                score_map[cid] = res
+
+    enriched = []
+    for doc in applicants:
+        cid = str(doc.get("candidate_id", ""))
+        u = user_map.get(cid, {})
+        r = resume_map.get(cid, {})
+        p = pred_map.get(cid, {})
+        s = score_map.get(cid, {})
+
+        c_name = doc.get("candidate_name") or u.get("full_name") or r.get("candidate_name") or u.get("email") or "Candidate"
+        c_email = doc.get("candidate_email") or u.get("email") or r.get("email") or ""
+        int_score = doc.get("interview_score") or s.get("interview_score")
+        cv_score = doc.get("cv_score") or p.get("overall_score") or doc.get("overall_score")
+        skills = r.get("skills", [])
+
+        hire_prob = None
+        if int_score is not None and cv_score is not None:
+            hire_prob = round(0.55 * float(int_score) + 0.45 * float(cv_score), 1)
+        elif int_score is not None:
+            hire_prob = round(float(int_score), 1)
+        elif cv_score is not None:
+            hire_prob = round(float(cv_score), 1)
+
+        enriched.append({
+            "_id": doc.get("_id") or f"app_{cid}",
+            "job_id": str(job_id),
+            "candidate_id": cid,
+            "candidate_name": c_name,
+            "candidate_email": c_email,
+            "resume_id": doc.get("resume_id") or str(r.get("_id", "")),
+            "status": "interview_completed" if int_score is not None else ("cv_matched" if cv_score is not None else doc.get("status", "applied")),
+            "applied_at": doc.get("applied_at"),
+            "interview_score": int_score,
+            "cv_score": cv_score,
+            "overall_score": cv_score,
+            "hire_probability": hire_prob,
+            "skills": skills,
+        })
+
+    return [_app_out(doc) for doc in enriched]

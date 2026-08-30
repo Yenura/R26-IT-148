@@ -31,7 +31,8 @@ def _sanitise_candidate_id(v: str) -> str:
 
 
 def _sanitise_text(v: str) -> str:
-    return re.sub(r'[$.]', '', v).strip()
+    cleaned = re.sub(r'[$.]', '', str(v or "")).strip()
+    return cleaned or "Candidate"
 
 
 # ── Sub-models ─────────────────────────────────────────────────────────────────
@@ -113,6 +114,9 @@ class SkillAnalysisModel(BaseModel):
     percentage: float
     matched_skills: List[str]
     missing_skills: List[str]
+    matched_preferred_skills: Optional[List[str]] = None
+    related_skills: Optional[List[str]] = None
+    evidence_breakdown: Optional[Dict[str, Any]] = None
 
 
 class ExperienceAnalysisModel(BaseModel):
@@ -120,6 +124,16 @@ class ExperienceAnalysisModel(BaseModel):
     required_years: float
     relevant_years: float
     score: float
+    total_professional_experience_months: Optional[float] = None
+    it_sector_experience_months: Optional[float] = None
+    target_role_relevant_experience_months: Optional[float] = None
+    it_experience_years: Optional[float] = None
+    total_experience_years: Optional[float] = None
+    candidate_seniority: Optional[str] = "Mid"
+    target_seniority: Optional[str] = "Mid"
+    seniority_fit: Optional[str] = "MATCH"
+    seniority_evidence: Optional[List[str]] = None
+    employment_records: Optional[List[Dict[str, Any]]] = None
 
 
 class EducationAnalysisModel(BaseModel):
@@ -127,6 +141,14 @@ class EducationAnalysisModel(BaseModel):
     required_education: List[str]
     education_match: str
     score: float
+    degree_level: Optional[str] = "BSc"
+    degree_field: Optional[str] = "General IT"
+    field_relevance: Optional[str] = "HIGH"
+    education_relevance_score: Optional[float] = None
+    relevant_certifications: Optional[List[Dict[str, Any]]] = None
+    verified_certifications: Optional[List[Dict[str, Any]]] = None
+    explanation: Optional[str] = None
+
 
 
 class JobRequirementSpec(BaseModel):
@@ -217,10 +239,21 @@ class CVAnalysisResponse(BaseModel):
     jd_similarity_score:  Optional[float] = Field(None, ge=0.0, le=1.0)
     optional_legacy_score: Optional[float] = Field(None, ge=0.0, le=100.0)
     cv_matching_score:    float = Field(..., ge=0.0, le=100.0)
+    role_relevant_experience_years: Optional[float] = None
+    detected_seniority:   Optional[str] = None
+    detected_certs:       Optional[List[str]] = None
+    verified_certifications: Optional[List[Dict[str, Any]]] = None
+    projects:             Optional[List[Dict[str, Any]]] = None
+    employment_records:   Optional[List[Dict[str, Any]]] = None
+    target_job_profile:   Optional[Dict[str, Any]] = None
+    cross_evidence_validation: Optional[Dict[str, Any]] = None
+    overall_analysis_confidence: Optional[float] = None
     status:               str = "READY_FOR_COMPONENT_3"
     analysis_timestamp:   datetime
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+
 
 
 class ClassifyResponse(BaseModel):
