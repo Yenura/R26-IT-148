@@ -139,19 +139,31 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
     for line in edu_section_lines:
         line_l = line.lower()
         if "scrum master" not in line_l and any(kw in line_l for kw in degree_kw):
-            edu_sentence = line.strip()
+            # Normalize glued tokens like BSc(Hons)SoftwareEngineering
+            c_line = re.sub(r'([a-z])([A-Z])', r'\1 \2', line)
+            c_line = re.sub(r'(\))\s*([A-Za-z])', r'\1 \2', c_line)
+            c_line = re.sub(r'([A-Za-z])\s*(\()', r'\1 \2', c_line)
+            c_line = re.sub(r'\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$', '', c_line, flags=re.I)
+            c_line = re.sub(r'\s*\(?\s*expected\s*(?:[A-Za-z]+\s*)?(?:20\d\d|19\d\d)?\s*\)?.*$', '', c_line, flags=re.I)
+            c_line = re.sub(r'\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$', '', c_line)
+            edu_sentence = c_line.strip(' -–—|:,')
             break
 
     if not edu_sentence:
         for line in lines:
             line_l = line.lower()
             if "scrum master" not in line_l and any(kw in line_l for kw in degree_kw):
-                edu_sentence = line.strip()
+                c_line = re.sub(r'([a-z])([A-Z])', r'\1 \2', line)
+                c_line = re.sub(r'(\))\s*([A-Za-z])', r'\1 \2', c_line)
+                c_line = re.sub(r'([A-Za-z])\s*(\()', r'\1 \2', c_line)
+                c_line = re.sub(r'\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$', '', c_line, flags=re.I)
+                c_line = re.sub(r'\s*\(?\s*expected\s*(?:[A-Za-z]+\s*)?(?:20\d\d|19\d\d)?\s*\)?.*$', '', c_line, flags=re.I)
+                c_line = re.sub(r'\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$', '', c_line)
+                edu_sentence = c_line.strip(' -–—|:,')
                 break
 
-    if not edu_sentence or len(edu_sentence) < 5:
-        spec_suffix = f" (Specializing in {specializations[0]})" if specializations else ""
-        edu_sentence = f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}{spec_suffix}"
+    if not edu_sentence or len(edu_sentence) < 5 or "general" in edu_sentence.lower():
+        edu_sentence = edu_full.get("qualification", f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}")
 
     # 3. Skills & Evidence
     skills_certs = extract_skills_and_certifications(text, target_role=target_role)
