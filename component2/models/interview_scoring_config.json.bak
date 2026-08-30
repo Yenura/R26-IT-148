@@ -1,0 +1,52 @@
+{
+  "Software Engineer": {
+    "mcq": 0.4,
+    "descriptive": 0.4,
+    "coding": 0.2
+  },
+  "Data Scientist": {
+    "mcq": 0.5,
+    "descriptive": 0.3,
+    "coding": 0.2
+  },
+  "Machine Learning Engineer": {
+    "mcq": 0.6,
+    "descriptive": 0.3,
+    "coding": 0.1
+  },
+  "DevOps Engineer": {
+    "mcq": 0.5,
+    "descriptive": 0.3,
+    "coding": 0.2
+  },
+  "Cybersecurity Analyst": {
+    "mcq": 0.78,
+    "descriptive": 0.22,
+    "coding": 0.0
+  },
+  "Cloud Solutions Architect": {
+    "mcq": 0.86,
+    "descriptive": 0.14,
+    "coding": 0.0
+  },
+  "Database Administrator": {
+    "mcq": 0.6,
+    "descriptive": 0.2,
+    "coding": 0.2
+  },
+  "Frontend Developer": {
+    "mcq": 0.6,
+    "descriptive": 0.1,
+    "coding": 0.3
+  },
+  "Backend Developer": {
+    "mcq": 0.4,
+    "descriptive": 0.4,
+    "coding": 0.2
+  },
+  "Mobile App Developer": {
+    "mcq": 0.4,
+    "descriptive": 0.3,
+    "coding": 0.3
+  }
+}
