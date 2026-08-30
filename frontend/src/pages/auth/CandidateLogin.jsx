@@ -6,6 +6,18 @@ import { C0 } from '../../api'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+const getErrorMessage = (err) => {
+  const detail = err?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail.map((d) => (d.msg ? d.msg.replace(/^Value error,\s*/i, '') : JSON.stringify(d))).join(', ')
+  }
+  if (typeof detail === 'object' && detail !== null) {
+    return Object.values(detail).join(', ')
+  }
+  return err?.message || 'Invalid email or password'
+}
+
 export default function CandidateLogin() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -30,6 +42,7 @@ export default function CandidateLogin() {
     setBusy(true)
     try {
       const r = await C0.post('/auth/login/candidate', { email: email.trim(), password })
+      try { sessionStorage.clear() } catch {}
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'candidate')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -59,7 +72,7 @@ export default function CandidateLogin() {
           return
         } catch { }
       }
-      toast.error(err?.response?.data?.detail || 'Invalid email or password')
+      toast.error(getErrorMessage(err))
     } finally {
       setBusy(false)
     }

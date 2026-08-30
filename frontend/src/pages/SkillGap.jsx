@@ -24,27 +24,8 @@ export default function SkillGap() {
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [activeTab, setActiveTab] = useState(userRole === 'company' ? 'explorer' : 'applied')
-  const [appliedReports, setAppliedReports] = useState(() => {
-    try {
-      const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
-      const cached = sessionStorage.getItem(`recruitai.skillgap.${uId}`)
-      return cached ? JSON.parse(cached) : []
-    } catch {
-      return []
-    }
-  })
-  const [selectedJobId, setSelectedJobId] = useState(() => {
-    if (paramJobId) return paramJobId
-    try {
-      const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
-      const cached = sessionStorage.getItem(`recruitai.skillgap.${uId}`)
-      if (cached) {
-        const arr = JSON.parse(cached)
-        return arr?.[0]?.job_id || null
-      }
-    } catch {}
-    return null
-  })
+  const [appliedReports, setAppliedReports] = useState([])
+  const [selectedJobId, setSelectedJobId] = useState(paramJobId || null)
   const [loadingApplied, setLoadingApplied] = useState(false)
   const [syncingProgress, setSyncingProgress] = useState(false)
 
@@ -178,6 +159,8 @@ export default function SkillGap() {
       } catch {}
       if (arr.length === 0) {
         setSelectedJobId(null)
+      } else if (paramJobId && arr.some((a) => a.job_id === paramJobId)) {
+        setSelectedJobId(paramJobId)
       } else if (!selectedJobId || !arr.some((a) => a.job_id === selectedJobId)) {
         setSelectedJobId(arr[0].job_id)
       }
@@ -389,7 +372,7 @@ export default function SkillGap() {
                           {selectedReport.interview_completed ? 'Final Total Mark (CSS)' : 'Current Total (CV Mark)'}
                         </div>
                         <div style={{ fontSize: '1.3rem', fontWeight: 900, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.hire_probability != null ? `${Number(selectedReport.hire_probability).toFixed(1)}%` : 'N/A')}
+                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.cv_score != null ? `${Number(selectedReport.cv_score).toFixed(1)}%` : 'N/A')}
                         </div>
                       </div>
                     </div>
