@@ -416,9 +416,15 @@ class ApplicationOut(BaseModel):
     job_id: str
     candidate_id: str
     candidate_name: str = ""
+    candidate_email: str = ""
     resume_id: str = ""
     status: str = "applied"
     applied_at: datetime | None = None
+    interview_score: float | None = None
+    cv_score: float | None = None
+    overall_score: float | None = None
+    hire_probability: float | None = None
+    skills: list[str] = []
 
 
 class ApplicationCreate(BaseModel):

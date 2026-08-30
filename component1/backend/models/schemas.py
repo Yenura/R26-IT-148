@@ -254,6 +254,8 @@ class CVAnalysisResponse(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
 
+
+
 class ClassifyResponse(BaseModel):
     job_role:                  str
     role_confidence:           float

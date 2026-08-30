@@ -321,7 +321,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                 "applied_at": app.get("applied_at")
             })
 
-    # B. From CV Match Predictions (even before applying or taking interview)
+    # B. From CV Match Predictions
     pred_query = list(cand_id_filters)
     if cand_resume_ids:
         pred_query.append({"resume_id": {"$in": cand_resume_ids}})
@@ -329,7 +329,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     pred_cursor = db.predictions.find({"$or": pred_query}).sort("created_at", -1)
     async for pred_doc in pred_cursor:
         jid = str(pred_doc.get("job_id", ""))
-        p_role = pred_doc.get("predicted_role", "")
         if jid:
             job_found = None
             try:
@@ -337,10 +336,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                     job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
                 if not job_found:
                     job_found = await db.jobs.find_one({"_id": jid})
-                if not job_found:
-                    job_found = await db.jobs.find_one({"$or": [{"title": jid}, {"job_role": jid}]})
-                if not job_found and p_role:
-                    job_found = await db.jobs.find_one({"$or": [{"title": p_role}, {"job_role": p_role}]})
             except Exception:
                 pass
             if job_found:
@@ -357,7 +352,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     score_cursor = db.interview_scores.find({"$or": cand_id_filters}).sort("created_at", -1)
     async for sc_doc in score_cursor:
         jid = str(sc_doc.get("job_id", ""))
-        j_role = sc_doc.get("job_role", "")
         if jid:
             job_found = None
             try:
@@ -365,8 +359,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                     job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
                 if not job_found:
                     job_found = await db.jobs.find_one({"_id": jid})
-                if not job_found and j_role:
-                    job_found = await db.jobs.find_one({"$or": [{"title": j_role}, {"job_role": j_role}]})
             except Exception:
                 pass
             if job_found:
@@ -383,16 +375,13 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     results_cursor = db.results.find({"$or": cand_id_filters}).sort("created_at", -1)
     async for res_doc in results_cursor:
         jid = str(res_doc.get("job_id", ""))
-        j_role = res_doc.get("job_role", "")
-        if jid or j_role:
+        if jid:
             job_found = None
             try:
-                if jid and ObjectId.is_valid(jid):
+                if ObjectId.is_valid(jid):
                     job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
-                if not job_found and jid:
+                if not job_found:
                     job_found = await db.jobs.find_one({"_id": jid})
-                if not job_found and j_role:
-                    job_found = await db.jobs.find_one({"$or": [{"title": j_role}, {"job_role": j_role}]})
             except Exception:
                 pass
             if job_found:
@@ -405,40 +394,19 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                         "applied_at": res_doc.get("created_at")
                     })
 
-    # Fallback if no specific jobs were found for this candidate_id
-    if not candidate_jobs:
-        latest_res = await db.resumes.find_one(sort=[("created_at", -1)])
-        if latest_res:
-            fb_cid = str(latest_res.get("candidate_id", ""))
-            fb_filters = [{"candidate_id": fb_cid}]
-            if ObjectId.is_valid(fb_cid):
-                fb_filters.append({"candidate_id": ObjectId(fb_cid)})
+    # 2. Fetch candidate resume strictly for this candidate
+    resume = None
+    try:
+        if ObjectId.is_valid(candidate_id):
+            resume = await db.resumes.find_one({"$or": [{"candidate_id": candidate_id}, {"candidate_id": ObjectId(candidate_id)}]}, sort=[("created_at", -1)])
+        else:
+            resume = await db.resumes.find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
+    except Exception:
+        pass
 
-            async for app in db.applications.find({"$or": fb_filters}).sort("applied_at", -1):
-                jid = str(app.get("job_id", ""))
-                if jid and jid not in seen_job_ids:
-                    seen_job_ids.add(jid)
-                    candidate_jobs.append({"job_id": jid, "status": "applied", "applied_at": app.get("applied_at")})
-
-            async for pr in db.predictions.find({"$or": fb_filters + [{"resume_id": str(latest_res["_id"])}]}).sort("created_at", -1):
-                jid = str(pr.get("job_id", ""))
-                if jid:
-                    j_f = await db.jobs.find_one({"_id": ObjectId(jid)}) if ObjectId.is_valid(jid) else await db.jobs.find_one({"_id": jid})
-                    if j_f:
-                        ajid = str(j_f["_id"])
-                        if ajid not in seen_job_ids:
-                            seen_job_ids.add(ajid)
-                            candidate_jobs.append({"job_id": ajid, "status": "cv_matched", "applied_at": pr.get("created_at")})
-
-    # 2. Fetch candidate resume
-    resume = await db.resumes.find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
-    if not resume:
-        try:
-            resume = await db.resumes.find_one({"candidate_id": ObjectId(candidate_id)}, sort=[("created_at", -1)])
-        except Exception:
-            pass
-    if not resume:
-        resume = await db.resumes.find_one(sort=[("created_at", -1)])
+    # If new candidate has no applications, predictions, or interviews, return clean empty reports
+    if not candidate_jobs and not resume:
+        return {"success": True, "candidate_id": candidate_id, "total_applied_jobs": 0, "reports": []}
 
     cand_skills = resume.get("skills", []) if resume else []
     cand_name = resume.get("candidate_name", "") if resume else ""
@@ -446,9 +414,12 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     cand_edu = resume.get("education", "B.Sc. Computer Science") if resume else "B.Sc. Computer Science"
 
     if not cand_name:
-        user_doc = await db.users.find_one({"_id": ObjectId(candidate_id)}) if ObjectId.is_valid(candidate_id) else await db.users.find_one({"_id": candidate_id})
-        if user_doc:
-            cand_name = user_doc.get("full_name", user_doc.get("email", "Candidate"))
+        try:
+            user_doc = await db.users.find_one({"_id": ObjectId(candidate_id)}) if ObjectId.is_valid(candidate_id) else await db.users.find_one({"_id": candidate_id})
+            if user_doc:
+                cand_name = user_doc.get("full_name", user_doc.get("email", "Candidate"))
+        except Exception:
+            pass
 
     reports = []
 
