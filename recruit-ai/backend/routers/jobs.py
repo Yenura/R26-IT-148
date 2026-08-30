@@ -378,6 +378,25 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
     if oid:
         job_filters.append({"job_id": oid})
 
+    job_doc = None
+    try:
+        if oid:
+            job_doc = await db.jobs.find_one({"_id": oid})
+        if not job_doc:
+            job_doc = await db.jobs.find_one({"_id": str(job_id)})
+        if not job_doc:
+            job_doc = await db.jobs.find_one({"title": job_id})
+    except Exception:
+        pass
+
+    if job_doc:
+        j_title = job_doc.get("title")
+        j_role = job_doc.get("job_role")
+        if j_title:
+            job_filters.extend([{"job_id": j_title}, {"job_title": j_title}, {"job_role": j_title}])
+        if j_role:
+            job_filters.extend([{"job_id": j_role}, {"job_role": j_role}])
+
     seen_candidates = set()
     applicants = []
 

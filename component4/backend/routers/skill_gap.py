@@ -288,6 +288,9 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     Evaluates skill gap, strengths, and weaknesses for every job the candidate applied for,
     integrating Component 1 CV parsing/matching and Component 2 AI Interview question-level topic scores.
     """
+    if not candidate_id or candidate_id in ("web-user", "candidate-user", "undefined", "null", "none"):
+        return {"success": True, "candidate_id": candidate_id or "", "total_applied_jobs": 0, "reports": [], "data": []}
+
     cached = get_cached_applied_jobs(candidate_id)
     if cached:
         return cached
