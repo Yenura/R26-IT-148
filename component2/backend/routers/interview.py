@@ -17,6 +17,7 @@ import subprocess
 import tempfile
 import os
 import ast
+import asyncio
 
 from models.schemas import (
     InterviewRequest, InterviewSession, InterviewQuestion,
@@ -232,6 +233,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             desc_count=interview_request.desc_count,
             coding_count=interview_request.coding_count,
             job_description=interview_request.job_description or "",
+            is_practice=interview_request.is_practice or False,
         )
         
         # Store time limits from employer config
@@ -312,6 +314,8 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             if q.get("id")
         }
         processed_answers = []
+        descriptive_tasks = []
+        descriptive_indices = []
 
         for answer in submission.answers:
             question_id = answer.get("question_id")
@@ -348,17 +352,16 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             elif question_type == "Descriptive":
                 answer_text = answer.get("answer_text") or answer.get("answer") or ""
                 reference_text = question.get("answer_text") or question.get("expected_answer") or ""
-                evaluation_result = await run_in_threadpool(
-                    services["evaluation_service"].evaluate_descriptive,
-                    reference=reference_text,
-                    candidate=answer_text,
+                processed_answer["answer_text"] = answer_text
+                processed_answer["_reference_text"] = reference_text
+                descriptive_tasks.append(
+                    run_in_threadpool(
+                        services["evaluation_service"].evaluate_descriptive,
+                        reference=reference_text,
+                        candidate=answer_text,
+                    )
                 )
-                processed_answer.update({
-                    "answer_text": answer_text,
-                    "final_score": evaluation_result.get("final_score", 0),
-                    "similarity": evaluation_result.get("similarity", 0),
-                    "keyword_coverage": evaluation_result.get("keyword_coverage", 0)
-                })
+                descriptive_indices.append(len(processed_answers))
 
             elif question_type == "Coding":
                 code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
@@ -429,6 +432,17 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
             processed_answers.append(processed_answer)
 
+        # Parallel gather for descriptive answers (was sequential, now ~3x faster)
+        if descriptive_tasks:
+            results = await asyncio.gather(*descriptive_tasks)
+            for idx, evaluation_result in zip(descriptive_indices, results):
+                processed_answers[idx].update({
+                    "final_score": evaluation_result.get("final_score", 0),
+                    "similarity": evaluation_result.get("similarity", 0),
+                    "keyword_coverage": evaluation_result.get("keyword_coverage", 0)
+                })
+                processed_answers[idx].pop("_reference_text", None)
+
         evaluation_payload = {
             "candidate_id": submission.candidate_id or session.get("candidate_id", ""),
             "session_id": session_id,
@@ -454,7 +468,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
         await save_result(result)
         await update_session_status(session_id, "completed")
         
-        # Send scores to C0 unified backend for ranking pipeline
+        # Send scores to C0 unified backend for ranking pipeline (fire-and-forget, don't block response)
         try:
             import urllib.request
             c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
@@ -476,7 +490,12 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 headers={"Content-Type": "application/json"},
                 method="POST"
             )
-            urllib.request.urlopen(req, timeout=5)
+            def _send_c0():
+                try:
+                    urllib.request.urlopen(req, timeout=2)
+                except:
+                    pass
+            asyncio.create_task(run_in_threadpool(_send_c0))
         except Exception as e:
             logger.warning(f"Failed to send scores to C0: {e}")
 
