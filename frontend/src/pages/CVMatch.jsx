@@ -33,15 +33,34 @@ const cleanCandidateName = (rawName, fallbackFilename) => {
 }
 
 const cleanEducationText = (rawEdu) => {
-  if (!rawEdu) return 'BSc IT / Computing'
+  if (!rawEdu) return 'BSc (Hons) in Information Technology'
   let edu = String(rawEdu).trim()
-  edu = edu.split(/\s*[|:;•\n\r]\s*/)[0].trim()
-  edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
-  if (/bsc\s*\(hons\)|bachelor of science/i.test(edu)) return 'BSc (Hons) IT'
-  if (/bachelor|b\.sc|btech|b\.e/i.test(edu)) return 'BSc Computer Science'
-  if (/master|msc|mtech/i.test(edu)) return 'MSc Computing'
-  if (/diploma|hnd/i.test(edu)) return 'Higher Diploma'
-  return edu.length > 25 ? edu.slice(0, 25) + '...' : edu
+
+  // Remove leading intro boilerplate
+  edu = edu.replace(/^(?:i'm|i am|student|undergraduate|motivated)\s+.*?towards\s+/i, '')
+  edu = edu.replace(/^(?:education|degree|qualification)\s*:\s*/i, '')
+
+  // Remove dates (e.g. 2023 - Following, 2023 - 2026, May 2023)
+  edu = edu.replace(/\s*[\(\[]?\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)?\s*\d{4}\s*[-–—]\s*(?:\d{4}|present|following|current)\s*[\)\]]?/gi, '')
+  edu = edu.replace(/\s*[\(\[]?\s*(?:year\s*)?\d{4}\s*[\)\]]?/gi, '')
+
+  // Standardize degree prefixes and keep specialization intact
+  edu = edu.replace(/Bachelor\s+of\s+science\s*\(hons\)/i, 'BSc (Hons)')
+  edu = edu.replace(/Bachelor\s+of\s+science/i, 'BSc')
+  edu = edu.replace(/Master\s+of\s+science/i, 'MSc')
+  edu = edu.replace(/Specialized\s+in/i, 'Spec. in')
+  edu = edu.replace(/Specialisation\s+in/i, 'Spec. in')
+
+  // Split off multiline text or phone delimiters
+  edu = edu.split(/\s*[\n\r|;•]\s*/)[0].trim()
+  edu = edu.replace(/^sri\s+lanka\s+institute\s+of\s+information\s+technology\s+/i, '')
+  edu = edu.replace(/^sliit\s+/i, '')
+
+  // Clean trailing punctuation
+  edu = edu.replace(/[,\-–—|•;:]+$/, '').trim()
+
+  if (!edu || edu.length < 4) return 'BSc (Hons) in Information Technology'
+  return edu
 }
 
 const cleanExperienceText = (r) => {
@@ -57,6 +76,131 @@ const cleanCompanyName = (name) => {
   if (/^techcorp\b/i.test(trimmed)) return 'TechCorp'
   if (trimmed.toLowerCase() === 'slt') return 'SLT Mobitel'
   return trimmed
+}
+
+const SKILL_CASE_MAP = {
+  'sql': 'SQL',
+  'nosql': 'NoSQL',
+  'mysql': 'MySQL',
+  'postgresql': 'PostgreSQL',
+  'mongodb': 'MongoDB',
+  'aws': 'AWS',
+  'gcp': 'GCP',
+  'azure': 'Azure',
+  'rest': 'REST APIs',
+  'api': 'APIs',
+  'graphql': 'GraphQL',
+  'html': 'HTML5',
+  'css': 'CSS3',
+  'javascript': 'JavaScript',
+  'typescript': 'TypeScript',
+  'python': 'Python',
+  'r': 'R Language',
+  'c': 'C',
+  'c++': 'C++',
+  'c#': 'C#',
+  'php': 'PHP',
+  'ruby': 'Ruby',
+  'golang': 'Go',
+  'go': 'Go',
+  'rust': 'Rust',
+  'java': 'Java',
+  'kotlin': 'Kotlin',
+  'swift': 'Swift',
+  'dart': 'Dart',
+  'flutter': 'Flutter',
+  'react': 'React',
+  'react native': 'React Native',
+  'vue': 'Vue.js',
+  'angular': 'Angular',
+  'node': 'Node.js',
+  'nodejs': 'Node.js',
+  'express': 'Express.js',
+  'django': 'Django',
+  'fastapi': 'FastAPI',
+  'flask': 'Flask',
+  'spring': 'Spring Boot',
+  'springboot': 'Spring Boot',
+  '.net': '.NET Core',
+  'dotnet': '.NET',
+  'docker': 'Docker',
+  'kubernetes': 'Kubernetes',
+  'k8s': 'Kubernetes',
+  'ci/cd': 'CI/CD Pipelines',
+  'cicd': 'CI/CD Pipelines',
+  'git': 'Git / GitHub',
+  'github': 'GitHub',
+  'gitlab': 'GitLab',
+  'linux': 'Linux',
+  'bash': 'Bash Scripting',
+  'terraform': 'Terraform',
+  'ansible': 'Ansible',
+  'spark': 'Apache Spark',
+  'pyspark': 'PySpark',
+  'hadoop': 'Apache Hadoop',
+  'kafka': 'Apache Kafka',
+  'airflow': 'Apache Airflow',
+  'numpy': 'NumPy',
+  'pandas': 'Pandas',
+  'scikit-learn': 'Scikit-Learn',
+  'sklearn': 'Scikit-Learn',
+  'tensorflow': 'TensorFlow',
+  'pytorch': 'PyTorch',
+  'keras': 'Keras',
+  'matplotlib': 'Matplotlib',
+  'seaborn': 'Seaborn',
+  'scipy': 'SciPy',
+  'nlp': 'NLP',
+  'cv': 'Computer Vision',
+  'tableau': 'Tableau',
+  'power bi': 'Power BI',
+  'powerbi': 'Power BI',
+  'excel': 'Advanced Excel',
+  'jupyter': 'Jupyter Notebooks',
+  'data cleaning': 'Data Cleaning',
+  'exploratory data analysis': 'Exploratory Data Analysis',
+  'eda': 'Exploratory Data Analysis',
+  'machine learning': 'Machine Learning',
+  'deep learning': 'Deep Learning',
+  'statistics': 'Statistics',
+  'qa': 'QA Testing',
+  'selenium': 'Selenium',
+  'cypress': 'Cypress',
+  'playwright': 'Playwright',
+  'postman': 'Postman',
+  'jira': 'Jira / Agile',
+  'confluence': 'Confluence',
+  'figma': 'Figma',
+  'adobe xd': 'Adobe XD',
+  'ui/ux': 'UI/UX Design',
+  'ui': 'UI Design',
+  'ux': 'UX Research',
+  'solid': 'SOLID Principles',
+  'oop': 'Object-Oriented Programming',
+  'design patterns': 'Design Patterns',
+  'microservices': 'Microservices Architecture',
+  'blockchain': 'Blockchain / Web3',
+  'solidity': 'Solidity',
+  'web3': 'Web3.js / Ethers.js',
+  'smart contracts': 'Smart Contracts',
+  'cybersecurity': 'Cybersecurity',
+  'siem': 'SIEM & SOC',
+  'soc': 'SOC Analysis',
+  'firewall': 'Firewall & Network Security',
+  'penetration testing': 'Penetration Testing',
+  'ethical hacking': 'Ethical Hacking',
+  'wireshark': 'Wireshark'
+}
+
+const formatSkillName = (rawSkill) => {
+  if (!rawSkill) return ''
+  const trimmed = String(rawSkill).trim()
+  const lower = trimmed.toLowerCase()
+  if (SKILL_CASE_MAP[lower]) return SKILL_CASE_MAP[lower]
+  return trimmed
+    .split(/\s+/)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
 }
 
 const CANONICAL_ROLES = [
@@ -642,8 +786,8 @@ export default function CVMatch() {
   const candExp = c1Result?.experience_years !== undefined && c1Result?.experience_years !== null
     ? c1Result.experience_years
     : (currentResumeDoc?.experience_years || (currentResumeDoc?.project_experience_years ? currentResumeDoc.project_experience_years : 2.0))
-  const reqExp = matchedJobDoc?.experience_required ?? 3.0
-  const computedExpScore = Math.min((candExp / (reqExp || 1.0)) * 100, 100)
+  const reqExp = matchedJobDoc?.experience_required ?? (c1Result?.required_experience_years || 2.0)
+  const computedExpScore = reqExp > 0 ? Math.min(Math.round((candExp / reqExp) * 100), 100) : 100.0
 
   // Resilient skill matching: if server returned empty, match candidate skills against job required skills
   const jobReqSkills = matchedJobDoc?.required_skills || []
@@ -667,14 +811,22 @@ export default function CVMatch() {
       : localMissing
 
   // Score aggregations (supporting C1 S_skill/S_exp/S_edu, component_1_scores, and fallbacks)
-  const computedSkillScore = jobReqSkills.length > 0
-    ? Math.round((activeMatchedSkills.length / jobReqSkills.length) * 100)
+  const computedSkillScore = (activeMatchedSkills.length + activeMissingSkills.length) > 0
+    ? Math.round((activeMatchedSkills.length / (activeMatchedSkills.length + activeMissingSkills.length)) * 100)
     : 80.0
 
   const skillScore = c1Result?.S_skill ?? c1Result?.s_skill ?? c1Result?.component_1_scores?.S_skill ?? (matchResult?.skill_score && matchResult.skill_score > 0 ? matchResult.skill_score : computedSkillScore)
-  const expScore = c1Result?.S_exp ?? c1Result?.s_exp ?? c1Result?.component_1_scores?.S_exp ?? (matchResult?.experience_score !== undefined && matchResult?.experience_score > 0 ? matchResult.experience_score : computedExpScore)
-  const eduScore = c1Result?.S_edu ?? c1Result?.s_edu ?? c1Result?.component_1_scores?.S_edu ?? matchResult?.education_score ?? (currentResumeDoc?.education ? 80.0 : 70.0)
-  const overallFitScore = c1Result?.cv_matching_score ?? matchResult?.cv_matching_score ?? (skillScore * 0.50 + expScore * 0.30 + eduScore * 0.20)
+  
+  // Clean Experience Score: candExp meets or exceeds reqExp -> 100%
+  const rawExpVal = c1Result?.S_exp ?? c1Result?.s_exp ?? c1Result?.component_1_scores?.S_exp ?? matchResult?.experience_score
+  const expScore = candExp >= reqExp
+    ? 100.0
+    : (rawExpVal !== undefined && rawExpVal !== null
+        ? (rawExpVal <= 1.0 ? Math.round(rawExpVal * 100) : (rawExpVal < 30 && candExp >= 1.5 ? computedExpScore : rawExpVal))
+        : computedExpScore)
+
+  const eduScore = c1Result?.S_edu ?? c1Result?.s_edu ?? c1Result?.component_1_scores?.S_edu ?? matchResult?.education_score ?? (currentResumeDoc?.education ? 100.0 : 80.0)
+  const overallFitScore = Math.min(100, Math.max(0, Math.round(skillScore * 0.50 + expScore * 0.30 + eduScore * 0.20)))
 
   // Fit Tier Determination
   const getFitTier = (score) => {
@@ -1452,10 +1604,10 @@ export default function CVMatch() {
 
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
                     <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <CheckCircle2 size={12} /> Verified Matches ({activeMatchedSkills.length}):
+                      <CheckCircle2 size={12} /> Key Verified Strengths:
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxHeight: 68, overflowY: 'auto' }}>
-                      {activeMatchedSkills.map((s) => (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {activeMatchedSkills.slice(0, 5).map((s) => (
                         <span
                           key={s}
                           onClick={() => {
@@ -1464,10 +1616,16 @@ export default function CVMatch() {
                           }}
                           className="cvm-skill-pill matched"
                           title="Click to view sentence evidence from resume"
+                          style={{ cursor: 'pointer', padding: '4px 9px', fontSize: '11px' }}
                         >
-                          <Check size={11} /> {s}
+                          <Check size={11} /> {formatSkillName(s)}
                         </span>
                       ))}
+                      {activeMatchedSkills.length > 5 && (
+                        <span className="chip" style={{ fontSize: '10px', padding: '3px 8px', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 'var(--radius-full)' }}>
+                          +{activeMatchedSkills.length - 5} more
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -1591,13 +1749,18 @@ export default function CVMatch() {
               </div>
 
               {/* Skills Breakdown: Matched vs Missing */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
-                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(16, 185, 129, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <CheckCircle2 size={16} /> Matched Role Competencies ({activeMatchedSkills.length})
+                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <CheckCircle2 size={16} /> Matched Role Competencies
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: 800, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                      {activeMatchedSkills.length} Verified
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                     {activeMatchedSkills.map((s) => (
                       <span
                         key={s}
@@ -1606,20 +1769,26 @@ export default function CVMatch() {
                           if (ev) setSelectedSkillEvidence(ev)
                         }}
                         className="cvm-skill-pill matched"
-                        title="Click to view evidence in resume text"
+                        title="Click to view verified sentence evidence in resume text"
+                        style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '12px', transition: 'all 0.15s ease' }}
                       >
-                        <Check size={12} /> {s}
+                        <Check size={13} style={{ color: 'var(--color-success)' }} /> {formatSkillName(s)}
                       </span>
                     ))}
                   </div>
                 </div>
 
                 {/* Missing Skills */}
-                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: '#fb7185', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <AlertCircle size={16} /> Missing Competencies to Develop ({activeMissingSkills.length})
+                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: '#fb7185', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <AlertCircle size={16} /> Missing Competencies to Develop
+                    </span>
+                    <span style={{ fontSize: '11px', fontWeight: 800, background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                      {activeMissingSkills.length} Gap{activeMissingSkills.length === 1 ? '' : 's'}
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
                     {activeMissingSkills.map((s) => (
                       <span
                         key={s}
@@ -1628,9 +1797,10 @@ export default function CVMatch() {
                           handleSimulateSkill(s)
                         }}
                         className="cvm-skill-pill missing"
-                        title="Click to simulate acquiring this skill in Sandbox"
+                        title="Click to simulate acquiring this skill in the Interactive Sandbox"
+                        style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '12px', transition: 'all 0.15s ease' }}
                       >
-                        + {s}
+                        + {formatSkillName(s)}
                       </span>
                     ))}
                   </div>
@@ -1744,7 +1914,7 @@ export default function CVMatch() {
                           }}
                         >
                           <span>{isSelected ? '✓ Acquired' : '+ Acquire'}</span>
-                          <span>{skill}</span>
+                          <span>{formatSkillName(skill)}</span>
                         </button>
                       )
                     })
