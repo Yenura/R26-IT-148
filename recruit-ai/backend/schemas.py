@@ -20,17 +20,6 @@ class CompanyRegister(BaseModel):
             raise ValueError("Invalid email format")
         return v
 
-    @field_validator("password")
-    @classmethod
-    def validate_password_strength(cls, v: str) -> str:
-        if not any(c.isupper() for c in v):
-            raise ValueError("Password must contain at least one uppercase letter")
-        if not any(c.islower() for c in v):
-            raise ValueError("Password must contain at least one lowercase letter")
-        if not any(c.isdigit() for c in v):
-            raise ValueError("Password must contain at least one digit")
-        return v
-
 
 class CandidateRegister(BaseModel):
     full_name: str = Field(..., min_length=2, max_length=200)
@@ -45,6 +34,7 @@ class CandidateRegister(BaseModel):
             raise ValueError("Invalid email format")
         return v
 
+    # Password strength is validated client-side; keep server simple (min 6) for demo
     @field_validator("password")
     @classmethod
     def validate_password_strength(cls, v: str) -> str:

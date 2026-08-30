@@ -41,24 +41,6 @@ export default function CandidateLogin() {
       toast.success('Welcome back to RecruitAI!')
       navigate('/candidate/dashboard')
     } catch (err) {
-      if (email.trim().toLowerCase() === 'candidate@example.com') {
-        try {
-          const reg = await C0.post('/auth/register/candidate', {
-            full_name: 'Demo Candidate',
-            email: 'candidate@example.com',
-            password: 'demo123',
-            phone: '+1 555-0199',
-            education: 'BSc Computer Science'
-          })
-          localStorage.setItem('recruitai.token', reg.data.access_token)
-          localStorage.setItem('recruitai.role', 'candidate')
-          localStorage.setItem('recruitai.user_id', reg.data.user_id || '')
-          localStorage.setItem('recruitai.name', 'Demo Candidate')
-          toast.success('Welcome to RecruitAI!')
-          navigate('/candidate/dashboard')
-          return
-        } catch { }
-      }
       toast.error(err?.response?.data?.detail || 'Invalid email or password')
     } finally {
       setBusy(false)

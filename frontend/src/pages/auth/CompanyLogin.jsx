@@ -47,25 +47,6 @@ export default function CompanyLogin() {
       toast.success('Welcome back, Recruiter!')
       navigate('/company/dashboard')
     } catch (err) {
-      const lower = email.trim().toLowerCase()
-      if (lower === 'company@techcorp.com' || lower === 'company@example.com') {
-        try {
-          const reg = await C0.post('/auth/register/company', {
-            company_name: 'Tech Corp Global',
-            email: lower,
-            password: 'demo123',
-            industry: 'Technology',
-            website: 'https://techcorp.example.com'
-          })
-          localStorage.setItem('recruitai.token', reg.data.access_token)
-          localStorage.setItem('recruitai.role', 'company')
-          localStorage.setItem('recruitai.user_id', reg.data.user_id || '')
-          localStorage.setItem('recruitai.name', 'Tech Corp Global')
-          toast.success('Welcome to RecruitAI Recruiter Suite!')
-          navigate('/company/dashboard')
-          return
-        } catch {}
-      }
       toast.error(err?.response?.data?.detail || 'Invalid company credentials')
     } finally {
       setBusy(false)
