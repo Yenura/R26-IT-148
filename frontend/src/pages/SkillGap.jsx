@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Target, RefreshCw, TrendingUp, Briefcase, HelpCircle,
@@ -16,6 +16,10 @@ import EmptyState from '../components/EmptyState'
 export default function SkillGap() {
   const navigate = useNavigate()
   useAuth()
+  const [searchParams] = useSearchParams()
+  const paramJobId = searchParams.get('jobId') || ''
+  const paramRole = searchParams.get('role') || ''
+
   const userRole = localStorage.getItem('recruitai.role') || 'candidate'
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
@@ -30,6 +34,7 @@ export default function SkillGap() {
     }
   })
   const [selectedJobId, setSelectedJobId] = useState(() => {
+    if (paramJobId) return paramJobId
     try {
       const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
       const cached = sessionStorage.getItem(`recruitai.skillgap.${uId}`)

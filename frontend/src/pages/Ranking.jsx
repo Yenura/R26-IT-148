@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   ListOrdered, Trophy, Briefcase, Award, Brain,
   CheckCircle2, Users, ArrowRight, Eye, ChevronRight, Plus
 } from 'lucide-react'
-import { uJobsMy, c3Pipeline, c0JobsAll } from '../api'
+import { uJobsMy, c3Pipeline } from '../api'
 import PageHeader from '../components/PageHeader'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
@@ -13,8 +13,11 @@ import SkeletonLoader from '../components/SkeletonLoader'
 
 export default function Ranking() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const paramJobId = searchParams.get('jobId') || ''
+
   const [jobs, setJobs] = useState([])
-  const [selectedJob, setSelectedJob] = useState('')
+  const [selectedJob, setSelectedJob] = useState(paramJobId || '')
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
   const [loadingJobs, setLoadingJobs] = useState(true)
@@ -32,22 +35,15 @@ export default function Ranking() {
   const loadCompanyJobs = async () => {
     setLoadingJobs(true)
     try {
-      let companyJobs = []
-      try {
-        const r = await uJobsMy()
-        companyJobs = Array.isArray(r.data) ? r.data : []
-      } catch (e) {
-        console.warn('uJobsMy error, trying all jobs:', e)
-      }
-      if (companyJobs.length === 0) {
-        const allRes = await c0JobsAll().catch(() => ({ data: [] }))
-        companyJobs = Array.isArray(allRes.data) ? allRes.data : []
-      }
+      const r = await uJobsMy().catch(() => ({ data: [] }))
+      const companyJobs = Array.isArray(r.data) ? r.data : []
       setJobs(companyJobs)
       if (companyJobs.length > 0) {
-        const firstJobId = companyJobs[0].id || companyJobs[0]._id
-        setSelectedJob(firstJobId)
-        computePipeline(firstJobId)
+        const targetJobId = (paramJobId && companyJobs.some(j => (j.id || j._id) === paramJobId))
+          ? paramJobId
+          : (companyJobs[0].id || companyJobs[0]._id)
+        setSelectedJob(targetJobId)
+        computePipeline(targetJobId)
       }
     } catch {
       toast.error('Failed to load company jobs')
