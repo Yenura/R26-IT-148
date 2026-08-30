@@ -507,6 +507,7 @@ def calculate_education_score(
         if deg_level_str in ["PhD", "MSc", "BSc"]:
             base_score = 100.0
             match_status = "FULL_MATCH"
+            f_rel = "HIGH"
         else:
             base_score = 75.0
             match_status = "PARTIAL_MATCH (DIPLOMA)"
