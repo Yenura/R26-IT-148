@@ -141,7 +141,7 @@ export default function CompanyDashboard() {
     setForm((f) => ({
       ...f,
       title: roleName,
-      required_skills: f.required_skills ? f.required_skills : suggestedSkills,
+      required_skills: suggestedSkills,
     }))
   }
 

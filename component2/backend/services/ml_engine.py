@@ -422,6 +422,7 @@ class InterviewService:
         desc_count: Optional[int] = None,
         coding_count: Optional[int] = None,
         job_description: str = "",
+        is_practice: bool = False,
     ) -> Dict:
         """
         Create interview session with questions
@@ -486,14 +487,18 @@ class InterviewService:
             if desc_skills:
                 required_skills = merge_skill_lists(required_skills, desc_skills)
 
-        qg_questions = generate_questions_qg(
-            job_role=job_role,
-            skills=required_skills,
-            num_mcq=num_mcq,
-            num_desc=num_desc,
-            num_code=num_code,
-            coding_profile=coding_profile,
-        )
+        # Fast path for practice (is_practice): skip slow T5, use bank directly
+        if is_practice:
+            qg_questions = None
+        else:
+            qg_questions = generate_questions_qg(
+                job_role=job_role,
+                skills=required_skills,
+                num_mcq=num_mcq,
+                num_desc=num_desc,
+                num_code=num_code,
+                coding_profile=coding_profile,
+            )
 
         if qg_questions:
             all_questions = qg_questions
