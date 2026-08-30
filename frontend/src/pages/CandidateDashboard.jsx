@@ -70,31 +70,10 @@ export default function CandidateDashboard() {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ')
 
-  const [resumes, setResumes] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.cand.resumes')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
-  const [jobs, setJobs] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.jobs.cached')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
-  const [jobSearch, setJobSearch] = useState('')
-  const [applications, setApplications] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.cand.apps')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
-  const [predictions, setPredictions] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.cand.preds')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
+  const [resumes, setResumes] = useState([])
+  const [jobs, setJobs] = useState([])
+  const [applications, setApplications] = useState([])
+  const [predictions, setPredictions] = useState([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)

@@ -876,7 +876,7 @@ export default function Interview() {
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               className="btn btn-primary"
-              onClick={() => navigate('/candidate/skill-gap')}
+              onClick={() => navigate(`/candidate/skill-gap${jobId ? `?jobId=${jobId}` : ''}`)}
             >
               <Sparkles size={15} /> View Skill Gap & Composite Mark
             </button>
