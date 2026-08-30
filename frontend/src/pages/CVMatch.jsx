@@ -33,15 +33,19 @@ const cleanCandidateName = (rawName, fallbackFilename) => {
 }
 
 const cleanEducationText = (rawEdu) => {
-  if (!rawEdu) return 'BSc IT / Computing'
+  if (!rawEdu) return 'BSc Degree'
   let edu = String(rawEdu).trim()
-  edu = edu.split(/\s*[|:;•\n\r]\s*/)[0].trim()
+  // Separate glued letters from PDF/OCR like BSc(Hons)SoftwareEngineering
+  edu = edu.replace(/([a-z])([A-Z])/g, '$1 $2')
+  edu = edu.replace(/(\))\s*([A-Za-z])/g, '$1 $2')
+  edu = edu.replace(/([A-Za-z])\s*(\()/g, '$1 $2')
+  // Strip trailing dates, GPA, and section delimiters
+  edu = edu.split(/\s*[|;•\n\r]\s*/)[0].trim()
+  edu = edu.replace(/\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$/i, '')
+  edu = edu.replace(/\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$/i, '')
   edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
-  if (/bsc\s*\(hons\)|bachelor of science/i.test(edu)) return 'BSc (Hons) IT'
-  if (/bachelor|b\.sc|btech|b\.e/i.test(edu)) return 'BSc Computer Science'
-  if (/master|msc|mtech/i.test(edu)) return 'MSc Computing'
-  if (/diploma|hnd/i.test(edu)) return 'Higher Diploma'
-  return edu.length > 25 ? edu.slice(0, 25) + '...' : edu
+  edu = edu.replace(/\s+/g, ' ').trim()
+  return edu.length > 40 ? edu.slice(0, 40) + '...' : edu
 }
 
 const cleanExperienceText = (r) => {

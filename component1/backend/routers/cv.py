@@ -109,6 +109,7 @@ async def _full_analysis(
         required_years=job_reqs.required_experience_years,
         required_education=job_reqs.required_education,
         candidate_education=features.education,
+        degree_field=getattr(features, "degree_field", None),
         role_relevant_experience_years=features.role_relevant_experience_years,
         candidate_seniority=features.seniority,
         target_seniority=job_reqs.required_seniority,
