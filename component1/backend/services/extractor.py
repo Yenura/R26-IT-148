@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from data.role_requirements import REQUIRED_SKILLS
 from ml.extractor import (
     clean_text,
+    extract_candidate_name,
     extract_education_level,
     extract_education_details,
     extract_experience_years,
@@ -33,7 +34,8 @@ logger = logging.getLogger("component1.extractor")
 
 @dataclass
 class ExtractedFeatures:
-    # Core legacy fields for backward compatibility
+    # Candidate identity & core fields
+    candidate_name:            str   = "Candidate Profile"
     edu_level:                 int   = 2         # 1=Diploma, 2=BSc, 3=MSc, 4=PhD
     edu_relevance:             float = 0.5
     education:                 str   = ""
@@ -156,7 +158,9 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
     projects = extract_projects(text)
 
     # 4. Feature Assembly & Multi-Layer Cross-Validation
+    cand_name = extract_candidate_name(text)
     res_feat = ExtractedFeatures(
+        candidate_name=cand_name,
         edu_level=edu_level,
         edu_relevance=round(edu_relevance, 2),
         education=edu_sentence,
