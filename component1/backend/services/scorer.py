@@ -158,6 +158,7 @@ class CVScores:
     jd_similarity_score: Optional[float] = None
     optional_legacy_score: Optional[float] = None
     cv_matching_score: Optional[float] = None
+    technical_roadmap: List[Dict[str, Any]] = field(default_factory=list)
 
 
 SENIORITY_RANKS = {
@@ -638,6 +639,13 @@ def score(
     cv_match = (s_skill * w_skill) + (s_exp * w_exp) + (s_edu * w_edu)
     cv_match = max(0.0, min(100.0, cv_match))
 
+    from ml.roadmap import build_backend_learning_roadmap
+    technical_roadmap = build_backend_learning_roadmap(
+        missing_skills=skill_analysis.missing_skills,
+        target_role=role,
+        max_items=6
+    )
+
     return CVScores(
         component_1_scores=c1_scores,
         S_skill=round(s_skill, 2),
@@ -650,4 +658,5 @@ def score(
         jd_similarity_score=jd_similarity_score,
         optional_legacy_score=round(cv_match, 2),
         cv_matching_score=round(cv_match, 2),
+        technical_roadmap=technical_roadmap,
     )

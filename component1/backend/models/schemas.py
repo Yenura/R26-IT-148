@@ -248,6 +248,7 @@ class CVAnalysisResponse(BaseModel):
     target_job_profile:   Optional[Dict[str, Any]] = None
     cross_evidence_validation: Optional[Dict[str, Any]] = None
     overall_analysis_confidence: Optional[float] = None
+    technical_roadmap:    Optional[List[Dict[str, Any]]] = None
     status:               str = "READY_FOR_COMPONENT_3"
     analysis_timestamp:   datetime
 

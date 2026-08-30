@@ -164,6 +164,7 @@ async def _full_analysis(
         target_job_profile=target_profile.to_dict(),
         cross_evidence_validation=getattr(features, "cross_evidence_validation", {}),
         overall_analysis_confidence=getattr(features, "overall_analysis_confidence", 0.85),
+        technical_roadmap=scores.technical_roadmap,
         component_1_scores={
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
