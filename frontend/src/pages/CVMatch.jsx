@@ -11,13 +11,45 @@ import {
 } from 'lucide-react'
 import {
   uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
-  c1Analyze, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
+  c1Analyze, c1Classify, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import UploadZone from '../components/UploadZone'
 import LoadingState from '../components/LoadingState'
 import ConfirmDialog from '../components/ConfirmDialog'
+
+const cleanCandidateName = (rawName, fallbackFilename) => {
+  if (!rawName) return (fallbackFilename || 'Candidate').replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')
+  let name = String(rawName).trim()
+  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
+  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
+  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
+  const words = name.split(/\s+/).filter(Boolean)
+  if (words.length > 3) {
+    name = words.slice(0, 3).join(' ')
+  }
+  return name || 'Candidate Profile'
+}
+
+const cleanEducationText = (rawEdu) => {
+  if (!rawEdu) return 'BSc IT / Computing'
+  let edu = String(rawEdu).trim()
+  edu = edu.split(/\s*[|:;•\n\r]\s*/)[0].trim()
+  edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
+  if (/bsc\s*\(hons\)|bachelor of science/i.test(edu)) return 'BSc (Hons) IT'
+  if (/bachelor|b\.sc|btech|b\.e/i.test(edu)) return 'BSc Computer Science'
+  if (/master|msc|mtech/i.test(edu)) return 'MSc Computing'
+  if (/diploma|hnd/i.test(edu)) return 'Higher Diploma'
+  return edu.length > 25 ? edu.slice(0, 25) + '...' : edu
+}
+
+const cleanExperienceText = (r) => {
+  const yrs = parseFloat(r?.experience_years ?? r?.project_experience_years ?? 0)
+  if (yrs <= 0) return 'Graduate / Entry'
+  if (yrs === 1) return '1.0 yr exp'
+  return `${yrs.toFixed(1)} yrs exp`
+}
 
 const cleanCompanyName = (name) => {
   if (!name) return 'General Tech'
@@ -600,12 +632,11 @@ export default function CVMatch() {
     toast.success('Dossier summary copied to clipboard!')
   }
 
+  const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
   const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
   const displayJobTitle = matchedJobDoc
     ? matchedJobDoc.title
     : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : (c1Result ? c1Result.job_role : (currentResumeDoc?.predicted_role || 'AI Auto-Detect Fit'))))
-
-  const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
 
   // Experience calculations with sensible defaults
   const candExp = c1Result?.experience_years !== undefined && c1Result?.experience_years !== null
