@@ -11,13 +11,45 @@ import {
 } from 'lucide-react'
 import {
   uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
-  c1Analyze, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
+  c1Analyze, c1Classify, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import UploadZone from '../components/UploadZone'
 import LoadingState from '../components/LoadingState'
 import ConfirmDialog from '../components/ConfirmDialog'
+
+const cleanCandidateName = (rawName, fallbackFilename) => {
+  if (!rawName) return (fallbackFilename || 'Candidate').replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')
+  let name = String(rawName).trim()
+  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
+  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
+  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
+  const words = name.split(/\s+/).filter(Boolean)
+  if (words.length > 3) {
+    name = words.slice(0, 3).join(' ')
+  }
+  return name || 'Candidate Profile'
+}
+
+const cleanEducationText = (rawEdu) => {
+  if (!rawEdu) return 'BSc IT / Computing'
+  let edu = String(rawEdu).trim()
+  edu = edu.split(/\s*[|:;•\n\r]\s*/)[0].trim()
+  edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
+  if (/bsc\s*\(hons\)|bachelor of science/i.test(edu)) return 'BSc (Hons) IT'
+  if (/bachelor|b\.sc|btech|b\.e/i.test(edu)) return 'BSc Computer Science'
+  if (/master|msc|mtech/i.test(edu)) return 'MSc Computing'
+  if (/diploma|hnd/i.test(edu)) return 'Higher Diploma'
+  return edu.length > 25 ? edu.slice(0, 25) + '...' : edu
+}
+
+const cleanExperienceText = (r) => {
+  const yrs = parseFloat(r?.experience_years ?? r?.project_experience_years ?? 0)
+  if (yrs <= 0) return 'Graduate / Entry'
+  if (yrs === 1) return '1.0 yr exp'
+  return `${yrs.toFixed(1)} yrs exp`
+}
 
 const cleanCompanyName = (name) => {
   if (!name) return 'General Tech'
@@ -600,12 +632,11 @@ export default function CVMatch() {
     toast.success('Dossier summary copied to clipboard!')
   }
 
+  const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
   const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
   const displayJobTitle = matchedJobDoc
     ? matchedJobDoc.title
     : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : (c1Result ? c1Result.job_role : (currentResumeDoc?.predicted_role || 'AI Auto-Detect Fit'))))
-
-  const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
 
   // Experience calculations with sensible defaults
   const candExp = c1Result?.experience_years !== undefined && c1Result?.experience_years !== null
@@ -814,29 +845,84 @@ export default function CVMatch() {
           
           {/* CARD 1: CANDIDATE RESUME */}
           <div style={{
-            padding: '18px 20px',
-            background: 'rgba(15, 23, 42, 0.65)',
+            padding: '20px 22px',
+            background: 'rgba(15, 23, 42, 0.75)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 12,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)'
+            gap: 14,
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(12px)'
           }}>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                 <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <UserCheck size={15} /> 1. Candidate Resume
                 </span>
-                {currentResumeDoc && (
-                  <span style={{ fontSize: '11px', color: 'var(--color-success)', fontWeight: 600 }}>
-                    {candExp.toFixed(1)} yrs exp · {currentResumeDoc.education || 'Degree'}
-                  </span>
-                )}
+                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                  {resumes.length} Candidate{resumes.length === 1 ? '' : 's'} Ingested
+                </span>
               </div>
 
-              {/* Ingested Resume Dropdown */}
+              {/* Quick Switch Candidate Avatar Chips */}
+              {resumes.length > 1 && (
+                <div style={{
+                  display: 'flex',
+                  gap: 6,
+                  overflowX: 'auto',
+                  paddingBottom: 8,
+                  marginBottom: 10,
+                  scrollbarWidth: 'thin'
+                }}>
+                  {resumes.slice(0, 8).map((r) => {
+                    const isSelected = r.id === selectedResume
+                    const name = cleanCandidateName(r.candidate_name, r.filename)
+                    const initials = name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setSelectedResume(r.id)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '4px 10px 4px 6px',
+                          borderRadius: '20px',
+                          background: isSelected ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.04)',
+                          border: isSelected ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.08)',
+                          color: isSelected ? '#93c5fd' : 'var(--color-fg-muted)',
+                          fontSize: '11px',
+                          fontWeight: isSelected ? 700 : 500,
+                          cursor: 'pointer',
+                          whiteSpace: 'nowrap',
+                          transition: 'all 0.2s ease'
+                        }}
+                      >
+                        <span style={{
+                          width: 18,
+                          height: 18,
+                          borderRadius: '50%',
+                          background: isSelected ? '#3b82f6' : 'rgba(255, 255, 255, 0.1)',
+                          color: '#ffffff',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '9px',
+                          fontWeight: 800
+                        }}>
+                          {initials}
+                        </span>
+                        {name}
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Ingested Resume Dropdown with Clean Labels */}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
                 <select
                   value={selectedResume}
@@ -855,11 +941,16 @@ export default function CVMatch() {
                   }}
                 >
                   <option value="">Select an applicant resume to evaluate...</option>
-                  {resumes.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.candidate_name || r.filename} ({r.experience_years ? `${r.experience_years} yrs exp` : 'CV'}) · {r.education || 'CS Degree'}
-                    </option>
-                  ))}
+                  {resumes.map((r) => {
+                    const cleanName = cleanCandidateName(r.candidate_name, r.filename)
+                    const cleanExp = cleanExperienceText(r)
+                    const cleanEdu = cleanEducationText(r.education)
+                    return (
+                      <option key={r.id} value={r.id}>
+                        {cleanName} · {cleanExp} · {cleanEdu}
+                      </option>
+                    )
+                  })}
                 </select>
                 {selectedResume && (
                   <button
@@ -886,155 +977,192 @@ export default function CVMatch() {
 
           {/* CARD 2: TARGET COMPANY & ROLE */}
           <div style={{
-            padding: '18px 20px',
-            background: 'rgba(15, 23, 42, 0.65)',
+            padding: '20px 22px',
+            background: 'rgba(15, 23, 42, 0.75)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
-            gap: 12,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)'
+            gap: 14,
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
+            backdropFilter: 'blur(12px)'
           }}>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
                 <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Briefcase size={15} /> 2. Target Company & Role
+                  <Briefcase size={15} /> 2. Target Evaluation Standard
                 </span>
-                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
-                  {jobs.length} Openings Available
-                </span>
+                {/* Mode Selector Tabs */}
+                <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setTargetMode('company')}
+                    style={{
+                      fontSize: '11px',
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: targetMode === 'company' ? 'var(--color-primary)' : 'transparent',
+                      color: targetMode === 'company' ? '#fff' : 'var(--color-fg-muted)',
+                      fontWeight: targetMode === 'company' ? 700 : 500
+                    }}
+                  >
+                    🏢 Company Job
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTargetMode('benchmark')}
+                    style={{
+                      fontSize: '11px',
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: targetMode === 'benchmark' ? '#9333ea' : 'transparent',
+                      color: targetMode === 'benchmark' ? '#fff' : 'var(--color-fg-muted)',
+                      fontWeight: targetMode === 'benchmark' ? 700 : 500
+                    }}
+                  >
+                    🎯 20 IT Roles
+                  </button>
+                </div>
               </div>
 
-              {/* 1. Select Company */}
-              <div style={{ marginBottom: 10 }}>
-                <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Building2 size={12} style={{ color: 'var(--color-primary)' }} /> Select Target Company:
-                </label>
-                <select
-                  value={selectedCompany}
-                  onChange={(e) => {
-                    const comp = e.target.value
-                    setSelectedCompany(comp)
-                    if (comp) {
-                      const compJobs = jobs.filter((j) => cleanCompanyName(j.company_name) === comp)
-                      if (compJobs.length > 0) {
-                        setSelectedJob(compJobs[0].id)
-                        setSelectedCanonicalRole('')
-                      }
-                    } else {
-                      setSelectedJob('')
-                    }
-                  }}
-                  style={{
-                    width: '100%',
-                    fontSize: 'var(--p-text-sm)',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-fg)'
-                  }}
-                >
-                  <option value="">🏢 All Companies ({jobs.length} roles)</option>
-                  {companyOptions.map((c) => (
-                    <option key={c.name} value={c.name}>
-                      {c.name} ({c.count} open {c.count === 1 ? 'role' : 'roles'})
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {targetMode === 'company' ? (
+                <>
+                  {/* 1. Select Company */}
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Building2 size={12} style={{ color: 'var(--color-primary)' }} /> Target Company:
+                    </label>
+                    <select
+                      value={selectedCompany}
+                      onChange={(e) => {
+                        const comp = e.target.value
+                        setSelectedCompany(comp)
+                        if (comp) {
+                          const compJobs = jobs.filter((j) => cleanCompanyName(j.company_name) === comp)
+                          if (compJobs.length > 0) {
+                            setSelectedJob(compJobs[0].id)
+                            setSelectedCanonicalRole('')
+                          }
+                        } else {
+                          setSelectedJob('')
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        fontSize: 'var(--p-text-sm)',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--color-bg)',
+                        border: '1px solid var(--color-border)',
+                        color: 'var(--color-fg)'
+                      }}
+                    >
+                      <option value="">🏢 All Companies ({jobs.length} roles)</option>
+                      {companyOptions.map((c) => (
+                        <option key={c.name} value={c.name}>
+                          {c.name} ({c.count} open {c.count === 1 ? 'role' : 'roles'})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              {/* 2. Select Role (Filtered by Company) */}
-              <div style={{ marginBottom: 10 }}>
-                <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Briefcase size={12} style={{ color: 'var(--color-success)' }} /> Target Role {selectedCompany ? `at ${selectedCompany}` : ''}:
-                </label>
-                <select
-                  value={selectedJob}
-                  onChange={(e) => {
-                    const jobId = e.target.value
-                    setSelectedJob(jobId)
-                    if (jobId) {
-                      setSelectedCanonicalRole('')
-                      const found = jobs.find((j) => j.id === jobId)
-                      if (found) setSelectedCompany(cleanCompanyName(found.company_name))
-                    }
-                  }}
-                  style={{
-                    width: '100%',
-                    fontSize: 'var(--p-text-sm)',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-fg)'
-                  }}
-                >
-                  <option value="">
-                    {selectedCompany ? `Select role at ${selectedCompany}...` : 'Select any role...'}
-                  </option>
-                  {selectedCompany ? (
-                    filteredJobs.map((j) => (
-                      <option key={j.id} value={j.id}>
-                        {j.title} {j.experience_years ? `· ${j.experience_years}+ yrs exp` : ''} {j.department ? `· ${j.department}` : ''}
+                  {/* 2. Select Role (Filtered by Company) */}
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <Briefcase size={12} style={{ color: 'var(--color-success)' }} /> Target Role {selectedCompany ? `at ${selectedCompany}` : ''}:
+                    </label>
+                    <select
+                      value={selectedJob}
+                      onChange={(e) => {
+                        const jobId = e.target.value
+                        setSelectedJob(jobId)
+                        if (jobId) {
+                          setSelectedCanonicalRole('')
+                          const found = jobs.find((j) => j.id === jobId)
+                          if (found) setSelectedCompany(cleanCompanyName(found.company_name))
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        fontSize: 'var(--p-text-sm)',
+                        padding: '8px 12px',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--color-bg)',
+                        border: '1px solid var(--color-border)',
+                        color: 'var(--color-fg)'
+                      }}
+                    >
+                      <option value="">
+                        {selectedCompany ? `Select role at ${selectedCompany}...` : 'Select any role...'}
                       </option>
-                    ))
-                  ) : (
-                    Object.entries(jobsGroupedByCompany).map(([compName, jList]) => (
-                      <optgroup key={compName} label={`🏢 ${compName} (${jList.length})`}>
-                        {jList.map((j) => (
+                      {selectedCompany ? (
+                        filteredJobs.map((j) => (
                           <option key={j.id} value={j.id}>
-                            {j.title} {j.experience_years ? `(${j.experience_years}+ yrs)` : ''}
+                            {j.title} {j.experience_years ? `· ${j.experience_years}+ yrs exp` : ''} {j.department ? `· ${j.department}` : ''}
                           </option>
+                        ))
+                      ) : (
+                        Object.entries(jobsGroupedByCompany).map(([compName, jList]) => (
+                          <optgroup key={compName} label={`🏢 ${compName} (${jList.length})`}>
+                            {jList.map((j) => (
+                              <option key={j.id} value={j.id}>
+                                {j.title} {j.experience_years ? `(${j.experience_years}+ yrs)` : ''}
+                              </option>
+                            ))}
+                          </optgroup>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                /* Benchmark Canonical 20 Roles */
+                <div style={{ marginBottom: 10 }}>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
+                    <Compass size={12} style={{ color: '#a855f7' }} /> Standard Canonical IT Role:
+                  </label>
+                  <select
+                    value={selectedCanonicalRole}
+                    onChange={(e) => {
+                      const r = e.target.value
+                      setSelectedCanonicalRole(r)
+                      if (r) {
+                        setSelectedJob('')
+                        setSelectedCompany('')
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      fontSize: 'var(--p-text-sm)',
+                      padding: '9px 12px',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--color-bg)',
+                      border: '1px solid #9333ea',
+                      color: 'var(--color-fg)'
+                    }}
+                  >
+                    <option value="">🎯 AI Auto-Detect Best Fit Role (from CV text)</option>
+                    {Object.entries(CANONICAL_CATEGORIES).map(([catName, roleList]) => (
+                      <optgroup key={catName} label={`▸ ${catName}`}>
+                        {roleList.map((roleName) => (
+                          <option key={roleName} value={roleName}>{roleName}</option>
                         ))}
                       </optgroup>
-                    ))
-                  )}
-                </select>
-              </div>
-
-              {/* 3. Or Benchmark Canonical 20 Roles */}
-              <div>
-                <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                  <Compass size={12} style={{ color: '#a855f7' }} /> Or Benchmark Standard 20 IT Roles:
-                </label>
-                <select
-                  value={selectedCanonicalRole}
-                  onChange={(e) => {
-                    const r = e.target.value
-                    setSelectedCanonicalRole(r)
-                    if (r) {
-                      setSelectedJob('')
-                      setSelectedCompany('')
-                    }
-                  }}
-                  style={{
-                    width: '100%',
-                    fontSize: 'var(--p-text-sm)',
-                    padding: '8px 12px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-fg)'
-                  }}
-                >
-                  <option value="">🎯 AI Auto-Detect Best Fit Role (from CV text)</option>
-                  {Object.entries(CANONICAL_CATEGORIES).map(([catName, roleList]) => (
-                    <optgroup key={catName} label={`▸ ${catName}`}>
-                      {roleList.map((roleName) => (
-                        <option key={roleName} value={roleName}>{roleName}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                </select>
-              </div>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
 
             {/* Target Feedback Banner */}
             <div style={{
               fontSize: '11.5px',
-              padding: '7px 12px',
+              padding: '8px 12px',
               borderRadius: 'var(--radius-md)',
               background: 'rgba(59, 130, 246, 0.1)',
               border: '1px solid rgba(59, 130, 246, 0.25)',
@@ -1045,7 +1173,7 @@ export default function CVMatch() {
               gap: 8
             }}>
               <span>
-                Target: <strong style={{ color: '#93c5fd' }}>{matchedJobDoc?.title || selectedCanonicalRole || 'Auto-Detect Role'}</strong>
+                Target: <strong style={{ color: '#93c5fd' }}>{matchedJobDoc?.title || selectedCanonicalRole || 'AI Auto-Detect (Dynamic)'}</strong>
                 {matchedJobDoc && (
                   <span> at <strong style={{ color: '#ffffff' }}>{cleanCompanyName(matchedJobDoc.company_name)}</strong></span>
                 )}
@@ -1058,9 +1186,9 @@ export default function CVMatch() {
                     setSelectedCompany('')
                     setSelectedCanonicalRole('')
                   }}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-fg-muted)', cursor: 'pointer', fontSize: '11px' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-fg-muted)', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline' }}
                 >
-                  Clear
+                  Reset to Auto-Detect
                 </button>
               )}
             </div>
@@ -1075,20 +1203,25 @@ export default function CVMatch() {
           disabled={busy || (!selectedResume && resumes.length === 0)}
           style={{
             width: '100%',
-            padding: '13px 24px',
-            fontSize: '1rem',
+            padding: '14px 24px',
+            fontSize: '1.05rem',
             fontWeight: 800,
-            borderRadius: 'var(--radius-md)',
+            borderRadius: 'var(--radius-lg)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            gap: 10,
-            boxShadow: '0 4px 18px rgba(59, 130, 246, 0.35)',
-            cursor: 'pointer'
+            gap: 12,
+            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)',
+            border: 'none',
+            color: '#ffffff',
+            boxShadow: '0 6px 24px rgba(139, 92, 246, 0.4)',
+            cursor: busy ? 'not-allowed' : 'pointer',
+            transition: 'all 0.3s ease',
+            letterSpacing: '0.01em'
           }}
         >
-          <Sparkles size={18} />
-          {busy ? 'Running AI Multi-Factor Resume Analysis...' : 'Evaluate Candidate Fit & Launch AI Intelligence'}
+          <Sparkles size={20} className={busy ? 'animate-spin' : ''} />
+          {busy ? 'Running AI Multi-Factor Resume Analysis...' : '⚡ Screen Candidate Fit & Run AI Intelligence'}
         </button>
       </div>
 
@@ -1180,11 +1313,11 @@ export default function CVMatch() {
               </h2>
 
               <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
-                <span>Applicant: <strong>{currentResumeDoc?.candidate_name || 'Verified Applicant'}</strong></span>
+                <span>Applicant: <strong style={{ color: 'var(--color-fg)' }}>{cleanCandidateName(currentResumeDoc?.candidate_name, currentResumeDoc?.filename)}</strong></span>
                 <span>•</span>
                 <span>Experience: <strong>{candExp.toFixed(1)} years</strong></span>
                 <span>•</span>
-                <span>Education: <strong>{c1Result?.education || currentResumeDoc?.education || 'BSc Information Technology'}</strong></span>
+                <span>Education: <strong>{cleanEducationText(c1Result?.education || currentResumeDoc?.education)}</strong></span>
               </div>
 
               <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '10px 0 0 0', lineHeight: 1.55, maxWidth: 680 }}>
@@ -1220,23 +1353,11 @@ export default function CVMatch() {
               <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginTop: 6 }}>
                 Overall Fit Score
               </div>
-              <div style={{
-                fontSize: '9.5px',
-                fontFamily: 'var(--p-font-mono)',
-                color: 'var(--color-fg-muted)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                padding: '3px 8px',
-                borderRadius: 4,
-                marginTop: 6,
-                border: '1px solid rgba(255, 255, 255, 0.06)'
-              }}>
-                0.5·Skill + 0.3·Exp + 0.2·Edu
-              </div>
               <button
                 type="button"
                 onClick={() => setShowDossierModal(true)}
                 className="btn btn-sm btn-ghost"
-                style={{ marginTop: 10, width: '100%', fontSize: '11px', padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)' }}
+                style={{ marginTop: 12, width: '100%', fontSize: '11px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)' }}
                 title="Preview printable executive evaluation dossier"
               >
                 <FileText size={12} /> View Evaluation Dossier
@@ -1312,7 +1433,7 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Cpu size={14} /> Technical Skills (S_skill)
+                        <Cpu size={14} /> Technical Skills Match
                       </span>
                       <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
                         {skillScore.toFixed(0)}%
@@ -1356,7 +1477,7 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-success)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Clock size={14} /> Experience & Seniority (S_exp)
+                        <Clock size={14} /> Experience & Tenure
                       </span>
                       <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>
                         {expScore.toFixed(0)}%
@@ -1390,7 +1511,7 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#a855f7', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <GraduationCap size={14} /> Education & Credentials (S_edu)
+                        <GraduationCap size={14} /> Education & Qualifications
                       </span>
                       <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#a855f7', fontFamily: 'var(--p-font-mono)' }}>
                         {eduScore.toFixed(0)}%
@@ -1411,7 +1532,7 @@ export default function CVMatch() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Degree Qualification:</span>
                       <strong style={{ color: 'var(--color-fg)', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c1Result?.education || currentResumeDoc?.education || 'BSc Information Technology'}
+                        {cleanEducationText(c1Result?.education || currentResumeDoc?.education)}
                       </strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1539,48 +1660,6 @@ export default function CVMatch() {
                   </div>
                   <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', fontStyle: 'italic', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: 4 }}>
                     "{selectedSkillEvidence.evidence_snippets?.[0] || 'Verified from work experience in candidate CV.'}"
-                  </div>
-                </div>
-              )}
-              {/* Top AI-Predicted Roles Matrix */}
-              {((c1Result?.role_alternatives?.length > 0) || (c1Result?.role_predictions?.length > 0)) && (
-                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <Cpu size={16} style={{ color: 'var(--color-primary)' }} /> Top AI-Predicted Roles (Click to Benchmark)
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-                    {(c1Result.role_alternatives || c1Result.role_predictions || []).slice(0, 4).map((p) => {
-                      const roleName = typeof p === 'string' ? p : (p?.role || '')
-                      if (!roleName) return null
-                      const prob = p?.probability ?? p?.confidence ?? 0.8
-                      return (
-                        <div
-                          key={roleName}
-                          onClick={() => runUnifiedAnalysis(roleName)}
-                          style={{
-                            padding: '10px 14px',
-                            background: 'var(--color-bg-elevated)',
-                            border: '1px solid var(--color-border-subtle)',
-                            borderRadius: 'var(--radius-md)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                          title={`Click to re-score against ${roleName}`}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>
-                              {roleName}
-                            </span>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)' }}>
-                              {(prob * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                          <div style={{ width: '100%', height: 4, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(prob * 100, 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      )
-                    })}
                   </div>
                 </div>
               )}

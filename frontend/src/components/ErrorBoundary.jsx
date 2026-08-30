@@ -20,12 +20,22 @@ export default class ErrorBoundary extends Component {
             <AlertCircle size={28} />
           </div>
           <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-fg)', marginBottom: 8 }}>Something went wrong</h2>
-          <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', marginBottom: 24, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', marginBottom: 16, lineHeight: 1.5 }}>
             An unexpected error occurred. Please try refreshing the page.
           </p>
+          {this.state.error && (
+            <div style={{ textAlign: 'left', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 12, marginBottom: 20, fontSize: '12px', color: '#f87171', overflowX: 'auto', fontFamily: 'monospace' }}>
+              <strong>Error:</strong> {String(this.state.error?.message || this.state.error)}
+              {this.state.error?.stack && (
+                <pre style={{ marginTop: 8, fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: 150, overflowY: 'auto' }}>
+                  {this.state.error.stack}
+                </pre>
+              )}
+            </div>
+          )}
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => { this.setState({ hasError: false }); window.location.reload() }}
+            onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload() }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}
           >
             <RefreshCw size={14} /> Reload Page

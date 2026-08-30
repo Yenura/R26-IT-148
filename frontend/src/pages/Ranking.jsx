@@ -11,6 +11,19 @@ import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
+const cleanCandidateName = (rawName, fallbackId) => {
+  if (!rawName) return `Candidate ${(fallbackId || '01').slice(-4)}`
+  let name = String(rawName).trim()
+  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
+  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
+  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
+  const words = name.split(/\s+/).filter(Boolean)
+  if (words.length > 3) {
+    name = words.slice(0, 3).join(' ')
+  }
+  return name || 'Candidate'
+}
+
 export default function Ranking() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
@@ -267,7 +280,7 @@ export default function Ranking() {
                           </td>
                           <td>
                             <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
-                              {cand.candidate_name || 'Candidate'}
+                              {cleanCandidateName(cand.candidate_name, cand.candidate_id)}
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
                               ID: {cand.candidate_id?.slice(0, 10) || 'Verified'}
