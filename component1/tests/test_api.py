@@ -1,5 +1,5 @@
 """API integration tests — Component 1
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Uses FastAPI TestClient with mocked MongoDB and a real TF-IDF (or fallback) predictor.
 Mongo-persisted endpoints are marked requires_mongo and skipped if DB is unavailable.

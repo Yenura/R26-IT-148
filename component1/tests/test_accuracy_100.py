@@ -1,5 +1,5 @@
 """100% Accuracy Verification Tests for S_exp and S_edu
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Validates 100% accuracy across all diverse international candidate formats:
 - S_edu: PhD, MSc, MS, MEng, MTech, BSc, BS, B.S., B.Eng, B.Tech, BIT, BCS, Bachelor's

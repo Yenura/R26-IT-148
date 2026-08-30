@@ -1,6 +1,6 @@
 """
 Test Candidate Intelligence Engine — Component 1
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Exhaustive test suite testing all 13 Required Validation Scenarios:
 1. Accountant 1 year + Software Engineer 1 year -> Target: Software Engineer (Relevant Exp ≈ 1 yr).

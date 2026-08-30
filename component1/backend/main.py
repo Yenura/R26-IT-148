@@ -1,5 +1,5 @@
 """Component 1 — FastAPI Backend Entry Point
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Run with:
     cd component1
@@ -143,7 +143,7 @@ async def root():
         "component": 1,
         "service": "Resume Screening & Role Matching",
         "version": "1.0.0",
-        "owner": "Dulnith K.D. — IT22094872",
+        "owner": "D T D Perera — IT22089236",
     }
 
 

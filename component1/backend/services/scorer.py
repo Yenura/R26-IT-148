@@ -1,6 +1,6 @@
 """
 CV Scoring Engine — Component 1: Advanced Accuracy & Deep CV Understanding
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Calculates three separate, independent scores for Component 1:
 1. S_skill (0–100): Skill Match Score based on required & preferred coverage, evidence levels, and related skills.

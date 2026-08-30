@@ -1,6 +1,6 @@
 """
 Component 1: Batch Testing, Learning, and Validation Pipeline on Real IT Resumes Dataset
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Iterates through all 251 real-world IT resume PDFs from:
 C:\\Users\\thari\\Desktop\\000\\Resumes Datasets\\INFORMATION-TECHNOLOGY
