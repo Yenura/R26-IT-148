@@ -372,7 +372,7 @@ export default function SkillGap() {
                           {selectedReport.interview_completed ? 'Final Total Mark (CSS)' : 'Current Total (CV Mark)'}
                         </div>
                         <div style={{ fontSize: '1.3rem', fontWeight: 900, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.hire_probability != null ? `${Number(selectedReport.hire_probability).toFixed(1)}%` : 'N/A')}
+                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.cv_score != null ? `${Number(selectedReport.cv_score).toFixed(1)}%` : 'N/A')}
                         </div>
                       </div>
                     </div>

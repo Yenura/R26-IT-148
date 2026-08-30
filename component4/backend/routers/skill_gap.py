@@ -22,6 +22,75 @@ except ImportError:
 from services.ml_engine import run_skill_gap_analysis
 from src.gap_analysis.skill_gap import analyze_skill_gap
 import time
+import pickle
+import numpy as np
+
+# Load LambdaMART model from Component 3 if available
+_LAMBDAMART_MODEL = None
+_C3_MODEL_PATH = os.path.normpath(os.path.join(str(COMPONENT_ROOT), "..", "component3", "models", "lambdamart_model.pkl"))
+if os.path.exists(_C3_MODEL_PATH):
+    try:
+        with open(_C3_MODEL_PATH, "rb") as f:
+            _LAMBDAMART_MODEL = pickle.load(f)
+    except Exception:
+        pass
+
+# Role CV and Interview weights from Component 3 CSS Engine
+ROLE_CV_WEIGHTS = {
+    "Software_Engineer":         {"w_edu": 0.20, "w_exp": 0.30, "w_skill": 0.50},
+    "Data_Scientist":            {"w_edu": 0.30, "w_exp": 0.30, "w_skill": 0.40},
+    "Machine_Learning_Engineer": {"w_edu": 0.25, "w_exp": 0.30, "w_skill": 0.45},
+    "DevOps_Engineer":           {"w_edu": 0.15, "w_exp": 0.40, "w_skill": 0.45},
+    "Cybersecurity_Analyst":     {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+    "Cloud_Solutions_Architect": {"w_edu": 0.20, "w_exp": 0.40, "w_skill": 0.40},
+    "Database_Administrator":    {"w_edu": 0.20, "w_exp": 0.40, "w_skill": 0.40},
+    "Frontend_Developer":        {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "Backend_Developer":         {"w_edu": 0.20, "w_exp": 0.30, "w_skill": 0.50},
+    "Mobile_App_Developer":      {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "Full_Stack_Developer":      {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "QA_Test_Automation_Engineer": {"w_edu": 0.15, "w_exp": 0.35, "w_skill": 0.50},
+    "Data_Engineer":             {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+    "Site_Reliability_Engineer": {"w_edu": 0.15, "w_exp": 0.40, "w_skill": 0.45},
+    "UI_UX_Designer":            {"w_edu": 0.20, "w_exp": 0.25, "w_skill": 0.55},
+    "Network_Engineer":          {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+    "Business_Systems_Analyst":  {"w_edu": 0.25, "w_exp": 0.35, "w_skill": 0.40},
+    "AI_NLP_Engineer":           {"w_edu": 0.25, "w_exp": 0.30, "w_skill": 0.45},
+    "Blockchain_Developer":      {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "Embedded_Systems_Engineer": {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+}
+
+ROLE_INTERVIEW_WEIGHTS = {
+    "Software_Engineer":         {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Data_Scientist":            {"w_mcq": 0.30, "w_desc": 0.50, "w_code": 0.20},
+    "Machine_Learning_Engineer": {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "DevOps_Engineer":           {"w_mcq": 0.25, "w_desc": 0.30, "w_code": 0.45},
+    "Cybersecurity_Analyst":     {"w_mcq": 0.35, "w_desc": 0.45, "w_code": 0.20},
+    "Cloud_Solutions_Architect": {"w_mcq": 0.30, "w_desc": 0.50, "w_code": 0.20},
+    "Database_Administrator":    {"w_mcq": 0.30, "w_desc": 0.35, "w_code": 0.35},
+    "Frontend_Developer":        {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Backend_Developer":         {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Mobile_App_Developer":      {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Full_Stack_Developer":      {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "QA_Test_Automation_Engineer": {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "Data_Engineer":             {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "Site_Reliability_Engineer": {"w_mcq": 0.25, "w_desc": 0.30, "w_code": 0.45},
+    "UI_UX_Designer":            {"w_mcq": 0.30, "w_desc": 0.50, "w_code": 0.20},
+    "Network_Engineer":          {"w_mcq": 0.30, "w_desc": 0.40, "w_code": 0.30},
+    "Business_Systems_Analyst":  {"w_mcq": 0.35, "w_desc": 0.50, "w_code": 0.15},
+    "AI_NLP_Engineer":           {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "Blockchain_Developer":      {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Embedded_Systems_Engineer": {"w_mcq": 0.25, "w_desc": 0.30, "w_code": 0.45},
+}
+
+def _resolve_role_weights(job_title: str):
+    clean = job_title.strip().replace(" ", "_")
+    for k in ROLE_CV_WEIGHTS:
+        if k.lower() == clean.lower() or k.replace("_", "").lower() == clean.replace("_", "").lower():
+            return ROLE_CV_WEIGHTS[k], ROLE_INTERVIEW_WEIGHTS[k]
+    for k in ROLE_CV_WEIGHTS:
+        if k.lower() in clean.lower() or clean.lower() in k.lower():
+            return ROLE_CV_WEIGHTS[k], ROLE_INTERVIEW_WEIGHTS[k]
+    return {"w_edu": 0.20, "w_exp": 0.30, "w_skill": 0.50}, {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50}
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -542,6 +611,9 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             pred_task, interview_res_task, session_task, score_doc_task
         )
 
+        # Resolve role weights for CSS engine
+        cv_w, int_w = _resolve_role_weights(job_title)
+
         skill_score = pred.get("skill_score") if pred else None
         experience_score = pred.get("experience_score") if pred else None
         education_score = pred.get("education_score") if pred else None
@@ -561,7 +633,9 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             education_score = 80.0
 
         if cv_matching_score is None:
-            cv_matching_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
+            cv_matching_score = round(cv_w["w_skill"] * skill_score + cv_w["w_exp"] * experience_score + cv_w["w_edu"] * education_score, 1)
+        else:
+            cv_matching_score = round(float(cv_matching_score), 1)
 
         interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None
         interview_score = None
@@ -574,10 +648,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         topic_scores = {}
 
         if interview_res:
-            interview_score = interview_res.get("interview_score", 0)
-            mcq_score = interview_res.get("mcq_score", 0)
-            descriptive_score = interview_res.get("descriptive_score", 0)
-            coding_score = interview_res.get("coding_score", 0)
+            mcq_score = float(interview_res.get("mcq_score", 0))
+            descriptive_score = float(interview_res.get("descriptive_score", 0))
+            coding_score = float(interview_res.get("coding_score", 0))
+            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
             grade = interview_res.get("grade", "Average")
             weak_topics = interview_res.get("weak_topics", [])
             failed_mcq_topics = interview_res.get("failed_mcq_topics", [])
@@ -598,10 +672,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                 topic_scores.setdefault(t, []).append(float(s))
 
         elif score_doc:
-            interview_score = score_doc.get("interview_score", 0)
-            mcq_score = score_doc.get("mcq_score", 0)
-            descriptive_score = score_doc.get("descriptive_score", 0)
-            coding_score = score_doc.get("coding_score", 0)
+            mcq_score = float(score_doc.get("mcq_score", 0))
+            descriptive_score = float(score_doc.get("descriptive_score", 0))
+            coding_score = float(score_doc.get("coding_score", 0))
+            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
             grade = score_doc.get("grade", "Average")
 
         topic_performance = []
@@ -701,10 +775,17 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         all_strengths = interview_strengths + cv_strengths
         all_weaknesses = interview_weaknesses + cv_weaknesses
 
-        if interview_score is not None and cv_matching_score is not None:
-            composite_fit = round(0.55 * interview_score + 0.45 * cv_matching_score, 1)
-        elif interview_score is not None:
-            composite_fit = round(interview_score, 1)
+        # Master CSS calculation (40% CV + 60% Interview) and LambdaMART score
+        ltr_score = None
+        if interview_completed and interview_score is not None:
+            composite_fit = round(0.40 * cv_matching_score + 0.60 * interview_score, 1)
+            if _LAMBDAMART_MODEL is not None:
+                try:
+                    X_cand = np.array([[education_score / 100.0, experience_score / 100.0, skill_score / 100.0,
+                                       (mcq_score or 0.0) / 100.0, (descriptive_score or 0.0) / 100.0, (coding_score or 0.0) / 100.0]])
+                    ltr_score = round(float(_LAMBDAMART_MODEL.predict(X_cand)[0]), 4)
+                except Exception:
+                    pass
         elif cv_matching_score is not None:
             composite_fit = round(cv_matching_score, 1)
         else:
@@ -762,6 +843,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             },
             "composite_score": composite_fit,
             "total_mark": composite_fit,
+            "ltr_score": ltr_score,
             "interview_breakdown": {
                 "mcq_score": mcq_score,
                 "descriptive_score": descriptive_score,
