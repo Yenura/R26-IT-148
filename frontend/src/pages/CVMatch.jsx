@@ -69,6 +69,29 @@ const CANONICAL_CATEGORIES = {
   ]
 }
 
+const CANONICAL_ROLE_SKILLS = {
+  'Software Engineer': ['Python', 'Java', 'Data Structures', 'Algorithms', 'Git', 'SQL', 'OOP', 'System Design'],
+  'Data Scientist': ['Python', 'Pandas', 'NumPy', 'Statistics', 'Machine Learning', 'SQL', 'Scikit-Learn', 'Data Visualization'],
+  'Machine Learning Engineer': ['Python', 'PyTorch', 'TensorFlow', 'Machine Learning', 'Deep Learning', 'Docker', 'MLOps'],
+  'DevOps Engineer': ['Linux', 'Docker', 'Kubernetes', 'CI/CD', 'Terraform', 'AWS', 'Ansible', 'Bash'],
+  'Cloud Solutions Architect': ['AWS', 'Azure', 'Cloud Architecture', 'Kubernetes', 'Terraform', 'System Design', 'Security'],
+  'Database Administrator': ['SQL', 'PostgreSQL', 'MySQL', 'Database Tuning', 'Backup and Recovery', 'Linux', 'Query Optimization'],
+  'Frontend Developer': ['JavaScript', 'TypeScript', 'React', 'HTML', 'CSS', 'Tailwind CSS', 'Redux', 'Git'],
+  'Backend Developer': ['Python', 'FastAPI', 'Node.js', 'PostgreSQL', 'Docker', 'Redis', 'REST APIs', 'SQL'],
+  'Mobile App Developer': ['Flutter', 'Dart', 'React Native', 'iOS', 'Android', 'Swift', 'Kotlin', 'REST APIs'],
+  'Full Stack Developer': ['JavaScript', 'TypeScript', 'React', 'Node.js', 'FastAPI', 'PostgreSQL', 'Docker', 'Git'],
+  'QA/Test Automation Engineer': ['Selenium', 'Cypress', 'Playwright', 'Python', 'Test Automation', 'Postman', 'CI/CD', 'Git'],
+  'Data Engineer': ['Python', 'SQL', 'PySpark', 'Apache Spark', 'Airflow', 'Kafka', 'ETL', 'Data Warehousing'],
+  'Site Reliability Engineer': ['Linux', 'Kubernetes', 'Docker', 'Prometheus', 'Grafana', 'CI/CD', 'Incident Response'],
+  'Cybersecurity Analyst': ['Network Security', 'SIEM', 'Splunk', 'OWASP', 'Penetration Testing', 'Linux', 'Cryptography'],
+  'UI/UX Designer': ['Figma', 'Adobe XD', 'Wireframing', 'Prototyping', 'User Research', 'Usability Testing', 'Design Systems'],
+  'Network Engineer': ['CCNA', 'TCP/IP', 'Routing', 'Switching', 'BGP', 'OSPF', 'Firewalls', 'VPN', 'Wireshark'],
+  'Business/Systems Analyst': ['Requirements Gathering', 'Business Analysis', 'UML', 'BPMN', 'JIRA', 'SQL', 'Agile', 'Scrum'],
+  'AI/NLP Engineer': ['Python', 'NLP', 'Transformers', 'BERT', 'LLMs', 'LangChain', 'RAG', 'Vector Databases', 'PyTorch'],
+  'Blockchain Developer': ['Solidity', 'Ethereum', 'Smart Contracts', 'Web3', 'Hardhat', 'JavaScript', 'DApps'],
+  'Embedded Systems Engineer': ['C', 'C++', 'Embedded C', 'Microcontrollers', 'RTOS', 'FreeRTOS', 'I2C', 'SPI', 'UART', 'ARM']
+}
+
 const CANONICAL_CAREER_PATHWAYS = {
   'Data Scientist': [
     {
@@ -293,7 +316,7 @@ export default function CVMatch() {
       setJobs(jobList)
       const rawRoles = r3?.data?.roles || []
       const rolesList = Array.isArray(rawRoles)
-        ? rawRoles.map((item) => (typeof item === 'string' ? item : item?.role)).filter(Boolean)
+        ? rawRoles.map((item) => (typeof item === 'string' ? item : (item?.role || ''))).filter(Boolean)
         : []
       setCanonicalRoles(rolesList.length > 0 ? rolesList : CANONICAL_ROLES)
       if (resumeList.length > 0) {
@@ -368,14 +391,30 @@ export default function CVMatch() {
         : (typeof targetResumeDoc.skills === 'string' ? targetResumeDoc.skills.split(',').map((s) => s.trim()) : [])
 
       const matchedJobDoc = jobsListToUse.find((j) => j.id === jobIdToUse)
-      const targetRoleName = matchedJobDoc
-        ? matchedJobDoc.title
-        : (targetRoleOverride || 'Software Engineer')
+      let targetRoleName = matchedJobDoc ? matchedJobDoc.title : targetRoleOverride
+
+      // Dynamic Auto-Classification using Model 1 if no explicit role is chosen
+      if (!targetRoleName) {
+        const cvText = targetResumeDoc.raw_text || targetResumeDoc.text || candidateSkills.join(', ')
+        if (cvText && cvText.length > 5) {
+          try {
+            const classRes = await c1Classify({ text: cvText })
+            if (classRes?.data?.job_role) {
+              targetRoleName = classRes.data.job_role
+            }
+          } catch (e) {
+            console.warn('Auto classification fallback:', e)
+          }
+        }
+      }
+      if (!targetRoleName) {
+        targetRoleName = targetResumeDoc.predicted_role || 'Full Stack Developer'
+      }
 
       // 1. Component 0 Match Pipeline
       const matchParams = { resume_id: resumeToUse }
       if (jobIdToUse) matchParams.job_id = jobIdToUse
-      else if (targetRoleOverride) matchParams.target_role = targetRoleOverride
+      else if (targetRoleName) matchParams.target_role = targetRoleName
       
       let matchData = null
       try {
@@ -387,9 +426,9 @@ export default function CVMatch() {
 
       // If backend match returned null or error, compute local high-precision matching
       if (!matchData) {
-        const reqSkills = (matchedJobDoc?.required_skills && Array.isArray(matchedJobDoc.required_skills))
+        const reqSkills = (matchedJobDoc?.required_skills && Array.isArray(matchedJobDoc.required_skills) && matchedJobDoc.required_skills.length > 0)
           ? matchedJobDoc.required_skills
-          : ['Python', 'React', 'FastAPI', 'Docker', 'SQL', 'Git']
+          : (CANONICAL_ROLE_SKILLS[targetRoleName] || ['Python', 'React', 'FastAPI', 'Docker', 'SQL', 'Git'])
         
         const candSkillsLower = candidateSkills.map((s) => String(s).toLowerCase().trim())
         const matched = []
@@ -437,8 +476,8 @@ export default function CVMatch() {
       const safeCandName = String(targetResumeDoc.candidate_name || 'Candidate').replace(/[$.]/g, '')
 
       const c1Payload = {
-        candidate_id: targetResumeDoc.candidate_id || resumeToUse,
-        candidate_name: targetResumeDoc.candidate_name || 'Candidate',
+        candidate_id: safeCandId,
+        candidate_name: safeCandName,
         text: cvTextToSend ? cvTextToSend.trim() : (targetResumeDoc.filename || 'Candidate Resume'),
         raw_text: cvTextToSend ? cvTextToSend.trim() : '',
         target_role: finalRole,
@@ -472,6 +511,15 @@ export default function CVMatch() {
       if (careerRes?.data) setCareerResult(careerRes.data)
       if (pathRes?.data) setLearningPathResult(pathRes.data)
       if (c1Res?.data) setC1Result(c1Res.data)
+
+      // Invalidate Skill Gap and Progress local caches so fresh data is loaded
+      try {
+        const uId = localStorage.getItem('recruitai.user_id')
+        if (uId) {
+          sessionStorage.removeItem(`recruitai.skillgap.${uId}`)
+          sessionStorage.removeItem(`recruitai.progress.${uId}`)
+        }
+      } catch {}
 
       toast.success(`Evaluation complete for ${finalRole}!`)
     } catch (err) {
@@ -555,7 +603,7 @@ export default function CVMatch() {
   const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
   const displayJobTitle = matchedJobDoc
     ? matchedJobDoc.title
-    : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : 'Software Engineer'))
+    : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : (c1Result ? c1Result.job_role : (currentResumeDoc?.predicted_role || 'AI Auto-Detect Fit'))))
 
   const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
 
@@ -971,14 +1019,14 @@ export default function CVMatch() {
                     color: 'var(--color-fg)'
                   }}
                 >
-                  <option value="">AI Auto-Detect Best Fit Role</option>
-                  {(canonicalRoles.length > 0 ? canonicalRoles : CANONICAL_ROLES).map((r) => {
-                    const roleName = typeof r === 'string' ? r : (r?.role || '')
-                    if (!roleName) return null
-                    return (
-                      <option key={roleName} value={roleName}>{roleName}</option>
-                    )
-                  })}
+                  <option value="">🎯 AI Auto-Detect Best Fit Role (from CV text)</option>
+                  {Object.entries(CANONICAL_CATEGORIES).map(([catName, roleList]) => (
+                    <optgroup key={catName} label={`▸ ${catName}`}>
+                      {roleList.map((roleName) => (
+                        <option key={roleName} value={roleName}>{roleName}</option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
             </div>
@@ -1375,6 +1423,52 @@ export default function CVMatch() {
 
               </div>
 
+              {/* Direct Next Action Bar */}
+              <div style={{
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
+                border: '1px solid rgba(99, 102, 241, 0.25)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 'var(--p-space-5)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: 12
+              }}>
+                <div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                    Ready to complete evaluation for {displayJobTitle}?
+                  </div>
+                  <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                    CV scores are saved. Take the AI Technical Interview to generate your final composite ranking for recruiters.
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                  <button
+                    className="btn btn-primary btn-sm"
+                    onClick={() => {
+                      const params = new URLSearchParams({
+                        role: displayJobTitle,
+                        skills: (matchedJobDoc?.required_skills || []).join(','),
+                        level: matchedJobDoc?.job_level || 'Mid-Level',
+                        count: String(matchedJobDoc?.interview_question_count || 10),
+                        jobId: selectedJob || '',
+                      })
+                      navigate(`/candidate/interview?${params.toString()}`)
+                    }}
+                  >
+                    <Play size={13} /> Take AI Technical Interview
+                  </button>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={() => navigate('/candidate/skill-gap')}
+                  >
+                    <Sparkles size={13} /> View Skill Gap Report
+                  </button>
+                </div>
+              </div>
+
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
@@ -1445,6 +1539,48 @@ export default function CVMatch() {
                   </div>
                   <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', fontStyle: 'italic', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: 4 }}>
                     "{selectedSkillEvidence.evidence_snippets?.[0] || 'Verified from work experience in candidate CV.'}"
+                  </div>
+                </div>
+              )}
+              {/* Top AI-Predicted Roles Matrix */}
+              {((c1Result?.role_alternatives?.length > 0) || (c1Result?.role_predictions?.length > 0)) && (
+                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                    <Cpu size={16} style={{ color: 'var(--color-primary)' }} /> Top AI-Predicted Roles (Click to Benchmark)
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+                    {(c1Result.role_alternatives || c1Result.role_predictions || []).slice(0, 4).map((p) => {
+                      const roleName = typeof p === 'string' ? p : (p?.role || '')
+                      if (!roleName) return null
+                      const prob = p?.probability ?? p?.confidence ?? 0.8
+                      return (
+                        <div
+                          key={roleName}
+                          onClick={() => runUnifiedAnalysis(roleName)}
+                          style={{
+                            padding: '10px 14px',
+                            background: 'var(--color-bg-elevated)',
+                            border: '1px solid var(--color-border-subtle)',
+                            borderRadius: 'var(--radius-md)',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease'
+                          }}
+                          title={`Click to re-score against ${roleName}`}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>
+                              {roleName}
+                            </span>
+                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)' }}>
+                              {(prob * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                          <div style={{ width: '100%', height: 4, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
+                            <div style={{ width: `${Math.min(prob * 100, 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 2 }} />
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
               )}

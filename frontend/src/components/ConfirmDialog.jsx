@@ -13,29 +13,44 @@ export default function ConfirmDialog({
 }) {
   const dialogRef = useRef(null)
   const previousFocusRef = useRef(null)
+  const onCancelRef = useRef(onCancel)
+
+  useEffect(() => {
+    onCancelRef.current = onCancel
+  }, [onCancel])
 
   useEffect(() => {
     if (!open) return
 
+    previousFocusRef.current = document.activeElement
+    const originalOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handleKeyDown = (e) => {
-      if (e.key === 'Escape') onCancel()
+      if (e.key === 'Escape') {
+        if (onCancelRef.current) onCancelRef.current()
+        return
+      }
 
       // Focus trap
       if (e.key === 'Tab' && dialogRef.current) {
-        const focusable = dialogRef.current.querySelectorAll(
-          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        )
+        const focusable = Array.from(
+          dialogRef.current.querySelectorAll(
+            'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+          )
+        ).filter((el) => el.offsetParent !== null)
+
         if (focusable.length === 0) return
         const first = focusable[0]
         const last = focusable[focusable.length - 1]
 
         if (e.shiftKey) {
-          if (document.activeElement === first) {
+          if (document.activeElement === first || !dialogRef.current.contains(document.activeElement)) {
             e.preventDefault()
             last.focus()
           }
         } else {
-          if (document.activeElement === last) {
+          if (document.activeElement === last || !dialogRef.current.contains(document.activeElement)) {
             e.preventDefault()
             first.focus()
           }
@@ -43,26 +58,29 @@ export default function ConfirmDialog({
       }
     }
 
-    previousFocusRef.current = document.activeElement
-    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', handleKeyDown)
 
     // Auto-focus the confirm button
-    setTimeout(() => {
+    const timer = setTimeout(() => {
       if (dialogRef.current) {
         const confirmBtn = dialogRef.current.querySelector('.btn-primary, .btn-danger')
         if (confirmBtn) confirmBtn.focus()
       }
     }, 50)
 
-    window.addEventListener('keydown', handleKeyDown)
     return () => {
+      clearTimeout(timer)
       window.removeEventListener('keydown', handleKeyDown)
-      document.body.style.overflow = 'unset'
+      document.body.style.overflow = originalOverflow || 'unset'
       if (previousFocusRef.current && previousFocusRef.current.focus) {
-        previousFocusRef.current.focus()
+        try {
+          previousFocusRef.current.focus()
+        } catch {
+          // Ignore
+        }
       }
     }
-  }, [open, onCancel])
+  }, [open])
 
   if (!open) return null
 

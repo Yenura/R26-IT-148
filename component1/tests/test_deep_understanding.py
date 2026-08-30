@@ -198,9 +198,10 @@ class TestContextualSkillEvidence:
         assert "python" in skills
         assert "fastapi" in skills
 
-        # Python and FastAPI mentioned in work experience bullets should have HIGH evidence
+        # Python and FastAPI mentioned in work experience bullets should have HIGH/VERY_HIGH evidence
         py_ev = evidence.get("python", {})
-        assert py_ev.get("evidence_strength") == "high"
+        assert py_ev.get("evidence_strength") in ["high", "very_high"]
+        assert py_ev.get("evidence_level") in ["HIGH", "VERY_HIGH"]
 
 
 

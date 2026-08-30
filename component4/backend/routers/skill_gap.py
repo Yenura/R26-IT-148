@@ -21,9 +21,31 @@ except ImportError:
     from backend.models.schemas import SkillGapRequest
 from services.ml_engine import run_skill_gap_analysis
 from src.gap_analysis.skill_gap import analyze_skill_gap
+import time
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# In-memory high performance TTL cache for applied jobs analysis
+_APPLIED_JOBS_CACHE: Dict[str, Any] = {}
+_CACHE_TTL_SECS = 45.0
+
+def get_cached_applied_jobs(candidate_id: str):
+    entry = _APPLIED_JOBS_CACHE.get(candidate_id)
+    if entry:
+        ts, data = entry
+        if time.time() - ts < _CACHE_TTL_SECS:
+            return data
+    return None
+
+def set_cached_applied_jobs(candidate_id: str, data: dict):
+    _APPLIED_JOBS_CACHE[candidate_id] = (time.time(), data)
+
+def invalidate_applied_jobs_cache(candidate_id: Optional[str] = None):
+    if candidate_id and candidate_id in _APPLIED_JOBS_CACHE:
+        del _APPLIED_JOBS_CACHE[candidate_id]
+    elif not candidate_id:
+        _APPLIED_JOBS_CACHE.clear()
 
 
 class SimpleSkillGapRequest(BaseModel):
@@ -266,22 +288,147 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     Evaluates skill gap, strengths, and weaknesses for every job the candidate applied for,
     integrating Component 1 CV parsing/matching and Component 2 AI Interview question-level topic scores.
     """
+    cached = get_cached_applied_jobs(candidate_id)
+    if cached:
+        return cached
+
     db = request.app.state.db
     from bson import ObjectId
     from services.ml_engine import RESOURCES, JOB_REQ, compute_gap
 
-    # 1. Fetch candidate applications
-    applications = []
-    cursor = db.applications.find({"candidate_id": candidate_id}).sort("applied_at", -1)
+    # 1. Fetch candidate jobs from Applications, CV Match Predictions, and Interview Scores
+    seen_job_ids = set()
+    candidate_jobs = []
+
+    # Fetch candidate resume IDs first
+    cand_resume_ids = []
+    cand_id_filters = [{"candidate_id": candidate_id}]
+    if ObjectId.is_valid(candidate_id):
+        cand_id_filters.append({"candidate_id": ObjectId(candidate_id)})
+
+    async for r in db.resumes.find({"$or": cand_id_filters}):
+        cand_resume_ids.append(str(r["_id"]))
+
+    # A. From Applications
+    cursor = db.applications.find({"$or": cand_id_filters}).sort("applied_at", -1)
     async for app in cursor:
-        applications.append(app)
-    if not applications:
-        try:
-            cursor = db.applications.find({"candidate_id": ObjectId(candidate_id)}).sort("applied_at", -1)
-            async for app in cursor:
-                applications.append(app)
-        except Exception:
-            pass
+        jid = str(app.get("job_id", ""))
+        if jid and jid not in seen_job_ids:
+            seen_job_ids.add(jid)
+            candidate_jobs.append({
+                "job_id": jid,
+                "status": app.get("status", "applied"),
+                "applied_at": app.get("applied_at")
+            })
+
+    # B. From CV Match Predictions (even before applying or taking interview)
+    pred_query = list(cand_id_filters)
+    if cand_resume_ids:
+        pred_query.append({"resume_id": {"$in": cand_resume_ids}})
+
+    pred_cursor = db.predictions.find({"$or": pred_query}).sort("created_at", -1)
+    async for pred_doc in pred_cursor:
+        jid = str(pred_doc.get("job_id", ""))
+        p_role = pred_doc.get("predicted_role", "")
+        if jid:
+            job_found = None
+            try:
+                if ObjectId.is_valid(jid):
+                    job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
+                if not job_found:
+                    job_found = await db.jobs.find_one({"_id": jid})
+                if not job_found:
+                    job_found = await db.jobs.find_one({"$or": [{"title": jid}, {"job_role": jid}]})
+                if not job_found and p_role:
+                    job_found = await db.jobs.find_one({"$or": [{"title": p_role}, {"job_role": p_role}]})
+            except Exception:
+                pass
+            if job_found:
+                actual_jid = str(job_found["_id"])
+                if actual_jid not in seen_job_ids:
+                    seen_job_ids.add(actual_jid)
+                    candidate_jobs.append({
+                        "job_id": actual_jid,
+                        "status": "cv_matched",
+                        "applied_at": pred_doc.get("created_at")
+                    })
+
+    # C. From Interview Scores (C0 db.interview_scores)
+    score_cursor = db.interview_scores.find({"$or": cand_id_filters}).sort("created_at", -1)
+    async for sc_doc in score_cursor:
+        jid = str(sc_doc.get("job_id", ""))
+        j_role = sc_doc.get("job_role", "")
+        if jid:
+            job_found = None
+            try:
+                if ObjectId.is_valid(jid):
+                    job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
+                if not job_found:
+                    job_found = await db.jobs.find_one({"_id": jid})
+                if not job_found and j_role:
+                    job_found = await db.jobs.find_one({"$or": [{"title": j_role}, {"job_role": j_role}]})
+            except Exception:
+                pass
+            if job_found:
+                actual_jid = str(job_found["_id"])
+                if actual_jid not in seen_job_ids:
+                    seen_job_ids.add(actual_jid)
+                    candidate_jobs.append({
+                        "job_id": actual_jid,
+                        "status": "interviewed",
+                        "applied_at": sc_doc.get("created_at")
+                    })
+
+    # D. From Interview Results (C2 db.results)
+    results_cursor = db.results.find({"$or": cand_id_filters}).sort("created_at", -1)
+    async for res_doc in results_cursor:
+        jid = str(res_doc.get("job_id", ""))
+        j_role = res_doc.get("job_role", "")
+        if jid or j_role:
+            job_found = None
+            try:
+                if jid and ObjectId.is_valid(jid):
+                    job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
+                if not job_found and jid:
+                    job_found = await db.jobs.find_one({"_id": jid})
+                if not job_found and j_role:
+                    job_found = await db.jobs.find_one({"$or": [{"title": j_role}, {"job_role": j_role}]})
+            except Exception:
+                pass
+            if job_found:
+                actual_jid = str(job_found["_id"])
+                if actual_jid not in seen_job_ids:
+                    seen_job_ids.add(actual_jid)
+                    candidate_jobs.append({
+                        "job_id": actual_jid,
+                        "status": "interviewed",
+                        "applied_at": res_doc.get("created_at")
+                    })
+
+    # Fallback if no specific jobs were found for this candidate_id
+    if not candidate_jobs:
+        latest_res = await db.resumes.find_one(sort=[("created_at", -1)])
+        if latest_res:
+            fb_cid = str(latest_res.get("candidate_id", ""))
+            fb_filters = [{"candidate_id": fb_cid}]
+            if ObjectId.is_valid(fb_cid):
+                fb_filters.append({"candidate_id": ObjectId(fb_cid)})
+
+            async for app in db.applications.find({"$or": fb_filters}).sort("applied_at", -1):
+                jid = str(app.get("job_id", ""))
+                if jid and jid not in seen_job_ids:
+                    seen_job_ids.add(jid)
+                    candidate_jobs.append({"job_id": jid, "status": "applied", "applied_at": app.get("applied_at")})
+
+            async for pr in db.predictions.find({"$or": fb_filters + [{"resume_id": str(latest_res["_id"])}]}).sort("created_at", -1):
+                jid = str(pr.get("job_id", ""))
+                if jid:
+                    j_f = await db.jobs.find_one({"_id": ObjectId(jid)}) if ObjectId.is_valid(jid) else await db.jobs.find_one({"_id": jid})
+                    if j_f:
+                        ajid = str(j_f["_id"])
+                        if ajid not in seen_job_ids:
+                            seen_job_ids.add(ajid)
+                            candidate_jobs.append({"job_id": ajid, "status": "cv_matched", "applied_at": pr.get("created_at")})
 
     # 2. Fetch candidate resume
     resume = await db.resumes.find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
@@ -290,6 +437,8 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             resume = await db.resumes.find_one({"candidate_id": ObjectId(candidate_id)}, sort=[("created_at", -1)])
         except Exception:
             pass
+    if not resume:
+        resume = await db.resumes.find_one(sort=[("created_at", -1)])
 
     cand_skills = resume.get("skills", []) if resume else []
     cand_name = resume.get("candidate_name", "") if resume else ""
@@ -303,8 +452,8 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
     reports = []
 
-    # If no applications found, create a baseline report from resume so candidate gets instant insights
-    if not applications and cand_skills:
+    # If no specific jobs found, create a baseline report from resume so candidate gets instant insights
+    if not candidate_jobs and cand_skills:
         # Fallback to general skill gap for candidate's top predicted role
         pred = await db.predictions.find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
         target_role = pred.get("predicted_role", "Software Engineer") if pred else "Software Engineer"
@@ -339,7 +488,14 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "interview_completed": interview_res is not None,
             "interview_score": interview_score,
             "cv_score": pred.get("overall_score", 75) if pred else 75,
+            "cv_breakdown": {
+                "skill_score": pred.get("skill_score", 75) if pred else 75,
+                "experience_score": pred.get("experience_score", 70) if pred else 70,
+                "education_score": pred.get("education_score", 80) if pred else 80,
+                "overall_score": pred.get("overall_score", 75) if pred else 75,
+            },
             "composite_score": analysis.get("hire_probability", 0.7) * 100,
+            "total_mark": analysis.get("hire_probability", 0.7) * 100,
             "strengths": [{"skill": s, "source": "CV Skill Profile", "details": f"Verified proficiency in {s}"} for s in analysis.get("matched_skills", [])[:5]],
             "weaknesses": [{"skill": s, "source": "Target Role Gap", "details": f"Missing critical skill for {target_role}", "severity": "High"} for s in analysis.get("missing_required", [])[:4]],
             "topic_performance": [],
@@ -378,34 +534,60 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             company_name = "Tech Employer"
 
         # Parallel database lookups for this application
-        pred_task = db.predictions.find_one({
-            "candidate_id": candidate_id,
-            "$or": [{"job_id": job_id}, {"job_id": str(job.get("_id", ""))}, {"predicted_role": job_title}]
-        }, sort=[("created_at", -1)])
+        pred_or_conditions = [
+            {"candidate_id": candidate_id, "job_id": job_id},
+            {"candidate_id": candidate_id, "job_id": str(job.get("_id", ""))},
+            {"candidate_id": candidate_id, "predicted_role": job_title},
+        ]
+        if ObjectId.is_valid(candidate_id):
+            pred_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_id": job_id})
+            pred_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_id": str(job.get("_id", ""))})
+            pred_or_conditions.append({"candidate_id": ObjectId(candidate_id), "predicted_role": job_title})
+        if cand_resume_ids:
+            pred_or_conditions.append({"resume_id": {"$in": cand_resume_ids}, "job_id": job_id})
+            pred_or_conditions.append({"resume_id": {"$in": cand_resume_ids}, "job_id": str(job.get("_id", ""))})
+            pred_or_conditions.append({"resume_id": {"$in": cand_resume_ids}, "predicted_role": job_title})
 
-        interview_res_task = db.results.find_one({
-            "candidate_id": candidate_id,
-            "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
-        }, sort=[("created_at", -1)])
+        pred_task = db.predictions.find_one({"$or": pred_or_conditions}, sort=[("created_at", -1)])
 
-        session_task = db.sessions.find_one({
-            "candidate_id": candidate_id,
-            "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
-        }, sort=[("created_at", -1)])
+        int_or_conditions = [
+            {"candidate_id": candidate_id, "job_role": job_title},
+            {"candidate_id": candidate_id, "job_role": job.get("title", "")},
+            {"candidate_id": candidate_id, "job_id": job_id},
+            {"candidate_id": candidate_id, "job_id": str(job.get("_id", ""))}
+        ]
+        if ObjectId.is_valid(candidate_id):
+            int_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_role": job_title})
+            int_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_id": job_id})
 
-        score_doc_task = db.interview_scores.find_one({
-            "candidate_id": candidate_id,
-            "$or": [{"job_id": job_id}, {"job_role": job_title}]
-        }, sort=[("created_at", -1)])
+        interview_res_task = db.results.find_one({"$or": int_or_conditions}, sort=[("created_at", -1)])
+        session_task = db.sessions.find_one({"$or": int_or_conditions}, sort=[("created_at", -1)])
+        score_doc_task = db.interview_scores.find_one({"$or": int_or_conditions}, sort=[("created_at", -1)])
 
         pred, interview_res, session, score_doc = await asyncio.gather(
             pred_task, interview_res_task, session_task, score_doc_task
         )
 
+        skill_score = pred.get("skill_score") if pred else None
+        experience_score = pred.get("experience_score") if pred else None
+        education_score = pred.get("education_score") if pred else None
         cv_matching_score = pred.get("overall_score") if pred else None
-        if cv_matching_score is None and cand_skills and job_skills:
+
+        if skill_score is None and cand_skills and job_skills:
             matched_cv_count = len([s for s in job_skills if any(s.lower() in cs.lower() or cs.lower() in s.lower() for cs in cand_skills)])
-            cv_matching_score = round((matched_cv_count / max(len(job_skills), 1)) * 100, 1)
+            skill_score = round((matched_cv_count / max(len(job_skills), 1)) * 100, 1)
+        elif skill_score is None:
+            skill_score = 75.0
+
+        if experience_score is None:
+            req_exp = float(job.get("experience_required", 2) or 2)
+            experience_score = round(min((float(cand_exp or 2) / max(req_exp, 1)) * 100, 100), 1)
+
+        if education_score is None:
+            education_score = 80.0
+
+        if cv_matching_score is None:
+            cv_matching_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
 
         interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None
         interview_score = None
@@ -598,11 +780,19 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "interview_completed": interview_completed,
             "interview_score": interview_score,
             "cv_score": cv_matching_score,
+            "cv_breakdown": {
+                "skill_score": skill_score,
+                "experience_score": experience_score,
+                "education_score": education_score,
+                "overall_score": cv_matching_score,
+            },
             "composite_score": composite_fit,
+            "total_mark": composite_fit,
             "interview_breakdown": {
                 "mcq_score": mcq_score,
                 "descriptive_score": descriptive_score,
                 "coding_score": coding_score,
+                "interview_score": interview_score,
                 "grade": grade,
             } if interview_completed else None,
             "topic_performance": topic_performance,
@@ -615,8 +805,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "gap_severity": analysis.get("gap_severity", "Medium"),
         }
 
-    if applications:
-        results = await asyncio.gather(*[process_app(app) for app in applications])
+    if candidate_jobs:
+        results = await asyncio.gather(*[process_app(app) for app in candidate_jobs])
         reports.extend([r for r in results if r is not None])
 
-    return {"success": True, "candidate_id": candidate_id, "total_applied_jobs": len(reports), "reports": reports}
+    resp_data = {"success": True, "candidate_id": candidate_id, "total_applied_jobs": len(reports), "reports": reports, "data": reports}
+    set_cached_applied_jobs(candidate_id, resp_data)
+    return resp_data

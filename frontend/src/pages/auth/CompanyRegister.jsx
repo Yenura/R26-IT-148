@@ -4,20 +4,30 @@ import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, Building2, ArrowLeft, Globe } from 'lucide-react'
 import { C0 } from '../../api'
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 export default function CompanyRegister() {
   const [form, setForm] = useState({ company_name: '', email: '', password: '' })
   const [showPassword, setShowPassword] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+
+  const validate = () => {
+    const e = {}
+    if (!form.company_name.trim()) e.company_name = 'Company name is required'
+    else if (form.company_name.trim().length < 2) e.company_name = 'Name must be at least 2 characters'
+    if (!form.email.trim()) e.email = 'Email is required'
+    else if (!EMAIL_RE.test(form.email.trim())) e.email = 'Enter a valid email address'
+    if (!form.password) e.password = 'Password is required'
+    else if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
 
   const register = async (e) => {
     e.preventDefault()
-    if (!form.company_name.trim() || !form.email.trim() || !form.password) {
-      return toast.error('Please fill in required fields')
-    }
-    if (form.password.length < 6) {
-      return toast.error('Password must be at least 6 characters')
-    }
+    if (!validate()) return
     setBusy(true)
     try {
       const r = await C0.post('/auth/register/company', form)
@@ -38,7 +48,10 @@ export default function CompanyRegister() {
     }
   }
 
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
+  const set = (k) => (e) => {
+    setForm((f) => ({ ...f, [k]: e.target.value }))
+    setErrors((p) => ({ ...p, [k]: '' }))
+  }
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
@@ -69,7 +82,7 @@ export default function CompanyRegister() {
           </p>
         </div>
 
-        <form onSubmit={register} className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
+        <form onSubmit={register} noValidate className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
           <div style={{ marginBottom: 12 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Company Name *</label>
             <input
@@ -77,8 +90,10 @@ export default function CompanyRegister() {
               value={form.company_name}
               onChange={set('company_name')}
               placeholder="e.g. Acme Tech Inc."
+              style={{ borderColor: errors.company_name ? 'var(--color-danger, #ef4444)' : undefined }}
               required
             />
+            {errors.company_name && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.company_name}</p>}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -88,8 +103,10 @@ export default function CompanyRegister() {
               value={form.email}
               onChange={set('email')}
               placeholder="recruiter@acme.com"
+              style={{ borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
               required
             />
+            {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -99,8 +116,10 @@ export default function CompanyRegister() {
               value={form.password}
               onChange={set('password')}
               placeholder="Minimum 6 characters"
+              style={{ borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
               required
             />
+            {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>

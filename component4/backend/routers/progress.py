@@ -4,23 +4,29 @@ from fastapi import APIRouter, Request, HTTPException
 from datetime import datetime, timezone
 from bson import ObjectId
 from typing import Any, Dict, Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+import re
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
 
 class ProgressUpdateRequest(BaseModel):
-    candidate_id: str
-    skill: str
-    status: str
-    notes: Optional[str] = ""
+    candidate_id: str = Field(..., min_length=1, max_length=50)
+    skill: str = Field(..., min_length=1, max_length=100)
+    status: str = Field(..., pattern=r'^(not_started|in_progress|completed)$')
+    notes: Optional[str] = Field("", max_length=500)
     source_role: Optional[str] = None
     course_name: Optional[str] = None
     course_url: Optional[str] = None
     priority: Optional[str] = "High"
+
+    @field_validator("notes")
+    @classmethod
+    def sanitise_notes(cls, v: Optional[str]) -> str:
+        return re.sub(r'[$.]', '', v or "").strip()
 
 
 @router.post("/update", summary="Update skill learning progress")
@@ -223,7 +229,36 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
                         "priority": "High"
                     })
 
-    # B. Check Latest Skill Gap Reports if no weak skills from applied jobs yet
+    # B. Check CV Match Predictions (Missing Skills from CV Matches)
+    pred_filters = [{"candidate_id": candidate_id}]
+    if ObjectId.is_valid(candidate_id):
+        pred_filters.append({"candidate_id": ObjectId(candidate_id)})
+    if resume and resume.get("_id"):
+        pred_filters.append({"resume_id": str(resume["_id"])})
+
+    async for pred_doc in db.predictions.find({"$or": pred_filters}).sort("created_at", -1):
+        p_role = pred_doc.get("predicted_role", "Software Engineer")
+        p_job_id = str(pred_doc.get("job_id", ""))
+        p_comp = "Target Employer"
+        if p_job_id:
+            try:
+                j_doc = await db.jobs.find_one({"_id": ObjectId(p_job_id)}) if ObjectId.is_valid(p_job_id) else await db.jobs.find_one({"_id": p_job_id})
+                if j_doc and j_doc.get("company_name"):
+                    p_comp = j_doc.get("company_name")
+            except Exception:
+                pass
+
+        for ms in pred_doc.get("missing_skills", []):
+            if not any(w["skill"].lower() == ms.lower() for w in weak_skills_found):
+                weak_skills_found.append({
+                    "skill": ms,
+                    "source_role": p_role,
+                    "source_company": p_comp,
+                    "reason": f"Missing qualification for {p_role} ({p_comp}) on parsed CV",
+                    "priority": "High"
+                })
+
+    # C. Check Latest Skill Gap Reports if no weak skills from applied jobs yet
     if len(weak_skills_found) < 3:
         async for rpt in db.skill_gap_reports.find({"candidate_id": candidate_id}).sort("created_at", -1).limit(3):
             role_name = rpt.get("job_role", "Software Engineer")
@@ -355,10 +390,23 @@ async def populate_progress(request: Request):
 @router.get("/{candidate_id}", summary="Get full progress for a candidate")
 async def get_progress(candidate_id: str, request: Request):
     db = request.app.state.db
+    query_filters = [{"candidate_id": candidate_id}]
+    if ObjectId.is_valid(candidate_id):
+        query_filters.append({"candidate_id": ObjectId(candidate_id)})
+
     docs = await db.progress_tracking.find(
-        {"candidate_id": candidate_id},
+        {"$or": query_filters},
         projection={"_id": 0},
     ).sort("updated_at", -1).to_list(length=100)
+
+    if not docs and (candidate_id == "web-user" or not ObjectId.is_valid(candidate_id)):
+        latest = await db.progress_tracking.find_one(sort=[("updated_at", -1)])
+        if latest and latest.get("candidate_id"):
+            fb_cid = str(latest["candidate_id"])
+            docs = await db.progress_tracking.find(
+                {"candidate_id": fb_cid},
+                projection={"_id": 0},
+            ).sort("updated_at", -1).to_list(length=100)
 
     stats = {
         "not_started": sum(1 for d in docs if d.get("status") == "not_started"),

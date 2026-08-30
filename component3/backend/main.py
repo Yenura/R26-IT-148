@@ -107,6 +107,8 @@ app.add_middleware(
 from routers import rank  # noqa: E402
 
 app.include_router(rank.router, prefix="/api/v1", tags=["Ranking"])
+app.include_router(rank.router, prefix="/api/v1/api/v1", tags=["Ranking"])  # Compatibility fallback
+app.include_router(rank.router, prefix="", tags=["Ranking"])  # Direct prefix fallback
 
 
 @app.get("/", tags=["Health"])

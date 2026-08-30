@@ -24,11 +24,31 @@ export default function CandidateDashboard() {
   useAuth('candidate')
   const candidateName = localStorage.getItem('recruitai.name') || 'Candidate'
 
-  const [resumes, setResumes] = useState([])
-  const [jobs, setJobs] = useState([])
-  const [applications, setApplications] = useState([])
-  const [predictions, setPredictions] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [resumes, setResumes] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.cand.resumes')
+      return cached ? JSON.parse(cached) : []
+    } catch { return [] }
+  })
+  const [jobs, setJobs] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.jobs.cached')
+      return cached ? JSON.parse(cached) : []
+    } catch { return [] }
+  })
+  const [applications, setApplications] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.cand.apps')
+      return cached ? JSON.parse(cached) : []
+    } catch { return [] }
+  })
+  const [predictions, setPredictions] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.cand.preds')
+      return cached ? JSON.parse(cached) : []
+    } catch { return [] }
+  })
+  const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
   const [editingId, setEditingId] = useState(null)
@@ -38,7 +58,6 @@ export default function CandidateDashboard() {
   useEffect(() => { loadData() }, [])
 
   const loadData = async () => {
-    if (resumes.length === 0 && jobs.length === 0) setLoading(true)
     try {
       const [r1, r2, r3, r4] = await Promise.all([
         uResumeList().catch(() => ({ data: [] })),
@@ -46,10 +65,20 @@ export default function CandidateDashboard() {
         c0Predictions().catch(() => ({ data: [] })),
         c0Applications().catch(() => ({ data: [] })),
       ])
-      setResumes(toArr(r1))
-      setJobs(toArr(r2))
-      setPredictions(toArr(r3))
-      setApplications(toArr(r4))
+      const resArr = toArr(r1)
+      const jobArr = toArr(r2)
+      const predArr = toArr(r3)
+      const appArr = toArr(r4)
+      setResumes(resArr)
+      setJobs(jobArr)
+      setPredictions(predArr)
+      setApplications(appArr)
+      try {
+        sessionStorage.setItem('recruitai.cand.resumes', JSON.stringify(resArr))
+        sessionStorage.setItem('recruitai.jobs.cached', JSON.stringify(jobArr))
+        sessionStorage.setItem('recruitai.cand.preds', JSON.stringify(predArr))
+        sessionStorage.setItem('recruitai.cand.apps', JSON.stringify(appArr))
+      } catch {}
     } catch {
       toast.error('Failed to load dashboard data')
     } finally {
@@ -437,7 +466,7 @@ export default function CandidateDashboard() {
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{
                           fontSize: '11px',
                           fontWeight: 700,
@@ -450,6 +479,25 @@ export default function CandidateDashboard() {
                         }}>
                           {app.status || 'Under Review'}
                         </span>
+
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => navigate(`/candidate/interview?role=${job.job_role || job.title || ''}&jobId=${app.job_id}`)}
+                          style={{ fontSize: '11px', padding: '4px 8px' }}
+                          title="Take or retake technical interview"
+                        >
+                          <MessagesSquare size={12} /> Interview
+                        </button>
+
+                        <button
+                          className="btn btn-ghost btn-sm"
+                          onClick={() => navigate(`/candidate/skill-gap`)}
+                          style={{ fontSize: '11px', padding: '4px 8px', color: 'var(--color-primary)' }}
+                          title="View Skill Gap and composite evaluation"
+                        >
+                          <Sparkles size={12} /> Skill Gap
+                        </button>
+
                         <button
                           className="btn-ghost btn-sm"
                           onClick={() => navigate(`/candidate/jobs/${app.job_id}`)}

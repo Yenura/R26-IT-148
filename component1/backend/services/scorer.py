@@ -68,12 +68,21 @@ class SkillAnalysis:
         }
 
 
+from ml.extractor import (
+    CERTIFICATION_ROLE_RELEVANCE,
+    EDUCATION_FIELD_ROLE_RELEVANCE,
+)
+
+
 @dataclass
 class ExperienceAnalysis:
     candidate_years: float
     required_years: float
     relevant_years: float
     score: float
+    total_professional_experience_months: Optional[float] = None
+    it_sector_experience_months: Optional[float] = None
+    target_role_relevant_experience_months: Optional[float] = None
     candidate_seniority: str = "Mid"
     target_seniority: str = "Mid"
     seniority_fit: str = "MATCH"
@@ -85,6 +94,9 @@ class ExperienceAnalysis:
             "candidate_years": round(self.candidate_years, 2),
             "required_years": round(self.required_years, 2),
             "relevant_years": round(self.relevant_years, 2),
+            "total_professional_experience_months": self.total_professional_experience_months or round(self.candidate_years * 12.0, 1),
+            "it_sector_experience_months": self.it_sector_experience_months or round(self.relevant_years * 12.0, 1),
+            "target_role_relevant_experience_months": self.target_role_relevant_experience_months or round(self.relevant_years * 12.0, 1),
             "score": round(self.score, 2),
             "candidate_seniority": self.candidate_seniority,
             "target_seniority": self.target_seniority,
@@ -101,8 +113,12 @@ class EducationAnalysis:
     education_match: str
     score: float
     degree_level: str = "BSc"
+    degree_field: str = "General IT"
     field_relevance: str = "HIGH"
+    education_relevance_score: float = 100.0
+    relevant_certifications: List[Dict[str, Any]] = field(default_factory=list)
     verified_certifications: List[Dict[str, Any]] = field(default_factory=list)
+    explanation: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -111,8 +127,12 @@ class EducationAnalysis:
             "education_match": self.education_match,
             "score": round(self.score, 2),
             "degree_level": self.degree_level,
+            "degree_field": self.degree_field,
             "field_relevance": self.field_relevance,
+            "education_relevance_score": round(self.education_relevance_score, 2),
+            "relevant_certifications": self.relevant_certifications,
             "verified_certifications": self.verified_certifications,
+            "explanation": self.explanation,
         }
 
 
@@ -280,75 +300,88 @@ def calculate_experience_score(
     seniority_evidence: Optional[List[str]] = None,
     employment_records: Optional[List[Dict[str, Any]]] = None,
 ) -> tuple[float, ExperienceAnalysis]:
-    """Calculate S_exp (0-100) comparing Role-Relevant Experience, Seniority, and Responsibilities."""
+    """Calculate S_exp (0-100) based strictly on Role-Relevant Experience, NOT total professional experience."""
     cand_yrs = max(0.0, float(candidate_years))
     req_yrs = max(0.1, float(required_years))
     rel_yrs = max(0.0, float(relevant_years)) if relevant_years is not None else cand_yrs
 
-    # Zero experience edge case
-    if cand_yrs <= 0.0:
+    # Zero relevant experience edge case -> 0 score
+    if rel_yrs <= 0.0:
         return 0.0, ExperienceAnalysis(
-            candidate_years=0.0,
+            candidate_years=round(cand_yrs, 2),
             required_years=round(req_yrs, 2),
             relevant_years=0.0,
             score=0.0,
+            total_professional_experience_months=round(cand_yrs * 12.0, 1),
+            it_sector_experience_months=0.0,
+            target_role_relevant_experience_months=0.0,
             candidate_seniority=candidate_seniority,
             target_seniority=target_seniority,
-            seniority_fit="NO_EXPERIENCE",
-            seniority_evidence=[],
-            employment_records=[]
+            seniority_fit="NO_RELEVANT_EXPERIENCE",
+            seniority_evidence=seniority_evidence or [],
+            employment_records=employment_records or []
         )
 
     recs = employment_records or []
+    rel_ratio = min(1.0, rel_yrs / req_yrs)
 
-    # If no employment records provided, use standard ratio benchmark
     if not recs:
+        # Standard benchmark ratio when detailed records are absent
         if rel_yrs >= req_yrs or rel_yrs >= (req_yrs * 0.85):
             s_exp = 100.0
         else:
-            s_exp = min(1.0, rel_yrs / req_yrs) * 100.0
+            s_exp = rel_ratio * 100.0
         sen_match = "BENCHMARK_FIT"
     else:
-        # Multi-signal evaluation for full candidate profiles
-        # 1. Relevant experience fit (0 - 50 pts)
-        if rel_yrs >= req_yrs or rel_yrs >= (req_yrs * 0.85):
-            rel_fit = 50.0
-        else:
-            rel_fit = (rel_yrs / req_yrs) * 50.0
+        # Filter strictly for IT / Role-Relevant records (target_role_relevance >= 0.10)
+        rel_recs = [r for r in recs if r.get("target_role_relevance", 0.0) >= 0.10 or r.get("is_it_related", False)]
 
-        # 2. Seniority fit (0 - 25 pts)
+        # 1. Base Role-Relevant Experience Score (0 - 70 points)
+        if rel_yrs >= req_yrs or rel_yrs >= (req_yrs * 0.85):
+            base_exp_pts = 70.0
+        else:
+            base_exp_pts = rel_ratio * 70.0
+
+        # 2. Seniority Alignment (0 - 15 points) - evaluated on relevant role fit
         c_rank = SENIORITY_RANKS.get(candidate_seniority.lower(), 3)
         t_rank = SENIORITY_RANKS.get(target_seniority.lower(), 3)
 
         if c_rank >= t_rank:
-            seniority_pts = 25.0
+            seniority_pts = 15.0
             sen_match = "FULL_SENIORITY_MATCH"
         elif c_rank == (t_rank - 1):
-            seniority_pts = 18.0
+            seniority_pts = 10.0
             sen_match = "ADJACENT_GROWTH_FIT"
         elif c_rank == (t_rank - 2):
-            seniority_pts = 10.0
+            seniority_pts = 5.0
             sen_match = "POTENTIAL_TRAINEE_FIT"
         else:
-            seniority_pts = 5.0
+            seniority_pts = 2.0
             sen_match = "UNDERQUALIFIED_FOR_LEVEL"
 
-        # 3. Responsibility & Technology fit (0 - 25 pts)
-        total_bullets = sum(len(r.get("responsibilities", [])) for r in recs)
-        total_techs = sum(len(r.get("technologies", [])) for r in recs)
+        # 3. Technical Depth & Scope from RELEVANT jobs only (0 - 15 points)
+        rel_bullets = sum(len(r.get("responsibilities", [])) for r in rel_recs)
+        rel_techs = sum(len(r.get("technologies", [])) for r in rel_recs)
 
-        bullet_pts = min(15.0, 5.0 + total_bullets * 1.5)
-        tech_pts = min(10.0, 4.0 + total_techs * 1.0)
+        bullet_pts = min(8.0, rel_bullets * 1.5)
+        tech_pts = min(7.0, rel_techs * 1.0)
+        depth_pts = bullet_pts + tech_pts
 
-        raw_score = rel_fit + seniority_pts + bullet_pts + tech_pts
+        if rel_yrs >= req_yrs or rel_yrs >= (req_yrs * 0.85):
+            raw_score = base_exp_pts + seniority_pts + depth_pts
+        else:
+            # Scale secondary bonuses by relevant experience ratio so 1 year out of 3 does not get full 30 pts
+            raw_score = base_exp_pts + (seniority_pts + depth_pts) * (rel_ratio ** 0.8)
+
         s_exp = max(0.0, min(100.0, raw_score))
-
-
 
     analysis = ExperienceAnalysis(
         candidate_years=round(cand_yrs, 2),
         required_years=round(req_yrs, 2),
         relevant_years=round(rel_yrs, 2),
+        total_professional_experience_months=round(cand_yrs * 12.0, 1),
+        it_sector_experience_months=round(sum(r.get("duration_months", 0.0) for r in recs if r.get("is_it_related", False)), 1),
+        target_role_relevant_experience_months=round(rel_yrs * 12.0, 1),
         score=round(s_exp, 2),
         candidate_seniority=candidate_seniority,
         target_seniority=target_seniority,
@@ -364,8 +397,9 @@ def calculate_education_score(
     edu_level: int,
     required_education: Optional[List[str]] = None,
     verified_certifications: Optional[List[Dict[str, Any]]] = None,
+    target_role: str = "Software Engineer",
 ) -> tuple[float, EducationAnalysis]:
-    """Calculate S_edu (0-100) using degree level, domain relevance, and verified certifications."""
+    """Calculate S_edu (0-100) using exact academic field relevance, degree level, and role-relevant certifications."""
     cand_edu_list = candidate_edu if isinstance(candidate_edu, list) else ([candidate_edu] if candidate_edu else [])
     req_edu_list = required_education or [
         "BSc Information Technology",
@@ -374,53 +408,149 @@ def calculate_education_score(
     ]
 
     cand_text = " ".join(cand_edu_list).lower()
-    it_keywords = [
-        "computer", "it", "software", "information technology", "data", "cyber",
-        "system", "ai", "engineering", "tech", "computing", "analytics", "science",
-        "network", "cloud", "security", "web", "developer", "applied", "bcs", "bit",
-        "b.sc", "bsc", "bachelor", "msc", "m.sc", "phd", "university", "institute", "college"
-    ]
-    
-    is_it_field = any(k in cand_text for k in it_keywords)
-    non_relevant_keywords = ["fine arts", "history", "literature", "music", "philosophy", "theology", "culinary", "drama"]
-    is_explicitly_non_relevant = any(k in cand_text for k in non_relevant_keywords)
 
+    # 1. Degree Level Determination
+    if edu_level >= 4 or "phd" in cand_text or "doctorate" in cand_text:
+        deg_level_str = "PhD"
+        deg_level_score = 100.0
+    elif edu_level == 3 or "msc" in cand_text or "master" in cand_text:
+        deg_level_str = "MSc"
+        deg_level_score = 85.0
+    elif edu_level == 2 or any(k in cand_text for k in ["bsc", "b.sc", "bachelor", "b.tech", "b.eng", "bit", "bcs", "undergraduate"]):
+        deg_level_str = "BSc"
+        deg_level_score = 70.0
+    elif edu_level == 1 or "diploma" in cand_text or "hnd" in cand_text:
+        deg_level_str = "Diploma"
+        deg_level_score = 45.0
+    else:
+        deg_level_str = "Diploma"
+        deg_level_score = 35.0
+
+    # 2. Degree Field & Domain Relevance for Target Role
+    field_map = EDUCATION_FIELD_ROLE_RELEVANCE.get(target_role, {})
+
+    # Detect candidate degree field from text
+    matched_field = "General / Unspecified"
+    best_field_rel = 0.20
+
+    import re
+    if re.search(r'\b(?:computer science|\bcs\b|computing|computer studies|computer engineering)\b', cand_text):
+        matched_field = "Computer Science"
+    elif re.search(r'\b(?:software engineering|software development|software systems)\b', cand_text):
+        matched_field = "Software Engineering"
+    elif re.search(r'\b(?:information technology|\bit\b|\bbit\b|\bbcs\b|information systems|\bict\b)\b', cand_text):
+        matched_field = "Information Technology"
+    elif re.search(r'\b(?:data science|analytics|artificial intelligence|\bai\b|machine learning|\bml\b)\b', cand_text):
+        matched_field = "Data Science"
+    elif re.search(r'\b(?:mathematics|applied mathematics|statistics|actuarial|\bmath\b)\b', cand_text):
+        matched_field = "Mathematics"
+    elif re.search(r'\b(?:cybersecurity|cyber security|information security|network security)\b', cand_text):
+        matched_field = "Cybersecurity"
+    elif re.search(r'\b(?:electrical engineering|electronic engineering|systems engineering|engineering)\b', cand_text):
+        matched_field = "Engineering"
+    elif re.search(r'\b(?:accounting|finance|accountancy|commerce|banking|auditing)\b', cand_text):
+        matched_field = "Accounting & Finance"
+    elif re.search(r'\b(?:business administration|\bmba\b|\bbba\b|management|marketing)\b', cand_text):
+        matched_field = "Business Administration"
+    elif re.search(r'\b(?:culinary|hospitality|hotel management|catering|tourism)\b', cand_text):
+        matched_field = "Culinary & Hospitality"
+    elif re.search(r'\b(?:nursing|medicine|pharmacy|medical|healthcare)\b', cand_text):
+        matched_field = "Medicine & Health"
+    elif re.search(r'\b(?:history|english|literature|philosophy|fine arts)\b', cand_text):
+        matched_field = "Arts & Humanities"
+    elif re.search(r'\b(?:law|\bllb\b|legal)\b', cand_text):
+        matched_field = "Law"
+    else:
+        if any(k in cand_text for k in ["bsc level", "bsc", "b.sc", "bachelor", "master", "msc", "phd", "degree in"]):
+            matched_field = "Information Technology"
+        else:
+            matched_field = "General / Unspecified"
+
+    if matched_field in field_map:
+        best_field_rel = field_map[matched_field]
+    elif matched_field in ["Accounting & Finance", "Culinary & Hospitality", "Medicine & Health", "Arts & Humanities", "Law"]:
+        best_field_rel = 0.05
+    elif matched_field == "General / Unspecified":
+        best_field_rel = 0.60
+
+    # Classify Field Relevance
+    if best_field_rel >= 0.80:
+        field_rel_cat = "HIGH"
+    elif best_field_rel >= 0.60:
+        field_rel_cat = "RELEVANT"
+    elif best_field_rel >= 0.40:
+        field_rel_cat = "PARTIAL"
+    elif best_field_rel >= 0.10:
+        field_rel_cat = "LOW"
+    else:
+        field_rel_cat = "IRRELEVANT"
+
+    # 3. Role-Relevant Certifications Bonus (0 - 15 points)
     certs = verified_certifications or []
-    cert_bonus = 15.0 if len(certs) >= 1 else 0.0
+    relevant_certs: List[Dict[str, Any]] = []
+    cert_bonus = 0.0
 
-    if is_explicitly_non_relevant:
-        base_score = 40.0 if edu_level >= 2 else 30.0
-        match_status = "NON_RELEVANT_DEGREE"
-        f_rel = "LOW"
-    elif edu_level >= 2 or is_it_field:
-        if edu_level >= 2 or any(deg in cand_text for deg in ("bsc", "b.sc", "bachelor", "msc", "m.sc", "master", "phd", "b.tech", "b.eng", "bit", "bcs")):
+    for cert in certs:
+        c_name = cert.get("certification", "")
+        c_norm = c_name.lower()
+        
+        # Check role relevance for this certification
+        cert_role_map = CERTIFICATION_ROLE_RELEVANCE.get(c_norm, {})
+        cert_rel = cert_role_map.get(target_role, 0.20) if cert_role_map else 0.50
+
+        if cert_rel >= 0.60 or cert.get("is_role_relevant", False):
+            relevant_certs.append(cert)
+            cert_bonus = max(cert_bonus, 15.0 if cert_rel >= 0.80 else 10.0)
+
+    # 4. Compute S_edu Score
+    if field_rel_cat in ["HIGH", "RELEVANT"]:
+        if deg_level_str in ["PhD", "MSc", "BSc"]:
             base_score = 100.0
             match_status = "FULL_MATCH"
             f_rel = "HIGH"
         else:
-            base_score = 85.0
+            base_score = 75.0
             match_status = "PARTIAL_MATCH (DIPLOMA)"
-            f_rel = "HIGH"
-    elif edu_level == 1:
-        base_score = 80.0
-        match_status = "QUALIFIED (DIPLOMA)"
-        f_rel = "MEDIUM"
-    else:
-        base_score = 70.0
-        match_status = "EXPERIENCE_EQUIVALENT"
-        f_rel = "MEDIUM"
+    elif field_rel_cat == "PARTIAL":
+        if deg_level_str in ["PhD", "MSc"]:
+            base_score = 80.0
+            match_status = "PARTIAL_MATCH (ADVANCED DEGREE IN RELATED FIELD)"
+        elif deg_level_str == "BSc":
+            base_score = 65.0
+            match_status = "PARTIAL_MATCH (QUANTITATIVE/ANALYTICAL FIELD)"
+        else:
+            base_score = 45.0
+            match_status = "WEAK_MATCH"
+    elif field_rel_cat == "LOW":
+        base_score = 30.0 if deg_level_str in ["PhD", "MSc", "BSc"] else 20.0
+        match_status = "LOW_RELEVANCE_FIELD"
+    else:  # IRRELEVANT
+        base_score = 25.0 if deg_level_str in ["PhD", "MSc", "BSc"] else 15.0
+        match_status = "NON_RELEVANT_DEGREE"
 
-    raw_score = min(100.0, base_score + (cert_bonus if base_score < 100.0 else 0.0))
+    raw_score = min(100.0, base_score + cert_bonus)
     s_edu = max(0.0, min(100.0, raw_score))
+
+    # Explanation construction
+    if field_rel_cat in ["HIGH", "RELEVANT"]:
+        explanation = f"{deg_level_str} in {matched_field} is highly relevant to {target_role}."
+    elif field_rel_cat == "PARTIAL":
+        explanation = f"{deg_level_str} in {matched_field} provides valuable analytical foundation for {target_role}."
+    else:
+        explanation = f"{deg_level_str} degree level is acceptable, but {matched_field} is not directly related to {target_role}."
 
     analysis = EducationAnalysis(
         candidate_education=cand_edu_list,
         required_education=req_edu_list,
         education_match=match_status,
         score=round(s_edu, 2),
-        degree_level="PhD" if edu_level >= 4 else ("MSc" if edu_level == 3 else ("BSc" if edu_level == 2 else "Diploma")),
-        field_relevance=f_rel,
-        verified_certifications=certs
+        degree_level=deg_level_str,
+        degree_field=matched_field,
+        field_relevance=field_rel_cat,
+        education_relevance_score=round(s_edu, 2),
+        relevant_certifications=relevant_certs,
+        verified_certifications=certs,
+        explanation=explanation
     )
     return round(s_edu, 2), analysis
 
@@ -490,6 +620,7 @@ def score(
         edu_level=edu_level,
         required_education=required_education,
         verified_certifications=verified_certifications,
+        target_role=role,
     )
 
     c1_scores = Component1Scores(
