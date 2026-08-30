@@ -7,14 +7,14 @@ Preprocessing Hygiene: Preprocessing / Vectorizers fitted strictly on Training s
 
 1. PRIMARY MODEL: NLP Entity Features + Balanced Logistic Regression (cv_classifier.pkl)
 --------------------------------------------------------------------------------
-5-Fold CV Accuracy: 0.9010 (+/- 0.0028)
-5-Fold CV Macro F1: 0.9302 (+/- 0.0039)
-Test Accuracy     : 0.8967 (89.67%)
-Test Precision    : 0.9180 (91.80%)
-Test Recall       : 0.9456 (94.56%)
-Test Macro F1     : 0.9290 (92.90%)
-Test Weighted F1  : 0.8909 (89.09%)
-Training Time     : 1.58 seconds
+5-Fold CV Accuracy: 0.9036 (+/- 0.0050)
+5-Fold CV Macro F1: 0.9317 (+/- 0.0040)
+Test Accuracy     : 0.9049 (90.49%)
+Test Precision    : 0.9247 (92.47%)
+Test Recall       : 0.9487 (94.87%)
+Test Macro F1     : 0.9347 (93.47%)
+Test Weighted F1  : 0.9008 (90.08%)
+Training Time     : 1.02 seconds
 
 Classification Report:
                              precision    recall  f1-score   support
@@ -24,25 +24,25 @@ Classification Report:
        Blockchain Developer       0.97      0.94      0.96        34
    Business/Systems Analyst       0.94      1.00      0.97        30
   Cloud Solutions Architect       0.91      0.97      0.94        30
-      Cybersecurity Analyst       0.91      1.00      0.95        30
+      Cybersecurity Analyst       0.94      1.00      0.97        30
               Data Engineer       1.00      1.00      1.00        30
-             Data Scientist       0.76      0.85      0.80        65
+             Data Scientist       0.79      0.83      0.81        65
      Database Administrator       0.88      0.93      0.90        30
-            DevOps Engineer       0.97      0.97      0.97        30
+            DevOps Engineer       0.94      0.97      0.95        30
   Embedded Systems Engineer       1.00      1.00      1.00        30
-         Frontend Developer       0.82      0.80      0.81        61
-       Full Stack Developer       0.93      0.93      0.93        30
+         Frontend Developer       0.82      0.82      0.82        61
+       Full Stack Developer       0.97      0.93      0.95        30
   Machine Learning Engineer       1.00      1.00      1.00        30
        Mobile App Developer       1.00      1.00      1.00        30
-           Network Engineer       0.86      1.00      0.92        30
+           Network Engineer       0.91      1.00      0.95        30
 QA/Test Automation Engineer       0.94      1.00      0.97        30
   Site Reliability Engineer       0.94      1.00      0.97        30
-          Software Engineer       0.78      0.52      0.62        96
+          Software Engineer       0.80      0.58      0.67        96
              UI/UX Designer       1.00      1.00      1.00        30
 
                    accuracy                           0.90       736
                   macro avg       0.92      0.95      0.93       736
-               weighted avg       0.89      0.90      0.89       736
+               weighted avg       0.90      0.90      0.90       736
 
 
 2. BASELINE MODEL: TF-IDF (1-2 N-grams) + Logistic Regression (tfidf_baseline.pkl)
@@ -52,7 +52,7 @@ Test Precision    : 0.9898 (98.98%)
 Test Recall       : 0.9868 (98.68%)
 Test Macro F1     : 0.9881 (98.81%)
 Test Weighted F1  : 0.9796 (97.96%)
-Training Time     : 0.88 seconds
+Training Time     : 0.79 seconds
 
 Classification Report:
                              precision    recall  f1-score   support

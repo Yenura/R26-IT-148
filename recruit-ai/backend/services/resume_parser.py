@@ -1,8 +1,21 @@
 """Resume file parsing and NLP entity extraction."""
 import io
+import os
 import re
+import sys
 from datetime import datetime
 from typing import Any
+
+# Import Component 1 high-precision skill extraction engine
+try:
+    _cur_dir = os.path.dirname(os.path.abspath(__file__))
+    _root_dir = os.path.dirname(os.path.dirname(os.path.dirname(_cur_dir)))
+    _c1_path = os.path.join(_root_dir, "component1")
+    if os.path.exists(_c1_path) and _c1_path not in sys.path:
+        sys.path.insert(0, _c1_path)
+    from ml.extractor import extract_skills_and_certifications as c1_extract_skills
+except Exception as _e:
+    c1_extract_skills = None
 
 
 def parse_resume_file(content: bytes, filename: str) -> str:
@@ -591,9 +604,23 @@ def extract_entities(text: str) -> dict[str, Any]:
     text_lower = text.lower()
     text_normalized = re.sub(r"\s+", " ", text_lower)
     found_skills = []
-    for skill in SKILLS_KEYWORDS:
-        if re.search(r"(?<!\w)" + re.escape(skill) + r"(?!\w)", text_normalized):
-            found_skills.append(skill.title())
+    used_c1 = False
+    if c1_extract_skills:
+        try:
+            c1_data = c1_extract_skills(text)
+            detected = c1_data.get("detected_skills", [])
+            found_skills = [s.title() for s in detected]
+            if c1_data.get("detected_certs"):
+                entities["certifications"] = list(dict.fromkeys(entities.get("certifications", []) + [c.title() for c in c1_data["detected_certs"]]))
+            used_c1 = True
+        except Exception:
+            used_c1 = False
+
+    if not used_c1:
+        for skill in SKILLS_KEYWORDS:
+            if re.search(r"(?:\b|_)" + re.escape(skill) + r"(?:\b|_)", text_normalized, re.I):
+                found_skills.append(skill.title())
+
     entities["skills"] = list(dict.fromkeys(found_skills))
 
     # Education: extract complete degree specification line

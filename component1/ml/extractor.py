@@ -65,11 +65,52 @@ def _build_skill_pattern(skill: str) -> re.Pattern:
     elif s_low in [".net", ".net core", "dotnet"]:
         return re.compile(r'(?<![a-zA-Z0-9])\.net(?:\s+core)?(?![a-zA-Z0-9])|\bdotnet\b|\bnet\s+core\b|\basp\.net\b', re.I)
     elif s_low == "c":
-        return re.compile(r'(?<![a-zA-Z0-9_])c(?![a-zA-Z0-9_+#])', re.I)
+        # Guard against single letter 'c': require programming/language context or C/C++ pair or skills list boundary
+        return re.compile(
+            r'\b(?:c\s*[\/,]\s*c\+\+|c\+\+\s*[\/,]\s*c|c\s+(?:programming|language)|(?:programming|language)\s+in\s+c|embedded\s+c)\b|'
+            r'(?:^|[,\n•|;:\(\[])\s*c\s*(?=[,\n•|;\)\]]|$)',
+            re.I
+        )
     elif s_low == "r":
-        return re.compile(r'(?<![a-zA-Z0-9_])r(?![a-zA-Z0-9_])', re.I)
+        # Guard against single letter 'r': require programming/language context or data science pair
+        return re.compile(
+            r'\b(?:r\s+(?:programming|language|studio|package|scripting)|(?:programming|language)\s+in\s+r)\b|'
+            r'(?:^|[,\n•|;:\(\[])\s*r\s*(?=[,\n•|;\)\]]|$)',
+            re.I
+        )
     elif s_low in ["go", "golang"]:
-        return re.compile(r'\bgolang\b|\bgo\s+language\b|(?<![a-zA-Z0-9_])go(?![a-zA-Z0-9_])', re.I)
+        # Guard against English verb 'go': require golang or programming context or tech list pair
+        return re.compile(
+            r'\b(?:golang|go\s+(?:programming|language|lang)|(?:programming|language)\s+in\s+go)\b|'
+            r'(?:^|[,\n•|;:\(\[])\s*go\s*(?=[,\n•|;\)\]]|$)',
+            re.I
+        )
+    elif s_low in ["rest", "rest api", "rest apis", "restful api", "restful apis"]:
+        return re.compile(
+            r'\brest(?:\s*apis?|\s*ful\s*apis?|\s*ful\s*web\s*services?|\s*ful)\b|\brest\/graphql\b|'
+            r'(?:^|[,\n•|;:\(\[])\s*rest\s*(?=[,\n•|;\)\]]|$)',
+            re.I
+        )
+    elif s_low == "less":
+        return re.compile(
+            r'\bless(?:\s+css|\s+preprocessor|\s*\/\s*sass|\s+stylesheet)\b|'
+            r'(?:^|[,\n•|;:\(\[])\s*less\s*(?=[,\n•|;\)\]]|$)',
+            re.I
+        )
+    elif s_low in ["spring", "spring boot", "spring framework"]:
+        return re.compile(
+            r'\bspring\s+(?:boot|framework|mvc|cloud|data|security|batch|web)\b|'
+            r'(?:^|[,\n•|;:\(\[])\s*spring\s*(?=[,\n•|;\)\]]|$)',
+            re.I
+        )
+    elif s_low == "dart":
+        return re.compile(
+            r'\bdart(?:\s+programming|\s+language|\s*\/\s*flutter)?\b|'
+            r'(?:^|[,\n•|;:\(\[])\s*dart\s*(?=[,\n•|;\)\]]|$)',
+            re.I
+        )
+    elif s_low in ["solid", "solid principles"]:
+        return re.compile(r'\bsolid\s+(?:principles?|design)\b', re.I)
     elif s_low in ["ci/cd", "ci-cd", "ci / cd"]:
         return re.compile(r'\bci\/cd\b|\bci-cd\b|\bcontinuous\s+integration\b', re.I)
     elif s_low in ["node.js", "nodejs", "node js"]:

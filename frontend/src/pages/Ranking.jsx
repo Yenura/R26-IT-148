@@ -5,7 +5,7 @@ import {
   ListOrdered, Trophy, Briefcase, Award, Brain,
   CheckCircle2, Users, ArrowRight, Eye, ChevronRight, Plus
 } from 'lucide-react'
-import { uJobsMy, c3Pipeline } from '../api'
+import { uJobsMy, c3Pipeline, c0JobsAll } from '../api'
 import PageHeader from '../components/PageHeader'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
@@ -21,6 +21,9 @@ export default function Ranking() {
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
   const [loadingJobs, setLoadingJobs] = useState(true)
+  const [myJobs, setMyJobs] = useState([])
+  const [allJobs, setAllJobs] = useState([])
+  const [viewScope, setViewScope] = useState('all') // 'my' | 'all'
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -35,20 +38,41 @@ export default function Ranking() {
   const loadCompanyJobs = async () => {
     setLoadingJobs(true)
     try {
-      const r = await uJobsMy().catch(() => ({ data: [] }))
-      const companyJobs = Array.isArray(r.data) ? r.data : []
-      setJobs(companyJobs)
-      if (companyJobs.length > 0) {
-        const targetJobId = (paramJobId && companyJobs.some(j => (j.id || j._id) === paramJobId))
+      const [myRes, allRes] = await Promise.all([
+        uJobsMy().catch(() => ({ data: [] })),
+        c0JobsAll().catch(() => ({ data: [] }))
+      ])
+      const userCompanyJobs = Array.isArray(myRes.data) ? myRes.data : []
+      const platformAllJobs = Array.isArray(allRes.data) ? allRes.data : []
+      
+      setMyJobs(userCompanyJobs)
+      setAllJobs(platformAllJobs)
+
+      const activeList = (userCompanyJobs.length > 0 && viewScope === 'my') ? userCompanyJobs : (platformAllJobs.length > 0 ? platformAllJobs : userCompanyJobs)
+      setJobs(activeList)
+
+      if (activeList.length > 0) {
+        const targetJobId = (paramJobId && activeList.some(j => (j.id || j._id) === paramJobId))
           ? paramJobId
-          : (companyJobs[0].id || companyJobs[0]._id)
+          : (activeList[0].id || activeList[0]._id)
         setSelectedJob(targetJobId)
         computePipeline(targetJobId)
       }
     } catch {
-      toast.error('Failed to load company jobs')
+      toast.error('Failed to load job openings')
     } finally {
       setLoadingJobs(false)
+    }
+  }
+
+  const handleScopeChange = (newScope) => {
+    setViewScope(newScope)
+    const activeList = newScope === 'my' && myJobs.length > 0 ? myJobs : allJobs
+    setJobs(activeList)
+    if (activeList.length > 0) {
+      const firstJobId = activeList[0].id || activeList[0]._id
+      setSelectedJob(firstJobId)
+      computePipeline(firstJobId)
     }
   }
 
@@ -97,12 +121,32 @@ export default function Ranking() {
         <>
           {/* Job Selection Card */}
           <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Your Company Job Opening
-              </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
+                </h3>
+                {myJobs.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, background: 'var(--color-bg)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                    <button
+                      className={`btn btn-xs ${viewScope === 'my' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => handleScopeChange('my')}
+                      style={{ fontSize: '11px', padding: '2px 8px' }}
+                    >
+                      🏢 My Openings ({myJobs.length})
+                    </button>
+                    <button
+                      className={`btn btn-xs ${viewScope === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => handleScopeChange('all')}
+                      style={{ fontSize: '11px', padding: '2px 8px' }}
+                    >
+                      🌐 All 20 IT Roles ({allJobs.length})
+                    </button>
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                {jobs.length} Active Company Opening{jobs.length > 1 ? 's' : ''}
+                {jobs.length} Active Role{jobs.length > 1 ? 's' : ''} Available
               </span>
             </div>
 
@@ -118,9 +162,10 @@ export default function Ranking() {
               >
                 {jobs.map((j) => {
                   const id = j.id || j._id
+                  const compName = j.company_name ? ` [${j.company_name}]` : ''
                   return (
                     <option key={id} value={id}>
-                      {j.title} · {j.department || 'Engineering'} ({j.location || 'Remote'})
+                      {j.title}{compName} · {j.experience_required ? `${j.experience_required}+ yrs` : (j.department || 'Engineering')} ({j.location || 'Remote'})
                     </option>
                   )
                 })}

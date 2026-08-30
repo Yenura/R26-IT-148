@@ -69,6 +69,29 @@ const CANONICAL_CATEGORIES = {
   ]
 }
 
+const CANONICAL_ROLE_SKILLS = {
+  'Software Engineer': ['Python', 'Java', 'Data Structures', 'Algorithms', 'Git', 'SQL', 'OOP', 'System Design'],
+  'Data Scientist': ['Python', 'Pandas', 'NumPy', 'Statistics', 'Machine Learning', 'SQL', 'Scikit-Learn', 'Data Visualization'],
+  'Machine Learning Engineer': ['Python', 'PyTorch', 'TensorFlow', 'Machine Learning', 'Deep Learning', 'Docker', 'MLOps'],
+  'DevOps Engineer': ['Linux', 'Docker', 'Kubernetes', 'CI/CD', 'Terraform', 'AWS', 'Ansible', 'Bash'],
+  'Cloud Solutions Architect': ['AWS', 'Azure', 'Cloud Architecture', 'Kubernetes', 'Terraform', 'System Design', 'Security'],
+  'Database Administrator': ['SQL', 'PostgreSQL', 'MySQL', 'Database Tuning', 'Backup and Recovery', 'Linux', 'Query Optimization'],
+  'Frontend Developer': ['JavaScript', 'TypeScript', 'React', 'HTML', 'CSS', 'Tailwind CSS', 'Redux', 'Git'],
+  'Backend Developer': ['Python', 'FastAPI', 'Node.js', 'PostgreSQL', 'Docker', 'Redis', 'REST APIs', 'SQL'],
+  'Mobile App Developer': ['Flutter', 'Dart', 'React Native', 'iOS', 'Android', 'Swift', 'Kotlin', 'REST APIs'],
+  'Full Stack Developer': ['JavaScript', 'TypeScript', 'React', 'Node.js', 'FastAPI', 'PostgreSQL', 'Docker', 'Git'],
+  'QA/Test Automation Engineer': ['Selenium', 'Cypress', 'Playwright', 'Python', 'Test Automation', 'Postman', 'CI/CD', 'Git'],
+  'Data Engineer': ['Python', 'SQL', 'PySpark', 'Apache Spark', 'Airflow', 'Kafka', 'ETL', 'Data Warehousing'],
+  'Site Reliability Engineer': ['Linux', 'Kubernetes', 'Docker', 'Prometheus', 'Grafana', 'CI/CD', 'Incident Response'],
+  'Cybersecurity Analyst': ['Network Security', 'SIEM', 'Splunk', 'OWASP', 'Penetration Testing', 'Linux', 'Cryptography'],
+  'UI/UX Designer': ['Figma', 'Adobe XD', 'Wireframing', 'Prototyping', 'User Research', 'Usability Testing', 'Design Systems'],
+  'Network Engineer': ['CCNA', 'TCP/IP', 'Routing', 'Switching', 'BGP', 'OSPF', 'Firewalls', 'VPN', 'Wireshark'],
+  'Business/Systems Analyst': ['Requirements Gathering', 'Business Analysis', 'UML', 'BPMN', 'JIRA', 'SQL', 'Agile', 'Scrum'],
+  'AI/NLP Engineer': ['Python', 'NLP', 'Transformers', 'BERT', 'LLMs', 'LangChain', 'RAG', 'Vector Databases', 'PyTorch'],
+  'Blockchain Developer': ['Solidity', 'Ethereum', 'Smart Contracts', 'Web3', 'Hardhat', 'JavaScript', 'DApps'],
+  'Embedded Systems Engineer': ['C', 'C++', 'Embedded C', 'Microcontrollers', 'RTOS', 'FreeRTOS', 'I2C', 'SPI', 'UART', 'ARM']
+}
+
 const CANONICAL_CAREER_PATHWAYS = {
   'Data Scientist': [
     {
@@ -368,14 +391,30 @@ export default function CVMatch() {
         : (typeof targetResumeDoc.skills === 'string' ? targetResumeDoc.skills.split(',').map((s) => s.trim()) : [])
 
       const matchedJobDoc = jobsListToUse.find((j) => j.id === jobIdToUse)
-      const targetRoleName = matchedJobDoc
-        ? matchedJobDoc.title
-        : (targetRoleOverride || 'Software Engineer')
+      let targetRoleName = matchedJobDoc ? matchedJobDoc.title : targetRoleOverride
+
+      // Dynamic Auto-Classification using Model 1 if no explicit role is chosen
+      if (!targetRoleName) {
+        const cvText = targetResumeDoc.raw_text || targetResumeDoc.text || candidateSkills.join(', ')
+        if (cvText && cvText.length > 5) {
+          try {
+            const classRes = await c1Classify({ text: cvText })
+            if (classRes?.data?.job_role) {
+              targetRoleName = classRes.data.job_role
+            }
+          } catch (e) {
+            console.warn('Auto classification fallback:', e)
+          }
+        }
+      }
+      if (!targetRoleName) {
+        targetRoleName = targetResumeDoc.predicted_role || 'Full Stack Developer'
+      }
 
       // 1. Component 0 Match Pipeline
       const matchParams = { resume_id: resumeToUse }
       if (jobIdToUse) matchParams.job_id = jobIdToUse
-      else if (targetRoleOverride) matchParams.target_role = targetRoleOverride
+      else if (targetRoleName) matchParams.target_role = targetRoleName
       
       let matchData = null
       try {
@@ -387,9 +426,9 @@ export default function CVMatch() {
 
       // If backend match returned null or error, compute local high-precision matching
       if (!matchData) {
-        const reqSkills = (matchedJobDoc?.required_skills && Array.isArray(matchedJobDoc.required_skills))
+        const reqSkills = (matchedJobDoc?.required_skills && Array.isArray(matchedJobDoc.required_skills) && matchedJobDoc.required_skills.length > 0)
           ? matchedJobDoc.required_skills
-          : ['Python', 'React', 'FastAPI', 'Docker', 'SQL', 'Git']
+          : (CANONICAL_ROLE_SKILLS[targetRoleName] || ['Python', 'React', 'FastAPI', 'Docker', 'SQL', 'Git'])
         
         const candSkillsLower = candidateSkills.map((s) => String(s).toLowerCase().trim())
         const matched = []
@@ -564,7 +603,7 @@ export default function CVMatch() {
   const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
   const displayJobTitle = matchedJobDoc
     ? matchedJobDoc.title
-    : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : 'Software Engineer'))
+    : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : (c1Result ? c1Result.job_role : (currentResumeDoc?.predicted_role || 'AI Auto-Detect Fit'))))
 
   const currentResumeDoc = resumes.find((r) => r.id === selectedResume)
 
@@ -980,14 +1019,14 @@ export default function CVMatch() {
                     color: 'var(--color-fg)'
                   }}
                 >
-                  <option value="">AI Auto-Detect Best Fit Role</option>
-                  {(canonicalRoles.length > 0 ? canonicalRoles : CANONICAL_ROLES).map((r) => {
-                    const roleName = typeof r === 'string' ? r : (r?.role || '')
-                    if (!roleName) return null
-                    return (
-                      <option key={roleName} value={roleName}>{roleName}</option>
-                    )
-                  })}
+                  <option value="">🎯 AI Auto-Detect Best Fit Role (from CV text)</option>
+                  {Object.entries(CANONICAL_CATEGORIES).map(([catName, roleList]) => (
+                    <optgroup key={catName} label={`▸ ${catName}`}>
+                      {roleList.map((roleName) => (
+                        <option key={roleName} value={roleName}>{roleName}</option>
+                      ))}
+                    </optgroup>
+                  ))}
                 </select>
               </div>
             </div>
