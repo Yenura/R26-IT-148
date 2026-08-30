@@ -155,6 +155,18 @@ def generate_questions_qg(
     Caller falls back to static question bank.
     When coding_profile is 'none', num_code is 0 and no coding questions are requested.
     """
+    # Enforce scoring config: non-coding roles never get coding questions
+    try:
+        cfg_path = Path(__file__).parent.parent.parent / "models" / "interview_scoring_config.json"
+        if cfg_path.exists():
+            cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+            w = cfg.get("interview_weights", {}).get(job_role, {})
+            if w.get("coding", 1) == 0 and num_code > 0:
+                num_desc += num_code
+                num_code = 0
+                coding_profile = "none"
+    except:
+        pass
     generator = _get_qg_generator()
     if generator is None:
         return None
