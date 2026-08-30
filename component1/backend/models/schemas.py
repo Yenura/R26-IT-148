@@ -31,7 +31,7 @@ def _sanitise_candidate_id(v: str) -> str:
 
 
 def _sanitise_text(v: str) -> str:
-    cleaned = re.sub(r'[$.]', '', str(v or "")).strip()
+    cleaned = re.sub(r'[\$<>{}="\'\\]', '', str(v or "")).strip()
     return cleaned or "Candidate"
 
 

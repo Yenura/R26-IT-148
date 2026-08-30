@@ -85,6 +85,7 @@ async def _full_analysis(
     scored_role = target_role if (target_role and target_role in ALL_ROLES) else pred.job_role
 
     features = extractor.extract(text, target_role=scored_role)
+    resolved_name = candidate_name.strip() if candidate_name and candidate_name.strip() not in ("Unknown", "Candidate") else getattr(features, "candidate_name", "Candidate Profile")
 
     jd_sim: Optional[float] = None
     if job_description and job_description.strip():
@@ -133,7 +134,7 @@ async def _full_analysis(
 
     return CVAnalysisResponse(
         candidate_id=candidate_id,
-        candidate_name=candidate_name,
+        candidate_name=resolved_name,
         job_id=job_id or "JOB001",
         job_role=pred.job_role,
         role_confidence=pred.confidence,
@@ -323,11 +324,10 @@ async def screen_resume(
         raise HTTPException(status_code=422, detail="Could not extract meaningful text from the uploaded file.")
 
     c_id = _make_candidate_id(candidate_id)
-    c_name = (candidate_name or "Candidate").strip()
     j_id = job_id or "JOB001"
-
     pred = predictor.predict(text)
     features = extractor.extract(text, target_role=pred.job_role)
+    c_name = candidate_name.strip() if candidate_name and candidate_name.strip() not in ("Unknown", "Candidate") else getattr(features, "candidate_name", "Candidate Profile")
     job_reqs = extract_job_requirements(target_role=pred.job_role)
 
     scores = scorer.score(

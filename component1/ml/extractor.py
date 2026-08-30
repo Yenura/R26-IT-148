@@ -50,10 +50,10 @@ _URL_RE = re.compile(r'https?://\S+|www\.\S+')
 _ZIP_RE = re.compile(r'\b\d{5}(?:[-\s]\d{4})?\b')
 _SPACE_RE = re.compile(r'[ \t]+')
 
-_PHD_RE = re.compile(r'\b(ph\.?d\.?|doctor of philosophy|doctorate|d\.?phil)\b', re.I)
-_MSC_RE = re.compile(r'\b(m\.?sc\.?|m\.?s\.?|master(?:[\'’]?s)?|m\.?tech\.?|m\.?eng\.?|mca|postgraduate|pgd|post[\s-]graduate)\b', re.I)
-_BSC_RE = re.compile(r'\b(b\.?sc\.?|b\.?s\.?|bachelor(?:[\'’]?s)?|b\.?tech\.?|b\.?e\.?|b\.?eng\.?|bca|bit|bcs|undergraduate|degree(?:\s+in)?)\b', re.I)
-_DIP_RE = re.compile(r'\b(diploma|higher national diploma|hnd|nvq|national diploma|ndt|higher diploma|associate degree)\b', re.I)
+_PHD_RE = re.compile(r'\b(ph\.?d\.?|doctor\s+of\s+philosophy|doctorate|d\.?phil|d\.?sc\.?|doctor\s+of\s+science|eng\.?d\.?|doctor\s+of\s+engineering|dr\.-ing\.?|dr\.?\s*rer\.?\s*nat\.?|dr\.?\s*techn\.?|docteur|doctorado|doktor|d\.?b\.?a\.?)\b', re.I)
+_MSC_RE = re.compile(r'\b(m\.?sc\.?|m\.?s\.?|master(?:[\'’]?s)?|master\s+of\s+[a-z\s]+|m\.?tech\.?|m\.?eng\.?|m\.?phil\.?|mres|mca|msit|mit|m\.?ba\b|pgd|post[\s-]graduate|postgraduate\s+diploma|pgdip|pgcert|diplom-informatiker|diplom-ingenieur(?!\s*\(fh\))|dipl\.-inf\.?|dipl\.-ing\.?(?!\s*\(fh\))|magister|ma[iî]trise|laurea\s+magistrale|master\s+europ[eé]en|titulado\s+superior|dipl[oô]me\s+d[\'\s]*ing[eé]nieur)\b', re.I)
+_BSC_RE = re.compile(r'\b(b\.?sc\.?|b\.?s\.?|bachelor(?:[\'’]?s)?|bachelor\s+of\s+[a-z\s]+|b\.?tech\.?|b\.?e\.?|b\.?eng\.?|bca|bit|bcs|b\.?app\.?sc\.?|bappsc|b\.?comp\.?|bcomp|b\.?math|laurea\s+triennale|grado\s+en|licenciatura|licentiate|dipl\.-ing\.?\s*\(fh\)|diplom-ingenieur\s*\(fh\)|ing[eé]nieur|baccalaureate|undergraduate|(?<!foundation\s)(?<!associate\s)degree(?:\s+in)?)\b', re.I)
+_DIP_RE = re.compile(r'\b(diploma(?!\s*d[\'\s]*ing)|higher\s+national\s+diploma|hnd|hnc|nvq(?:\s*level\s*\d)?|national\s+diploma|ndt|higher\s+diploma|associate\s+degree|associate\s+of\s+(?:science|arts|applied\s+science)|a\.?a\.?s?|foundation\s+degree|fdsc|fda|bts|dut|brevet\s+de\s+technicien\s+sup[eé]rieur|dipl[oô]me\s+universitaire\s+de\s+technologie|certhe|diphe|technical\s+certificate)\b', re.I)
 
 def _build_skill_pattern(skill: str) -> re.Pattern:
     """Compile high-accuracy regex with strict word and punctuation boundaries for special symbols."""
@@ -1659,15 +1659,34 @@ def extract_projects(text: str) -> List[Dict[str, Any]]:
     return projects
 
 
+def extract_candidate_name(text: str) -> str:
+    """Extract candidate full name from top lines of raw resume text."""
+    if not text:
+        return "Candidate Profile"
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    for line in lines[:6]:
+        # Skip contact info, urls, links, addresses, headers
+        if re.search(r'[@\+]|\b(?:http|www|github|linkedin|resume|curriculum|vitae|profile|summary|education|skills|experience|phone|email)\b', line, re.I):
+            continue
+        cleaned = re.sub(r'[\(\[\{].*?[\)\]\}]', '', line).strip()
+        cleaned = re.sub(r'^(?:name\s*[:\-]|profile\s*[:\-])\s*', '', cleaned, flags=re.I).strip()
+        words = [w for w in re.split(r'[\s,·|•/]+', cleaned) if w.isalpha() and len(w) > 1]
+        if 1 <= len(words) <= 4:
+            return " ".join(words).title()
+    return "Candidate Profile"
+
+
 def extract_deep_cv_profile(text: str, target_role: str = "Software Engineer") -> Dict[str, Any]:
     """Consolidated deep extraction returning the full candidate understanding profile."""
     cleaned = clean_text(text)
+    candidate_name = extract_candidate_name(text)
     skills_certs = extract_skills_and_certifications(text, target_role)
     exp_details = extract_experience_details(text, target_role)
     edu_details = extract_education_details(text, target_role)
     projects = extract_projects(text)
 
     return {
+        "candidate_name": candidate_name,
         "cleaned_text": cleaned,
         "skills": skills_certs["detected_skills"],
         "skill_evidence": skills_certs["skill_evidence"],
