@@ -52,6 +52,11 @@ export default function Leaderboard() {
               const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
               const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
               for (const app of rawApps) {
+                const hasInterview = app.interview_score != null || app.interview_completed
+                const hasCV = app.cv_score != null || app.overall_score != null
+                const cvScore = app.cv_score ?? app.overall_score ?? (hasInterview ? 75 : 0)
+                const intScore = app.interview_score ?? (hasCV ? 70 : 0)
+                const hireProb = app.hire_probability ?? app.css_score ?? (hasInterview && hasCV ? (0.4 * cvScore + 0.6 * intScore) : (hasInterview ? intScore : cvScore))
                 jobApps.push({
                   candidate_id: app.candidate_id,
                   candidate_name: app.candidate_name || app.name || 'Applicant',
@@ -59,11 +64,11 @@ export default function Leaderboard() {
                   job_role: job.title || 'Technical Role',
                   company_name: job.company_name || localStorage.getItem('recruitai.name') || 'Your Company',
                   skills: app.skills || app.resume_skills || job.required_skills || [],
-                  hire_probability: app.hire_probability || app.overall_score || app.css_score || app.cv_score || 82,
-                  interview_completed: Boolean(app.interview_score || app.interview_completed),
+                  hire_probability: hireProb,
+                  interview_completed: Boolean(hasInterview),
                   interview_score: app.interview_score || null,
                   cv_score: app.cv_score || app.overall_score || null,
-                  has_cv: true,
+                  has_cv: Boolean(hasCV),
                   passed_filter: app.passed_filter !== false
                 })
               }

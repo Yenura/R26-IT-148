@@ -36,7 +36,7 @@ export default function Ranking() {
   const [loadingJobs, setLoadingJobs] = useState(true)
   const [myJobs, setMyJobs] = useState([])
   const [allJobs, setAllJobs] = useState([])
-  const [viewScope, setViewScope] = useState('all') // 'my' | 'all'
+  const [viewScope, setViewScope] = useState('my') // 'my' | 'all'
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -61,7 +61,7 @@ export default function Ranking() {
       setMyJobs(userCompanyJobs)
       setAllJobs(platformAllJobs)
 
-      const activeList = (userCompanyJobs.length > 0 && viewScope === 'my') ? userCompanyJobs : (platformAllJobs.length > 0 ? platformAllJobs : userCompanyJobs)
+      const activeList = userCompanyJobs.length > 0 ? userCompanyJobs : platformAllJobs
       setJobs(activeList)
 
       if (activeList.length > 0) {
