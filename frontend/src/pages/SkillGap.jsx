@@ -17,24 +17,9 @@ export default function SkillGap() {
   useAuth('candidate')
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
-  const [activeTab, setActiveTab] = useState('applied')
-  const [appliedReports, setAppliedReports] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem(`recruitai.skillgap.${candidateId}`)
-      return cached ? JSON.parse(cached) : []
-    } catch {
-      return []
-    }
-  })
-  const [selectedJobId, setSelectedJobId] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem(`recruitai.skillgap.${candidateId}`)
-      const parsed = cached ? JSON.parse(cached) : []
-      return parsed.length > 0 ? parsed[0].job_id : null
-    } catch {
-      return null
-    }
-  })
+  const [activeTab, setActiveTab] = useState(userRole === 'company' ? 'explorer' : 'applied')
+  const [appliedReports, setAppliedReports] = useState([])
+  const [selectedJobId, setSelectedJobId] = useState(paramJobId || null)
   const [loadingApplied, setLoadingApplied] = useState(false)
   const [syncingProgress, setSyncingProgress] = useState(false)
 
@@ -92,7 +77,13 @@ export default function SkillGap() {
       try {
         sessionStorage.setItem(`recruitai.skillgap.${candidateId}`, JSON.stringify(reports))
       } catch {}
-      if (!selectedJobId && reports.length > 0) setSelectedJobId(reports[0].job_id)
+      if (arr.length === 0) {
+        setSelectedJobId(null)
+      } else if (paramJobId && arr.some((a) => a.job_id === paramJobId)) {
+        setSelectedJobId(paramJobId)
+      } else if (!selectedJobId || !arr.some((a) => a.job_id === selectedJobId)) {
+        setSelectedJobId(arr[0].job_id)
+      }
     } catch {
       if (appliedReports.length === 0) toast.error('Failed to load applied jobs analysis')
     }
@@ -296,10 +287,12 @@ export default function SkillGap() {
                           {selectedReport.interview_score != null ? `${selectedReport.interview_score}%` : 'Pending'}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>Overall Fit</div>
-                        <div style={{ fontSize: '1.3rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.composite_score}%
+                      <div style={{ textAlign: 'center', padding: '8px 14px', background: selectedReport.interview_completed ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${selectedReport.interview_completed ? 'rgba(99, 102, 241, 0.4)' : 'var(--color-border)'}` }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg-muted)', textTransform: 'uppercase' }}>
+                          {selectedReport.interview_completed ? 'Final Total Mark (CSS)' : 'Current Total (CV Mark)'}
+                        </div>
+                        <div style={{ fontSize: '1.3rem', fontWeight: 900, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.cv_score != null ? `${Number(selectedReport.cv_score).toFixed(1)}%` : 'N/A')}
                         </div>
                       </div>
                     </div>

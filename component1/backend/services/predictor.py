@@ -77,6 +77,7 @@ class Predictor:
         self.model_dir = resolved_dir
 
         cv_model_path = self.model_dir / self.FEATURE_MODEL_FILE
+        tfidf_path = self.model_dir / self.TFIDF_MODEL_FILE
         encoder_path = self.model_dir / self.LABEL_ENCODER_FILE
         meta_path = self.model_dir / self.METADATA_FILE
 
@@ -97,22 +98,32 @@ class Predictor:
         else:
             self._vectorizer = None
 
+        self._tfidf_clf = None
+        if tfidf_path.exists():
+            try:
+                self._tfidf_clf = joblib.load(tfidf_path)
+            except Exception as e:
+                self._tfidf_clf = None
+
         if cv_model_path.exists() and encoder_path.exists():
             try:
                 self._clf = joblib.load(cv_model_path)
                 self._label_encoder = joblib.load(encoder_path)
                 self._classes = list(self._label_encoder.classes_)
-                self._mode = "feature_lr"
-                logger.info("Predictor: loaded feature-based LogisticRegression from %s", cv_model_path)
+                if self._tfidf_clf is not None and self._vectorizer is not None:
+                    self._mode = "hybrid_ensemble"
+                    logger.info("Predictor: loaded Hybrid Ensemble (Feature LR + TF-IDF) from %s", self.model_dir)
+                else:
+                    self._mode = "feature_lr"
+                    logger.info("Predictor: loaded feature-based LogisticRegression from %s", cv_model_path)
                 return
             except Exception as exc:
                 logger.warning("Feature LR load failed (%s); trying fallback", exc)
 
         # Fallback to TF-IDF if present
-        tfidf_path = self.model_dir / self.TFIDF_MODEL_FILE
-        if tfidf_path.exists() and encoder_path.exists():
+        if self._tfidf_clf is not None and encoder_path.exists() and self._vectorizer is not None:
             try:
-                self._clf = joblib.load(tfidf_path)
+                self._clf = self._tfidf_clf
                 self._label_encoder = joblib.load(encoder_path)
                 self._classes = list(self._label_encoder.classes_)
                 self._mode = "tfidf_lr"
@@ -159,7 +170,16 @@ class Predictor:
             )
 
         if self._clf is not None and self._label_encoder is not None and len(self._classes) > 0:
-            probs = self._clf.predict_proba(feat_vec.reshape(1, -1))[0]
+            if self._mode == "hybrid_ensemble" and self._tfidf_clf is not None and self._vectorizer is not None:
+                probs_feat = self._clf.predict_proba(feat_vec.reshape(1, -1))[0]
+                probs_tfidf = self._tfidf_clf.predict_proba(self._vectorizer.transform([resume_text]))[0]
+                # High-discrimination ensemble blend
+                probs = 0.50 * probs_tfidf + 0.50 * probs_feat
+            elif self._mode == "tfidf_lr" and self._vectorizer is not None:
+                probs = self._clf.predict_proba(self._vectorizer.transform([resume_text]))[0]
+            else:
+                probs = self._clf.predict_proba(feat_vec.reshape(1, -1))[0]
+
             top_indices = np.argsort(probs)[::-1]
 
             best_idx = top_indices[0]
