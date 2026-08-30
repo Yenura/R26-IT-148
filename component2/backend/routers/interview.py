@@ -24,7 +24,7 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
-from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids
+from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids, link_candidate_application
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -482,6 +482,20 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             urllib.request.urlopen(req, timeout=5)
         except Exception as e:
             logger.warning(f"Failed to send scores to C0: {e}")
+
+        # Direct MongoDB sync for applications & interview_scores
+        try:
+            await link_candidate_application(
+                candidate_id=result["candidate_id"],
+                job_id=j_id or "",
+                job_role=result["job_role"],
+                interview_score=result["interview_score"],
+                mcq_score=result["mcq_score"],
+                desc_score=result["descriptive_score"],
+                code_score=result["coding_score"]
+            )
+        except Exception as e:
+            logger.warning(f"Direct link_candidate_application warning: {e}")
 
         return InterviewScoreResult(
             interview_id=result["interview_id"],
