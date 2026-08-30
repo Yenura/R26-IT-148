@@ -1587,27 +1587,21 @@ export default function CVMatch() {
                     <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={12} /> Key Verified Strengths:
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {activeMatchedSkills.slice(0, 5).map((s) => (
-                        <span
-                          key={s}
-                          onClick={() => {
-                            const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
-                            if (ev) setSelectedSkillEvidence(ev)
-                          }}
-                          className="cvm-skill-pill matched"
-                          title="Click to view sentence evidence from resume"
-                          style={{ cursor: 'pointer', padding: '4px 9px', fontSize: '11px' }}
-                        >
-                          <Check size={11} /> {formatSkillName(s)}
-                        </span>
-                      ))}
-                      {activeMatchedSkills.length > 5 && (
-                        <span className="chip" style={{ fontSize: '10px', padding: '3px 8px', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 'var(--radius-full)' }}>
-                          +{activeMatchedSkills.length - 5} more
-                        </span>
-                      )}
-                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxHeight: 68, overflowY: 'auto' }}>
+                       {[...new Set(activeMatchedSkills)].map((s, i) => (
+                         <span
+                           key={`${s}-${i}`}
+                           onClick={() => {
+                             const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
+                             if (ev) setSelectedSkillEvidence(ev)
+                           }}
+                           className="cvm-skill-pill matched"
+                           title="Click to view sentence evidence from resume"
+                         >
+                           <Check size={11} /> {s}
+                         </span>
+                       ))}
+                     </div>
                   </div>
                 </div>
 
@@ -1741,50 +1735,43 @@ export default function CVMatch() {
                       {activeMatchedSkills.length} Verified
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                    {activeMatchedSkills.map((s) => (
-                      <span
-                        key={s}
-                        onClick={() => {
-                          const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
-                          if (ev) setSelectedSkillEvidence(ev)
-                        }}
-                        className="cvm-skill-pill matched"
-                        title="Click to view verified sentence evidence in resume text"
-                        style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '12px', transition: 'all 0.15s ease' }}
-                      >
-                        <Check size={13} style={{ color: 'var(--color-success)' }} /> {formatSkillName(s)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                     {[...new Set(activeMatchedSkills)].map((s, i) => (
+                       <span
+                         key={`${s}-${i}`}
+                         onClick={() => {
+                           const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
+                           if (ev) setSelectedSkillEvidence(ev)
+                         }}
+                         className="cvm-skill-pill matched"
+                         title="Click to view evidence in resume text"
+                       >
+                         <Check size={12} /> {s}
+                       </span>
+                     ))}
+                   </div>
+                 </div>
 
-                {/* Missing Skills */}
-                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: '#fb7185', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <AlertCircle size={16} /> Missing Competencies to Develop
-                    </span>
-                    <span style={{ fontSize: '11px', fontWeight: 800, background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
-                      {activeMissingSkills.length} Gap{activeMissingSkills.length === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                    {activeMissingSkills.map((s) => (
-                      <span
-                        key={s}
-                        onClick={() => {
-                          setActiveTab('gap')
-                          handleSimulateSkill(s)
-                        }}
-                        className="cvm-skill-pill missing"
-                        title="Click to simulate acquiring this skill in the Interactive Sandbox"
-                        style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '12px', transition: 'all 0.15s ease' }}
-                      >
-                        + {formatSkillName(s)}
-                      </span>
-                    ))}
-                  </div>
+                 {/* Missing Skills */}
+                 <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: '#fb7185', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                     <AlertCircle size={16} /> Missing Competencies to Develop ({activeMissingSkills.length})
+                   </div>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                     {[...new Set(activeMissingSkills)].map((s, i) => (
+                       <span
+                         key={`${s}-${i}`}
+                         onClick={() => {
+                           setActiveTab('gap')
+                           handleSimulateSkill(s)
+                         }}
+                         className="cvm-skill-pill missing"
+                         title="Click to simulate acquiring this skill in Sandbox"
+                       >
+                         + {s}
+                       </span>
+                     ))}
+                   </div>
                 </div>
               </div>
 
@@ -1871,11 +1858,11 @@ export default function CVMatch() {
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                   {(matchResult.missing_skills || []).length > 0 ? (
-                    (matchResult.missing_skills || []).map((skill) => {
+                    (matchResult.missing_skills || []).map((skill, i) => {
                       const isSelected = simulatedAcquiredSkills.includes(skill)
                       return (
                         <button
-                          key={skill}
+                          key={`${skill}-${i}`}
                           type="button"
                           onClick={() => handleSimulateSkill(skill)}
                           style={{
@@ -2020,8 +2007,8 @@ export default function CVMatch() {
                                 Key Bridge Skills:
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                                {rec.bridge_skills.map((s) => (
-                                  <span key={s} style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 6, color: 'var(--color-fg)' }}>
+                                 {[...new Set(rec.bridge_skills)].map((s, i) => (
+                                   <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 6, color: 'var(--color-fg)' }}>
                                     {s}
                                   </span>
                                 ))}
@@ -2344,8 +2331,8 @@ export default function CVMatch() {
                 </h3>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                  {matchResult.matched_skills?.map((s) => (
-                    <span key={s} style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 6 }}>
+                   {[...new Set(matchResult.matched_skills || [])].map((s, i) => (
+                     <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 6 }}>
                       ✓ {s}
                     </span>
                   ))}
@@ -2357,8 +2344,8 @@ export default function CVMatch() {
                       Identified Competency Gaps:
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {matchResult.missing_skills?.map((s) => (
-                        <span key={s} style={{ fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '3px 10px', borderRadius: 6 }}>
+                       {[...new Set(matchResult.missing_skills || [])].map((s, i) => (
+                         <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '3px 10px', borderRadius: 6 }}>
                           - {s}
                         </span>
                       ))}

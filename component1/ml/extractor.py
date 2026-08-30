@@ -1031,6 +1031,8 @@ def extract_experience_years(text: str) -> float:
 
     return 0.0
 
+    return 0.0
+
 
 def extract_experience_details(text: str, target_role: str = "Software Engineer") -> Dict[str, Any]:
     """Calculate Total Professional Experience, IT Experience, and Target-Role Relevant Experience separately."""

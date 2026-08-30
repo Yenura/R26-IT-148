@@ -48,7 +48,7 @@ export default function JobBoard() {
       const apps = toArr(r3)
       setAppliedIds(new Set(apps.filter((a) => a.status !== 'withdrawn').map((a) => a.job_id)))
       const scores = toArr(r4)
-      setInterviewDone(new Set(scores.map((s) => s.job_id || s.job_role).filter(Boolean)))
+      setInterviewDone(new Set(scores.map((s) => s.job_id).filter(Boolean)))
     } catch {
       toast.error('Failed to load jobs')
     } finally {
@@ -63,7 +63,7 @@ export default function JobBoard() {
       return
     }
     const job = jobs.find((j) => j.id === jobId)
-    if (job?.interview_required && !interviewDone.has(jobId) && !interviewDone.has(job.job_role || job.title)) {
+    if (job?.interview_required && !interviewDone.has(jobId)) {
       toast.error('Please complete the AI Technical Interview first (open the job and click Start Interview)')
       return
     }
@@ -277,8 +277,8 @@ export default function JobBoard() {
 
                   {job.required_skills?.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                      {job.required_skills.slice(0, 5).map((s) => (
-                        <span key={s} className="chip" style={{ fontSize: '11px', margin: 0, padding: '2px 8px' }}>
+                      {[...new Set(job.required_skills)].slice(0, 5).map((s, i) => (
+                        <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', margin: 0, padding: '2px 8px' }}>
                           {s}
                         </span>
                       ))}
@@ -354,12 +354,11 @@ export default function JobBoard() {
       {/* Resume Selection Modal */}
       {resumeSelectOpen && (
         <div
-          style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)' }}
+          style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--modal-overlay, rgba(0,0,0,0.5))', backdropFilter: 'blur(8px)', padding: 'var(--p-space-4)' }}
           onClick={() => setResumeSelectOpen(false)}
         >
           <div
-            className="card"
-            style={{ padding: 'var(--p-space-5)', maxWidth: 420, width: '90%' }}
+            style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-xl)', padding: 'var(--p-space-5)', maxWidth: 420, width: '100%', boxShadow: 'var(--shadow-xl)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ margin: '0 0 12px', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>Select Resume to Submit</h3>

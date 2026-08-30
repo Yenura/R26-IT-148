@@ -1,54 +1,104 @@
 {
   "interview_weights": {
-    "Software Engineer": {
-      "mcq": 0.2,
-      "descriptive": 0.3,
-      "coding": 0.5
-    },
-    "Data Scientist": {
-      "mcq": 0.25,
-      "descriptive": 0.35,
-      "coding": 0.4
-    },
-    "Machine Learning Engineer": {
-      "mcq": 0.2,
-      "descriptive": 0.3,
-      "coding": 0.5
-    },
-    "DevOps Engineer": {
+    "AI/NLP Engineer": {
       "mcq": 0.4,
       "descriptive": 0.4,
       "coding": 0.2
     },
-    "Cybersecurity Analyst": {
+    "Backend Developer": {
+      "mcq": 0.5,
+      "descriptive": 0.3,
+      "coding": 0.2
+    },
+    "Blockchain Developer": {
+      "mcq": 0.6,
+      "descriptive": 0.3,
+      "coding": 0.1
+    },
+    "Business/Systems Analyst": {
       "mcq": 0.45,
       "descriptive": 0.55,
       "coding": 0.0
     },
     "Cloud Solutions Architect": {
+      "mcq": 0.78,
+      "descriptive": 0.22,
+      "coding": 0.0
+    },
+    "Cybersecurity Analyst": {
+      "mcq": 0.86,
+      "descriptive": 0.14,
+      "coding": 0.0
+    },
+    "Data Engineer": {
+      "mcq": 0.6,
+      "descriptive": 0.2,
+      "coding": 0.2
+    },
+    "Data Scientist": {
+      "mcq": 0.6,
+      "descriptive": 0.1,
+      "coding": 0.3
+    },
+    "Database Administrator": {
+      "mcq": 0.4,
+      "descriptive": 0.4,
+      "coding": 0.2
+    },
+    "DevOps Engineer": {
+      "mcq": 0.4,
+      "descriptive": 0.3,
+      "coding": 0.3
+    },
+    "Embedded Systems Engineer": {
+      "mcq": 0.5,
+      "descriptive": 0.3,
+      "coding": 0.2
+    },
+    "Frontend Developer": {
+      "mcq": 0.3,
+      "descriptive": 0.2,
+      "coding": 0.5
+    },
+    "Full Stack Developer": {
+      "mcq": 0.5,
+      "descriptive": 0.2,
+      "coding": 0.3
+    },
+    "Machine Learning Engineer": {
+      "mcq": 0.6,
+      "descriptive": 0.3,
+      "coding": 0.1
+    },
+    "Mobile App Developer": {
+      "mcq": 0.6,
+      "descriptive": 0.3,
+      "coding": 0.1
+    },
+    "Network Engineer": {
       "mcq": 0.45,
       "descriptive": 0.55,
       "coding": 0.0
     },
-    "Database Administrator": {
-      "mcq": 0.3,
+    "QA/Test Automation Engineer": {
+      "mcq": 0.4,
       "descriptive": 0.4,
+      "coding": 0.2
+    },
+    "Site Reliability Engineer": {
+      "mcq": 0.5,
+      "descriptive": 0.2,
       "coding": 0.3
     },
-    "Frontend Developer": {
-      "mcq": 0.2,
-      "descriptive": 0.3,
-      "coding": 0.5
+    "Software Engineer": {
+      "mcq": 0.7,
+      "descriptive": 0.2,
+      "coding": 0.1
     },
-    "Backend Developer": {
-      "mcq": 0.2,
-      "descriptive": 0.3,
-      "coding": 0.5
-    },
-    "Mobile App Developer": {
-      "mcq": 0.2,
-      "descriptive": 0.3,
-      "coding": 0.5
+    "UI/UX Designer": {
+      "mcq": 0.45,
+      "descriptive": 0.55,
+      "coding": 0.0
     }
   },
   "grade_bands": {

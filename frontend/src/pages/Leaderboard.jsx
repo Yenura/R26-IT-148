@@ -304,8 +304,8 @@ export default function Leaderboard() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 280 }}>
-                          {(c.skills || []).slice(0, 4).map((s) => (
-                            <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                           {[...new Set(c.skills || [])].slice(0, 4).map((s, i) => (
+                             <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                               {s}
                             </span>
                           ))}

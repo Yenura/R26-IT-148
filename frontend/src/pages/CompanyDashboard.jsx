@@ -141,7 +141,7 @@ export default function CompanyDashboard() {
     setForm((f) => ({
       ...f,
       title: roleName,
-      required_skills: f.required_skills ? f.required_skills : suggestedSkills,
+      required_skills: suggestedSkills,
     }))
   }
 
@@ -442,8 +442,8 @@ export default function CompanyDashboard() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 260 }}>
-                          {(job.required_skills || []).slice(0, 3).map((s) => (
-                            <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                          {[...new Set(job.required_skills || [])].slice(0, 3).map((s, i) => (
+                            <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                               {s}
                             </span>
                           ))}
