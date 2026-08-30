@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, Building2, ArrowLeft, Eye, EyeOff } from 'lucide-react'
+import { Brain, Mail, Lock, Building2, ArrowLeft, Eye, EyeOff, User } from 'lucide-react'
 import { C0 } from '../../api'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -14,10 +14,11 @@ export default function CompanyLogin() {
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
 
-  const fillDemo = () => {
-    setEmail('company@techcorp.com')
-    setPassword('demo123')
-    toast.success('Demo employer credentials loaded')
+  const fillDemo = (demoEmail = 'company@techcorp.com', demoPass = 'demo123') => {
+    setEmail(demoEmail)
+    setPassword(demoPass)
+    setErrors({})
+    toast.success(`Demo recruiter credentials loaded (${demoEmail})`)
   }
 
   const validate = () => {
@@ -73,28 +74,39 @@ export default function CompanyLogin() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
-      <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'radial-gradient(ellipse at top, rgba(147, 51, 234, 0.12) 0%, var(--color-bg) 70%)',
+      padding: '24px 16px',
+      position: 'relative',
+      overflow: 'hidden'
+    }}>
+      <div style={{ width: '100%', maxWidth: 440, display: 'flex', flexDirection: 'column', position: 'relative', zIndex: 1 }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 16, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6, borderRadius: 'var(--radius-full)' }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
 
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        {/* Header Branding */}
+        <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <div style={{
             margin: '0 auto 12px',
-            width: 48,
-            height: 48,
-            borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, var(--color-purple), #6366f1)',
+            width: 52,
+            height: 52,
+            borderRadius: 'var(--radius-lg)',
+            background: 'linear-gradient(135deg, #9333ea 0%, #6366f1 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
-            boxShadow: 'var(--shadow-md)'
+            boxShadow: '0 8px 24px rgba(147, 51, 234, 0.35)',
+            border: '1px solid rgba(255, 255, 255, 0.2)'
           }}>
-            <Building2 size={24} />
+            <Building2 size={26} color="#ffffff" />
           </div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+          <h1 style={{ fontSize: '1.65rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0, letterSpacing: '-0.02em' }}>
             Employer Sign In
           </h1>
           <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 6, lineHeight: 1.5 }}>
@@ -102,10 +114,72 @@ export default function CompanyLogin() {
           </p>
         </div>
 
-        <div className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
+        {/* Main Auth Box */}
+        <div className="card" style={{
+          padding: '28px 26px',
+          background: 'rgba(15, 23, 42, 0.85)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(16px)'
+        }}>
+          {/* Dual Role Segmented Selector */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 4,
+            background: 'rgba(0, 0, 0, 0.35)',
+            padding: '4px',
+            borderRadius: 'var(--radius-md)',
+            marginBottom: 20,
+            border: '1px solid rgba(255, 255, 255, 0.06)'
+          }}>
+            <button
+              type="button"
+              onClick={() => navigate('/login/candidate')}
+              style={{
+                fontSize: '12px',
+                fontWeight: 500,
+                padding: '7px 12px',
+                borderRadius: 'var(--radius-sm)',
+                background: 'transparent',
+                color: 'var(--color-fg-muted)',
+                border: 'none',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                transition: 'all 0.2s ease'
+              }}
+            >
+              <User size={13} /> Candidate
+            </button>
+            <button
+              type="button"
+              style={{
+                fontSize: '12px',
+                fontWeight: 700,
+                padding: '7px 12px',
+                borderRadius: 'var(--radius-sm)',
+                background: '#9333ea',
+                color: '#ffffff',
+                border: 'none',
+                cursor: 'default',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
+                boxShadow: '0 2px 8px rgba(147, 51, 234, 0.3)'
+              }}
+            >
+              <Building2 size={13} /> Employer
+            </button>
+          </div>
+
           <form onSubmit={handleLogin} noValidate>
             <div style={{ marginBottom: 14 }}>
-              <label style={{ fontSize: '12px', marginTop: 0 }}>Work Email</label>
+              <label style={{ fontSize: '12px', fontWeight: 600, marginTop: 0, color: 'var(--color-fg-secondary)' }}>Work Email</label>
               <div style={{ position: 'relative' }}>
                 <Mail size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
@@ -115,7 +189,12 @@ export default function CompanyLogin() {
                   value={email}
                   onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: '' })) }}
                   placeholder="recruiter@techcorp.com"
-                  style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
+                  style={{
+                    paddingLeft: 36,
+                    fontSize: '13px',
+                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined,
+                    background: 'rgba(0, 0, 0, 0.25)'
+                  }}
                   required
                 />
               </div>
@@ -123,7 +202,9 @@ export default function CompanyLogin() {
             </div>
 
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: '12px', marginTop: 0 }}>Password</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                <label style={{ fontSize: '12px', fontWeight: 600, margin: 0, color: 'var(--color-fg-secondary)' }}>Password</label>
+              </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
                 <input
@@ -133,14 +214,20 @@ export default function CompanyLogin() {
                   value={password}
                   onChange={(e) => { setPassword(e.target.value); setErrors((p) => ({ ...p, password: '' })) }}
                   placeholder="••••••••"
-                  style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
+                  style={{
+                    paddingLeft: 36,
+                    paddingRight: 36,
+                    fontSize: '13px',
+                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined,
+                    background: 'rgba(0, 0, 0, 0.25)'
+                  }}
                   required
                 />
-              <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    style={{
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  style={{
                     position: 'absolute',
                     right: 12,
                     top: '50%',
@@ -163,22 +250,29 @@ export default function CompanyLogin() {
               className="btn btn-primary"
               type="submit"
               disabled={busy}
-              style={{ width: '100%', padding: '11px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700, background: 'var(--color-purple)', borderColor: 'var(--color-purple)' }}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                fontSize: '13.5px',
+                fontWeight: 800,
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                background: 'linear-gradient(135deg, #9333ea 0%, #6366f1 100%)',
+                boxShadow: '0 4px 16px rgba(147, 51, 234, 0.35)',
+                border: 'none'
+              }}
             >
               <Building2 size={15} /> {busy ? 'Signing in...' : 'Sign In as Employer'}
             </button>
           </form>
 
-          <div style={{ textAlign: 'center', marginTop: 18, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+          <div style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
             <span>Don't have an employer account? </span>
-            <Link to="/register/company" style={{ color: 'var(--color-purple)', fontWeight: 700 }}>
+            <Link to="/register/company" style={{ color: '#c084fc', fontWeight: 700 }}>
               Register Company
-            </Link>
-          </div>
-
-          <div style={{ textAlign: 'center', marginTop: 10, fontSize: 'var(--p-text-xs)' }}>
-            <Link to="/login/candidate" style={{ color: 'var(--color-fg-muted)' }}>
-              Looking for a job? Candidate sign in →
             </Link>
           </div>
         </div>
