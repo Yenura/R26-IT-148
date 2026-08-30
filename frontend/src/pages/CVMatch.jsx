@@ -767,18 +767,18 @@ export default function CVMatch() {
           {/* CARD 1: CANDIDATE RESUME */}
           <div style={{
             padding: '18px 20px',
-            background: 'rgba(15, 23, 42, 0.65)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--color-bg-elevated)',
+            border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             gap: 12,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)'
+            boxShadow: 'var(--shadow-md)'
           }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <UserCheck size={15} /> 1. Candidate Resume
                 </span>
                 {currentResumeDoc && (
@@ -839,18 +839,18 @@ export default function CVMatch() {
           {/* CARD 2: TARGET COMPANY & ROLE */}
           <div style={{
             padding: '18px 20px',
-            background: 'rgba(15, 23, 42, 0.65)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--color-bg-elevated)',
+            border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             gap: 12,
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)'
+            boxShadow: 'var(--shadow-md)'
           }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Briefcase size={15} /> 2. Target Company & Role
                 </span>
                 <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
@@ -1539,7 +1539,7 @@ export default function CVMatch() {
               </div>
 
               {/* Simulation Sandbox Card */}
-              <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--p-space-5)' }}>
+              <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--p-space-5)' }}>
                 <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span>Missing Competencies for {displayJobTitle}:</span>
                   <span style={{ fontSize: '10px', color: 'var(--color-primary)', background: 'rgba(59, 130, 246, 0.1)', padding: '1px 7px', borderRadius: 10 }}>Click pill to toggle</span>
@@ -1659,7 +1659,7 @@ export default function CVMatch() {
                         style={{
                           padding: 'var(--p-space-5)',
                           background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.55) 100%)',
-                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          border: '1px solid var(--color-border)',
                           borderRadius: 'var(--radius-lg)',
                           margin: 0,
                           display: 'flex',
@@ -1766,7 +1766,7 @@ export default function CVMatch() {
                         padding: '16px 20px',
                         background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)',
                         borderRadius: 'var(--radius-lg)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
+                        border: '1px solid var(--color-border)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -1795,7 +1795,7 @@ export default function CVMatch() {
                         <div>
                           <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <span>{item.title || item.skill}</span>
-                            <span style={{ fontSize: '10px', fontWeight: 600, background: 'rgba(59, 130, 246, 0.12)', color: 'var(--color-primary-light, #93c5fd)', padding: '1px 7px', borderRadius: 10 }}>
+                            <span style={{ fontSize: '10px', fontWeight: 600, background: 'rgba(59, 130, 246, 0.12)', color: 'var(--color-primary)', padding: '1px 7px', borderRadius: 10 }}>
                               {item.priority || `Milestone ${idx + 1}`}
                             </span>
                           </div>
