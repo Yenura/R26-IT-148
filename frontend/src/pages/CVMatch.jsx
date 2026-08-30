@@ -1313,11 +1313,11 @@ export default function CVMatch() {
               </h2>
 
               <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 8 }}>
-                <span>Applicant: <strong>{currentResumeDoc?.candidate_name || 'Verified Applicant'}</strong></span>
+                <span>Applicant: <strong style={{ color: 'var(--color-fg)' }}>{cleanCandidateName(currentResumeDoc?.candidate_name, currentResumeDoc?.filename)}</strong></span>
                 <span>•</span>
                 <span>Experience: <strong>{candExp.toFixed(1)} years</strong></span>
                 <span>•</span>
-                <span>Education: <strong>{c1Result?.education || currentResumeDoc?.education || 'BSc Information Technology'}</strong></span>
+                <span>Education: <strong>{cleanEducationText(c1Result?.education || currentResumeDoc?.education)}</strong></span>
               </div>
 
               <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '10px 0 0 0', lineHeight: 1.55, maxWidth: 680 }}>
@@ -1353,23 +1353,11 @@ export default function CVMatch() {
               <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginTop: 6 }}>
                 Overall Fit Score
               </div>
-              <div style={{
-                fontSize: '9.5px',
-                fontFamily: 'var(--p-font-mono)',
-                color: 'var(--color-fg-muted)',
-                background: 'rgba(255, 255, 255, 0.05)',
-                padding: '3px 8px',
-                borderRadius: 4,
-                marginTop: 6,
-                border: '1px solid rgba(255, 255, 255, 0.06)'
-              }}>
-                0.5·Skill + 0.3·Exp + 0.2·Edu
-              </div>
               <button
                 type="button"
                 onClick={() => setShowDossierModal(true)}
                 className="btn btn-sm btn-ghost"
-                style={{ marginTop: 10, width: '100%', fontSize: '11px', padding: '5px 8px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)' }}
+                style={{ marginTop: 12, width: '100%', fontSize: '11px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)' }}
                 title="Preview printable executive evaluation dossier"
               >
                 <FileText size={12} /> View Evaluation Dossier
@@ -1445,7 +1433,7 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Cpu size={14} /> Technical Skills (S_skill)
+                        <Cpu size={14} /> Technical Skills Match
                       </span>
                       <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
                         {skillScore.toFixed(0)}%
@@ -1489,7 +1477,7 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-success)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <Clock size={14} /> Experience & Seniority (S_exp)
+                        <Clock size={14} /> Experience & Tenure
                       </span>
                       <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>
                         {expScore.toFixed(0)}%
@@ -1523,7 +1511,7 @@ export default function CVMatch() {
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                       <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#a855f7', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <GraduationCap size={14} /> Education & Credentials (S_edu)
+                        <GraduationCap size={14} /> Education & Qualifications
                       </span>
                       <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#a855f7', fontFamily: 'var(--p-font-mono)' }}>
                         {eduScore.toFixed(0)}%
@@ -1544,7 +1532,7 @@ export default function CVMatch() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Degree Qualification:</span>
                       <strong style={{ color: 'var(--color-fg)', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {c1Result?.education || currentResumeDoc?.education || 'BSc Information Technology'}
+                        {cleanEducationText(c1Result?.education || currentResumeDoc?.education)}
                       </strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1672,48 +1660,6 @@ export default function CVMatch() {
                   </div>
                   <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', fontStyle: 'italic', background: 'var(--color-bg)', padding: '8px 12px', borderRadius: 4 }}>
                     "{selectedSkillEvidence.evidence_snippets?.[0] || 'Verified from work experience in candidate CV.'}"
-                  </div>
-                </div>
-              )}
-              {/* Top AI-Predicted Roles Matrix */}
-              {((c1Result?.role_alternatives?.length > 0) || (c1Result?.role_predictions?.length > 0)) && (
-                <div className="card" style={{ padding: 'var(--p-space-4)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
-                    <Cpu size={16} style={{ color: 'var(--color-primary)' }} /> Top AI-Predicted Roles (Click to Benchmark)
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
-                    {(c1Result.role_alternatives || c1Result.role_predictions || []).slice(0, 4).map((p) => {
-                      const roleName = typeof p === 'string' ? p : (p?.role || '')
-                      if (!roleName) return null
-                      const prob = p?.probability ?? p?.confidence ?? 0.8
-                      return (
-                        <div
-                          key={roleName}
-                          onClick={() => runUnifiedAnalysis(roleName)}
-                          style={{
-                            padding: '10px 14px',
-                            background: 'var(--color-bg-elevated)',
-                            border: '1px solid var(--color-border-subtle)',
-                            borderRadius: 'var(--radius-md)',
-                            cursor: 'pointer',
-                            transition: 'all 0.15s ease'
-                          }}
-                          title={`Click to re-score against ${roleName}`}
-                        >
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>
-                              {roleName}
-                            </span>
-                            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-primary)' }}>
-                              {(prob * 100).toFixed(0)}%
-                            </span>
-                          </div>
-                          <div style={{ width: '100%', height: 4, background: 'var(--color-border-subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                            <div style={{ width: `${Math.min(prob * 100, 100)}%`, height: '100%', background: 'var(--color-primary)', borderRadius: 2 }} />
-                          </div>
-                        </div>
-                      )
-                    })}
                   </div>
                 </div>
               )}
