@@ -14,7 +14,45 @@ Integration notes
   REQUIRED_SKILLS; these are documented in the README.
 """
 
-from typing import Dict, List
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+# ── Target Job Profile ─────────────────────────────────────────────────────────
+
+@dataclass
+class TargetJobProfile:
+    """Structured Target Job Profile for multi-layer candidate intelligence matching."""
+    job_title: str
+    canonical_role: str
+    seniority: str
+    required_skills: List[str]
+    preferred_skills: List[str] = field(default_factory=list)
+    technologies: List[str] = field(default_factory=list)
+    responsibilities: List[str] = field(default_factory=list)
+    required_experience_years: Optional[float] = None
+    preferred_experience_years: Optional[float] = None
+    required_education: List[str] = field(default_factory=list)
+    preferred_education: List[str] = field(default_factory=list)
+    required_certifications: List[str] = field(default_factory=list)
+    domain: str = "Information Technology"
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "job_title": self.job_title,
+            "canonical_role": self.canonical_role,
+            "seniority": self.seniority,
+            "required_skills": self.required_skills,
+            "preferred_skills": self.preferred_skills,
+            "technologies": self.technologies,
+            "responsibilities": self.responsibilities,
+            "required_experience_years": self.required_experience_years,
+            "preferred_experience_years": self.preferred_experience_years,
+            "required_education": self.required_education,
+            "preferred_education": self.preferred_education,
+            "required_certifications": self.required_certifications,
+            "domain": self.domain,
+        }
+
 
 # ── Education level scores (mirrors component3/data/role_configs.py) ───────────
 EDU_LEVEL_SCORES: Dict[int, float] = {1: 0.40, 2: 0.60, 3: 0.80, 4: 1.00}
@@ -167,3 +205,102 @@ ROLE_CV_WEIGHTS: Dict[str, Dict[str, float]] = {
 # ── Ordered list of the canonical 20 role names ────────────────────────────────
 # (same order as component2/raigs/generate.py ROLES dict)
 ALL_ROLES: List[str] = list(REQUIRED_SKILLS.keys())
+
+
+# ── Preferred skills per role ──────────────────────────────────────────────────
+PREFERRED_SKILLS: Dict[str, List[str]] = {
+    "Software Engineer": ["docker", "ci/cd", "microservices", "redis", "aws"],
+    "Data Scientist": ["deep learning", "nlp", "tensorflow", "pytorch", "bigquery"],
+    "Machine Learning Engineer": ["kubernetes", "ray", "onnx", "fastapi", "cuda"],
+    "DevOps Engineer": ["helm", "prometheus", "grafana", "istio", "vault"],
+    "Cloud Solutions Architect": ["finops", "cloud security", "saml", "multi-cloud"],
+    "Database Administrator": ["redis", "elasticsearch", "cassandra", "sharding"],
+    "Frontend Developer": ["next.js", "tailwind css", "graphql", "jest", "vite"],
+    "Backend Developer": ["fastapi", "grpc", "kafka", "redis", "postgresql"],
+    "Mobile App Developer": ["ci/cd", "fastlane", "clean architecture", "bloc", "swiftui"],
+    "Cybersecurity Analyst": ["cissp", "ceh", "wireshark", "splunk", "mitre att&ck"],
+    "Full Stack Developer": ["next.js", "tailwind css", "postgresql", "docker", "ci/cd"],
+    "QA/Test Automation Engineer": ["playwright", "cypress", "postman", "gatling", "k6"],
+    "Data Engineer": ["snowflake", "databricks", "presto", "trino", "delta lake"],
+    "Site Reliability Engineer": ["opentelemetry", "datadog", "chaos engineering", "ansible"],
+    "UI/UX Designer": ["design tokens", "micro-interactions", "heuristic evaluation", "storyboarding"],
+    "Network Engineer": ["ccna", "ccnp", "sd-wan", "ansible", "palo alto"],
+    "Business/Systems Analyst": ["tableau", "power bi", "agile", "user stories", "swagger"],
+    "AI/NLP Engineer": ["langchain", "llamaindex", "faiss", "pinecone", "fine-tuning"],
+    "Blockchain Developer": ["rust", "solana", "truffle", "subgraph", "zero knowledge"],
+    "Embedded Systems Engineer": ["arm cortex", "linux kernel", "pcb layout", "oscilloscope", "ble"],
+}
+
+# ── Role Domain Mapping ────────────────────────────────────────────────────────
+ROLE_DOMAINS: Dict[str, str] = {
+    "Software Engineer": "Software Engineering & Architecture",
+    "Data Scientist": "Data Science & Artificial Intelligence",
+    "Machine Learning Engineer": "Machine Learning & MLOps",
+    "DevOps Engineer": "Cloud Infrastructure & DevOps",
+    "Cloud Solutions Architect": "Cloud Infrastructure & Enterprise Architecture",
+    "Database Administrator": "Database Engineering & Storage Systems",
+    "Frontend Developer": "Frontend Engineering & User Interface",
+    "Backend Developer": "Backend Systems & Distributed APIs",
+    "Mobile App Developer": "Mobile Software Engineering",
+    "Cybersecurity Analyst": "Cybersecurity & Information Security",
+    "Full Stack Developer": "Full Stack Web Engineering",
+    "QA/Test Automation Engineer": "Quality Assurance & Test Automation",
+    "Data Engineer": "Data Engineering & Analytics Infrastructure",
+    "Site Reliability Engineer": "Reliability Engineering & Cloud Infrastructure",
+    "UI/UX Designer": "Product Design & User Experience",
+    "Network Engineer": "Network Engineering & Telecommunications",
+    "Business/Systems Analyst": "Business Systems & Requirements Analysis",
+    "AI/NLP Engineer": "Artificial Intelligence & NLP",
+    "Blockchain Developer": "Decentralized Systems & Blockchain",
+    "Embedded Systems Engineer": "Embedded Systems & Firmware Engineering",
+}
+
+
+def build_target_job_profile(
+    role_name: str = "Software Engineer",
+    jd_text: Optional[str] = None,
+    custom_spec: Optional[Dict[str, Any]] = None,
+) -> TargetJobProfile:
+    """Build a comprehensive, structured Target Job Profile for multi-layer candidate intelligence matching."""
+    canonical = role_name if role_name in REQUIRED_SKILLS else "Software Engineer"
+    spec = custom_spec or {}
+
+    req_skills = spec.get("required_skills") or REQUIRED_SKILLS.get(canonical, [])
+    pref_skills = spec.get("preferred_skills") or PREFERRED_SKILLS.get(canonical, [])
+    req_years = spec.get("required_experience_years") or REQUIRED_YEARS.get(canonical, 3.0)
+    domain = spec.get("domain") or ROLE_DOMAINS.get(canonical, "Information Technology")
+
+    # Common education baselines per role
+    req_edu = spec.get("required_education") or [
+        "BSc Computer Science",
+        "BSc Information Technology",
+        "BSc Software Engineering",
+    ]
+    if canonical in ["Data Scientist", "AI/NLP Engineer"]:
+        req_edu = ["BSc Data Science", "BSc Computer Science", "BSc Mathematics", "BSc Statistics"]
+    elif canonical in ["Network Engineer", "Cybersecurity Analyst"]:
+        req_edu = ["BSc Computer Networks", "BSc Cybersecurity", "BSc Information Technology"]
+
+    pref_edu = spec.get("preferred_education") or ["MSc Computer Science", "MSc Software Engineering"]
+    seniority = spec.get("seniority", "Mid")
+
+    return TargetJobProfile(
+        job_title=spec.get("job_title", canonical),
+        canonical_role=canonical,
+        seniority=seniority,
+        required_skills=list(req_skills),
+        preferred_skills=list(pref_skills),
+        technologies=list(req_skills[:6] + pref_skills[:4]),
+        responsibilities=spec.get("responsibilities", [
+            f"Design, build, and maintain production systems for {canonical} domain",
+            "Collaborate with cross-functional technical teams and adhere to code quality standards",
+            "Participate in architecture reviews, code testing, and technical documentation"
+        ]),
+        required_experience_years=float(req_years),
+        preferred_experience_years=float(req_years) + 2.0,
+        required_education=req_edu,
+        preferred_education=pref_edu,
+        required_certifications=spec.get("required_certifications", []),
+        domain=domain,
+    )
+

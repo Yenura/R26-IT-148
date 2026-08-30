@@ -844,6 +844,19 @@ export default function CompanyDashboard() {
               <label style={{ fontSize: '12px', marginTop: 0 }}>Min Experience (Years)</label>
               <input type="number" min={0} max={40} value={form.experience_required} onChange={(e) => setForm({ ...form, experience_required: e.target.value })} />
             </div>
+            <div>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Education Level</label>
+              <select
+                value={form.education_required}
+                onChange={(e) => setForm({ ...form, education_required: e.target.value })}
+              >
+                <option value="High School">High School</option>
+                <option value="Associate Degree">Associate Degree</option>
+                <option value="Bachelor Degree">Bachelor Degree</option>
+                <option value="Master Degree">Master Degree</option>
+                <option value="PhD">PhD</option>
+              </select>
+            </div>
           </div>
 
           <div style={{ marginTop: 12 }}>

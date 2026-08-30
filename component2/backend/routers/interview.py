@@ -25,7 +25,7 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
-from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids
+from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids, link_candidate_application
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -33,11 +33,11 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 class InterviewSubmitRequest(BaseModel):
-    candidate_id: str = Field(default="", max_length=100)
     session_id: str = Field(..., min_length=1, max_length=200)
-    job_role: str = Field(default="", max_length=200)
-    job_id: str = Field(default="", max_length=100)
     answers: List[Dict] = Field(default_factory=list)
+    candidate_id: Optional[str] = None
+    job_role: Optional[str] = None
+    job_id: Optional[str] = None
     proctoring: Optional[Dict] = None
 
     @field_validator("answers")
@@ -432,21 +432,15 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
             processed_answers.append(processed_answer)
 
-        # Parallel gather for descriptive answers (was sequential, now ~3x faster)
-        if descriptive_tasks:
-            results = await asyncio.gather(*descriptive_tasks)
-            for idx, evaluation_result in zip(descriptive_indices, results):
-                processed_answers[idx].update({
-                    "final_score": evaluation_result.get("final_score", 0),
-                    "similarity": evaluation_result.get("similarity", 0),
-                    "keyword_coverage": evaluation_result.get("keyword_coverage", 0)
-                })
-                processed_answers[idx].pop("_reference_text", None)
+        cand_id = submission.candidate_id or session.get("candidate_id", "")
+        j_role = submission.job_role or session.get("job_role", "")
+        j_id = submission.job_id or session.get("job_id", "")
+        proctoring = submission.proctoring
 
         evaluation_payload = {
-            "candidate_id": submission.candidate_id or session.get("candidate_id", ""),
+            "candidate_id": cand_id,
             "session_id": session_id,
-            "job_role": submission.job_role or session.get("job_role", ""),
+            "job_role": j_role,
             "answers": processed_answers
         }
         
@@ -456,9 +450,10 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             interview_data=evaluation_payload,
         )
 
+        result["job_id"] = j_id
+
         # Attach proctoring data if provided (job interviews only)
         # Enforce: practice interviews NEVER store proctoring data
-        proctoring = submission.proctoring
         is_practice = session.get("is_practice", False)
         if is_practice:
             proctoring = None
@@ -474,7 +469,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
             payload = json.dumps({
                 "candidate_id": result["candidate_id"],
-                "job_id": submission.job_id or session.get("job_id", ""),
+                "job_id": j_id,
                 "session_id": session_id,
                 "job_role": result["job_role"],
                 "mcq_score": result["mcq_score"],
@@ -498,6 +493,20 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             asyncio.create_task(run_in_threadpool(_send_c0))
         except Exception as e:
             logger.warning(f"Failed to send scores to C0: {e}")
+
+        # Direct MongoDB sync for applications & interview_scores
+        try:
+            await link_candidate_application(
+                candidate_id=result["candidate_id"],
+                job_id=j_id or "",
+                job_role=result["job_role"],
+                interview_score=result["interview_score"],
+                mcq_score=result["mcq_score"],
+                desc_score=result["descriptive_score"],
+                code_score=result["coding_score"]
+            )
+        except Exception as e:
+            logger.warning(f"Direct link_candidate_application warning: {e}")
 
         return InterviewScoreResult(
             interview_id=result["interview_id"],

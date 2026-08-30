@@ -111,7 +111,7 @@ def main():
         if s["type"] == "backend":
             log_path = os.path.join(log_dir, f"{s['id'].upper()}.log")
             log_file = open(log_path, "w", buffering=1, encoding="utf-8", errors="replace")
-            cmd = [PYTHON, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(s["port"])]
+            cmd = [PYTHON, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(s["port"]), "--reload"]
             p = subprocess.Popen(cmd, cwd=s["dir"], env=COMMON_ENV, stdout=log_file, stderr=log_file, close_fds=False)
             procs.append((s, p, log_file))
             print(f"  -> Started {s['name']:<24} (PID {p.pid:>5}) on port {s['port']}")

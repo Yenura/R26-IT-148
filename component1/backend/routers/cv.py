@@ -117,6 +117,20 @@ async def _full_analysis(
         verified_certifications=features.verified_certifications,
     )
 
+    from data.role_requirements import build_target_job_profile
+    target_profile = build_target_job_profile(
+        role_name=scored_role,
+        jd_text=job_description,
+        custom_spec={
+            "job_title": scored_role,
+            "required_skills": job_reqs.required_skills,
+            "preferred_skills": job_reqs.preferred_skills,
+            "required_experience_years": job_reqs.required_experience_years,
+            "required_education": job_reqs.required_education,
+            "seniority": job_reqs.required_seniority,
+        }
+    )
+
     return CVAnalysisResponse(
         candidate_id=candidate_id,
         candidate_name=candidate_name,
@@ -131,7 +145,7 @@ async def _full_analysis(
             )
             for a in pred.alternatives
         ],
-        manual_review_recommended=getattr(pred, "manual_review_recommended", False),
+        manual_review_recommended=getattr(features, "manual_review_recommended", False) or getattr(pred, "manual_review_recommended", False),
         review_reason=getattr(pred, "review_reason", None),
         education=features.education,
         edu_level=features.edu_level,
@@ -143,6 +157,11 @@ async def _full_analysis(
         detected_seniority=features.seniority,
         detected_certs=features.detected_certs,
         verified_certifications=features.verified_certifications,
+        projects=features.projects,
+        employment_records=features.employment_records,
+        target_job_profile=target_profile.to_dict(),
+        cross_evidence_validation=getattr(features, "cross_evidence_validation", {}),
+        overall_analysis_confidence=getattr(features, "overall_analysis_confidence", 0.85),
         component_1_scores={
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
@@ -161,9 +180,6 @@ async def _full_analysis(
         status="READY_FOR_COMPONENT_3",
         analysis_timestamp=datetime.now(timezone.utc),
     )
-
-
-
 # ── GET /api/v1/roles ──────────────────────────────────────────────────────────
 
 @router.get("/roles", response_model=RolesListResponse, summary="List all 20 canonical roles")
@@ -346,7 +362,9 @@ async def screen_resume(
         "role_relevant_experience_years": features.role_relevant_experience_years,
         "detected_seniority": features.seniority,
         "employment_records": features.employment_records,
+        "projects": features.projects,
         "scores": {
+
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
             "S_edu": scores.S_edu,

@@ -386,7 +386,7 @@
   --btn-ghost-bg: transparent;
   --btn-ghost-border: var(--color-border);
   --btn-ghost-fg: var(--color-fg-secondary);
-  --btn-ghost-bg-hover: var(--color-surface);
+  --btn-ghost-bg-hover: var(--color-bg-soft);
   --btn-ghost-fg-hover: var(--color-fg);
 
   /* Success button */

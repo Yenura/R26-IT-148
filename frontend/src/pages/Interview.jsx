@@ -864,6 +864,45 @@ export default function Interview() {
             </ResponsiveContainer>
           </div>
         </div>
+
+        {/* Next Step Action Hub */}
+        <div className="card" style={{ padding: 'var(--p-space-5)', textAlign: 'center', background: 'var(--color-bg-elevated)' }}>
+          <h3 style={{ margin: '0 0 8px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
+            Next Steps in Your Application Process
+          </h3>
+          <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '0 0 16px 0' }}>
+            Your 3 category interview marks have been pushed to the company recruiter pipeline and saved to your profile.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button
+              className="btn btn-primary"
+              onClick={() => navigate('/candidate/skill-gap')}
+            >
+              <Sparkles size={15} /> View Skill Gap & Composite Mark
+            </button>
+            {jobId ? (
+              <button
+                className="btn btn-ghost"
+                onClick={() => navigate(`/candidate/jobs/${jobId}`)}
+              >
+                <Briefcase size={15} /> Return to Job Posting
+              </button>
+            ) : (
+              <button
+                className="btn btn-ghost"
+                onClick={() => navigate('/candidate/jobs')}
+              >
+                <Briefcase size={15} /> Browse Open Jobs
+              </button>
+            )}
+            <button
+              className="btn btn-ghost"
+              onClick={() => navigate(`/pipeline/cv-match${jobId ? `?jobId=${jobId}` : ''}`)}
+            >
+              <FileText size={15} /> Run Role CV Match
+            </button>
+          </div>
+        </div>
       </div>
     )
   }

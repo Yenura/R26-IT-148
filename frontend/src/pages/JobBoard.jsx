@@ -135,6 +135,26 @@ export default function JobBoard() {
     return matchesSearch && matchesType
   })
 
+  const takeInterviewForJob = (e, job) => {
+    e.stopPropagation()
+    const params = new URLSearchParams({
+      role: job.job_role || job.title || '',
+      skills: (job.required_skills || []).join(','),
+      level: job.job_level || 'Mid-Level',
+      count: String(job.interview_question_count || 10),
+      mcqCount: String(job.interview_mcq_count ?? 4),
+      descCount: String(job.interview_desc_count ?? 3),
+      codingCount: String(job.interview_coding_count ?? 3),
+      mcqTime: String(job.interview_mcq_time || 60),
+      descTime: String(job.interview_desc_time || 300),
+      codingTime: String(job.interview_coding_time || 600),
+      totalTime: String(job.interview_total_time || 60),
+      description: job.description || '',
+      jobId: job.id,
+    })
+    navigate(`/candidate/interview?${params.toString()}`)
+  }
+
   return (
     <div className="fade-in" style={{ maxWidth: 1040, margin: '0 auto' }}>
       {/* Header */}
@@ -194,6 +214,7 @@ export default function JobBoard() {
           {filtered.map((job) => {
             const isApplied = appliedIds.has(job.id)
             const hasInterview = job.interview_required
+            const isInterviewed = interviewDone.has(job.id) || interviewDone.has(job.job_role || job.title)
 
             return (
               <div
@@ -270,28 +291,37 @@ export default function JobBoard() {
                   )}
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
-                  {hasInterview && (
-                    <span style={{
-                      fontSize: '11px',
-                      color: 'var(--color-purple)',
-                      background: 'var(--color-purple-muted)',
-                      padding: '3px 8px',
-                      borderRadius: 'var(--radius-full)',
-                      border: '1px solid rgba(139, 92, 246, 0.25)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4
-                    }}>
-                      <MessageSquare size={12} /> Tech Interview
-                    </span>
-                  )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0, flexWrap: 'wrap' }} onClick={(e) => e.stopPropagation()}>
+                  <button
+                    className="btn btn-ghost btn-sm"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      navigate(`/pipeline/cv-match?jobId=${job.id}`)
+                    }}
+                    style={{ fontSize: 'var(--p-text-xs)' }}
+                    title="Match your CV with this job requirements"
+                  >
+                    <Sparkles size={13} /> Match CV
+                  </button>
+
+                  <button
+                    className={`btn btn-sm ${isInterviewed ? 'btn-ghost' : 'btn-primary'}`}
+                    onClick={(e) => takeInterviewForJob(e, job)}
+                    style={{
+                      fontSize: 'var(--p-text-xs)',
+                      background: isInterviewed ? 'var(--color-success-muted)' : undefined,
+                      color: isInterviewed ? 'var(--color-success)' : undefined,
+                      border: isInterviewed ? '1px solid rgba(16, 185, 129, 0.3)' : undefined,
+                    }}
+                  >
+                    <MessageSquare size={13} /> {isInterviewed ? 'Retake Interview' : 'Start Interview'}
+                  </button>
 
                   {isApplied ? (
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={(e) => withdraw(e, job.id)}
-                      style={{ color: 'var(--color-danger)' }}
+                      style={{ color: 'var(--color-danger)', fontSize: 'var(--p-text-xs)' }}
                     >
                       Withdraw
                     </button>
@@ -299,6 +329,7 @@ export default function JobBoard() {
                     <button
                       className="btn btn-primary btn-sm"
                       onClick={(e) => apply(e, job.id)}
+                      style={{ fontSize: 'var(--p-text-xs)' }}
                     >
                       Apply Now
                     </button>

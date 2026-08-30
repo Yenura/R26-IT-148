@@ -36,6 +36,14 @@ def _get_classifier() -> RoleClassifier:
 
 
 def _resume_out(doc: dict) -> ResumeOut:
+    edu = doc.get("education", "")
+    if (not edu or len(edu.strip()) < 3) and doc.get("raw_text"):
+        try:
+            ent = extract_entities(doc.get("raw_text", ""))
+            edu = ent.get("education", "")
+        except Exception:
+            pass
+
     return ResumeOut(
         id=str(doc["_id"]),
         candidate_id=doc.get("candidate_id", ""),
@@ -47,7 +55,7 @@ def _resume_out(doc: dict) -> ResumeOut:
         linkedin=doc.get("linkedin", ""),
         github=doc.get("github", ""),
         skills=doc.get("skills", []),
-        education=doc.get("education", ""),
+        education=edu,
         experience_years=doc.get("experience_years", 0),
         projects=doc.get("projects", []),
         academic_projects=doc.get("academic_projects", []),
@@ -64,7 +72,7 @@ def _resume_out(doc: dict) -> ResumeOut:
 
 def _pred_out(doc: dict) -> PredictionOut:
     return PredictionOut(
-        id=str(doc["_id"]),
+        id=str(doc.get("_id", "pred_1")),
         resume_id=doc.get("resume_id", ""),
         candidate_id=doc.get("candidate_id", ""),
         job_id=doc.get("job_id", ""),
@@ -130,6 +138,7 @@ async def upload_resume(
     return _resume_out(doc)
 
 
+@router.get("", response_model=list[ResumeOut])
 @router.get("/", response_model=list[ResumeOut])
 async def list_resumes(request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
@@ -138,10 +147,6 @@ async def list_resumes(request: Request, user: dict = Depends(get_current_user))
     else:
         cursor = db.resumes.find({"candidate_id": str(user["_id"])}).sort("created_at", -1)
         results = [_resume_out(doc) async for doc in cursor]
-        if len(results) == 0:
-            # Also check if candidate has any parsed resumes in database
-            cursor_all = db.resumes.find().sort("created_at", -1).limit(20)
-            results = [_resume_out(doc) async for doc in cursor_all]
         return results
     return [_resume_out(doc) async for doc in cursor]
 
@@ -224,25 +229,27 @@ async def match_resume(
         except Exception:
             pass
 
-    if not resume_doc:
+    if not resume_doc and user:
+        from bson import ObjectId
+        cand_filters = [{"candidate_id": str(user["_id"])}]
+        if ObjectId.is_valid(str(user["_id"])):
+            cand_filters.append({"candidate_id": ObjectId(user["_id"])})
         resume_doc = await db.resumes.find_one(
-            {"candidate_id": str(user["_id"])},
+            {"$or": cand_filters},
             sort=[("created_at", -1)]
         )
 
     if not resume_doc:
-        resume_doc = await db.resumes.find_one(sort=[("created_at", -1)])
-
+        resume_doc = await db.resumes.find_one({}, sort=[("created_at", -1)])
     if not resume_doc:
         resume_doc = {
-            "_id": "demo_resume_01",
-            "candidate_id": str(user["_id"]),
-            "candidate_name": user.get("name", "Candidate Applicant"),
-            "filename": "Candidate_Resume.pdf",
-            "skills": ["Python", "React", "TypeScript", "Node.js", "SQL", "Docker", "FastAPI", "Git", "REST APIs"],
-            "experience_years": 3.5,
+            "_id": "default_resume",
+            "candidate_id": str(user.get("_id", "candidate_1")),
+            "candidate_name": user.get("name", "Applicant"),
+            "skills": ["Python", "React", "JavaScript", "SQL", "Git", "Docker"],
+            "experience_years": 3.0,
             "education": "BSc Computer Science",
-            "raw_text": "Full Stack Developer specializing in Python, React, TypeScript, FastAPI, Docker, and REST APIs."
+            "raw_text": "Experienced Software Engineer with proficiency in Python, React, JavaScript, SQL, Git, and Docker."
         }
 
     job_doc = None
@@ -254,7 +261,7 @@ async def match_resume(
             try:
                 job_doc = await db.jobs.find_one({"id": job_id})
             except Exception:
-                pass
+                job_doc = None
 
     resume_text = resume_doc.get("raw_text", "") or resume_doc.get("text", "") or resume_doc.get("resume_text", "")
     cand_skills_raw = resume_doc.get("skills", [])
@@ -393,6 +400,24 @@ async def match_resume(
             {"$set": doc},
             upsert=True
         )
+        if job_id and job_doc:
+            await db.applications.update_one(
+                {"candidate_id": str(user["_id"]), "job_id": str(job_id)},
+                {"$set": {
+                    "job_id": str(job_id),
+                    "candidate_id": str(user["_id"]),
+                    "candidate_name": user.get("full_name") or user.get("name") or "Candidate",
+                    "candidate_email": user.get("email", ""),
+                    "resume_id": res_id_str,
+                    "job_title": job_doc.get("title", ""),
+                    "company_id": str(job_doc.get("company_id", "")),
+                    "company_name": job_doc.get("company_name", ""),
+                    "cv_score": round(overall_score, 2),
+                    "overall_score": round(overall_score, 2),
+                    "applied_at": now,
+                }},
+                upsert=True
+            )
     except Exception:
         pass
 
@@ -471,9 +496,9 @@ async def parse_resume_text(
     return _resume_out(doc)
 
 
-@limiter.limit("30/minute")
+@limiter.limit("60/minute")
 @router.post("/interview-scores")
-async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(get_current_user)):
+async def save_interview_scores(payload: InterviewScoresCreate, request: Request):
     db = request.app.state.db
     doc = {
         "candidate_id": payload.candidate_id,
@@ -488,12 +513,81 @@ async def save_interview_scores(payload: InterviewScoresCreate, request: Request
         "integrity_score": payload.integrity_score,
         "created_at": datetime.now(timezone.utc),
     }
-    await db.interview_scores.insert_one(doc)
+    # Update or insert interview score
+    query = {"candidate_id": payload.candidate_id}
+    if payload.job_id:
+        query["job_id"] = payload.job_id
+    elif payload.session_id:
+        query["session_id"] = payload.session_id
+    
+    await db.interview_scores.update_one(
+        query,
+        {"$set": doc},
+        upsert=True
+    )
+
+    # Automatically synchronize application in db.applications
+    if payload.job_id:
+        from bson import ObjectId
+        job_doc = None
+        try:
+            if ObjectId.is_valid(payload.job_id):
+                job_doc = await db.jobs.find_one({"_id": ObjectId(payload.job_id)})
+            if not job_doc:
+                job_doc = await db.jobs.find_one({"_id": payload.job_id})
+        except Exception:
+            pass
+
+        user_doc = None
+        try:
+            if ObjectId.is_valid(payload.candidate_id):
+                user_doc = await db.users.find_one({"_id": ObjectId(payload.candidate_id)})
+            if not user_doc:
+                user_doc = await db.users.find_one({"_id": payload.candidate_id})
+        except Exception:
+            pass
+
+        cand_name = user_doc.get("full_name") or user_doc.get("name") if user_doc else "Candidate"
+        cand_email = user_doc.get("email", "") if user_doc else ""
+
+        # Fetch candidate resume
+        resume_doc = None
+        try:
+            if ObjectId.is_valid(payload.candidate_id):
+                resume_doc = await db.resumes.find_one({"$or": [{"candidate_id": payload.candidate_id}, {"candidate_id": ObjectId(payload.candidate_id)}]}, sort=[("created_at", -1)])
+            else:
+                resume_doc = await db.resumes.find_one({"candidate_id": payload.candidate_id}, sort=[("created_at", -1)])
+        except Exception:
+            pass
+
+        app_doc = {
+            "job_id": str(payload.job_id),
+            "candidate_id": str(payload.candidate_id),
+            "candidate_name": cand_name,
+            "candidate_email": cand_email,
+            "resume_id": str(resume_doc["_id"]) if resume_doc else "",
+            "job_title": job_doc.get("title", payload.job_role) if job_doc else payload.job_role,
+            "company_id": str(job_doc.get("company_id", "")) if job_doc else "",
+            "company_name": job_doc.get("company_name", "") if job_doc else "",
+            "status": "interview_completed",
+            "applied_at": datetime.now(timezone.utc),
+            "interview_score": payload.interview_score,
+            "mcq_score": payload.mcq_score,
+            "descriptive_score": payload.descriptive_score,
+            "coding_score": payload.coding_score,
+            "grade": payload.grade,
+        }
+        await db.applications.update_one(
+            {"candidate_id": str(payload.candidate_id), "job_id": str(payload.job_id)},
+            {"$set": app_doc},
+            upsert=True
+        )
+
     return {"success": True}
 
 
 @router.get("/interview-scores/{candidate_id}")
-async def get_interview_scores(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
+async def get_interview_scores(candidate_id: str, request: Request):
     db = request.app.state.db
     cursor = db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1)
     scores = []
@@ -503,7 +597,7 @@ async def get_interview_scores(candidate_id: str, request: Request, user: dict =
     return scores
 
 @router.get("/interview-detail/{candidate_id}")
-async def get_interview_detail(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
+async def get_interview_detail(candidate_id: str, request: Request):
     db = request.app.state.db
     cursor = db.results.find({"candidate_id": candidate_id}).sort("created_at", -1)
     results = []
