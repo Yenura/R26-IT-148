@@ -42,7 +42,9 @@ export default function CandidateRegister() {
       toast.success('Candidate account created!')
       navigate('/candidate/dashboard')
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Registration failed')
+      const detail = err?.response?.data?.detail
+      const msg = Array.isArray(detail) ? (detail[0]?.msg?.replace('Value error, ','') || detail[0]?.msg || detail[0]) : detail
+      toast.error(msg || 'Registration failed')
     } finally {
       setBusy(false)
     }

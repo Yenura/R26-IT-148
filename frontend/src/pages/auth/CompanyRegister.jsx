@@ -42,7 +42,9 @@ export default function CompanyRegister() {
       toast.success('Company account created!')
       navigate('/company/dashboard')
     } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Registration failed')
+      const detail = err?.response?.data?.detail
+      const msg = Array.isArray(detail) ? (detail[0]?.msg?.replace('Value error, ','') || detail[0]?.msg || detail[0]) : detail
+      toast.error(msg || 'Registration failed')
     } finally {
       setBusy(false)
     }
