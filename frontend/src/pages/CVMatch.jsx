@@ -33,34 +33,15 @@ const cleanCandidateName = (rawName, fallbackFilename) => {
 }
 
 const cleanEducationText = (rawEdu) => {
-  if (!rawEdu) return 'BSc (Hons) in Information Technology'
+  if (!rawEdu) return 'BSc IT / Computing'
   let edu = String(rawEdu).trim()
-
-  // Remove leading intro boilerplate
-  edu = edu.replace(/^(?:i'm|i am|student|undergraduate|motivated)\s+.*?towards\s+/i, '')
-  edu = edu.replace(/^(?:education|degree|qualification)\s*:\s*/i, '')
-
-  // Remove dates (e.g. 2023 - Following, 2023 - 2026, May 2023)
-  edu = edu.replace(/\s*[\(\[]?\s*(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)?\s*\d{4}\s*[-–—]\s*(?:\d{4}|present|following|current)\s*[\)\]]?/gi, '')
-  edu = edu.replace(/\s*[\(\[]?\s*(?:year\s*)?\d{4}\s*[\)\]]?/gi, '')
-
-  // Standardize degree prefixes and keep specialization intact
-  edu = edu.replace(/Bachelor\s+of\s+science\s*\(hons\)/i, 'BSc (Hons)')
-  edu = edu.replace(/Bachelor\s+of\s+science/i, 'BSc')
-  edu = edu.replace(/Master\s+of\s+science/i, 'MSc')
-  edu = edu.replace(/Specialized\s+in/i, 'Spec. in')
-  edu = edu.replace(/Specialisation\s+in/i, 'Spec. in')
-
-  // Split off multiline text or phone delimiters
-  edu = edu.split(/\s*[\n\r|;•]\s*/)[0].trim()
-  edu = edu.replace(/^sri\s+lanka\s+institute\s+of\s+information\s+technology\s+/i, '')
-  edu = edu.replace(/^sliit\s+/i, '')
-
-  // Clean trailing punctuation
-  edu = edu.replace(/[,\-–—|•;:]+$/, '').trim()
-
-  if (!edu || edu.length < 4) return 'BSc (Hons) in Information Technology'
-  return edu
+  edu = edu.split(/\s*[|:;•\n\r]\s*/)[0].trim()
+  edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
+  if (/bsc\s*\(hons\)|bachelor of science/i.test(edu)) return 'BSc (Hons) IT'
+  if (/bachelor|b\.sc|btech|b\.e/i.test(edu)) return 'BSc Computer Science'
+  if (/master|msc|mtech/i.test(edu)) return 'MSc Computing'
+  if (/diploma|hnd/i.test(edu)) return 'Higher Diploma'
+  return edu.length > 25 ? edu.slice(0, 25) + '...' : edu
 }
 
 const cleanExperienceText = (r) => {

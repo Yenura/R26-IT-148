@@ -176,7 +176,9 @@ export default function SkillGap() {
       try {
         sessionStorage.setItem(`recruitai.skillgap.${currentId}`, JSON.stringify(arr))
       } catch {}
-      if ((!selectedJobId || !arr.some((a) => a.job_id === selectedJobId)) && arr.length > 0) {
+      if (arr.length === 0) {
+        setSelectedJobId(null)
+      } else if (!selectedJobId || !arr.some((a) => a.job_id === selectedJobId)) {
         setSelectedJobId(arr[0].job_id)
       }
     } catch {

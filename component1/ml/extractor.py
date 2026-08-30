@@ -1133,6 +1133,8 @@ def detect_seniority(records: List[Dict[str, Any]], relevant_years: float, text:
 
 # ── Education & Certification Extraction ───────────────────────────────────────
 
+# ── Education & Certification Extraction ───────────────────────────────────────
+
 def extract_education_level(text: str) -> Dict[str, Any]:
     """Extract education degree level (PhD=4, MSc=3, BSc=2, Diploma=1) and major field."""
     if not text:
@@ -1518,6 +1520,7 @@ def extract_skills_and_certifications(text: str, target_role: str = "Software En
                     "evidence_level": strength.upper(),
                     "category": category,
                 }
+
 
         category_counts[category] = count
 

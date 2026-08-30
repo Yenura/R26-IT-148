@@ -182,3 +182,113 @@ def _get_seen_question_ids_sync(candidate_id: str, limit: int = 1000) -> set:
 
 async def get_seen_question_ids(candidate_id: str, limit: int = 1000) -> set:
     return await run_in_threadpool(_get_seen_question_ids_sync, candidate_id, limit)
+
+
+def _link_candidate_application_sync(
+    candidate_id: str,
+    job_id: str,
+    job_role: str,
+    interview_score: float,
+    mcq_score: float,
+    desc_score: float,
+    code_score: float
+) -> None:
+    mongo_db = _get_mongo_db()
+    if mongo_db is None:
+        return
+    from bson import ObjectId
+    from datetime import datetime, timezone
+
+    cand_name = "Candidate User"
+    resume_id = ""
+    try:
+        user_doc = mongo_db["users"].find_one({"_id": ObjectId(candidate_id)}) if ObjectId.is_valid(candidate_id) else mongo_db["users"].find_one({"_id": candidate_id})
+        if user_doc:
+            cand_name = user_doc.get("full_name", user_doc.get("email", "Candidate User"))
+    except Exception:
+        pass
+
+    try:
+        res_doc = mongo_db["resumes"].find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
+        if res_doc:
+            resume_id = str(res_doc["_id"])
+            if not cand_name or cand_name == "Candidate User":
+                cand_name = res_doc.get("candidate_name", cand_name)
+    except Exception:
+        pass
+
+    now = datetime.now(timezone.utc)
+
+    # 1. Update or insert application for the specific job
+    if job_id:
+        try:
+            job_oid = ObjectId(job_id) if ObjectId.is_valid(job_id) else job_id
+            app_filter = {
+                "$or": [
+                    {"job_id": job_oid, "candidate_id": str(candidate_id)},
+                    {"job_id": str(job_id), "candidate_id": str(candidate_id)},
+                ]
+            }
+            app_update = {
+                "$set": {
+                    "job_id": job_oid if ObjectId.is_valid(job_id) else str(job_id),
+                    "candidate_id": str(candidate_id),
+                    "candidate_name": cand_name,
+                    "resume_id": resume_id,
+                    "status": "interview_completed",
+                    "interview_completed": True,
+                    "interview_score": round(interview_score, 2),
+                    "mcq_score": round(mcq_score, 2),
+                    "descriptive_score": round(desc_score, 2),
+                    "coding_score": round(code_score, 2),
+                    "applied_at": now,
+                    "updated_at": now,
+                }
+            }
+            mongo_db["applications"].update_one(app_filter, app_update, upsert=True)
+            logger.info("Auto-linked application for candidate %s and job %s (Score: %.2f)", candidate_id, job_id, interview_score)
+        except Exception as e:
+            logger.warning("Failed to link application in db.py: %s", e)
+
+    # 2. Update or insert into interview_scores
+    try:
+        score_doc = {
+            "candidate_id": str(candidate_id),
+            "candidate_name": cand_name,
+            "job_id": str(job_id) if job_id else "",
+            "job_role": job_role,
+            "interview_score": round(interview_score, 2),
+            "mcq_score": round(mcq_score, 2),
+            "descriptive_score": round(desc_score, 2),
+            "coding_score": round(code_score, 2),
+            "created_at": now,
+        }
+        score_filter = {
+            "candidate_id": str(candidate_id),
+            "$or": [{"job_id": str(job_id)}, {"job_role": job_role}]
+        } if job_id else {"candidate_id": str(candidate_id), "job_role": job_role}
+        mongo_db["interview_scores"].update_one(score_filter, {"$set": score_doc}, upsert=True)
+    except Exception as e:
+        logger.warning("Failed to update interview_scores in db.py: %s", e)
+
+
+async def link_candidate_application(
+    candidate_id: str,
+    job_id: str,
+    job_role: str,
+    interview_score: float,
+    mcq_score: float,
+    desc_score: float,
+    code_score: float
+) -> None:
+    await run_in_threadpool(
+        _link_candidate_application_sync,
+        candidate_id,
+        job_id,
+        job_role,
+        interview_score,
+        mcq_score,
+        desc_score,
+        code_score
+    )
+
