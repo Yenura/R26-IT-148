@@ -1,6 +1,6 @@
 """
 Role Classifier Service — Component 1
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Loads the feature-based LogisticRegression classifier (cv_classifier.pkl)
 and returns top IT job role predictions with calibrated confidence probabilities,
