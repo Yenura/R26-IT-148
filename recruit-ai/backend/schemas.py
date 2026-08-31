@@ -392,6 +392,18 @@ class ApplicationOut(BaseModel):
     overall_score: float | None = None
     hire_probability: float | None = None
     skills: list[str] = []
+    skill_score: float | None = None
+    experience_score: float | None = None
+    education_score: float | None = None
+    mcq_score: float | None = None
+    descriptive_score: float | None = None
+    coding_score: float | None = None
+    S_cv: float | None = None
+    S_int: float | None = None
+    CSS: float | None = None
+    passed_filter: bool = True
+    verdict: str | None = None
+    badge_color: str | None = None
 
 
 class ApplicationCreate(BaseModel):

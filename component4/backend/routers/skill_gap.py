@@ -504,6 +504,18 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             descriptive_score=interview_res.get("descriptive_score") if interview_res else None,
             coding_score=interview_res.get("coding_score") if interview_res else None,
         )
+        cv_w, int_w = _resolve_role_weights(target_role)
+        cand_cv_score = round(float(pred.get("overall_score", 75) if pred else 75), 1)
+        if interview_res and interview_score is not None:
+            mcq_s = float(interview_res.get("mcq_score", 0))
+            desc_s = float(interview_res.get("descriptive_score", 0))
+            code_s = float(interview_res.get("coding_score", 0))
+            cand_int_score = round(int_w["w_mcq"] * mcq_s + int_w["w_desc"] * desc_s + int_w["w_code"] * code_s, 1)
+            cand_composite = round(0.40 * cand_cv_score + 0.60 * cand_int_score, 1)
+        else:
+            cand_int_score = None
+            cand_composite = cand_cv_score
+
         reports.append({
             "job_id": "general_baseline",
             "job_title": target_role,
@@ -512,16 +524,16 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "employment_type": "Full-time",
             "applied_at": datetime.now(timezone.utc).isoformat(),
             "interview_completed": interview_res is not None,
-            "interview_score": interview_score,
-            "cv_score": pred.get("overall_score", 75) if pred else 75,
+            "interview_score": cand_int_score,
+            "cv_score": cand_cv_score,
             "cv_breakdown": {
                 "skill_score": pred.get("skill_score", 75) if pred else 75,
                 "experience_score": pred.get("experience_score", 70) if pred else 70,
                 "education_score": pred.get("education_score", 80) if pred else 80,
-                "overall_score": pred.get("overall_score", 75) if pred else 75,
+                "overall_score": cand_cv_score,
             },
-            "composite_score": analysis.get("hire_probability", 0.7) * 100,
-            "total_mark": analysis.get("hire_probability", 0.7) * 100,
+            "composite_score": cand_composite,
+            "total_mark": cand_composite,
             "strengths": [{"skill": s, "source": "CV Skill Profile", "details": f"Verified proficiency in {s}"} for s in analysis.get("matched_skills", [])[:5]],
             "weaknesses": [{"skill": s, "source": "Target Role Gap", "details": f"Missing critical skill for {target_role}", "severity": "High"} for s in analysis.get("missing_required", [])[:4]],
             "topic_performance": [],
