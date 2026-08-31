@@ -43,22 +43,21 @@ _DEFAULT_LEVEL = "Mid-Level"
 _LEVEL_WORDS = set(w for _, ws in _LEVEL_PATTERNS for w in ws) | {"lead", "associate", "mid", "level", "l3"}
 
 
-def _normalize_job_role(title: str) -> str:
-    """Derive the canonical interview role from a free-text job title."""
-    t = re.sub(r"[^a-z0-9 ]", " ", (title or "").lower())
-    for word in _LEVEL_WORDS:
-        t = t.replace(word, " ")
-    t = re.sub(r"\s+", " ", t).strip()
-    if not t:
+def _normalize_role_match(role_str: str) -> str:
+    if not role_str:
         return ""
-    twords = t.split()
-    best_role, best_score = "", 0
-    for role in _INTERVIEW_ROLES:
-        rwords = role.lower().split()
-        score = sum(1 for rw in rwords if any(tw.startswith(rw) or rw.startswith(tw) for tw in twords))
-        if score > best_score:
-            best_role, best_score = role, score
-    return best_role if best_score else (title or "").strip()
+    r = role_str.lower().replace("_", " ").strip()
+    for canon in [
+        "software engineer", "data scientist", "machine learning engineer",
+        "cloud solutions architect", "devops engineer", "cybersecurity engineer",
+        "frontend developer", "backend developer", "full stack developer",
+        "qa engineer", "mobile developer", "data engineer", "data analyst",
+        "systems engineer", "network engineer", "security engineer",
+        "ai engineer", "product manager", "ui ux designer"
+    ]:
+        if canon in r or r in canon:
+            return canon
+    return _normalize_job_role(role_str).lower()
 
 
 def _normalize_job_level(title: str) -> str:
@@ -490,19 +489,34 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             if cid not in resume_map:
                 resume_map[cid] = r
 
+        j_t_str = _normalize_role_match(job_doc.get("title", "")) if job_doc else ""
+        j_r_str = _normalize_role_match(job_doc.get("job_role", "")) if job_doc else ""
+
+        def _is_match(rec):
+            if not rec:
+                return False
+            rec_jid = str(rec.get("job_id", ""))
+            rec_role = _normalize_role_match(str(rec.get("predicted_role", "") or rec.get("job_role", "") or rec.get("job_title", "") or ""))
+            return bool(
+                (rec_jid and rec_jid == str(job_id)) or
+                (job_doc and oid and rec_jid == str(job_doc.get("_id", ""))) or
+                (j_t_str and rec_role == j_t_str) or
+                (j_r_str and rec_role == j_r_str)
+            )
+
         async for p in db.predictions.find({"$or": r_filters}).sort("created_at", -1):
             cid = str(p.get("candidate_id", ""))
-            if cid not in pred_map or str(p.get("job_id")) == str(job_id):
+            if cid and _is_match(p):
                 pred_map[cid] = p
 
         async for s in db.interview_scores.find({"$or": r_filters}).sort("created_at", -1):
             cid = str(s.get("candidate_id", ""))
-            if cid not in score_map or str(s.get("job_id")) == str(job_id):
+            if cid and _is_match(s):
                 score_map[cid] = s
 
         async for res in db.results.find({"$or": r_filters}).sort("created_at", -1):
             cid = str(res.get("candidate_id", ""))
-            if cid not in score_map or str(res.get("job_id")) == str(job_id):
+            if cid and _is_match(res):
                 score_map[cid] = res
 
     enriched = []
@@ -511,13 +525,17 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
         u = user_map.get(cid, {})
         r = resume_map.get(cid, {})
         p = pred_map.get(cid, {})
+        if not p and _is_match(doc) and (doc.get("skill_score") is not None or doc.get("overall_score") is not None or doc.get("cv_score") is not None):
+            p = doc
         s = score_map.get(cid, {})
+        if not s and _is_match(doc) and (doc.get("interview_score") is not None or doc.get("interview_completed")):
+            s = doc
 
         c_name = doc.get("candidate_name") or u.get("full_name") or r.get("candidate_name") or u.get("email") or "Candidate"
         c_email = doc.get("candidate_email") or u.get("email") or r.get("email") or ""
-        int_score = doc.get("interview_score") or s.get("interview_score")
-        cv_score = doc.get("cv_score") or p.get("overall_score") or doc.get("overall_score")
-        skills = r.get("skills", [])
+        int_score = s.get("interview_score") or doc.get("interview_score")
+        cv_score = p.get("overall_score") or p.get("cv_score") or doc.get("cv_score") or doc.get("overall_score")
+        skills = r.get("skills", []) or doc.get("skills", [])
 
         hire_prob = None
         if int_score is not None and cv_score is not None:

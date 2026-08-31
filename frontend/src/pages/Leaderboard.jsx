@@ -48,7 +48,7 @@ export default function Leaderboard() {
     if (data.length === 0) setLoading(true)
     try {
       if (userRole === 'company') {
-        // 1. Fetch only jobs posted by this company
+        // Fetch company jobs
         const myJobsRes = await uJobsMy().catch(() => ({ data: [] }))
         const jobs = Array.isArray(myJobsRes.data) ? myJobsRes.data : []
         setCompanyJobs(jobs)
@@ -56,54 +56,28 @@ export default function Leaderboard() {
         const companyApplicants = []
         const seenCandidates = new Set()
 
-        // 2. Fetch applicants strictly applied to this company's jobs
+        // Fetch rankings from the canonical C3 ranking engine for each job
         const resultsPerJob = await Promise.all(
           jobs.map(async (job) => {
             const jobId = job.id || job._id
-            const jobApps = []
             try {
-              const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
-              const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
-              for (const app of rawApps) {
-                const hasInterview = app.interview_score != null || app.interview_completed
-                const hasCV = app.cv_score != null || app.overall_score != null
-                const cvScore = app.cv_score ?? app.overall_score ?? (hasInterview ? 75 : 0)
-                const intScore = app.interview_score ?? 0
-                const hireProb = app.hire_probability ?? app.css_score ?? (hasInterview && hasCV ? (0.4 * cvScore + 0.6 * intScore) : (hasInterview ? intScore : cvScore))
-                jobApps.push({
-                  candidate_id: app.candidate_id,
-                  candidate_name: app.candidate_name || app.name || 'Applicant',
-                  job_id: jobId,
-                  job_role: job.title || 'Technical Role',
-                  company_name: job.company_name || localStorage.getItem('recruitai.name') || 'Your Company',
-                  skills: app.skills || app.resume_skills || job.required_skills || [],
-                  hire_probability: hireProb,
-                  CSS: hireProb,
-                  interview_completed: Boolean(hasInterview),
-                  interview_score: app.interview_score || null,
-                  cv_score: cvScore,
-                  S_cv: cvScore,
-                  S_int: intScore,
-                  skill_score: app.skill_score ?? 80,
-                  experience_score: app.experience_score ?? 70,
-                  education_score: app.education_score ?? 80,
-                  mcq_score: app.mcq_score ?? (hasInterview ? 80 : 0),
-                  descriptive_score: app.descriptive_score ?? (hasInterview ? 75 : 0),
-                  coding_score: app.coding_score ?? (hasInterview ? 85 : 0),
-                  has_cv: Boolean(hasCV),
-                  passed_filter: app.passed_filter !== false
-                })
-              }
+              const res = await c3Pipeline(jobId).catch(() => ({ data: { data: [] } }))
+              const list = res.data?.data || res.data?.rankings || []
+              return list.map((cand) => ({
+                ...cand,
+                job_id: jobId,
+                job_role: job.title || 'Technical Role',
+                company_name: job.company_name || localStorage.getItem('recruitai.name') || 'Your Company',
+              }))
             } catch {
-              /* ignore error for individual job */
+              return []
             }
-            return jobApps
           })
         )
 
         for (const list of resultsPerJob) {
           for (const cand of list) {
-            const uniqueKey = `${cand.candidate_id || cand.candidate_name}_${cand.job_id}`
+            const uniqueKey = `${cand.candidate_id}_${cand.job_id}`
             if (!seenCandidates.has(uniqueKey)) {
               seenCandidates.add(uniqueKey)
               companyApplicants.push(cand)
@@ -111,9 +85,16 @@ export default function Leaderboard() {
           }
         }
 
-        // Sort descending by candidate score
-        companyApplicants.sort((a, b) => (b.hire_probability || 0) - (a.hire_probability || 0))
+        // Sort descending by CSS / final_score
+        companyApplicants.sort((a, b) => {
+          const scoreA = a.final_score ?? (a.CSS != null ? (a.CSS <= 1 ? a.CSS * 100 : a.CSS) : 0)
+          const scoreB = b.final_score ?? (b.CSS != null ? (b.CSS <= 1 ? b.CSS * 100 : b.CSS) : 0)
+          return scoreB - scoreA
+        })
         setData(companyApplicants)
+        try {
+          sessionStorage.setItem(`recruitai.leaderboard.${userRole}`, JSON.stringify(companyApplicants))
+        } catch {}
       } else {
         // Candidate view: general benchmark standings
         const r = await c4Leaderboard(50)
@@ -292,16 +273,20 @@ export default function Leaderboard() {
               <tbody>
                 {filteredData.map((cand, index) => {
                   const rank = index + 1
-                  const isTop3 = rank <= 3
-                  const cssVal = cand.final_score ?? (cand.CSS != null ? cand.CSS : (cand.hire_probability ?? (cand.cv_score ?? 0)))
-                  const sCvVal = cand.cv_score ?? (cand.S_cv != null ? cand.S_cv : 75)
-                  const sSkillVal = cand.skill_score ?? 80
-                  const sExpVal = cand.experience_score ?? 70
-                  const sEduVal = cand.education_score ?? 80
-                  const sIntVal = cand.interview_score ?? (cand.S_int != null ? cand.S_int : (cand.interview_completed ? 75 : 0))
-                  const pMcqVal = cand.mcq_score ?? (cand.interview_completed ? 80 : 0)
-                  const pDescVal = cand.descriptive_score ?? (cand.interview_completed ? 75 : 0)
-                  const pCodeVal = cand.coding_score ?? (cand.interview_completed ? 85 : 0)
+                  const isTop3 = rank <= 3 && cand.passed_hard_filter !== false
+                  const hasCV = cand.has_cv !== false && (cand.S_cv != null || cand.cv_score != null)
+                  const hasInt = cand.interview_completed === true && (cand.S_int != null || cand.interview_score != null)
+
+                  const cssVal = cand.final_score ?? (cand.CSS != null ? (cand.CSS <= 1 ? cand.CSS * 100 : cand.CSS) : (cand.hire_probability ?? (hasCV ? cand.cv_score : cand.interview_score) ?? 0))
+                  const sCvVal = cand.cv_score ?? (cand.S_cv != null ? (cand.S_cv <= 1 ? cand.S_cv * 100 : cand.S_cv) : null)
+                  const sSkillVal = cand.skill_score ?? (cand.S_skill != null ? (cand.S_skill <= 1 ? cand.S_skill * 100 : cand.S_skill) : null)
+                  const sExpVal = cand.experience_score ?? (cand.S_exp != null ? (cand.S_exp <= 1 ? cand.S_exp * 100 : cand.S_exp) : null)
+                  const sEduVal = cand.education_score ?? (cand.S_edu != null ? (cand.S_edu <= 1 ? cand.S_edu * 100 : cand.S_edu) : null)
+                  
+                  const sIntVal = cand.interview_score ?? (cand.S_int != null ? (cand.S_int <= 1 ? cand.S_int * 100 : cand.S_int) : null)
+                  const pMcqVal = cand.mcq_score ?? (cand.P_mcq != null ? (cand.P_mcq <= 1 ? cand.P_mcq * 100 : cand.P_mcq) : null)
+                  const pDescVal = cand.descriptive_score ?? (cand.P_desc != null ? (cand.P_desc <= 1 ? cand.P_desc * 100 : cand.P_desc) : null)
+                  const pCodeVal = cand.coding_score ?? (cand.P_code != null ? (cand.P_code <= 1 ? cand.P_code * 100 : cand.P_code) : null)
 
                   const passedFilter = cand.passed_hard_filter !== false && cand.passed_filter !== false
                   const verdict = !passedFilter ? 'Disqualified' : (Number(cssVal) >= 80 ? 'Highly Recommended' : (Number(cssVal) >= 65 ? 'Recommended' : (Number(cssVal) >= 50 ? 'Potential Match' : 'Not Recommended')))
@@ -330,11 +315,11 @@ export default function Leaderboard() {
                         </div>
                       </td>
                       <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
                             {cleanCandidateName(cand.candidate_name, cand.candidate_id)}
                           </div>
-                          {cand.interview_completed && (
+                          {hasInt && (
                             <span style={{ fontSize: '10px', color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '1px 6px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
                               ✓ Assessed
                             </span>
@@ -348,37 +333,58 @@ export default function Leaderboard() {
                         <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
                           {Number(cssVal).toFixed(1)}%
                         </div>
-                      </td>
-                      <td>
-                        <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                          {Number(sCvVal).toFixed(0)}%
+                        <div style={{ fontSize: '10px', color: hasCV && hasInt ? 'var(--color-success)' : (hasCV ? 'var(--color-warning)' : 'var(--color-info)'), fontWeight: 600 }}>
+                          {hasCV && hasInt ? 'Combined CSS' : (hasCV ? 'CV Fit Score' : 'Interview Score')}
                         </div>
                       </td>
                       <td>
-                        <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                          <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal).toFixed(0)}%</span>
-                        </div>
+                        {hasCV && sCvVal != null ? (
+                          <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                            {Number(sCvVal).toFixed(0)}%
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>Pending</span>
+                        )}
                       </td>
                       <td>
-                        <div style={{ fontSize: 'var(--p-text-xs)', color: cand.interview_completed ? 'var(--color-purple)' : 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)', fontWeight: 800 }}>
-                          {cand.interview_completed ? `${Number(sIntVal).toFixed(0)}%` : '0%'}
-                        </div>
+                        {hasCV && sSkillVal != null ? (
+                          <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
+                            <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal ?? 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal ?? 0).toFixed(0)}%</span>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>—</span>
+                        )}
                       </td>
                       <td>
-                        <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                          <span title="MCQ Score" style={{ color: 'var(--color-primary)' }}>{Number(pMcqVal).toFixed(0)}%</span> / <span title="Theory Score" style={{ color: 'var(--color-info)' }}>{Number(pDescVal).toFixed(0)}%</span> / <span title="Coding Score" style={{ color: 'var(--color-purple)' }}>{Number(pCodeVal).toFixed(0)}%</span>
-                        </div>
+                        {hasInt && sIntVal != null ? (
+                          <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 800 }}>
+                            {Number(sIntVal).toFixed(0)}%
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '10px', color: 'var(--color-warning)', background: 'var(--color-warning-muted)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', fontWeight: 600 }}>
+                            Pending
+                          </span>
+                        )}
+                      </td>
+                      <td>
+                        {hasInt && pMcqVal != null ? (
+                          <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
+                            <span title="MCQ Score" style={{ color: 'var(--color-primary)' }}>{Number(pMcqVal).toFixed(0)}%</span> / <span title="Theory Score" style={{ color: 'var(--color-info)' }}>{Number(pDescVal ?? 0).toFixed(0)}%</span> / <span title="Coding Score" style={{ color: 'var(--color-purple)' }}>{Number(pCodeVal ?? 0).toFixed(0)}%</span>
+                          </div>
+                        ) : (
+                          <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>—</span>
+                        )}
                       </td>
                       <td>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
                           <span style={{
                             fontSize: '10px',
                             fontWeight: 700,
-                            color: badgeColor,
+                            color: cand.badge_color || badgeColor,
                             background: 'var(--color-bg-elevated)',
                             padding: '2px 8px',
                             borderRadius: 'var(--radius-full)',
-                            border: `1px solid ${badgeColor}40`,
+                            border: `1px solid ${cand.badge_color || badgeColor}40`,
                             whiteSpace: 'nowrap'
                           }}>
                             {cand.verdict || verdict}
