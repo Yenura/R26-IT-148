@@ -6,7 +6,7 @@ import {
   Building2, MapPin, Sparkles, Eye, AlertCircle, Clock, Shield,
   UserCheck, Volume2, Activity
 } from 'lucide-react'
-import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, c3Explain, uJobsGet } from '../api'
+import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, c3Explain } from '../api'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import ScoreMeter from '../components/ScoreMeter'
@@ -51,17 +51,15 @@ export default function ApplicantPipeline() {
   const loadData = async () => {
     setBusy(true)
     try {
-      const [jobRes, appsRes, rankRes] = await Promise.all([
-        uJobsGet(jobId).catch(() => c0JobsAll().then((r) => ({ data: (Array.isArray(r.data) ? r.data : []).find((x) => x.id === jobId) }))).catch(() => ({ data: null })),
+      const [jobRes, appsRes] = await Promise.all([
+        c0JobsAll().catch(() => ({ data: [] })),
         uJobsApplicants(jobId).catch(() => ({ data: [] })),
-        c3Pipeline(jobId).catch(() => ({ data: { data: [] } })),
       ])
-      setJob(jobRes.data || null)
+      const jobList = Array.isArray(jobRes.data) ? jobRes.data : []
+      const j = jobList.find((x) => x.id === jobId)
+      setJob(j)
       const apps = Array.isArray(appsRes.data) ? appsRes.data : []
       setApplicants(apps)
-      if (rankRes?.data?.data && rankRes.data.data.length > 0) {
-        setRankings(rankRes.data.data)
-      }
     } catch (err) {
       toast.error('Failed to load applicant pipeline')
     } finally {
@@ -155,102 +153,84 @@ export default function ApplicantPipeline() {
             <table className="table">
               <thead>
                 <tr>
-                  <th style={{ width: 50 }}>Rank</th>
+                  <th style={{ width: 60 }}>Rank</th>
                   <th>Candidate</th>
-                  <th>Overall Fit (CSS)</th>
-                  <th>CV Match (S_cv)</th>
-                  <th>Skills / Exp / Edu</th>
-                  <th>Interview (S_int)</th>
-                  <th>MCQ / Theory / Code</th>
-                  <th>Recommendation</th>
+                  <th>Overall Fit Score</th>
+                  <th>Skills Match</th>
+                  <th>Experience Match</th>
+                  <th>Interview Score</th>
+                  <th>Status</th>
                   <th style={{ textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {rankings.map((r, i) => {
-                  const cssVal = r.final_score ?? (r.CSS != null ? r.CSS * 100 : (r.blended_score ?? 0))
-                  const sCvVal = r.cv_score ?? (r.S_cv != null ? r.S_cv * 100 : 75)
-                  const sSkillVal = r.skill_score ?? (r.S_skill != null ? r.S_skill * 100 : 80)
-                  const sExpVal = r.experience_score ?? (r.S_exp != null ? r.S_exp * 100 : 70)
-                  const sEduVal = r.education_score ?? (r.S_edu != null ? r.S_edu * 100 : 80)
-                  const sIntVal = r.interview_score ?? (r.S_int != null ? r.S_int * 100 : 0)
-                  const pMcqVal = r.mcq_score ?? (r.P_mcq != null ? r.P_mcq * 100 : 0)
-                  const pDescVal = r.descriptive_score ?? (r.P_desc != null ? r.P_desc * 100 : 0)
-                  const pCodeVal = r.coding_score ?? (r.P_code != null ? r.P_code * 100 : 0)
-
-                  return (
-                    <tr key={r.candidate_id || i} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
-                      <td>
-                        <div style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 'var(--radius-sm)',
-                          background: r.passed_hard_filter ? (i < 3 ? 'var(--color-primary)' : 'var(--color-border-subtle)') : 'var(--color-danger-muted)',
-                          color: r.passed_hard_filter ? (i < 3 ? '#fff' : 'var(--color-fg)') : 'var(--color-danger)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontWeight: 800,
-                          fontSize: '12px'
-                        }}>
-                          {r.passed_hard_filter ? `#${r.rank || i + 1}` : '✗'}
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{r.candidate_name || 'Candidate'}</div>
-                        <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
-                          <span title={r.candidate_id}>ID: {r.candidate_id?.slice(0, 8)}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)', fontSize: '1.05rem' }}>
-                          {Number(cssVal).toFixed(1)}%
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)' }}>
-                          {Number(sCvVal).toFixed(0)}%
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                          <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal).toFixed(0)}%</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontWeight: 800 }}>
-                          {Number(sIntVal).toFixed(0)}%
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                          <span title="MCQ Score" style={{ color: 'var(--color-primary)' }}>{Number(pMcqVal).toFixed(0)}%</span> / <span title="Theory Score" style={{ color: 'var(--color-info)' }}>{Number(pDescVal).toFixed(0)}%</span> / <span title="Coding Score" style={{ color: 'var(--color-purple)' }}>{Number(pCodeVal).toFixed(0)}%</span>
-                        </div>
-                      </td>
-                      <td>
-                        {r.passed_hard_filter ? (
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: r.badge_color || 'var(--color-success)', background: 'var(--color-bg-elevated)', border: `1px solid ${r.badge_color || 'var(--color-success)'}40`, padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
-                            {r.verdict || 'Qualified'}
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-danger)', background: 'var(--color-danger-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
-                            {r.filter_fail_reason || 'Disqualified'}
-                          </span>
-                        )}
-                      </td>
-                      <td style={{ textAlign: 'right' }}>
-                        <button
-                          className="btn btn-ghost btn-sm"
-                          onClick={() => openDetail(r.candidate_id)}
-                          disabled={detailBusy}
-                          style={{ fontSize: 'var(--p-text-xs)' }}
-                        >
-                          <Eye size={13} /> Assessment Detail
-                        </button>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {rankings.map((r) => (
+                  <tr key={r.candidate_id} style={{ opacity: r.passed_hard_filter ? 1 : 0.65 }}>
+                    <td>
+                      <div style={{
+                        width: 28,
+                        height: 28,
+                        borderRadius: 'var(--radius-sm)',
+                        background: r.passed_hard_filter ? (i < 3 ? 'var(--color-primary)' : 'var(--color-border-subtle)') : 'var(--color-danger-muted)',
+                        color: r.passed_hard_filter ? (i < 3 ? '#fff' : 'var(--color-fg)') : 'var(--color-danger)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontWeight: 800,
+                        fontSize: '12px'
+                      }}>
+                        {r.passed_hard_filter ? `#${r.rank || i + 1}` : '✗'}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{r.candidate_name || 'Candidate'}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                        <span title={r.candidate_id}>ID: {r.candidate_id?.slice(0, 8)}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                        {(r.final_score || r.blended_score || 0).toFixed(1)}%
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)' }}>
+                        {(r.skill_score || 0).toFixed(0)}%
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)' }}>
+                        {(r.experience_score || 0).toFixed(0)}%
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ fontFamily: 'var(--p-font-mono)', fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontWeight: 700 }}>
+                        {(r.interview_score || 0).toFixed(0)}%
+                      </div>
+                    </td>
+                    <td>
+                      {r.passed_hard_filter ? (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                          Qualified
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-danger)', background: 'var(--color-danger-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                          {r.filter_fail_reason || 'Disqualified'}
+                        </span>
+                      )}
+                    </td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => openDetail(r.candidate_id)}
+                        disabled={detailBusy}
+                        style={{ fontSize: 'var(--p-text-xs)' }}
+                      >
+                        <Eye size={13} /> Assessment Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>
@@ -279,8 +259,8 @@ export default function ApplicantPipeline() {
                 </tr>
               </thead>
               <tbody>
-                {applicants.map((app, idx) => (
-                  <tr key={app.id || app._id || app.candidate_id || idx}>
+                {applicants.map((app) => (
+                  <tr key={app.candidate_id || app.id}>
                     <td style={{ fontWeight: 700, color: 'var(--color-fg)' }}>
                       {app.candidate_name || 'Verified Applicant'}
                     </td>

@@ -1,0 +1,500 @@
+{
+  "timestamp": "2026-08-28T13:33:57.811967",
+  "summary": {
+    "total": 57,
+    "pass": 50,
+    "warn": 7,
+    "fail": 0,
+    "score": 93.9
+  },
+  "categories": {
+    "Performance": {
+      "PASS": 11,
+      "WARN": 1,
+      "FAIL": 0,
+      "total": 12
+    },
+    "Security": {
+      "PASS": 10,
+      "WARN": 1,
+      "FAIL": 0,
+      "total": 11
+    },
+    "Scalability": {
+      "PASS": 8,
+      "WARN": 3,
+      "FAIL": 0,
+      "total": 11
+    },
+    "Usability": {
+      "PASS": 11,
+      "WARN": 1,
+      "FAIL": 0,
+      "total": 12
+    },
+    "Reliability": {
+      "PASS": 10,
+      "WARN": 1,
+      "FAIL": 0,
+      "total": 11
+    }
+  },
+  "results": [
+    {
+      "category": "Performance",
+      "test": "Frontend: Landing",
+      "status": "PASS",
+      "metric": 58.8,
+      "unit": "ms",
+      "details": "min=7 max=160"
+    },
+    {
+      "category": "Performance",
+      "test": "Frontend: Candidate Login",
+      "status": "PASS",
+      "metric": 23.7,
+      "unit": "ms",
+      "details": "min=12 max=38"
+    },
+    {
+      "category": "Performance",
+      "test": "Frontend: Company Login",
+      "status": "PASS",
+      "metric": 14.4,
+      "unit": "ms",
+      "details": "min=11 max=20"
+    },
+    {
+      "category": "Performance",
+      "test": "API: C0: Jobs List",
+      "status": "PASS",
+      "metric": 16.6,
+      "unit": "ms",
+      "details": "p95=45ms"
+    },
+    {
+      "category": "Performance",
+      "test": "API: C0: Health",
+      "status": "PASS",
+      "metric": 10.4,
+      "unit": "ms",
+      "details": "p95=33ms"
+    },
+    {
+      "category": "Performance",
+      "test": "API: C1: Health",
+      "status": "PASS",
+      "metric": 125.7,
+      "unit": "ms",
+      "details": "p95=127ms"
+    },
+    {
+      "category": "Performance",
+      "test": "API: C2: Health",
+      "status": "PASS",
+      "metric": 12.4,
+      "unit": "ms",
+      "details": "p95=28ms"
+    },
+    {
+      "category": "Performance",
+      "test": "API: C3: Health",
+      "status": "PASS",
+      "metric": 5.2,
+      "unit": "ms",
+      "details": "p95=8ms"
+    },
+    {
+      "category": "Performance",
+      "test": "API: C4: Health",
+      "status": "PASS",
+      "metric": 119.1,
+      "unit": "ms",
+      "details": "p95=144ms"
+    },
+    {
+      "category": "Performance",
+      "test": "API: C4: Skill Graph",
+      "status": "PASS",
+      "metric": 5.7,
+      "unit": "ms",
+      "details": "p95=8ms"
+    },
+    {
+      "category": "Performance",
+      "test": "Build: JS bundle",
+      "status": "WARN",
+      "metric": 998.4,
+      "unit": "KB",
+      "details": ""
+    },
+    {
+      "category": "Performance",
+      "test": "Build: CSS bundle",
+      "status": "PASS",
+      "metric": 39.4,
+      "unit": "KB",
+      "details": ""
+    },
+    {
+      "category": "Security",
+      "test": "Auth: Valid candidate login",
+      "status": "PASS",
+      "metric": 612.5,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Security",
+      "test": "Auth: Reject wrong password",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 401"
+    },
+    {
+      "category": "Security",
+      "test": "Auth: Reject unknown user",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 401"
+    },
+    {
+      "category": "Security",
+      "test": "Auth: Reject bad JWT",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 401"
+    },
+    {
+      "category": "Security",
+      "test": "Auth: Reject no JWT",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 401"
+    },
+    {
+      "category": "Security",
+      "test": "Injection: NoSQL injection",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 422"
+    },
+    {
+      "category": "Security",
+      "test": "Injection: SQL injection",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 401"
+    },
+    {
+      "category": "Security",
+      "test": "Injection: XSS in field",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 401"
+    },
+    {
+      "category": "Security",
+      "test": "Auth: Password not in response",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "Token returned, no password field"
+    },
+    {
+      "category": "Security",
+      "test": "CORS: Checked",
+      "status": "WARN",
+      "metric": null,
+      "unit": "",
+      "details": "ACAO=not set, HTTP 400"
+    },
+    {
+      "category": "Security",
+      "test": "Rate limiting: Active",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": ""
+    },
+    {
+      "category": "Scalability",
+      "test": "Concurrent: 5 API requests",
+      "status": "WARN",
+      "metric": 11.2,
+      "unit": "ms",
+      "details": "success=0%"
+    },
+    {
+      "category": "Scalability",
+      "test": "Concurrent: 10 API requests",
+      "status": "WARN",
+      "metric": 8.2,
+      "unit": "ms",
+      "details": "success=0%"
+    },
+    {
+      "category": "Scalability",
+      "test": "Concurrent: 20 API requests",
+      "status": "WARN",
+      "metric": 15.9,
+      "unit": "ms",
+      "details": "success=0%"
+    },
+    {
+      "category": "Scalability",
+      "test": "Concurrent: 5 frontend loads",
+      "status": "PASS",
+      "metric": 20.0,
+      "unit": "ms",
+      "details": "success=100%"
+    },
+    {
+      "category": "Scalability",
+      "test": "Concurrent: 10 frontend loads",
+      "status": "PASS",
+      "metric": 38.1,
+      "unit": "ms",
+      "details": "success=100%"
+    },
+    {
+      "category": "Scalability",
+      "test": "Sustained: 30 req / 5s",
+      "status": "PASS",
+      "metric": 6.8,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Scalability",
+      "test": "Load: C0 health",
+      "status": "PASS",
+      "metric": 6.2,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Scalability",
+      "test": "Load: C1 health",
+      "status": "PASS",
+      "metric": 125.8,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Scalability",
+      "test": "Load: C2 health",
+      "status": "PASS",
+      "metric": 8.2,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Scalability",
+      "test": "Load: C3 health",
+      "status": "PASS",
+      "metric": 11.6,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Scalability",
+      "test": "Load: C4 health",
+      "status": "PASS",
+      "metric": 113.5,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Login page loads",
+      "status": "PASS",
+      "metric": 2975.0,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Form: Email field",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Form: Password field",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Form: Submit button",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Nav: Dashboard",
+      "status": "PASS",
+      "metric": 723.0,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Nav: Job Board",
+      "status": "PASS",
+      "metric": 659.0,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Nav: AI Interview",
+      "status": "PASS",
+      "metric": 645.0,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Nav: CV Match",
+      "status": "PASS",
+      "metric": 646.0,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Nav: Skill Gap",
+      "status": "PASS",
+      "metric": 753.0,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Nav: Progress",
+      "status": "PASS",
+      "metric": 719.0,
+      "unit": "ms",
+      "details": ""
+    },
+    {
+      "category": "Usability",
+      "test": "Theme toggle",
+      "status": "WARN",
+      "metric": null,
+      "unit": "",
+      "details": "Button not found"
+    },
+    {
+      "category": "Usability",
+      "test": "Responsive: viewport meta",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": ""
+    },
+    {
+      "category": "Reliability",
+      "test": "Uptime: C0",
+      "status": "PASS",
+      "metric": "100%",
+      "unit": "",
+      "details": "10/10"
+    },
+    {
+      "category": "Reliability",
+      "test": "Uptime: C1",
+      "status": "PASS",
+      "metric": "100%",
+      "unit": "",
+      "details": "10/10"
+    },
+    {
+      "category": "Reliability",
+      "test": "Uptime: C2",
+      "status": "PASS",
+      "metric": "100%",
+      "unit": "",
+      "details": "10/10"
+    },
+    {
+      "category": "Reliability",
+      "test": "Uptime: C3",
+      "status": "PASS",
+      "metric": "100%",
+      "unit": "",
+      "details": "10/10"
+    },
+    {
+      "category": "Reliability",
+      "test": "Uptime: C4",
+      "status": "PASS",
+      "metric": "100%",
+      "unit": "",
+      "details": "10/10"
+    },
+    {
+      "category": "Reliability",
+      "test": "Uptime: Frontend",
+      "status": "PASS",
+      "metric": "100%",
+      "unit": "",
+      "details": "10/10"
+    },
+    {
+      "category": "Reliability",
+      "test": "Error: C0: 404",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 404"
+    },
+    {
+      "category": "Reliability",
+      "test": "Error: C4: Empty POST",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 422"
+    },
+    {
+      "category": "Reliability",
+      "test": "Error: Malformed JSON",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": "HTTP 422"
+    },
+    {
+      "category": "Reliability",
+      "test": "Stress: 50 rapid requests",
+      "status": "WARN",
+      "metric": "0/50 OK",
+      "unit": "",
+      "details": ""
+    },
+    {
+      "category": "Reliability",
+      "test": "Isolation: C4 independent",
+      "status": "PASS",
+      "metric": null,
+      "unit": "",
+      "details": ""
+    }
+  ]
+}
