@@ -329,7 +329,7 @@ code {
   top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
-  background: var(--card-bg);
+  background: var(--color-bg-elevated);
   border: 1px solid var(--card-border);
   border-radius: var(--p-radius-md);
   box-shadow: var(--shadow-lg);

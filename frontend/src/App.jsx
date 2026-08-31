@@ -243,8 +243,8 @@ export default function App() {
                   {userMenu && (
                     <div className="navbar-dropdown" onClick={(e) => e.stopPropagation()}>
                       <div className="navbar-dropdown-label">
-                        <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>{userName || 'Account'}</div>
-                        <div style={{ textTransform: 'capitalize', color: 'var(--color-fg-muted)' }}>{role} Profile</div>
+                        <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 180 }}>{userName || 'Account'}</div>
+                        <div style={{ textTransform: 'capitalize', color: 'var(--color-fg-muted)', fontSize: 'var(--p-text-xs)' }}>{role} Profile</div>
                       </div>
                       <button onClick={() => { navigate(profileLink); setUserMenu(false) }}>
                         <User size={14} /> Profile & Settings
