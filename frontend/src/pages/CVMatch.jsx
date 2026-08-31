@@ -1526,6 +1526,49 @@ export default function CVMatch() {
                 </div>
               )}
             </div>
+
+            {/* Target Live Benchmark Intelligence Preview */}
+            <div style={{
+              fontSize: '11.5px',
+              padding: '10px 14px',
+              borderRadius: 'var(--radius-md)',
+              background: 'rgba(59, 130, 246, 0.08)',
+              border: '1px solid rgba(59, 130, 246, 0.25)',
+              color: 'var(--color-fg)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 4
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#93c5fd', letterSpacing: '0.04em' }}>
+                  Target Evaluation Benchmark
+                </span>
+                {(selectedJob || selectedCanonicalRole) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedJob('')
+                      setSelectedCompany('')
+                      setSelectedCanonicalRole('')
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-fg-muted)', cursor: 'pointer', fontSize: '10.5px', textDecoration: 'underline' }}
+                  >
+                    Reset to Auto-Detect
+                  </button>
+                )}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '13px', color: '#ffffff', marginTop: 2 }}>
+                {matchedJobDoc?.title || selectedCanonicalRole || 'AI Auto-Detect (Dynamic Classifier)'}
+                {matchedJobDoc && (
+                  <span style={{ fontSize: '11.5px', fontWeight: 500, color: 'var(--color-fg-muted)' }}> at {cleanCompanyName(matchedJobDoc.company_name)}</span>
+                )}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
+                <span>🎯 Standard: {targetMode === 'company' ? 'Enterprise Job Spec' : 'Canonical IT Benchmark'}</span>
+                <span>•</span>
+                <span>⏳ Req: {matchedJobDoc?.experience_required ?? (c1Result?.required_experience_years || 2.0)}+ yrs</span>
+              </div>
+            </div>
           </div>
 
         </div>
