@@ -253,7 +253,7 @@ export default function Ranking() {
                       const sIntVal = cand.interview_score ?? (cand.S_int != null ? (cand.S_int <= 1 ? cand.S_int * 100 : cand.S_int) : null)
                       const pMcqVal = cand.mcq_score ?? (cand.P_mcq != null ? (cand.P_mcq <= 1 ? cand.P_mcq * 100 : cand.P_mcq) : null)
                       const pDescVal = cand.descriptive_score ?? (cand.P_desc != null ? (cand.P_desc <= 1 ? cand.P_desc * 100 : cand.P_desc) : null)
-                      const pCodeVal = cand.coding_score ?? (cand.P_code != null ? (cand.P_code <= 1 ? cand.P_code * 100 : cand.P_code) : null)n
+                      const pCodeVal = cand.coding_score ?? (cand.P_code != null ? (cand.P_code <= 1 ? cand.P_code * 100 : cand.P_code) : null)
                       return (
                         <tr
                           key={cand.candidate_id || idx}
