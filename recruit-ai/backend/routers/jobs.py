@@ -1,8 +1,8 @@
 import re
 import time
+import asyncio
 from datetime import datetime, timezone
 from bson import ObjectId
-from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from slowapi import Limiter
 from slowapi.util import get_remote_address
@@ -195,16 +195,275 @@ async def create_job(payload: JobCreate, request: Request, company: dict = Depen
     return _job_out(doc)
 
 
+# Company-specific fast in-memory caches
+_COMPANY_JOBS_CACHE = {}
+_APPLICANT_COUNTS_CACHE = {}
+_JOB_APPLICANTS_CACHE = {}
+_SUB_CACHE_TTL = 15.0
+
+_COMPANY_APPLICANTS_BUNDLE_CACHE = {}
+
+def _invalidate_jobs_cache():
+    _JOBS_CACHE["data"] = None
+    _JOBS_CACHE["json"] = None
+    _JOBS_CACHE["expires_at"] = 0
+    _COMPANY_JOBS_CACHE.clear()
+    _APPLICANT_COUNTS_CACHE.clear()
+    _JOB_APPLICANTS_CACHE.clear()
+    _COMPANY_APPLICANTS_BUNDLE_CACHE.clear()
+
+
+@router.get("/company-applicants")
+async def get_all_company_applicants(request: Request, company: dict = Depends(require_company)):
+    """Ultra-fast unified batch endpoint: fetches all jobs, applicant counts, and fully enriched applicants for the logged-in company in a single database roundtrip."""
+    cid = str(company["_id"])
+    now = time.time()
+    if cid in _COMPANY_APPLICANTS_BUNDLE_CACHE:
+        ts, bundle = _COMPANY_APPLICANTS_BUNDLE_CACHE[cid]
+        if now - ts < _SUB_CACHE_TTL:
+            return bundle
+
+    db = request.app.state.db
+    comp_filters = [{"company_id": str(cid)}]
+    if ObjectId.is_valid(cid):
+        comp_filters.append({"company_id": ObjectId(cid)})
+
+    # 1. Fetch all company jobs
+    job_docs = await db.jobs.find({"$or": comp_filters}).sort("created_at", -1).to_list(100)
+    jobs_out = [_job_out(j) for j in job_docs]
+
+    if not job_docs:
+        res = {"success": True, "jobs": [], "applicant_counts": {}, "applicants": []}
+        _COMPANY_APPLICANTS_BUNDLE_CACHE[cid] = (now, res)
+        return res
+
+    job_id_strings = [str(j["_id"]) for j in job_docs]
+    job_id_oids = [j["_id"] for j in job_docs]
+    job_titles = [j.get("title", "") for j in job_docs if j.get("title")]
+    job_map = {str(j["_id"]): j for j in job_docs}
+
+    # Query criteria matching any of this company's jobs
+    match_criteria = [{"job_id": {"$in": job_id_strings + job_id_oids}}]
+    if job_titles:
+        match_criteria.append({"job_id": {"$in": job_titles}})
+        match_criteria.append({"job_title": {"$in": job_titles}})
+        match_criteria.append({"job_role": {"$in": job_titles}})
+
+    # Parallel fetch applications, predictions, interview_scores, results
+    apps_task = db.applications.find({"$or": match_criteria}).sort("applied_at", -1).to_list(500)
+    preds_task = db.predictions.find({"$or": match_criteria}).sort("created_at", -1).to_list(500)
+    scores_task = db.interview_scores.find({"$or": match_criteria}).sort("created_at", -1).to_list(500)
+    results_task = db.results.find({"$or": match_criteria}).sort("created_at", -1).to_list(500)
+
+    raw_apps, raw_preds, raw_scores, raw_results = await asyncio.gather(
+        apps_task, preds_task, scores_task, results_task
+    )
+
+    seen_candidates_per_job = set()
+    raw_applicants = []
+
+    for app in raw_apps:
+        cand_id = str(app.get("candidate_id", ""))
+        j_id = str(app.get("job_id", ""))
+        key = f"{cand_id}_{j_id}"
+        if cand_id and key not in seen_candidates_per_job:
+            seen_candidates_per_job.add(key)
+            raw_applicants.append(app)
+
+    for p in raw_preds:
+        cand_id = str(p.get("candidate_id", ""))
+        j_id = str(p.get("job_id", ""))
+        key = f"{cand_id}_{j_id}"
+        if cand_id and key not in seen_candidates_per_job:
+            seen_candidates_per_job.add(key)
+            raw_applicants.append({
+                "_id": str(p.get("_id", f"pred_{cand_id}")),
+                "job_id": j_id,
+                "candidate_id": cand_id,
+                "candidate_name": p.get("candidate_name", "Candidate"),
+                "resume_id": str(p.get("resume_id", "")),
+                "status": "cv_matched",
+                "applied_at": p.get("created_at"),
+                "cv_score": p.get("overall_score"),
+                "overall_score": p.get("overall_score"),
+            })
+
+    for s in raw_scores:
+        cand_id = str(s.get("candidate_id", ""))
+        j_id = str(s.get("job_id", ""))
+        key = f"{cand_id}_{j_id}"
+        if cand_id and key not in seen_candidates_per_job:
+            seen_candidates_per_job.add(key)
+            raw_applicants.append({
+                "_id": str(s.get("_id", f"sc_{cand_id}")),
+                "job_id": j_id,
+                "candidate_id": cand_id,
+                "candidate_name": s.get("candidate_name", "Candidate"),
+                "resume_id": str(s.get("resume_id", "")),
+                "status": "interview_completed",
+                "applied_at": s.get("created_at"),
+                "interview_score": s.get("interview_score"),
+            })
+
+    for res in raw_results:
+        cand_id = str(res.get("candidate_id", ""))
+        j_id = str(res.get("job_id", ""))
+        key = f"{cand_id}_{j_id}"
+        if cand_id and key not in seen_candidates_per_job:
+            seen_candidates_per_job.add(key)
+            raw_applicants.append({
+                "_id": str(res.get("_id", f"res_{cand_id}")),
+                "job_id": j_id,
+                "candidate_id": cand_id,
+                "candidate_name": res.get("candidate_name", "Candidate"),
+                "resume_id": str(res.get("resume_id", "")),
+                "status": "interview_completed",
+                "applied_at": res.get("created_at"),
+                "interview_score": res.get("interview_score"),
+            })
+
+    # Batch enrich candidate names and profiles
+    cand_ids = list({str(a.get("candidate_id")) for a in raw_applicants if a.get("candidate_id")})
+    user_map = {}
+    resume_map = {}
+    pred_map = {}
+    score_map = {}
+
+    if cand_ids:
+        c_oids = [ObjectId(c) for c in cand_ids if ObjectId.is_valid(c)]
+        u_filters = [{"_id": {"$in": cand_ids}}]
+        if c_oids:
+            u_filters.append({"_id": {"$in": c_oids}})
+        r_filters = [{"candidate_id": {"$in": cand_ids}}]
+        if c_oids:
+            r_filters.append({"candidate_id": {"$in": c_oids}})
+
+        users_task = db.users.find({"$or": u_filters}).to_list(200)
+        resumes_task = db.resumes.find({"$or": r_filters}).sort("created_at", -1).to_list(200)
+        preds_enrich_task = db.predictions.find({"$or": r_filters}).sort("created_at", -1).to_list(200)
+        scores_enrich_task = db.interview_scores.find({"$or": r_filters}).sort("created_at", -1).to_list(200)
+        results_enrich_task = db.results.find({"$or": r_filters}).sort("created_at", -1).to_list(200)
+
+        u_list, r_list, pe_list, se_list, re_list = await asyncio.gather(
+            users_task, resumes_task, preds_enrich_task, scores_enrich_task, results_enrich_task
+        )
+        for u in u_list:
+            user_map[str(u["_id"])] = u
+        for r in r_list:
+            cid_r = str(r.get("candidate_id", ""))
+            if cid_r not in resume_map:
+                resume_map[cid_r] = r
+        for p in pe_list:
+            cid_p = str(p.get("candidate_id", ""))
+            if cid_p not in pred_map:
+                pred_map[cid_p] = p
+        for s in se_list:
+            cid_s = str(s.get("candidate_id", ""))
+            if cid_s not in score_map:
+                score_map[cid_s] = s
+        for re_doc in re_list:
+            cid_re = str(re_doc.get("candidate_id", ""))
+            if cid_re not in score_map:
+                score_map[cid_re] = re_doc
+
+    enriched_applicants = []
+    applicant_counts = {str(j["_id"]): 0 for j in job_docs}
+
+    for doc in raw_applicants:
+        c_id = str(doc.get("candidate_id", ""))
+        j_id = str(doc.get("job_id", ""))
+        # Resolve real matching job
+        target_job = job_map.get(j_id)
+        if not target_job:
+            target_job = next((j for j in job_docs if str(j["_id"]) == j_id or j.get("title") == j_id or j.get("job_role") == j_id), None)
+        if target_job:
+            actual_jid = str(target_job["_id"])
+            applicant_counts[actual_jid] = applicant_counts.get(actual_jid, 0) + 1
+            j_title = target_job.get("title", "Technical Role")
+        else:
+            actual_jid = j_id
+            j_title = "Technical Role"
+
+        u = user_map.get(c_id, {})
+        r = resume_map.get(c_id, {})
+        p = pred_map.get(c_id, {})
+        s = score_map.get(c_id, {})
+
+        c_name = doc.get("candidate_name") or u.get("full_name") or r.get("candidate_name") or u.get("email") or "Applicant"
+        c_email = doc.get("candidate_email") or u.get("email") or r.get("email") or ""
+        int_score = doc.get("interview_score") or s.get("interview_score")
+        cv_score = doc.get("cv_score") or p.get("overall_score") or doc.get("overall_score")
+        skills = r.get("skills", []) or doc.get("skills", [])
+        if not skills and target_job:
+            skills = target_job.get("required_skills", [])
+
+        has_interview = int_score is not None
+        has_cv = cv_score is not None
+        num_cv = float(cv_score) if has_cv else 75.0
+        num_int = float(int_score) if has_interview else 70.0
+
+        if has_interview and has_cv:
+            hire_prob = round(0.40 * num_cv + 0.60 * num_int, 1)
+        elif has_interview:
+            hire_prob = round(num_int, 1)
+        elif has_cv:
+            hire_prob = round(num_cv, 1)
+        else:
+            hire_prob = 70.0
+
+        enriched_applicants.append({
+            "id": str(doc.get("_id") or f"app_{c_id}"),
+            "job_id": actual_jid,
+            "job_role": j_title,
+            "candidate_id": c_id,
+            "candidate_name": c_name,
+            "candidate_email": c_email,
+            "resume_id": doc.get("resume_id") or str(r.get("_id", "")),
+            "status": "interview_completed" if has_interview else ("cv_matched" if has_cv else doc.get("status", "applied")),
+            "applied_at": str(doc.get("applied_at", datetime.now(timezone.utc).isoformat())),
+            "interview_score": int_score,
+            "cv_score": cv_score,
+            "overall_score": cv_score,
+            "hire_probability": hire_prob,
+            "interview_completed": has_interview,
+            "has_cv": has_cv,
+            "skills": skills,
+            "company_name": company.get("name") or company.get("company_name", "Your Company"),
+            "passed_filter": doc.get("passed_filter", True),
+        })
+
+    # Sort descending by candidate score
+    enriched_applicants.sort(key=lambda a: (a.get("hire_probability") or 0), reverse=True)
+
+    result_bundle = {
+        "success": True,
+        "jobs": [r.model_dump(mode="json") for r in jobs_out],
+        "applicant_counts": applicant_counts,
+        "applicants": enriched_applicants
+    }
+    _COMPANY_APPLICANTS_BUNDLE_CACHE[cid] = (now, result_bundle)
+    return result_bundle
+
+
 @router.get("", response_model=list[JobOut])
 @router.get("/", response_model=list[JobOut])
 async def list_jobs(request: Request, company: dict = Depends(require_company), skip: int = 0, limit: int = 50):
     from bson import ObjectId
-    cid = company["_id"]
-    company_filters = [{"company_id": str(cid)}]
+    cid = str(company["_id"])
+    now = time.time()
+    cache_key = f"{cid}:{skip}:{limit}"
+    if cache_key in _COMPANY_JOBS_CACHE:
+        ts, data = _COMPANY_JOBS_CACHE[cache_key]
+        if now - ts < _SUB_CACHE_TTL:
+            return data
+
+    company_filters = [{"company_id": cid}]
     if ObjectId.is_valid(cid):
         company_filters.append({"company_id": ObjectId(cid)})
     cursor = request.app.state.db.jobs.find({"$or": company_filters}).sort("created_at", -1).skip(skip).limit(min(limit, 100))
-    return [_job_out(doc) async for doc in cursor]
+    res = [_job_out(doc) async for doc in cursor]
+    _COMPANY_JOBS_CACHE[cache_key] = (now, res)
+    return res
 
 
 @router.get("/all", response_model=list[JobOut])
@@ -263,6 +522,13 @@ async def list_my_applications(request: Request, user: dict = Depends(get_curren
 @router.get("/applicant-counts")
 async def get_applicant_counts(request: Request, company: dict = Depends(require_company)):
     """Batch endpoint: return {job_id: count} for all jobs owned by this company."""
+    cid = str(company["_id"])
+    now = time.time()
+    if cid in _APPLICANT_COUNTS_CACHE:
+        ts, data = _APPLICANT_COUNTS_CACHE[cid]
+        if now - ts < _SUB_CACHE_TTL:
+            return data
+
     db = request.app.state.db
     company_oid = company["_id"]
     # Match both string and ObjectId forms of company_id
@@ -272,6 +538,7 @@ async def get_applicant_counts(request: Request, company: dict = Depends(require
     ]}, {"_id": 1}).to_list(1000)
     job_ids = [doc["_id"] for doc in job_docs]
     if not job_ids:
+        _APPLICANT_COUNTS_CACHE[cid] = (now, {})
         return {}
     # Count applicants per job in a single aggregation
     pipeline = [
@@ -282,6 +549,7 @@ async def get_applicant_counts(request: Request, company: dict = Depends(require
     result = {}
     async for doc in cursor:
         result[str(doc["_id"])] = doc["count"]
+    _APPLICANT_COUNTS_CACHE[cid] = (now, result)
     return result
 
 
@@ -377,8 +645,16 @@ async def withdraw_application(job_id: str, request: Request, user: dict = Depen
     return None
 
 
+_JOB_APPLICANTS_CACHE = {}
+
 @router.get("/{job_id}/applicants", response_model=list[ApplicationOut])
 async def get_applicants(job_id: str, request: Request, company: dict = Depends(require_company)):
+    now = time.time()
+    if job_id in _JOB_APPLICANTS_CACHE:
+        ts, data = _JOB_APPLICANTS_CACHE[job_id]
+        if now - ts < _SUB_CACHE_TTL:
+            return data
+
     db = request.app.state.db
     from bson import ObjectId
     try:
@@ -556,7 +832,6 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             "applied_at": doc.get("applied_at"),
             "interview_score": int_score,
             "cv_score": cv_score,
-            "overall_score": cv_score,
             "hire_probability": hire_prob,
             "skills": skills,
             "skill_score": p.get("skill_score"),
@@ -571,4 +846,6 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             "passed_filter": True,
         })
 
-    return [_app_out(doc) for doc in enriched]
+    result_apps = [_app_out(doc) for doc in enriched]
+    _JOB_APPLICANTS_CACHE[job_id] = (now, result_apps)
+    return result_apps

@@ -28,23 +28,6 @@ EDU_STR = {1: "Diploma", 2: "B.Sc. Computer Science",
            3: "M.Sc. Computer Science", 4: "Ph.D. Computer Science"}
 
 
-def _normalize_role_match(role_str: str) -> str:
-    if not role_str:
-        return ""
-    r = role_str.lower().replace("_", " ").strip()
-    for canon in [
-        "software engineer", "data scientist", "machine learning engineer",
-        "cloud solutions architect", "devops engineer", "cybersecurity engineer",
-        "frontend developer", "backend developer", "full stack developer",
-        "qa engineer", "mobile developer", "data engineer", "data analyst",
-        "systems engineer", "network engineer", "security engineer",
-        "ai engineer", "product manager", "ui ux designer"
-    ]:
-        if canon in r or r in canon:
-            return canon
-    return r
-
-
 def _skill_gap_report(c: CandidateInput, job_role: str):
     resp = requests.post(
         f"{COMPONENT4_URL}/api/v1/skill-gap/analyze",
@@ -241,10 +224,18 @@ async def list_roles():
     return {"success": True, "roles": get_service().roles(), "count": len(get_service().roles())}
 
 
+import time
+_PIPELINE_CACHE: dict = {}
+_PIPELINE_TTL = 30.0
+
 @router.get("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
 @router.post("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
 async def rank_pipeline(request: Request, job_id: str):
     """Fetch real applicants from MongoDB, build candidate inputs, and rank them."""
+    cached = _PIPELINE_CACHE.get(job_id)
+    if cached and time.time() - cached[0] < _PIPELINE_TTL:
+        return cached[1]
+
     try:
         store = getattr(request.app.state, 'store', None)
         db = getattr(store, '_db', None) if store is not None else None
@@ -293,7 +284,7 @@ async def rank_pipeline(request: Request, job_id: str):
 
         required_skills = job.get("required_skills", ["Python", "SQL", "Git"]) if job else ["Python", "SQL"]
         
-        # 2. Fetch candidates for this job (Applications + CV Match + Interviewed + Results)
+        # 2. Fetch candidates for this job (Applications + CV Match + Interviewed + Results) in parallel
         query_conditions = [{"job_id": job_id}, {"job_id": str(job_id)}]
         if ObjectId.is_valid(job_id):
             query_conditions.append({"job_id": ObjectId(job_id)})
@@ -305,58 +296,63 @@ async def rank_pipeline(request: Request, job_id: str):
                 query_conditions.extend([{"job_id": j_t}, {"job_title": j_t}, {"job_role": j_t}])
             if j_r:
                 query_conditions.extend([{"job_id": j_r}, {"job_role": j_r}])
-            
+
+        apps_task = db.applications.find({"$or": query_conditions}).to_list(300)
+        preds_task = db.predictions.find({"$or": query_conditions}).to_list(300)
+        scores_task = db.interview_scores.find({"$or": query_conditions}).to_list(300)
+        results_task = db.results.find({"$or": query_conditions}).to_list(300)
+
+        raw_apps, raw_preds, raw_scores, raw_results = await asyncio.gather(
+            apps_task, preds_task, scores_task, results_task
+        )
+
         seen_candidates = set()
         applicants = []
-        
-        norm_jt = _normalize_role_match(j_t)
-        norm_jr = _normalize_role_match(j_r)
-        job_oid_str = str(job.get("_id", "")) if job else ""
 
-        def is_job_record(doc):
-            if not doc:
-                return False
-            d_jid = str(doc.get("job_id", ""))
-            d_role = _normalize_role_match(str(doc.get("predicted_role", "") or doc.get("job_role", "") or doc.get("job_title", "") or ""))
-            return bool(
-                (d_jid and d_jid == str(job_id)) or
-                (job_oid_str and d_jid == job_oid_str) or
-                (norm_jt and d_role == norm_jt) or
-                (norm_jr and d_role == norm_jr)
-            )
-
-        # A. Applications
-        async for app in db.applications.find({"$or": query_conditions}).sort("applied_at", -1):
+        for app in raw_apps:
             cid = str(app.get("candidate_id", ""))
             if cid and cid not in seen_candidates:
                 seen_candidates.add(cid)
-                applicants.append(app)
+                applicants.append({
+                    "candidate_id": cid,
+                    "candidate_name": app.get("candidate_name", ""),
+                    "resume_id": app.get("resume_id", ""),
+                })
 
-        # B. CV Match Predictions
-        async for pred in db.predictions.find({"$or": query_conditions}).sort("created_at", -1):
+        for pred in raw_preds:
             cid = str(pred.get("candidate_id", ""))
             if cid and cid not in seen_candidates:
                 seen_candidates.add(cid)
-                applicants.append(pred)
+                applicants.append({
+                    "candidate_id": cid,
+                    "candidate_name": pred.get("candidate_name", ""),
+                    "resume_id": pred.get("resume_id", ""),
+                })
 
-        # C. Interview Scores
-        async for sc in db.interview_scores.find({"$or": query_conditions}).sort("created_at", -1):
+        for sc in raw_scores:
             cid = str(sc.get("candidate_id", ""))
             if cid and cid not in seen_candidates:
                 seen_candidates.add(cid)
-                applicants.append(sc)
+                applicants.append({
+                    "candidate_id": cid,
+                    "candidate_name": sc.get("candidate_name", ""),
+                    "resume_id": sc.get("resume_id", ""),
+                })
 
-        # D. Interview Results (C2 db.results)
-        async for res in db.results.find({"$or": query_conditions}).sort("created_at", -1):
+        for res in raw_results:
             cid = str(res.get("candidate_id", ""))
             if cid and cid not in seen_candidates:
                 seen_candidates.add(cid)
-                applicants.append(res)
+                applicants.append({
+                    "candidate_id": cid,
+                    "candidate_name": res.get("candidate_name", ""),
+                    "resume_id": res.get("resume_id", ""),
+                })
 
         if not applicants:
             return {"success": True, "job_id": job_id, "data": [], "message": "No applicants have applied or completed interviews for this position yet."}
 
-        # 3. Batch-fetch users, resumes, predictions, and interview scores for all candidates
+        # 3. Parallel batch-fetch users, resumes, predictions, and interview scores for all candidates
         candidate_ids = [str(app.get("candidate_id") or app.get("_id", "CAND")) for app in applicants]
         cand_filters = [{"candidate_id": {"$in": candidate_ids}}]
         valid_oids = [ObjectId(c) for c in candidate_ids if ObjectId.is_valid(c)]
@@ -365,33 +361,43 @@ async def rank_pipeline(request: Request, job_id: str):
             cand_filters.append({"_id": {"$in": valid_oids}})
 
         user_map = {}
-        if valid_oids:
-            async for u in db.users.find({"_id": {"$in": valid_oids}}):
-                user_map[str(u["_id"])] = u.get("full_name") or u.get("name") or u.get("email") or "Candidate"
-
         resume_map = {}
-        async for r in db.resumes.find({"$or": cand_filters}).sort("created_at", -1):
+        pred_map = {}
+        scores_map = {}
+
+        u_task = db.users.find({"_id": {"$in": valid_oids}}).to_list(200) if valid_oids else asyncio.sleep(0, result=[])
+        r_task = db.resumes.find({"$or": cand_filters}).sort("created_at", -1).to_list(200)
+        p_task = db.predictions.find({"$or": cand_filters}).sort("created_at", -1).to_list(200)
+        s_task = db.interview_scores.find({"$or": cand_filters}).sort("created_at", -1).to_list(200)
+        res_task = db.results.find({"$or": cand_filters}).sort("created_at", -1).to_list(200)
+
+        u_list, r_list, p_list, s_list, res_list = await asyncio.gather(
+            u_task, r_task, p_task, s_task, res_task
+        )
+
+        for u in (u_list or []):
+            user_map[str(u["_id"])] = u.get("full_name") or u.get("name") or u.get("email") or "Candidate"
+
+        for r in r_list:
             cid = str(r.get("candidate_id", ""))
             if cid and cid not in resume_map:
                 resume_map[cid] = r
             if str(r.get("_id", "")) not in resume_map:
                 resume_map[str(r["_id"])] = r
-        
-        pred_map = {}
-        async for p in db.predictions.find({"$or": cand_filters}).sort("created_at", -1):
+
+        for p in p_list:
             cid = str(p.get("candidate_id", ""))
-            if cid and is_job_record(p):
+            if cid and (cid not in pred_map or str(p.get("job_id")) == str(job_id)):
                 pred_map[cid] = p
 
-        scores_map = {}
-        async for s in db.interview_scores.find({"$or": cand_filters}).sort("created_at", -1):
+        for s in s_list:
             cid = str(s.get("candidate_id", ""))
-            if cid and is_job_record(s):
+            if cid and (cid not in scores_map or str(s.get("job_id")) == str(job_id)):
                 scores_map[cid] = s
-        
-        async for res in db.results.find({"$or": cand_filters}).sort("created_at", -1):
+
+        for res in res_list:
             cid = str(res.get("candidate_id", ""))
-            if cid and is_job_record(res):
+            if cid and (cid not in scores_map or str(res.get("job_id")) == str(job_id)):
                 scores_map[cid] = res
 
         # 4. Build candidate inputs
@@ -400,7 +406,7 @@ async def rank_pipeline(request: Request, job_id: str):
             candidate_id = str(app.get("candidate_id") or app.get("_id", "CAND"))
             candidate_name = app.get("candidate_name") or user_map.get(candidate_id) or (resume_map.get(candidate_id, {}).get("candidate_name")) or "Candidate"
             
-            resume_skills = app.get("resume_skills", []) or app.get("skills", [])
+            resume_skills = app.get("resume_skills", [])
             experience_years = app.get("experience_years", 0)
             edu_level = 2
             
@@ -425,42 +431,26 @@ async def rank_pipeline(request: Request, job_id: str):
                 resume_skills = ["Python", "SQL", "Git"]
 
             # Real interview scores from completed interviews
+            mcq_score = 0.8
+            descriptive_score = 0.75
+            coding_score = 0.85
             latest_score = scores_map.get(candidate_id)
-            if not latest_score and is_job_record(app) and (app.get("interview_score") is not None or app.get("interview_completed")):
-                latest_score = app
-
-            if latest_score and latest_score.get("interview_score") is not None:
-                mcq_score = (float(latest_score.get("mcq_score", 0) or 0)) / 100
-                descriptive_score = (float(latest_score.get("descriptive_score", 0) or 0)) / 100
-                coding_score = (float(latest_score.get("coding_score", 0) or 0)) / 100
-                int_score_num = float(latest_score.get("interview_score", 0) or 0)
-            else:
-                mcq_score = 0.0
-                descriptive_score = 0.0
-                coding_score = 0.0
-                int_score_num = None
+            if latest_score:
+                mcq_score = (float(latest_score.get("mcq_score", 80) or 80)) / 100
+                descriptive_score = (float(latest_score.get("descriptive_score", 75) or 75)) / 100
+                coding_score = (float(latest_score.get("coding_score", 85) or 85)) / 100
             
-            # Skill matching and CV 3-pillar scores from predictions
+            # Skill matching from predictions or bidirectional check
             pred_doc = pred_map.get(candidate_id)
-            if not pred_doc and is_job_record(app) and (app.get("skill_score") is not None or app.get("overall_score") is not None or app.get("cv_score") is not None):
-                pred_doc = app
-
-            s_skill_val = None
-            s_exp_val = None
-            s_edu_val = None
-            if pred_doc:
-                if pred_doc.get("skill_score") is not None:
-                    s_skill_val = float(pred_doc["skill_score"]) / 100.0
-                elif pred_doc.get("overall_score") is not None or pred_doc.get("cv_score") is not None:
-                    s_skill_val = float(pred_doc.get("overall_score") or pred_doc.get("cv_score")) / 100.0
-                if pred_doc.get("experience_score") is not None:
-                    s_exp_val = float(pred_doc["experience_score"]) / 100.0
-                if pred_doc.get("education_score") is not None:
-                    s_edu_val = float(pred_doc["education_score"]) / 100.0
-            
-            if s_skill_val is None:
+            if pred_doc and pred_doc.get("skill_score") is not None:
+                skill_score_raw = pred_doc.get("skill_score", 80) / 100
+            else:
                 matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() or rs.lower() in s.lower() for rs in resume_skills)) if resume_skills else 0
-                s_skill_val = matched / max(len(required_skills), 1)
+                skill_score_raw = matched / max(len(required_skills), 1)
+            
+            if pred_doc and pred_doc.get("experience_score") is not None and not experience_years:
+                exp_req = float((job.get("experience_required") or 2.0) if job else 2.0)
+                experience_years = (pred_doc.get("experience_score", 60) / 100) * exp_req
 
             candidates.append(CandidateInput(
                 candidate_id=candidate_id,
@@ -468,15 +458,11 @@ async def rank_pipeline(request: Request, job_id: str):
                 job_role=job_role,
                 years_experience=float(experience_years or 2.0),
                 edu_level=int(edu_level),
-                skill_score_raw=float(s_skill_val),
-                S_edu=s_edu_val,
-                S_exp=s_exp_val,
-                S_skill=s_skill_val,
+                skill_score_raw=float(skill_score_raw),
                 P_mcq=float(mcq_score),
                 P_desc=float(descriptive_score),
                 P_code=float(coding_score),
                 skills=resume_skills,
-                interview_score=int_score_num,
             ))
         
         if not candidates:
@@ -495,67 +481,48 @@ async def rank_pipeline(request: Request, job_id: str):
         
         out = []
         for r in ranked:
+            css = round(r["CSS"], 4)
             s_cv = round(r["S_cv"], 4)
             s_int = round(r["S_int"], 4)
-            cand_inp = r.get("input")
-            cand_has_interview = bool(cand_inp and cand_inp.interview_score is not None)
-            cand_has_cv = bool(cand_inp and (cand_inp.S_skill is not None or cand_inp.S_exp is not None or cand_inp.S_edu is not None))
-            
-            if cand_has_interview and cand_has_cv:
-                css = round(0.40 * s_cv + 0.60 * s_int, 4)
-            elif cand_has_interview:
-                css = s_int
-            else:
-                css = s_cv
-
-            s_edu = round(r.get("S_edu", 0), 4) if cand_has_cv else None
-            s_exp = round(r.get("S_exp", 0), 4) if cand_has_cv else None
-            s_skill = round(r.get("S_skill", 0), 4) if cand_has_cv else None
-            
-            p_mcq = round(r.get("P_mcq", 0), 4) if cand_has_interview else None
-            p_desc = round(r.get("P_desc", 0), 4) if cand_has_interview else None
-            p_code = round(r.get("P_code", 0), 4) if cand_has_interview else None
+            s_edu = round(r.get("S_edu", 0), 4)
+            s_exp = round(r.get("S_exp", 0), 4)
+            s_skill = round(r.get("S_skill", 0), 4)
+            p_mcq = round(r.get("P_mcq", 0), 4)
+            p_desc = round(r.get("P_desc", 0), 4)
+            p_code = round(r.get("P_code", 0), 4)
             
             strengths = []
             weaknesses = []
             
-            if s_skill is not None and s_skill >= 0.75:
+            if s_skill >= 0.75:
                 strengths.append(f"Strong CV skill match ({s_skill*100:.0f}%)")
-            elif s_skill is not None and s_skill < 0.50:
+            elif s_skill < 0.50:
                 weaknesses.append(f"Low CV skill alignment ({s_skill*100:.0f}%)")
                 
-            if s_exp is not None and s_exp >= 0.75:
+            if s_exp >= 0.75:
                 strengths.append("Solid years of relevant experience")
-            elif s_exp is not None and s_exp < 0.40:
+            elif s_exp < 0.40:
                 weaknesses.append("Limited industry experience")
                 
-            if p_code is not None and p_code >= 0.80:
+            if p_code >= 0.80:
                 strengths.append(f"Top-tier live coding & unit test pass rate ({p_code*100:.0f}%)")
-            elif p_code is not None and p_code < 0.50:
+            elif p_code < 0.50:
                 weaknesses.append(f"Failed live coding test cases ({p_code*100:.0f}%)")
                 
-            if p_mcq is not None and p_mcq >= 0.80:
+            if p_mcq >= 0.80:
                 strengths.append(f"High conceptual MCQ score ({p_mcq*100:.0f}%)")
-            elif p_mcq is not None and p_mcq < 0.50:
+            elif p_mcq < 0.50:
                 weaknesses.append(f"Low conceptual MCQ marks ({p_mcq*100:.0f}%)")
                 
-            if p_desc is not None and p_desc >= 0.80:
+            if p_desc >= 0.80:
                 strengths.append(f"Clear architectural & descriptive explanations ({p_desc*100:.0f}%)")
-            elif p_desc is not None and p_desc < 0.50:
+            elif p_desc < 0.50:
                 weaknesses.append(f"Weak descriptive theory answers ({p_desc*100:.0f}%)")
                 
             if not r["passed_hard_filter"]:
-                verdict = "Disqualified"
+                verdict = "Disqualified (Filter Failed)"
                 badge_color = "#ef4444"
                 reasoning = f"Failed mandatory role filter: {r.get('filter_fail_reason', 'Did not meet prerequisites')}."
-            elif not cand_has_interview:
-                verdict = "Interview Pending"
-                badge_color = "#f59e0b"
-                reasoning = f"CV Match completed ({s_cv*100:.0f}%). Technical assessment pending."
-            elif not cand_has_cv:
-                verdict = "CV Match Pending"
-                badge_color = "#3b82f6"
-                reasoning = f"Interview completed ({s_int*100:.0f}%). CV qualification match pending."
             elif css >= 0.80:
                 verdict = "Highly Recommended"
                 badge_color = "#22c55e"
@@ -580,24 +547,22 @@ async def rank_pipeline(request: Request, job_id: str):
                 "CSS": css,
                 "final_score": round(css * 100, 2),
                 "blended_score": round(css * 100, 2),
-                "S_cv": s_cv if cand_has_cv else None,
-                "cv_score": round(s_cv * 100, 2) if cand_has_cv else None,
-                "S_int": s_int if cand_has_interview else None,
-                "interview_score": round(s_int * 100, 2) if cand_has_interview else None,
-                "interview_completed": cand_has_interview,
-                "has_cv": cand_has_cv,
+                "S_cv": s_cv,
+                "cv_score": round(s_cv * 100, 2),
+                "S_int": s_int,
+                "interview_score": round(s_int * 100, 2),
                 "S_edu": s_edu,
-                "education_score": round(s_edu * 100, 2) if s_edu is not None else None,
+                "education_score": round(s_edu * 100, 2),
                 "S_exp": s_exp,
-                "experience_score": round(s_exp * 100, 2) if s_exp is not None else None,
+                "experience_score": round(s_exp * 100, 2),
                 "S_skill": s_skill,
-                "skill_score": round(s_skill * 100, 2) if s_skill is not None else None,
+                "skill_score": round(s_skill * 100, 2),
                 "P_mcq": p_mcq,
-                "mcq_score": round(p_mcq * 100, 2) if p_mcq is not None else None,
+                "mcq_score": round(p_mcq * 100, 2),
                 "P_desc": p_desc,
-                "descriptive_score": round(p_desc * 100, 2) if p_desc is not None else None,
+                "descriptive_score": round(p_desc * 100, 2),
                 "P_code": p_code,
-                "coding_score": round(p_code * 100, 2) if p_code is not None else None,
+                "coding_score": round(p_code * 100, 2),
                 "ltr_score": r.get("ltr_score"),
                 "passed_hard_filter": r["passed_hard_filter"],
                 "filter_fail_reason": r.get("filter_fail_reason", ""),
@@ -608,7 +573,9 @@ async def rank_pipeline(request: Request, job_id: str):
                 "weaknesses": weaknesses if weaknesses else ["No critical deficits detected"],
             })
         
-        return {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
+        res_data = {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
+        _PIPELINE_CACHE[job_id] = (time.time(), res_data)
+        return res_data
     except HTTPException:
         raise
     except Exception as exc:

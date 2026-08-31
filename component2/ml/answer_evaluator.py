@@ -125,6 +125,17 @@ class DescriptiveAnswerEvaluator:
             if re.search(p, cand_lower) and not re.search(p, ref_lower):
                 return 0.20  # Apply 80% penalty for direct definition negation
 
+        # Complexity contradiction: O(log n) vs O(n) etc.
+        # If reference states O(log n) but candidate claims O(n) without log -> penalize
+        complexity_patterns = [
+            (r'o\s*\(\s*log\s*n\s*\)', r'o\s*\(\s*n\s*\)'),
+            (r'o\s*\(\s*n\s*log\s*n\s*\)', r'o\s*\(\s*n\s*\)'),
+            (r'o\s*\(\s*1\s*\)', r'o\s*\(\s*n\s*\)'),
+        ]
+        for ref_pat, cand_pat in complexity_patterns:
+            if re.search(ref_pat, ref_lower) and re.search(cand_pat, cand_lower) and not re.search(ref_pat, cand_lower):
+                return 0.45  # 55% penalty for wrong complexity
+
         return 1.0
 
     def evaluate_descriptive_answer(self, reference_answer: str, 
@@ -355,7 +366,8 @@ class CodingEvaluator:
     def evaluate_code_quality(self, has_syntax_error: bool = False,
                             complexity_order: int = 0,  # 0=optimal, 1=one worse, 2+=two worse
                             code_length: int = 0,
-                            comments_ratio: float = 0.0) -> float:
+                            comments_ratio: float = 0.0,
+                            code_text: str = "") -> float:
         """
         Calculate code quality score (simple heuristic)
         
@@ -372,6 +384,10 @@ class CodingEvaluator:
             Quality score in [0, 1]
         """
         w1, w2, w3 = 0.5, 0.3, 0.2
+
+        # Gibberish guard: must contain real code constructs
+        if code_text and not any(kw in code_text for kw in ['def ', 'class ', 'return', 'import ', 'for ', 'while ', 'if ', 'elif', 'else:', 'try:']):
+            return 0.15
         
         # Syntax validity
         syntax_score = 0.0 if has_syntax_error else 1.0
@@ -400,7 +416,8 @@ class CodingEvaluator:
                               has_syntax_error: bool = False,
                               complexity_order: int = 0,
                               code_length: int = 0,
-                              comments_ratio: float = 0.0) -> Dict:
+                              comments_ratio: float = 0.0,
+                              code_text: str = "") -> Dict:
         """
         Evaluate a coding answer comprehensively
         
@@ -421,7 +438,7 @@ class CodingEvaluator:
         
         # Quality score
         quality = self.evaluate_code_quality(
-            has_syntax_error, complexity_order, code_length, comments_ratio
+            has_syntax_error, complexity_order, code_length, comments_ratio, code_text
         )
         quality_score = quality * 100
         

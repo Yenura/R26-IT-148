@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { AlertTriangle, Trash2, X } from 'lucide-react'
 
 export default function ConfirmDialog({
@@ -84,13 +85,13 @@ export default function ConfirmDialog({
 
   if (!open) return null
 
-  return (
+  return createPortal(
     <div
       onClick={onCancel}
       style={{
         position: 'fixed',
         inset: 0,
-        zIndex: 'var(--p-z-modal, 9999)',
+        zIndex: 9999,
         background: 'var(--modal-overlay)',
         backdropFilter: 'blur(8px)',
         display: 'flex',
@@ -164,6 +165,7 @@ export default function ConfirmDialog({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -287,30 +287,30 @@ export default function SkillGap() {
                     </div>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                       <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Overall Mark (S_cv)</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Overall Mark</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.cv_score != null ? `${Number(selectedReport.cv_score).toFixed(0)}%` : 'Pending'}
+                          {selectedReport.cv_score != null ? `${selectedReport.cv_score}%` : 'N/A'}
                         </div>
                       </div>
                       <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark (S_int)</div>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedReport.interview_completed ? 'var(--color-purple)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.interview_completed && selectedReport.interview_score != null ? `${Number(selectedReport.interview_score).toFixed(0)}%` : 'Pending'}
+                          {selectedReport.interview_score != null ? `${selectedReport.interview_score}%` : 'Pending'}
                         </div>
                       </div>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: selectedReport.interview_completed && selectedReport.cv_score != null ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${selectedReport.interview_completed && selectedReport.cv_score != null ? 'rgba(99, 102, 241, 0.4)' : 'var(--color-border)'}` }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: selectedReport.interview_completed && selectedReport.cv_score != null ? 'var(--color-primary)' : 'var(--color-fg-muted)', textTransform: 'uppercase' }}>
-                          {selectedReport.interview_completed && selectedReport.cv_score != null ? 'Final Total Mark (CSS)' : 'Current Total (CSS)'}
+                      <div style={{ textAlign: 'center', padding: '8px 14px', background: selectedReport.interview_completed ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${selectedReport.interview_completed ? 'rgba(99, 102, 241, 0.4)' : 'var(--color-border)'}` }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg-muted)', textTransform: 'uppercase' }}>
+                          {selectedReport.interview_completed ? 'Final Total Mark (CSS)' : 'Current Total (CV Mark)'}
                         </div>
-                        <div style={{ fontSize: '1.3rem', fontWeight: 900, color: selectedReport.interview_completed && selectedReport.cv_score != null ? 'var(--color-primary)' : 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.hire_probability != null ? `${Number(selectedReport.hire_probability).toFixed(1)}%` : (selectedReport.cv_score != null ? `${Number(selectedReport.cv_score).toFixed(1)}%` : 'N/A'))}
+                        <div style={{ fontSize: '1.3rem', fontWeight: 900, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.cv_score != null ? `${Number(selectedReport.cv_score).toFixed(1)}%` : 'N/A')}
                         </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* If candidate completed only CV match -> prompt for AI interview */}
-                  {selectedReport.cv_score != null && (!selectedReport.interview_completed || selectedReport.interview_score == null) && (
+                  {/* Interview alert with animated subtle glow */}
+                  {!selectedReport.interview_completed && (
                     <div style={{
                       padding: '16px 20px',
                       borderRadius: 'var(--radius-lg)',
@@ -330,35 +330,8 @@ export default function SkillGap() {
                           Your CV Match score is recorded! Complete the AI Technical Interview to unlock your full combined score and top ranking.
                         </span>
                       </div>
-                      <Link to={`/candidate/interview?role=${encodeURIComponent(selectedReport.job_title)}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      <Link to={`/candidate/interview?role=${selectedReport.job_title}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         Start Technical Assessment
-                      </Link>
-                    </div>
-                  )}
-
-                  {/* If candidate completed only AI interview -> prompt for CV match */}
-                  {selectedReport.cv_score == null && selectedReport.interview_completed && selectedReport.interview_score != null && (
-                    <div style={{
-                      padding: '16px 20px',
-                      borderRadius: 'var(--radius-lg)',
-                      background: 'var(--color-warning-muted)',
-                      border: '1px solid rgba(245, 158, 11, 0.4)',
-                      boxShadow: '0 0 20px -4px rgba(245, 158, 11, 0.25)',
-                      marginBottom: 20,
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: 12
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <HelpCircle size={20} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
-                        <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg)' }}>
-                          Your AI Interview evaluation is recorded! Complete your CV Match to unlock your final total score and top ranking.
-                        </span>
-                      </div>
-                      <Link to={`/candidate/cv-match?jobId=${selectedReport.job_id}&role=${encodeURIComponent(selectedReport.job_title)}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
-                        Complete CV Match
                       </Link>
                     </div>
                   )}
@@ -531,10 +504,10 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                   <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
                     <CheckCircle2 size={15} /> Simulated Acquired Skills ({simulatedSkills.length})
                   </h4>
-                  {simulatedSkills.length > 0 ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-{simulatedSkills.map((s) => (
-                        <span key={s} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    {simulatedSkills.length > 0 ? (
+                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+ {[...new Set(simulatedSkills)].map((s, i) => (
+                         <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                           {s}
                           <button onClick={() => removeSimSkill(s)} aria-label={`Remove ${s}`} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', fontWeight: 800 }}>×</button>
                         </span>
@@ -637,9 +610,9 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                       <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-fg)' }}>
                         <Lightbulb size={18} style={{ color: 'var(--color-warning)' }} /> Actionable Next Steps
                       </h3>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-{simulationResult.improvement_suggestions.map((s) => (
-                          <div key={s} style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+ {[...new Set(simulationResult.improvement_suggestions)].map((s, i) => (
+                           <div key={`${s}-${i}`} style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'flex-start', gap: 8 }}>
                             <span style={{ color: 'var(--color-warning)' }}>•</span> {s}
                           </div>
                         ))}
@@ -655,4 +628,3 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
     </div>
   )
 }
-

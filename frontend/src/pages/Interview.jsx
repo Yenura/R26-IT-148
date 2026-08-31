@@ -15,6 +15,26 @@ import ScoreMeter from '../components/ScoreMeter'
 import ScoreBadge from '../components/ScoreBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
 
+const ROLE_LANGUAGES = {
+  "Software Engineer": ["Python","Java","C#","C++","JavaScript","Go"],
+  "Backend Developer": ["Python","Java","C#","Node.js","Go","JavaScript"],
+  "Frontend Developer": ["JavaScript","TypeScript"],
+  "Full Stack Developer": ["JavaScript","TypeScript","Python","Java"],
+  "Mobile App Developer": ["Kotlin","Swift","Dart","Java"],
+  "Data Scientist": ["Python","R"],
+  "Machine Learning Engineer": ["Python"],
+  "Data Engineer": ["Python","SQL","Scala"],
+  "DevOps Engineer": ["Python","Bash","Go"],
+  "Database Administrator": ["SQL","Python"],
+  "Blockchain Developer": ["Solidity","Rust","Go","Python"],
+  "AI/NLP Engineer": ["Python"],
+  "Embedded Systems Engineer": ["C","C++"],
+  "QA/Test Automation Engineer": ["Python","Java","JavaScript"],
+  "Site Reliability Engineer": ["Python","Go","Bash"],
+  "Network Engineer": ["Python"],
+}
+const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst"]
+
 export default function Interview() {
   const ct = getChartTheme()
   const navigate = useNavigate()
@@ -38,6 +58,7 @@ export default function Interview() {
   const [roles, setRoles] = useState({})
   const [selectedRole, setSelectedRole] = useState(jobRole)
   const [selectedLevel, setSelectedLevel] = useState(jobLevel)
+  const [selectedLanguage, setSelectedLanguage] = useState('Auto')
   const [numQuestions, setNumQuestions] = useState(jobCount)
   const [session, setSession] = useState(null)
   const [currentQ, setCurrentQ] = useState(0)
@@ -139,9 +160,13 @@ export default function Interview() {
     if (!selectedRole) return toast.error('Please select a target role')
     setBusy(true)
     try {
-      const skills = jobRole && jobSkills
+      let skills = jobRole && jobSkills
         ? jobSkills.split(',').filter(Boolean)
         : (Object.keys(roles).length > 0 ? (roles[selectedRole] || []).slice(0, 5) : [])
+      // If practice mode and user chose a language for coding role, prioritize it
+      if (isPracticeMode && selectedLanguage !== 'Auto' && !NON_CODING_ROLES.includes(selectedRole)) {
+        skills = [selectedLanguage, ...skills.filter((s) => s.toLowerCase() !== selectedLanguage.toLowerCase())]
+      }
       const r = await c2Start({
         candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
         job_role: selectedRole,
@@ -204,7 +229,7 @@ export default function Interview() {
             candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
             session_id: session.session_id,
             job_role: selectedRole,
-            job_id: jobId,
+            job_id: jobId || session.job_id || '',
             answers: questions.map((q) => {
               const a = answers[q.id]
               if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
@@ -313,8 +338,8 @@ export default function Interview() {
               <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 6 }}>Required Skills</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {jobSkills.split(',').filter(Boolean).map((s) => (
-                    <span key={s} className="chip" style={{ fontSize: '11px', padding: '2px 8px' }}>{s.trim()}</span>
+                   {[...new Set(jobSkills.split(',').filter(Boolean))].map((s, i) => (
+                     <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '2px 8px' }}>{s.trim()}</span>
                   ))}
                 </div>
               </div>
@@ -358,7 +383,7 @@ export default function Interview() {
             <label style={{ fontSize: '12px', marginTop: 0 }}>Target Technical Role *</label>
             <select
               value={selectedRole}
-              onChange={(e) => setSelectedRole(e.target.value)}
+              onChange={(e) => { setSelectedRole(e.target.value); setSelectedLanguage('Auto'); }}
               style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
             >
               <option value="">Select target role...</option>
@@ -370,6 +395,23 @@ export default function Interview() {
               )}
             </select>
           </div>
+
+          {selectedRole && ROLE_LANGUAGES[selectedRole] && !NON_CODING_ROLES.includes(selectedRole) && (
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: '12px', marginTop: 0 }}>Programming Language (for coding questions)</label>
+              <select
+                value={selectedLanguage}
+                onChange={(e) => setSelectedLanguage(e.target.value)}
+                style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+              >
+                <option value="Auto">Auto (from role)</option>
+                {ROLE_LANGUAGES[selectedRole].map((lang) => (
+                  <option key={lang} value={lang}>{lang}</option>
+                ))}
+              </select>
+              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4 }}>Coding questions will be generated in {selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage}</div>
+            </div>
+          )}
 
           <div style={{ marginBottom: 24 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Job Level</label>

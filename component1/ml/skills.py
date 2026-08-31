@@ -25,12 +25,30 @@ SKILLS_LEXICON = [
 ]
 
 EDUCATION_PATTERNS = [
-    (4, [r"\bph\.?d\b", r"\bdoctorate\b", r"doctor of philosophy"]),
-    (3, [r"\bm\.?s\b", r"\bm\.?sc\b", r"\bmaster(?:'?s| of)?\b", r"\bm\.?eng\b",
-         r"\bm\.?ba\b", r"\bmtech\b", r"\bm\.?tech\b"]),
-    (2, [r"\bb\.?s\b", r"\bb\.?sc\b", r"\bbachelor(?:'?s| of)?\b", r"\bb\.?eng\b",
-         r"\bb\.?tech\b", r"\bb\.?ba\b", r"\bundergraduate\b", r"\bdegree\b"]),
-    (1, [r"\bdiploma\b", r"\bhnd\b", r"\bcertificate\b", r"\bassociate\b", r"\bfoundation\b"]),
+    (4, [
+        r"\bph\.?d\b", r"\bdoctorate\b", r"\bdoctor of philosophy\b", r"\bd\.?phil\b",
+        r"\bd\.?sc\b", r"\bengd\b", r"\bdr\.-ing\b", r"\bdr\.?\s*rer\.?\s*nat\b",
+        r"\bdocteur\b", r"\bdoctorado\b", r"\bdoktor\b", r"\bd\.?b\.?a\b"
+    ]),
+    (3, [
+        r"\bm\.?s\b", r"\bm\.?sc\b", r"\bmaster(?:'?s| of)?\b", r"\bm\.?eng\b",
+        r"\bm\.?ba\b", r"\bmtech\b", r"\bm\.?tech\b", r"\bmca\b", r"\bm\.?phil\b",
+        r"\bpostgraduate\b", r"\bpgdip\b", r"\bdiplom-informatiker\b", r"\bdiplom-ingenieur\b",
+        r"\bdipl\.-inf\b", r"\bdipl\.-ing\b", r"\bmagister\b", r"\blaurea magistrale\b",
+        r"\bmaîtrise\b", r"\bmaster européen\b", r"\btitulado superior\b"
+    ]),
+    (2, [
+        r"\bb\.?s\b", r"\bb\.?sc\b", r"\bbachelor(?:'?s| of)?\b", r"\bb\.?eng\b",
+        r"\bb\.?tech\b", r"\bb\.?ba\b", r"\bbca\b", r"\bbit\b", r"\bbcs\b",
+        r"\bbappsc\b", r"\bundergraduate\b", r"\bdegree\b", r"\blaurea triennale\b",
+        r"\blicenciatura\b", r"\blicentiate\b", r"\bdiplôme d'ingénieur\b",
+        r"\bdipl\.-ing\.?\s*\(fh\)\b", r"\bbaccalaureate\b", r"\bgrado en\b"
+    ]),
+    (1, [
+        r"\bdiploma\b", r"\bhnd\b", r"\bhnc\b", r"\bcertificate\b", r"\bassociate\b",
+        r"\bfoundation\b", r"\bnvq\b", r"\bndt\b", r"\bbts\b", r"\bdut\b",
+        r"\bcerthe\b", r"\bdiphe\b"
+    ]),
 ]
 
 YEARS_PATTERNS = [
