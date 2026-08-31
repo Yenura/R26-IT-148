@@ -60,7 +60,7 @@ async def require_candidate(request: Request) -> dict:
 
 # ── Company ─────────────────────────────────────────────────────
 @router.post("/register/company", response_model=Token, status_code=201)
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 async def register_company(request: Request, payload: CompanyRegister):
     db = request.app.state.db
     email = payload.email.lower().strip()
@@ -84,7 +84,7 @@ async def register_company(request: Request, payload: CompanyRegister):
 
 
 @router.post("/login/company", response_model=Token)
-@limiter.limit("10/minute")
+@limiter.limit("30/minute")
 async def login_company(request: Request, payload: LoginRequest):
     db = request.app.state.db
     email = payload.email.lower().strip()
@@ -101,7 +101,7 @@ async def login_company(request: Request, payload: LoginRequest):
 
 # ── Candidate ───────────────────────────────────────────────────
 @router.post("/register/candidate", response_model=Token, status_code=201)
-@limiter.limit("5/minute")
+@limiter.limit("30/minute")
 async def register_candidate(request: Request, payload: CandidateRegister):
     db = request.app.state.db
     email = payload.email.lower().strip()
@@ -122,7 +122,7 @@ async def register_candidate(request: Request, payload: CandidateRegister):
 
 
 @router.post("/login/candidate", response_model=Token)
-@limiter.limit("10/minute")
+@limiter.limit("30/minute")
 async def login_candidate(request: Request, payload: LoginRequest):
     db = request.app.state.db
     email = payload.email.lower().strip()

@@ -280,6 +280,14 @@ async def rank_pipeline(request: Request, job_id: str):
         query_conditions = [{"job_id": job_id}, {"job_id": str(job_id)}]
         if ObjectId.is_valid(job_id):
             query_conditions.append({"job_id": ObjectId(job_id)})
+
+        if job:
+            j_t = job.get("title")
+            j_r = job.get("job_role")
+            if j_t:
+                query_conditions.extend([{"job_id": j_t}, {"job_title": j_t}, {"job_role": j_t}])
+            if j_r:
+                query_conditions.extend([{"job_id": j_r}, {"job_role": j_r}])
             
         seen_candidates = set()
         applicants = []
@@ -328,27 +336,8 @@ async def rank_pipeline(request: Request, job_id: str):
                     "resume_id": res.get("resume_id", ""),
                 })
 
-        # Fallback to all candidate resumes in the talent pool if no candidates interacted with this job yet
         if not applicants:
-            resume_cursor = db.resumes.find().sort("created_at", -1)
-            resumes_list = await resume_cursor.to_list(length=50)
-            if not resumes_list:
-                c1_cursor = db.cv_analyses.find().sort("analysis_timestamp", -1)
-                resumes_list = await c1_cursor.to_list(length=50)
-                
-            applicants = [
-                {
-                    "candidate_id": str(r.get("candidate_id", r.get("_id", "unknown"))),
-                    "candidate_name": r.get("candidate_name", r.get("filename", "Candidate")),
-                    "resume_skills": r.get("skills", []),
-                    "experience_years": r.get("experience_years", 2),
-                    "education": r.get("education", "BSc IT"),
-                }
-                for r in resumes_list
-            ]
-
-        if not applicants:
-            return {"success": True, "job_id": job_id, "data": [], "message": "No applicants or resumes found"}
+            return {"success": True, "job_id": job_id, "data": [], "message": "No applicants have applied or completed interviews for this position yet."}
 
         # 3. Batch-fetch users, resumes, predictions, and interview scores for all candidates
         candidate_ids = [str(app.get("candidate_id") or app.get("_id", "CAND")) for app in applicants]

@@ -1,10 +1,22 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
-import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Sparkles } from 'lucide-react'
+import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const getErrorMessage = (err) => {
+  const detail = err?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail.map((d) => (d.msg ? d.msg.replace(/^Value error,\s*/i, '') : JSON.stringify(d))).join(', ')
+  }
+  if (typeof detail === 'object' && detail !== null) {
+    return Object.values(detail).join(', ')
+  }
+  return err?.message || 'Registration failed. Please try again.'
+}
 
 export default function CandidateRegister() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '' })
@@ -30,21 +42,25 @@ export default function CandidateRegister() {
     if (!validate()) return
     setBusy(true)
     try {
-      const r = await C0.post('/auth/register/candidate', form)
+      const payload = {
+        full_name: form.full_name.trim(),
+        email: form.email.trim().toLowerCase(),
+        password: form.password
+      }
+      const r = await C0.post('/auth/register/candidate', payload)
+      try { sessionStorage.clear() } catch {}
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'candidate')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
       try {
         const me = await C0.get('/auth/me')
-        localStorage.setItem('recruitai.name', me.data.name || form.full_name)
+        localStorage.setItem('recruitai.name', me.data.name || form.full_name.trim())
         localStorage.setItem('recruitai.avatar', me.data.avatar_url || '')
       } catch {}
-      toast.success('Candidate account created!')
+      toast.success('Candidate account created successfully!')
       navigate('/candidate/dashboard')
     } catch (err) {
-      const detail = err?.response?.data?.detail
-      const msg = Array.isArray(detail) ? (detail[0]?.msg?.replace('Value error, ','') || detail[0]?.msg || detail[0]) : detail
-      toast.error(msg || 'Registration failed')
+      toast.error(getErrorMessage(err))
     } finally {
       setBusy(false)
     }
@@ -58,7 +74,7 @@ export default function CandidateRegister() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg)', padding: 20 }}>
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
-        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start' }}>
+        <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
           <ArrowLeft size={14} /> Back to Home
         </Link>
 
@@ -72,7 +88,8 @@ export default function CandidateRegister() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff'
+            color: '#fff',
+            boxShadow: 'var(--shadow-md)'
           }}>
             <Brain size={26} color="#ffffff" strokeWidth={2.5} />
           </div>
@@ -80,47 +97,78 @@ export default function CandidateRegister() {
             Create Candidate Account
           </h1>
           <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>
-            Join RecruitAI to analyze your CV and discover matching roles.
+            Join RecruitAI to analyze your CV, assess skills, and discover matching roles.
           </p>
         </div>
 
         <form onSubmit={register} noValidate className="card" style={{ padding: 'var(--p-space-6)', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-xl)' }}>
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Full Name *</label>
-            <input
-              type="text"
-              value={form.full_name}
-              onChange={set('full_name')}
-              placeholder="e.g. Alex Morgan"
-              style={{ borderColor: errors.full_name ? 'var(--color-danger, #ef4444)' : undefined }}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <User size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
+              <input
+                type="text"
+                autoComplete="name"
+                value={form.full_name}
+                onChange={set('full_name')}
+                placeholder="e.g. Alex Morgan"
+                style={{ paddingLeft: 36, borderColor: errors.full_name ? 'var(--color-danger, #ef4444)' : undefined }}
+                required
+              />
+            </div>
             {errors.full_name && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.full_name}</p>}
           </div>
 
           <div style={{ marginBottom: 14 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Email Address *</label>
-            <input
-              type="email"
-              value={form.email}
-              onChange={set('email')}
-              placeholder="alex@example.com"
-              style={{ borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <Mail size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
+              <input
+                type="email"
+                autoComplete="email"
+                value={form.email}
+                onChange={set('email')}
+                placeholder="alex@example.com"
+                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
+                required
+              />
+            </div>
             {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
           </div>
 
           <div style={{ marginBottom: 20 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Password *</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={set('password')}
-              placeholder="Minimum 6 characters"
-              style={{ borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
-              required
-            />
+            <div style={{ position: 'relative' }}>
+              <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="new-password"
+                value={form.password}
+                onChange={set('password')}
+                placeholder="Minimum 6 characters"
+                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                aria-label={showPassword ? 'Hide password' : 'Show password'}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--color-fg-muted)',
+                  padding: 0
+                }}
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+              </button>
+            </div>
             {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
           </div>
 

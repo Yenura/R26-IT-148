@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Upload, Briefcase, MapPin, Clock, ChevronRight, Trash2, Edit3, X, Check,
-  Sparkles, FileText, Target, TrendingUp, CheckCircle2, ArrowRight, UserCheck, Eye, MessagesSquare
+  Sparkles, FileText, Target, TrendingUp, CheckCircle2, ArrowRight, UserCheck, Eye, MessagesSquare,
+  Search, GraduationCap, Building2
 } from 'lucide-react'
 import {
   uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate,
@@ -19,35 +20,60 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
+const cleanCandidateTitle = (candName, filename) => {
+  if (candName && String(candName).trim() && !candName.toLowerCase().includes('.pdf') && !candName.toLowerCase().includes('candidate')) {
+    return candName.trim()
+  }
+  if (filename) {
+    let name = filename
+      .replace(/\.[^/.]+$/, '')
+      .replace(/[\(\[\d\)\]]/g, '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/\b(?:cv|resume|se|swe|intern|developer)\b/gi, '')
+      .trim()
+    if (name.length > 2) {
+      return name.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    }
+  }
+  return 'Candidate Profile'
+}
+
+const cleanCompanyName = (rawCompany) => {
+  if (!rawCompany) return 'Enterprise Partner'
+  let c = String(rawCompany).trim()
+  c = c.replace(/\s*\d{6,}\b/g, '')
+  if (c.toLowerCase() === 'virtusa') return 'Virtusa'
+  if (c.toLowerCase() === 'syscolabs' || c.toLowerCase() === 'sysco labs') return 'Sysco LABS'
+  if (c.toLowerCase() === 'ifs') return 'IFS'
+  if (c.toLowerCase() === 'wso2') return 'WSO2'
+  if (c.toLowerCase() === '99x') return '99x'
+  if (c.toLowerCase() === 'codegen') return 'CodeGen'
+  if (c.toLowerCase() === 'tech corp' || c.toLowerCase() === 'techcorp') return 'TechCorp Global'
+  return c.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
+const cleanEducationText = (rawEdu) => {
+  if (!rawEdu) return 'BSc Degree in Computing / IT'
+  let edu = String(rawEdu).trim()
+  if (edu.includes('|')) {
+    edu = edu.split('|')[0].trim()
+  }
+  return edu.length > 55 ? `${edu.slice(0, 52)}...` : edu
+}
+
 export default function CandidateDashboard() {
   const navigate = useNavigate()
   useAuth('candidate')
-  const candidateName = localStorage.getItem('recruitai.name') || 'Candidate'
+  const rawCandidateName = localStorage.getItem('recruitai.name') || 'Candidate'
+  const candidateName = rawCandidateName
+    .split(' ')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
 
-  const [resumes, setResumes] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.cand.resumes')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
-  const [jobs, setJobs] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.jobs.cached')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
-  const [applications, setApplications] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.cand.apps')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
-  const [predictions, setPredictions] = useState(() => {
-    try {
-      const cached = sessionStorage.getItem('recruitai.cand.preds')
-      return cached ? JSON.parse(cached) : []
-    } catch { return [] }
-  })
+  const [resumes, setResumes] = useState([])
+  const [jobs, setJobs] = useState([])
+  const [applications, setApplications] = useState([])
+  const [predictions, setPredictions] = useState([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)
@@ -161,22 +187,33 @@ export default function CandidateDashboard() {
     ? Math.max(...predictions.map((p) => p.overall_score || 0))
     : 0
 
+  const filteredJobs = jobs.filter((j) => {
+    if (!jobSearch.trim()) return true
+    const q = jobSearch.toLowerCase()
+    return (
+      (j.title && j.title.toLowerCase().includes(q)) ||
+      (j.company_name && j.company_name.toLowerCase().includes(q)) ||
+      (j.location && j.location.toLowerCase().includes(q)) ||
+      (j.required_skills && j.required_skills.some((s) => String(s).toLowerCase().includes(q)))
+    )
+  })
+
   return (
     <div className="fade-in" style={{ maxWidth: 1180, margin: '0 auto' }}>
       {/* Header & Primary CTAs */}
       <PageHeader
-        badge="Candidate Portal"
+        badge="Candidate AI Cockpit"
         title={`Welcome back, ${candidateName}`}
         description="Your unified AI recruitment cockpit: manage resumes, explore matching roles, and level up technical readiness."
         actions={
           <>
-            <Link to="/pipeline/cv-match" className="btn btn-primary btn-sm">
+            <Link to="/pipeline/cv-match" className="btn btn-primary btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}>
               <Sparkles size={15} /> Run AI CV Match
             </Link>
-            <Link to="/candidate/interview" className="btn btn-ghost btn-sm">
+            <Link to="/candidate/interview" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <MessagesSquare size={15} /> Practice Interview
             </Link>
-            <Link to="/candidate/jobs" className="btn btn-ghost btn-sm">
+            <Link to="/candidate/jobs" className="btn btn-ghost btn-sm" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
               <Briefcase size={15} /> Explore Jobs
             </Link>
           </>
@@ -193,28 +230,28 @@ export default function CandidateDashboard() {
             value={resumes.length}
             icon={FileText}
             color="primary"
-            helperText={resumes.length > 0 ? 'Ready for auto-matching' : 'Upload your first CV'}
+            helperText={resumes.length > 0 ? `${resumes.length} verified profile${resumes.length > 1 ? 's' : ''}` : 'Upload your first CV'}
           />
           <StatCard
             label="Applied Roles"
             value={applications.filter((a) => a.status !== 'withdrawn').length}
             icon={UserCheck}
             color="info"
-            helperText="Tracked in pipeline"
+            helperText="Active in recruitment pipeline"
           />
           <StatCard
             label="Open Positions"
             value={jobs.length}
             icon={Briefcase}
             color="success"
-            helperText="Active recruiter postings"
+            helperText="Live recruiter postings"
           />
           <StatCard
             label="Top Fit Match"
             value={bestPrediction > 0 ? `${bestPrediction.toFixed(0)}%` : '—'}
             icon={Target}
             color={bestPrediction >= 80 ? 'success' : 'purple'}
-            helperText={bestPrediction > 0 ? 'Highest AI match' : 'Run CV Match'}
+            helperText={bestPrediction > 0 ? 'Peak AI match score' : 'Run CV Match'}
           />
         </div>
       )}
@@ -340,84 +377,111 @@ export default function CandidateDashboard() {
                     ) : (
                       /* Standard View Mode */
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
-                            <div style={{
-                              width: 38,
-                              height: 38,
-                              borderRadius: 'var(--radius-md)',
-                              background: 'var(--color-primary-muted)',
-                              color: 'var(--color-primary)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0
-                            }}>
-                              <FileText size={18} />
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
-                                {r.filename}
+                        {(() => {
+                          const candDisplayName = cleanCandidateTitle(r.candidate_name, r.filename)
+                          const initials = candDisplayName.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'CV'
+                          return (
+                            <>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                                  <div style={{
+                                    width: 42,
+                                    height: 42,
+                                    borderRadius: 'var(--radius-md)',
+                                    background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                                    color: '#ffffff',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 800,
+                                    fontSize: '14px',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                                    flexShrink: 0
+                                  }}>
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                                      <span>{candDisplayName}</span>
+                                      <span style={{ fontSize: '10.5px', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'rgba(255, 255, 255, 0.06)', color: 'var(--color-fg-muted)', border: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                                        📄 {r.filename}
+                                      </span>
+                                    </div>
+                                    <div style={{ fontSize: '11.5px', color: 'var(--color-fg-muted)', marginTop: 4, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                        <GraduationCap size={13} style={{ color: 'var(--color-primary-light, #93c5fd)' }} />
+                                        {cleanEducationText(r.education)}
+                                      </span>
+                                      <span>•</span>
+                                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                                        <Clock size={13} style={{ color: 'var(--color-success)' }} />
+                                        {r.experience_years || 0} yrs experience
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                                  <button
+                                    className="btn-ghost btn-sm"
+                                    onClick={() => startEdit(r)}
+                                    aria-label="Edit parsed details"
+                                    title="Edit parsed details"
+                                    style={{ padding: 6, minWidth: 32, minHeight: 32, borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 255, 255, 0.06)' }}
+                                  >
+                                    <Edit3 size={13} />
+                                  </button>
+                                  <button
+                                    className="btn-ghost btn-sm"
+                                    onClick={() => deleteResume(r.id)}
+                                    aria-label="Delete resume"
+                                    title="Delete resume"
+                                    style={{ padding: 6, minWidth: 32, minHeight: 32, color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(244, 63, 94, 0.15)' }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               </div>
-                              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
-                                {r.candidate_name && <span><strong>{r.candidate_name}</strong> · </span>}
-                                {r.education && <span>{r.education} · </span>}
-                                <span>{r.experience_years || 0} yrs experience</span>
+
+                              {/* Extracted Skills Cloud */}
+                              {r.skills?.length > 0 && (
+                                <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+                                  <span style={{ fontSize: '10px', fontWeight: 800, color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', marginRight: 4 }}>
+                                    Skills:
+                                  </span>
+                                  {[...new Set(r.skills)].slice(0, 8).map((s, i) => (
+                                    <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10.5px', margin: 0, padding: '2px 8px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.06)' }}>
+                                      {s}
+                                    </span>
+                                  ))}
+                                  {r.skills.length > 8 && (
+                                    <span style={{ fontSize: '10.5px', color: 'var(--color-fg-muted)', alignSelf: 'center' }}>
+                                      +{r.skills.length - 8} more
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Action CTAs */}
+                              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
+                                <Link
+                                  to={`/candidate/interview?role=${encodeURIComponent(r.predicted_role || 'Software Engineer')}`}
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ fontSize: '11px', padding: '4px 10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                >
+                                  <MessagesSquare size={12} style={{ color: '#a78bfa' }} /> Practice Mock Interview
+                                </Link>
+                                <Link
+                                  to={`/pipeline/cv-match?resumeId=${r.id}`}
+                                  className="btn btn-primary btn-sm"
+                                  style={{ fontSize: '11px', padding: '4px 12px', fontWeight: 700 }}
+                                >
+                                  <Sparkles size={12} /> Run Detailed CV Match
+                                </Link>
                               </div>
-                            </div>
-                          </div>
-
-                          <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                            <button
-                              className="btn-ghost btn-sm"
-                              onClick={() => startEdit(r)}
-                              aria-label="Edit parsed details"
-                              title="Edit parsed details"
-                              style={{ padding: 8, minWidth: 44, minHeight: 44 }}
-                            >
-                              <Edit3 size={14} />
-                            </button>
-                            <button
-                              className="btn-ghost btn-sm"
-                              onClick={() => deleteResume(r.id)}
-                              aria-label="Delete resume"
-                              title="Delete resume"
-                              style={{ padding: 8, minWidth: 44, minHeight: 44, color: 'var(--color-danger)' }}
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        </div>
-
-                        {/* Extracted Skills Cloud */}
-                        {r.skills?.length > 0 && (
-                          <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
-                            <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase', marginRight: 4 }}>
-                              Extracted Skills:
-                            </span>
-                            {[...new Set(r.skills)].slice(0, 8).map((s, i) => (
-                               <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', margin: 0, padding: '2px 8px' }}>
-                                {s}
-                              </span>
-                            ))}
-                            {r.skills.length > 8 && (
-                              <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
-                                +{r.skills.length - 8} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Direct action CTA */}
-                        <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                          <Link
-                            to={`/pipeline/cv-match`}
-                            className="btn btn-ghost btn-sm"
-                            style={{ fontSize: 'var(--p-text-xs)' }}
-                          >
-                            <Sparkles size={13} /> Run Detailed CV Match
-                          </Link>
-                        </div>
+                            </>
+                          )
+                        })()}
                       </div>
                     )}
                   </div>
@@ -460,7 +524,7 @@ export default function CandidateDashboard() {
                           {job.title || app.job_title || 'Applied Position'}
                         </div>
                         <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2, display: 'flex', gap: 8 }}>
-                          <span>{job.company_name || 'Hiring Company'}</span>
+                          <span>{cleanCompanyName(job.company_name) || 'Hiring Company'}</span>
                           <span>·</span>
                           <span>{job.location || 'Remote'}</span>
                         </div>
@@ -520,70 +584,129 @@ export default function CandidateDashboard() {
         <div>
           {/* Top Job Matches */}
           <div className="card" style={{ marginBottom: 'var(--p-space-6)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--p-space-3)' }}>
-              <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Open Job Opportunities
-              </h3>
-              <Link to="/candidate/jobs" className="btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
-                Browse ({jobs.length})
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Open Job Opportunities
+                </h3>
+                <p style={{ fontSize: '11px', color: 'var(--color-fg-muted)', margin: '2px 0 0 0' }}>
+                  Explore active job postings and evaluate your semantic CV fit.
+                </p>
+              </div>
+              <Link to="/candidate/jobs" className="btn btn-ghost btn-sm" style={{ fontSize: '11.5px', padding: '4px 8px' }}>
+                Browse All ({jobs.length})
               </Link>
             </div>
 
-            {jobs.length === 0 ? (
+            {/* Quick Filter / Search */}
+            <div style={{ marginBottom: 12, position: 'relative' }}>
+              <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
+              <input
+                type="text"
+                value={jobSearch}
+                onChange={(e) => setJobSearch(e.target.value)}
+                placeholder="Search jobs by title, tech stack, or company..."
+                style={{
+                  width: '100%',
+                  fontSize: '12px',
+                  padding: '9px 12px 9px 34px',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'rgba(0, 0, 0, 0.25)',
+                  border: '1px solid var(--color-border-subtle)',
+                  color: 'var(--color-fg)'
+                }}
+              />
+            </div>
+
+            {filteredJobs.length === 0 ? (
               <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--color-fg-muted)', fontSize: 'var(--p-text-sm)' }}>
-                No active job postings yet.
+                No active job postings matched "{jobSearch}".
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {jobs.slice(0, 5).map((job) => {
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {filteredJobs.slice(0, 5).map((job) => {
                   const applied = appliedJobIds.has(job.id)
+                  const compName = cleanCompanyName(job.company_name)
+                  const compInitials = compName.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
                   return (
                     <div
                       key={job.id}
-                      onClick={() => navigate(`/candidate/jobs/${job.id}`)}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => e.key === 'Enter' && navigate(`/candidate/jobs/${job.id}`)}
                       style={{
-                        padding: '12px 14px',
-                        borderRadius: 'var(--radius-sm)',
+                        padding: '14px 16px',
+                        borderRadius: 'var(--radius-md)',
                         border: '1px solid var(--color-border-subtle)',
                         background: 'var(--color-bg-elevated)',
-                        cursor: 'pointer',
                         transition: 'all var(--duration-normal) var(--ease)'
                       }}
                       className="card-interactive"
                     >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                        <div style={{ fontWeight: 700, fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)' }}>
-                          {job.title}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: 'var(--radius-sm)',
+                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2))',
+                            color: 'var(--color-primary-light, #93c5fd)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            flexShrink: 0
+                          }}>
+                            {compInitials}
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--color-fg)' }}>
+                              {job.title}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--color-primary-light, #93c5fd)', fontWeight: 600, marginTop: 1 }}>
+                              {compName}
+                            </div>
+                          </div>
                         </div>
-                        {applied && (
-                          <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '1px 6px', borderRadius: 'var(--radius-full)' }}>
-                            Applied
+
+                        {applied ? (
+                          <span style={{ fontSize: '10.5px', fontWeight: 800, color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                            ✓ Applied
                           </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => navigate(`/pipeline/cv-match?jobId=${job.id}&role=${encodeURIComponent(job.job_role || job.title)}`)}
+                            className="btn btn-ghost btn-sm"
+                            style={{ fontSize: '11px', padding: '4px 9px', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)', fontWeight: 600 }}
+                            title="Evaluate your CV fit score for this position"
+                          >
+                            <Sparkles size={11} /> Evaluate Fit
+                          </button>
                         )}
                       </div>
 
-                      <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', gap: 10, alignItems: 'center' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                          <MapPin size={11} /> {job.location || 'Remote'}
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', gap: 12, alignItems: 'center', marginBottom: 8, marginTop: 4 }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <MapPin size={12} /> {job.location || 'Remote'}
                         </span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                          <Clock size={11} /> {job.employment_type || 'Full-time'}
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Clock size={12} /> {job.employment_type || 'Full-time'}
                         </span>
+                        {job.experience_required && (
+                          <span>{job.experience_required}+ yrs req</span>
+                        )}
                       </div>
 
                       {job.required_skills?.length > 0 && (
-                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 8 }}>
-                          {[...new Set(job.required_skills)].slice(0, 3).map((s, i) => (
-                            <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                          {[...new Set(job.required_skills)].slice(0, 4).map((s, i) => (
+                            <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '2px 7px', background: 'rgba(255, 255, 255, 0.04)' }}>
                               {s}
                             </span>
                           ))}
-                          {job.required_skills.length > 3 && (
-                            <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)' }}>
-                              +{job.required_skills.length - 3}
+                          {job.required_skills.length > 4 && (
+                            <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)', alignSelf: 'center' }}>
+                              +{job.required_skills.length - 4} more
                             </span>
                           )}
                         </div>
@@ -595,27 +718,54 @@ export default function CandidateDashboard() {
             )}
           </div>
 
-          {/* Quick AI Skill Development Box */}
+          {/* AI Career Acceleration Suite Hub */}
           <div
             className="card"
             style={{
-              background: 'linear-gradient(135deg, var(--color-primary-muted), var(--color-purple-muted))',
-              border: '1px solid rgba(59, 130, 246, 0.25)',
+              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%)',
+              border: '1px solid rgba(59, 130, 246, 0.3)',
+              borderRadius: 'var(--radius-lg)',
               padding: 'var(--p-space-5)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <TrendingUp size={18} style={{ color: 'var(--color-primary)' }} />
-              <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>
-                Career Roadmap & Skill Matrix
+              <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                RecruitAI Technical Acceleration Suite
               </div>
             </div>
             <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', lineHeight: 1.5, margin: '0 0 14px 0' }}>
-              Analyze technical gaps against industry benchmarks and simulate hiring readiness with automated learning pathways.
+              Maximize candidate hiring velocity with integrated AI screening tools:
             </p>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <Link to="/pipeline/progress" className="btn btn-ghost btn-sm" style={{ fontSize: 'var(--p-text-xs)' }}>
-                Progress Tracker
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+              <Link
+                to="/pipeline/cv-match"
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+              >
+                <Sparkles size={13} style={{ color: '#38bdf8' }} /> 3-Pillar CV Match
+              </Link>
+              <Link
+                to="/candidate/interview"
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+              >
+                <MessagesSquare size={13} style={{ color: '#a78bfa' }} /> Mock Interview
+              </Link>
+              <Link
+                to="/candidate/skill-gap"
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+              >
+                <Target size={13} style={{ color: '#34d399' }} /> Skill Gap Sandbox
+              </Link>
+              <Link
+                to="/pipeline/progress"
+                className="btn btn-ghost btn-sm"
+                style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+              >
+                <ArrowRight size={13} style={{ color: '#fbbf24' }} /> Roadmap Tracker
               </Link>
             </div>
           </div>

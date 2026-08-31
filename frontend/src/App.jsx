@@ -106,6 +106,7 @@ export default function App() {
     localStorage.removeItem('recruitai.user_id')
     localStorage.removeItem('recruitai.name')
     localStorage.removeItem('recruitai.avatar')
+    try { sessionStorage.clear() } catch {}
     setUserMenu(false)
     navigate('/')
   }, [navigate])

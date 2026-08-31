@@ -1,17 +1,54 @@
 {
-  "dataset_name": "Component 1 Real PDF & IT Resume Corpus",
-  "version": "c1_real_pdf_v2",
-  "total_records": 4906,
-  "real_pdf_records_added": 838,
-  "splits": {
-    "train": 3434,
-    "val": 736,
-    "test": 736
+  "dataset_name": "Component 1 Multi-Format Resume Corpus (PDF/DOCX/TXT)",
+  "provenance_classifications": {
+    "OpenSporks_Public_Resumes": "SCRAPED_PUBLIC_EXAMPLE",
+    "Real_Candidate_PDF_Corpus": "ANONYMIZED_REAL",
+    "Real_Candidate_DOCX_Corpus": "ANONYMIZED_REAL",
+    "Augmented_Role_Corpus": "AUGMENTED_REAL"
   },
-  "leakage_prevention": {
-    "target_role_label_masked": true,
+  "audit_statistics": {
+    "total_raw_documents_scanned": 3167,
+    "pdf_documents_count": 213,
+    "docx_documents_count": 350,
+    "txt_documents_count": 2604,
+    "successful_extractions": 3162,
+    "failed_or_empty_extractions": 5,
+    "exact_duplicates_detected": 143,
+    "near_duplicates_detected": 291,
+    "total_supervised_training_samples": 5454,
+    "parser_evaluation_corpus_size": 3162
+  },
+  "splits": {
+    "train_samples_70pct": 3817,
+    "val_samples_15pct": 818,
+    "test_samples_15pct": 819
+  },
+  "role_distribution": {
+    "Software Engineer": 1184,
+    "Data Scientist": 436,
+    "Frontend Developer": 407,
+    "Blockchain Developer": 224,
+    "Cybersecurity Analyst": 201,
+    "UI/UX Designer": 201,
+    "Business/Systems Analyst": 201,
+    "Machine Learning Engineer": 200,
+    "DevOps Engineer": 200,
+    "Cloud Solutions Architect": 200,
+    "Database Administrator": 200,
+    "Backend Developer": 200,
+    "Mobile App Developer": 200,
+    "Full Stack Developer": 200,
+    "QA/Test Automation Engineer": 200,
+    "Data Engineer": 200,
+    "Site Reliability Engineer": 200,
+    "Network Engineer": 200,
+    "AI/NLP Engineer": 200,
+    "Embedded Systems Engineer": 200
+  },
+  "leakage_prevention_audit": {
+    "target_role_title_masked": true,
     "mask_replacement_token": "Technical Professional",
-    "deduplication_performed": true,
-    "preprocessing_fit_strategy": "Fitted strictly on train.csv split only"
+    "file_paths_excluded_from_features": true,
+    "preprocessing_fitted_on_train_only": true
   }
 }

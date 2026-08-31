@@ -178,140 +178,172 @@ def run_full_document_audit_and_ingest():
 
     seen_hashes: Set[str] = set()
 
-    # 1. Parse PDFs
-    if RAW_PDF_DIR.exists():
-        for pdf_file in sorted(RAW_PDF_DIR.glob("*.pdf")):
-            stats["total_files"] += 1
-            stats["pdf_files"] += 1
-            try:
-                t0 = time.perf_counter()
-                text = extract_text_from_path(pdf_file)
-                elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    # 1. Parse PDFs from multiple directories
+    pdf_sources = [
+        RAW_PDF_DIR,
+        DATA_DIR / "cv new",
+        DATA_DIR / "Resumes Datasets" / "INFORMATION-TECHNOLOGY",
+    ]
+    for pdir in pdf_sources:
+        if pdir.exists():
+            for pdf_file in sorted(pdir.rglob("*.pdf")):
+                stats["total_files"] += 1
+                stats["pdf_files"] += 1
+                try:
+                    t0 = time.perf_counter()
+                    text = extract_text_from_path(pdf_file)
+                    elapsed_ms = (time.perf_counter() - t0) * 1000.0
 
-                if not text or len(text.strip()) < 30:
-                    stats["empty_or_image_only"] += 1
+                    if not text or len(text.strip()) < 30:
+                        stats["empty_or_image_only"] += 1
+                        stats["failed_extractions"] += 1
+                        logger.warning("PDF [%s] text too short / image-only (%d chars)", pdf_file.name, len(text))
+                        continue
+
+                    stats["success_extractions"] += 1
+                    doc_hash = compute_sha256(text)
+                    
+                    # Check for exact duplicate
+                    is_exact_dup = doc_hash in seen_hashes
+                    if is_exact_dup:
+                        stats["exact_duplicates"] += 1
+                    seen_hashes.add(doc_hash)
+
+                    fname_lower = pdf_file.stem.lower().replace("_", " ").replace("-", " ")
+                    canonical_role, conf, reason = map_role_label(fname_lower)
+                    if canonical_role in ("UNMAPPED", "AMBIGUOUS"):
+                        canonical_role = "Software Engineer"  # Default technical role for IT resumes
+
+                    record = {
+                        "document_id": f"DOC_PDF_{pdf_file.stem}",
+                        "source_dataset": "Real_Candidate_PDF_Corpus",
+                        "file_type": "PDF",
+                        "source_path": str(pdf_file.name),
+                        "extraction_method": "pdfplumber/PyPDF2",
+                        "extraction_time_ms": round(elapsed_ms, 2),
+                        "text_length": len(text),
+                        "document_hash": doc_hash,
+                        "raw_text": text,
+                        "cleaned_text": clean_text(text),
+                        "is_duplicate": is_exact_dup,
+                        "target_role": canonical_role
+                    }
+                    extracted_records.append(record)
+                    parser_eval_records.append(record)
+                except Exception as e:
                     stats["failed_extractions"] += 1
-                    logger.warning("PDF [%s] text too short / image-only (%d chars)", pdf_file.name, len(text))
-                    continue
+                    logger.error("Failed to parse PDF [%s]: %s", pdf_file.name, e)
 
-                stats["success_extractions"] += 1
-                doc_hash = compute_sha256(text)
-                
-                # Check for exact duplicate
-                is_exact_dup = doc_hash in seen_hashes
-                if is_exact_dup:
-                    stats["exact_duplicates"] += 1
-                seen_hashes.add(doc_hash)
+    # 2. Parse DOCX files from multiple directories
+    docx_sources = [
+        RAW_DOCX_DIR,
+        DATA_DIR / "cv new",
+        DATA_DIR / "CV" / "cv 1",
+        DATA_DIR / "CV" / "cv 2",
+        DATA_DIR / "CV" / "cv 3",
+    ]
+    for ddir in docx_sources:
+        if ddir.exists():
+            for docx_file in sorted(ddir.rglob("*.docx")):
+                stats["total_files"] += 1
+                stats["docx_files"] += 1
+                try:
+                    t0 = time.perf_counter()
+                    text = extract_text_from_path(docx_file)
+                    elapsed_ms = (time.perf_counter() - t0) * 1000.0
 
-                record = {
-                    "document_id": f"DOC_PDF_{pdf_file.stem}",
-                    "source_dataset": "Real_Candidate_PDF_Corpus",
-                    "file_type": "PDF",
-                    "source_path": str(pdf_file.name),
-                    "extraction_method": "pdfplumber/PyPDF2",
-                    "extraction_time_ms": round(elapsed_ms, 2),
-                    "text_length": len(text),
-                    "document_hash": doc_hash,
-                    "raw_text": text,
-                    "cleaned_text": clean_text(text),
-                    "is_duplicate": is_exact_dup,
-                    "target_role": "Software Engineer"  # Inferred from real candidate profile
-                }
-                extracted_records.append(record)
-                parser_eval_records.append(record)
-            except Exception as e:
-                stats["failed_extractions"] += 1
-                logger.error("Failed to parse PDF [%s]: %s", pdf_file.name, e)
+                    if not text or len(text.strip()) < 30:
+                        stats["empty_or_image_only"] += 1
+                        stats["failed_extractions"] += 1
+                        continue
 
-    # 2. Parse DOCX files
-    if RAW_DOCX_DIR.exists():
-        for docx_file in sorted(RAW_DOCX_DIR.glob("*.docx")):
-            stats["total_files"] += 1
-            stats["docx_files"] += 1
-            try:
-                t0 = time.perf_counter()
-                text = extract_text_from_path(docx_file)
-                elapsed_ms = (time.perf_counter() - t0) * 1000.0
+                    stats["success_extractions"] += 1
+                    doc_hash = compute_sha256(text)
+                    is_exact_dup = doc_hash in seen_hashes
+                    if is_exact_dup:
+                        stats["exact_duplicates"] += 1
+                    seen_hashes.add(doc_hash)
 
-                if not text or len(text.strip()) < 30:
-                    stats["empty_or_image_only"] += 1
+                    fname_lower = docx_file.stem.lower().replace("_", " ").replace("-", " ")
+                    canonical_role, conf, reason = map_role_label(fname_lower)
+                    if canonical_role in ("UNMAPPED", "AMBIGUOUS"):
+                        canonical_role = "Software Engineer"
+
+                    record = {
+                        "document_id": f"DOC_DOCX_{docx_file.stem}",
+                        "source_dataset": "Real_Candidate_DOCX_Corpus",
+                        "file_type": "DOCX",
+                        "source_path": str(docx_file.name),
+                        "extraction_method": "python-docx",
+                        "extraction_time_ms": round(elapsed_ms, 2),
+                        "text_length": len(text),
+                        "document_hash": doc_hash,
+                        "raw_text": text,
+                        "cleaned_text": clean_text(text),
+                        "is_duplicate": is_exact_dup,
+                        "target_role": canonical_role
+                    }
+                    extracted_records.append(record)
+                    parser_eval_records.append(record)
+                except Exception as e:
                     stats["failed_extractions"] += 1
-                    continue
-
-                stats["success_extractions"] += 1
-                doc_hash = compute_sha256(text)
-                is_exact_dup = doc_hash in seen_hashes
-                if is_exact_dup:
-                    stats["exact_duplicates"] += 1
-                seen_hashes.add(doc_hash)
-
-                record = {
-                    "document_id": f"DOC_DOCX_{docx_file.stem}",
-                    "source_dataset": "Real_Candidate_DOCX_Corpus",
-                    "file_type": "DOCX",
-                    "source_path": str(docx_file.name),
-                    "extraction_method": "python-docx",
-                    "extraction_time_ms": round(elapsed_ms, 2),
-                    "text_length": len(text),
-                    "document_hash": doc_hash,
-                    "raw_text": text,
-                    "cleaned_text": clean_text(text),
-                    "is_duplicate": is_exact_dup,
-                    "target_role": "Software Engineer"
-                }
-                extracted_records.append(record)
-                parser_eval_records.append(record)
-            except Exception as e:
-                stats["failed_extractions"] += 1
-                logger.error("Failed to parse DOCX [%s]: %s", docx_file.name, e)
+                    logger.error("Failed to parse DOCX [%s]: %s", docx_file.name, e)
 
     # 3. Parse TXT files (opensporks / public examples)
-    if RAW_TEXT_DIR.exists():
-        for txt_file in sorted(RAW_TEXT_DIR.glob("*/*.txt")):
-            stats["total_files"] += 1
-            stats["txt_files"] += 1
-            try:
-                t0 = time.perf_counter()
-                text = txt_file.read_text(encoding="utf-8", errors="replace")
-                elapsed_ms = (time.perf_counter() - t0) * 1000.0
+    txt_sources = [
+        RAW_TEXT_DIR,
+        DATA_DIR / "Resumes Datasets" / "INFORMATION-TECHNOLOGY",
+        DATA_DIR / "Resumes Datasets" / "Scrapped_Resumes",
+        DATA_DIR / "Resumes Datasets" / "resume_database",
+    ]
+    for tdir in txt_sources:
+        if tdir.exists():
+            for txt_file in sorted(tdir.rglob("*.txt")):
+                stats["total_files"] += 1
+                stats["txt_files"] += 1
+                try:
+                    t0 = time.perf_counter()
+                    text = txt_file.read_text(encoding="utf-8", errors="replace")
+                    elapsed_ms = (time.perf_counter() - t0) * 1000.0
 
-                if not text or len(text.strip()) < 30:
-                    stats["empty_or_image_only"] += 1
+                    if not text or len(text.strip()) < 30:
+                        stats["empty_or_image_only"] += 1
+                        stats["failed_extractions"] += 1
+                        continue
+
+                    stats["success_extractions"] += 1
+                    doc_hash = compute_sha256(text)
+                    is_exact_dup = doc_hash in seen_hashes
+                    if is_exact_dup:
+                        stats["exact_duplicates"] += 1
+                    seen_hashes.add(doc_hash)
+
+                    cat_folder = txt_file.parent.name.replace("_", " ")
+                    canonical_role, conf, reason = map_role_label(cat_folder)
+
+                    record = {
+                        "document_id": f"DOC_TXT_{txt_file.stem}",
+                        "source_dataset": "OpenSporks_Public_Resumes",
+                        "file_type": "TXT",
+                        "source_path": str(txt_file.name),
+                        "extraction_method": "native_text",
+                        "extraction_time_ms": round(elapsed_ms, 2),
+                        "text_length": len(text),
+                        "document_hash": doc_hash,
+                        "raw_text": text,
+                        "cleaned_text": clean_text(text),
+                        "original_label": cat_folder,
+                        "canonical_role": canonical_role,
+                        "mapping_confidence": conf,
+                        "mapping_reason": reason,
+                        "is_duplicate": is_exact_dup,
+                        "target_role": canonical_role if canonical_role not in ("UNMAPPED", "AMBIGUOUS") else "Software Engineer"
+                    }
+                    extracted_records.append(record)
+                    parser_eval_records.append(record)
+                except Exception as e:
                     stats["failed_extractions"] += 1
-                    continue
-
-                stats["success_extractions"] += 1
-                doc_hash = compute_sha256(text)
-                is_exact_dup = doc_hash in seen_hashes
-                if is_exact_dup:
-                    stats["exact_duplicates"] += 1
-                seen_hashes.add(doc_hash)
-
-                cat_folder = txt_file.parent.name.replace("_", " ")
-                canonical_role, conf, reason = map_role_label(cat_folder)
-
-                record = {
-                    "document_id": f"DOC_TXT_{txt_file.stem}",
-                    "source_dataset": "OpenSporks_Public_Resumes",
-                    "file_type": "TXT",
-                    "source_path": str(txt_file.name),
-                    "extraction_method": "native_text",
-                    "extraction_time_ms": round(elapsed_ms, 2),
-                    "text_length": len(text),
-                    "document_hash": doc_hash,
-                    "raw_text": text,
-                    "cleaned_text": clean_text(text),
-                    "original_label": cat_folder,
-                    "canonical_role": canonical_role,
-                    "mapping_confidence": conf,
-                    "mapping_reason": reason,
-                    "is_duplicate": is_exact_dup,
-                }
-                extracted_records.append(record)
-                parser_eval_records.append(record)
-            except Exception as e:
-                stats["failed_extractions"] += 1
-                logger.error("Failed to read TXT [%s]: %s", txt_file.name, e)
+                    logger.error("Failed to read TXT [%s]: %s", txt_file.name, e)
 
     logger.info("=" * 80)
     logger.info("DOCUMENT AUDIT SUMMARY:")

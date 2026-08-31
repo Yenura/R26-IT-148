@@ -50,10 +50,10 @@ _URL_RE = re.compile(r'https?://\S+|www\.\S+')
 _ZIP_RE = re.compile(r'\b\d{5}(?:[-\s]\d{4})?\b')
 _SPACE_RE = re.compile(r'[ \t]+')
 
-_PHD_RE = re.compile(r'\b(ph\.?d\.?|doctor of philosophy|doctorate|d\.?phil)\b', re.I)
-_MSC_RE = re.compile(r'\b(m\.?sc\.?|m\.?s\.?|master(?:[\'’]?s)?|m\.?tech\.?|m\.?eng\.?|mca|postgraduate|pgd|post[\s-]graduate)\b', re.I)
-_BSC_RE = re.compile(r'\b(b\.?sc\.?|b\.?s\.?|bachelor(?:[\'’]?s)?|b\.?tech\.?|b\.?e\.?|b\.?eng\.?|bca|bit|bcs|undergraduate|degree(?:\s+in)?)\b', re.I)
-_DIP_RE = re.compile(r'\b(diploma|higher national diploma|hnd|nvq|national diploma|ndt|higher diploma|associate degree)\b', re.I)
+_PHD_RE = re.compile(r'\b(ph\.?d\.?|doctor\s+of\s+philosophy|doctorate|d\.?phil|d\.?sc\.?|doctor\s+of\s+science|eng\.?d\.?|doctor\s+of\s+engineering|dr\.-ing\.?|dr\.?\s*rer\.?\s*nat\.?|dr\.?\s*techn\.?|docteur|doctorado|doktor|d\.?b\.?a\.?)\b', re.I)
+_MSC_RE = re.compile(r'\b(m\.?sc\.?|m\.?s\.?|master(?:[\'’]?s)?|master\s+of\s+[a-z\s]+|m\.?tech\.?|m\.?eng\.?|m\.?phil\.?|mres|mca|msit|mit|m\.?ba\b|pgd|post[\s-]graduate|postgraduate\s+diploma|pgdip|pgcert|diplom-informatiker|diplom-ingenieur(?!\s*\(fh\))|dipl\.-inf\.?|dipl\.-ing\.?(?!\s*\(fh\))|magister|ma[iî]trise|laurea\s+magistrale|master\s+europ[eé]en|titulado\s+superior|dipl[oô]me\s+d[\'\s]*ing[eé]nieur)\b', re.I)
+_BSC_RE = re.compile(r'\b(b\.?sc\.?|b\.?s\.?|bachelor(?:[\'’]?s)?|bachelor\s+of\s+[a-z\s]+|b\.?tech\.?|b\.?e\.?|b\.?eng\.?|bca|bit|bcs|b\.?app\.?sc\.?|bappsc|b\.?comp\.?|bcomp|b\.?math|laurea\s+triennale|grado\s+en|licenciatura|licentiate|dipl\.-ing\.?\s*\(fh\)|diplom-ingenieur\s*\(fh\)|ing[eé]nieur|baccalaureate|undergraduate|(?<!foundation\s)(?<!associate\s)degree(?:\s+in)?)\b', re.I)
+_DIP_RE = re.compile(r'\b(diploma(?!\s*d[\'\s]*ing)|higher\s+national\s+diploma|hnd|hnc|nvq(?:\s*level\s*\d)?|national\s+diploma|ndt|higher\s+diploma|associate\s+degree|associate\s+of\s+(?:science|arts|applied\s+science)|a\.?a\.?s?|foundation\s+degree|fdsc|fda|bts|dut|brevet\s+de\s+technicien\s+sup[eé]rieur|dipl[oô]me\s+universitaire\s+de\s+technologie|certhe|diphe|technical\s+certificate)\b', re.I)
 
 def _build_skill_pattern(skill: str) -> re.Pattern:
     """Compile high-accuracy regex with strict word and punctuation boundaries for special symbols."""
@@ -364,12 +364,20 @@ _MONTH_MAP = {
 
 def _parse_date_range(text: str) -> Optional[Tuple[float, float, bool]]:
     """Parse start date, end date, and is_current flag from string in years (decimal)."""
+    if not text:
+        return None
+
+    # Normalize glued letters and digits from OCR/PDF (e.g. June2025 -> June 2025, 2024-March2025)
+    t = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', text)
+    t = re.sub(r'(\d)([a-zA-Z])', r'\1 \2', t)
+    t = re.sub(r'([a-z])([A-Z])', r'\1 \2', t)
+
     m_re = r'(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
     date_pat = (
-        r'\b(?:(' + m_re + r')\s+)?(20[0-2]\d|19[8-9]\d)\s*(?:-|–|—|to)\s*'
-        r'(?:(' + m_re + r')\s+)?(present|current|now|till\s+date|ongoing|20[0-2]\d|19[8-9]\d)\b'
+        r'(?:(' + m_re + r')\s*)?(20[0-3]\d|19[7-9]\d)\s*(?:-|–|—|to)\s*'
+        r'(?:(' + m_re + r')\s*)?(present|current|now|till\s*date|ongoing|20[0-3]\d|19[7-9]\d)\b'
     )
-    m = re.search(date_pat, text, re.I)
+    m = re.search(date_pat, t, re.I)
     if m:
         sm_str, sy_str, em_str, ey_str = m.groups()
         start_yr = int(sy_str)
@@ -389,9 +397,9 @@ def _parse_date_range(text: str) -> Optional[Tuple[float, float, bool]]:
 
     # Numeric "MM/YYYY - MM/YYYY"
     m_num = re.search(
-        r'\b(\d{1,2})[\/\.-](20[0-2]\d|19[8-9]\d)\s*(?:-|–|—|to)\s*'
-        r'(?:(\d{1,2})[\/\.-](20[0-2]\d|19[8-9]\d)|(present|current|now|ongoing))\b',
-        text, re.I
+        r'\b(\d{1,2})[\/\.-](20[0-3]\d|19[7-9]\d)\s*(?:-|–|—|to)\s*'
+        r'(?:(\d{1,2})[\/\.-](20[0-3]\d|19[7-9]\d)|(present|current|now|ongoing))\b',
+        t, re.I
     )
     if m_num:
         sm, sy, em, ey, curr = m_num.groups()
@@ -641,21 +649,32 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
         if not stripped:
             continue
 
-        date_res = _parse_date_range(stripped)
-        is_title_line = any(re.search(r'\b' + re.escape(ind) + r'\b', stripped.lower()) for ind in title_indicators)
+        # Normalize line tokens from OCR/PDF
+        norm_line = re.sub(r'([a-z])([A-Z])', r'\1 \2', stripped)
+        norm_line = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', norm_line)
+        norm_line = re.sub(r'(\d)([a-zA-Z])', r'\1 \2', norm_line)
+        norm_line = re.sub(r'\s+', ' ', norm_line).strip()
+
+        date_res = _parse_date_range(norm_line)
+        is_title_line = any(re.search(r'\b' + re.escape(ind) + r'\b', norm_line.lower()) for ind in title_indicators)
 
         if is_title_line and not stripped.startswith(('•', '-', '*', '—')):
             # Push previous record
             if current_record and current_record.get("job_title"):
                 records.append(current_record)
 
-            title_candidate = stripped
+            m_re = r'(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
+            date_pat = (
+                r'(?:(' + m_re + r')\s*)?(20[0-3]\d|19[7-9]\d)\s*(?:-|–|—|to)\s*'
+                r'(?:(' + m_re + r')\s*)?(present|current|now|till\s*date|ongoing|20[0-3]\d|19[7-9]\d)\b'
+            )
+            title_candidate = re.sub(date_pat, '', norm_line, flags=re.I).strip(' -–—|:,')
             company_candidate = "Technology Organization"
 
             # Parse title & company if "at" or "|" or "-" separates them
             for sep in [" at ", " @ ", " - ", " | ", ", "]:
-                if sep in stripped:
-                    parts = stripped.split(sep, 1)
+                if sep in title_candidate:
+                    parts = title_candidate.split(sep, 1)
                     if any(re.search(r'\b' + re.escape(ind) + r'\b', parts[0].lower()) for ind in title_indicators):
                         title_candidate = parts[0].strip()
                         company_candidate = parts[1].strip()
@@ -688,16 +707,20 @@ def extract_employment_records(text: str, target_role: str = "Software Engineer"
             current_record["is_current"] = is_curr
             current_record["has_explicit_dates"] = True
         else:
-            if current_record:
-                # Add responsibility bullet
-                clean_bullet = re.sub(r'^[•\-\*\—\>\s]+', '', stripped).strip()
-                if len(clean_bullet) > 10:
-                    current_record["responsibilities"].append(clean_bullet)
-                    bullet_l = clean_bullet.lower()
-                    for cat_skills in SKILL_LEXICON.values():
-                        for s in cat_skills:
-                            if s in bullet_l and s not in current_record["technologies"]:
-                                current_record["technologies"].append(SKILL_ALIASES.get(s, s))
+            if current_record and not is_title_line:
+                # If next line looks like company name (e.g. ICIEOS (PVT) Ltd. Colombo, Sri Lanka)
+                if current_record.get("company") == "Technology Organization" and not stripped.startswith(('•', '-', '*', '—')):
+                    current_record["company"] = stripped.split('  ')[0].strip()
+                else:
+                    # Add responsibility bullet
+                    clean_bullet = re.sub(r'^[•\-\*\—\>\s]+', '', stripped).strip()
+                    if len(clean_bullet) > 10:
+                        current_record["responsibilities"].append(clean_bullet)
+                        bullet_l = clean_bullet.lower()
+                        for cat_skills in SKILL_LEXICON.values():
+                            for s in cat_skills:
+                                if s in bullet_l and s not in current_record["technologies"]:
+                                    current_record["technologies"].append(SKILL_ALIASES.get(s, s))
 
     if current_record and current_record.get("job_title"):
         records.append(current_record)
@@ -970,38 +993,53 @@ def extract_experience_years(text: str) -> float:
 
     intervals: List[Tuple[float, float]] = []
 
+    # Normalize work text tokens
+    norm_work_text = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', work_text)
+    norm_work_text = re.sub(r'(\d)([a-zA-Z])', r'\1 \2', norm_work_text)
+    norm_work_text = re.sub(r'([a-z])([A-Z])', r'\1 \2', norm_work_text)
+
     # 3. Numeric Date Ranges (e.g. "01/2020 - 05/2023", "2018.06 - 2022.08")
-    for sm, sy, em, ey in re.findall(r'\b(\d{1,2})[\/\.-](20[0-2]\d|19[8-9]\d)\s*(?:-|–|—|to)\s*(\d{1,2})[\/\.-](20[0-2]\d|19[8-9]\d)\b', work_text.lower()):
+    for sm, sy, em, ey in re.findall(r'\b(\d{1,2})[\/\.-](20[0-3]\d|19[7-9]\d)\s*(?:-|–|—|to)\s*(\d{1,2})[\/\.-](20[0-3]\d|19[7-9]\d)\b', norm_work_text.lower()):
         try:
             start_val = int(sy) + (int(sm) - 1) / 12.0
-            end_val = int(ey) + (int(em) - 1) / 12.0
+            end_val = int(ey) + int(em) / 12.0
             if end_val >= start_val and (end_val - start_val) <= 40:
                 intervals.append((start_val, end_val))
         except (ValueError, TypeError):
             pass
 
-    for sy, sm, ey, em in re.findall(r'\b(20[0-2]\d|19[8-9]\d)[\/\.-](\d{1,2})\s*(?:-|–|—|to)\s*(20[0-2]\d|19[8-9]\d)[\/\.-](\d{1,2})\b', work_text.lower()):
+    for sy, sm, ey, em in re.findall(r'\b(20[0-3]\d|19[7-9]\d)[\/\.-](\d{1,2})\s*(?:-|–|—|to)\s*(20[0-3]\d|19[7-9]\d)[\/\.-](\d{1,2})\b', norm_work_text.lower()):
         try:
             start_val = int(sy) + (int(sm) - 1) / 12.0
-            end_val = int(ey) + (int(em) - 1) / 12.0
+            end_val = int(ey) + int(em) / 12.0
             if end_val >= start_val and (end_val - start_val) <= 40:
                 intervals.append((start_val, end_val))
         except (ValueError, TypeError):
             pass
 
-    # 4. Standard Date Ranges (e.g. "Jan 2020 - Dec 2023", "2021 - Present")
+    # 4. Standard Date Ranges (e.g. "June 2025 - December 2025", "Jan 2020 - Dec 2023", "2021 - Present")
     m_re = r'(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)'
     date_pat = (
-        r'\b(?:(' + m_re + r')\s+)?(20[0-2]\d|19[8-9]\d)\s*(?:-|–|—|to)\s*'
-        r'(?:(' + m_re + r')\s+)?(present|current|now|till\s+date|ongoing|20[0-2]\d|19[8-9]\d)\b'
+        r'\b(?:(' + m_re + r')\s*)?(20[0-3]\d|19[7-9]\d)\s*(?:-|–|—|to)\s*'
+        r'(?:(' + m_re + r')\s*)?(present|current|now|till\s*date|ongoing|20[0-3]\d|19[7-9]\d)\b'
     )
 
-    for sm, sy, em, ey in re.findall(date_pat, work_text.lower()):
+    for sm, sy, em, ey in re.findall(date_pat, norm_work_text.lower()):
         try:
             start_yr = int(sy)
-            end_yr = int(CURRENT_YEAR) if any(w in str(ey).lower() for w in ('present', 'current', 'now', 'till', 'ongoing')) else int(ey)
-            if start_yr <= end_yr and (end_yr - start_yr) <= 40:
-                intervals.append((float(start_yr), float(end_yr)))
+            start_month = _MONTH_MAP.get(sm.lower()[:3], 1) if sm else 1
+            start_val = start_yr + (start_month - 1) / 12.0
+
+            is_curr = any(w in str(ey).lower() for w in ('present', 'current', 'now', 'till', 'ongoing'))
+            if is_curr:
+                end_val = CURRENT_YEAR
+            else:
+                end_yr = int(ey)
+                end_month = _MONTH_MAP.get(em.lower()[:3], 12) if em else 12
+                end_val = end_yr + end_month / 12.0
+
+            if end_val >= start_val and (end_val - start_val) <= 40:
+                intervals.append((start_val, end_val))
         except (ValueError, TypeError):
             pass
 
@@ -1138,11 +1176,21 @@ def detect_seniority(records: List[Dict[str, Any]], relevant_years: float, text:
 # ── Education & Certification Extraction ───────────────────────────────────────
 
 def extract_education_level(text: str) -> Dict[str, Any]:
-    """Extract education degree level (PhD=4, MSc=3, BSc=2, Diploma=1) and major field."""
+    """Extract education degree level (PhD=4, MSc=3, BSc=2, Diploma=1), honors, and major field with flexible spacing."""
     if not text:
         return {"level_score": 0.0, "level_name": "None", "major": "None", "majors": ["General IT"]}
 
-    lowered = text.lower()
+    # Normalize glued tokens from OCR / PDF extraction (e.g. BSc(Hons)SoftwareEngineering -> BSc (Hons) Software Engineering)
+    norm_text = re.sub(r'([a-z])([A-Z])', r'\1 \2', text)
+    norm_text = re.sub(r'(\))\s*([A-Za-z])', r'\1 \2', norm_text)
+    norm_text = re.sub(r'([A-Za-z])\s*(\()', r'\1 \2', norm_text)
+    lowered = norm_text.lower()
+
+    # Extract education section text specifically to prioritize degree over high school or hobbies
+    sections = extract_sections(text)
+    edu_section = sections.get("education", "")
+    edu_low = re.sub(r'([a-z])([A-Z])', r'\1 \2', edu_section).lower() if edu_section else lowered
+
     level_score = 0.60
     level_name = "BSc"
 
@@ -1150,11 +1198,15 @@ def extract_education_level(text: str) -> Dict[str, Any]:
         level_score = 1.00
         level_name = "PhD"
     elif _MSC_RE.search(lowered):
-        level_score = 0.80
+        level_score = 0.85
         level_name = "MSc"
     elif _BSC_RE.search(lowered):
-        level_score = 0.60
-        level_name = "BSc"
+        if re.search(r'\b(?:hons|honours|\(hons\)|\(honours\))\b', lowered) or re.search(r'bsc\s*\(hons\)|bachelor\s+of\s+science\s+honou?rs', lowered):
+            level_score = 0.70
+            level_name = "BSc (Hons)"
+        else:
+            level_score = 0.60
+            level_name = "BSc"
     elif _DIP_RE.search(lowered):
         level_score = 0.40
         level_name = "Diploma"
@@ -1166,15 +1218,39 @@ def extract_education_level(text: str) -> Dict[str, Any]:
         level_name = "Diploma"
 
     majors = []
+    # Major patterns ordered with specific disciplines first
     major_patterns = {
-        "Computer Science": (r'computer science', r'\bcs\b', r'computing', r'computer studies', r'computer systems'),
-        "Software Engineering": (r'software engineering', r'\bse\b', r'software development', r'software systems'),
-        "Information Technology": (r'information technology', r'\bit\b', r'information systems', r'\bict\b', r'\bbit\b'),
-        "Data Science": (r'data science', r'analytics', r'big data', r'data engineering', r'business intelligence'),
-        "Cybersecurity": (r'cybersecurity', r'cyber security', r'information security', r'network security'),
-        "Networking": (r'network engineering', r'telecommunications', r'computer networks', r'cloud architecture'),
-        "Mathematics": (r'mathematics', r'applied mathematics', r'statistics', r'\bmath\b', r'actuarial'),
-        "Engineering": (r'computer engineering', r'electrical engineering', r'electronic engineering', r'systems engineering', r'engineering')
+        "Software Engineering": (
+            r'software\s*engineering', r'software\s*development', r'software\s*systems',
+            r'\b(?:b\.?s\.?c|bachelor)\b.*?\bse\b'
+        ),
+        "Information Systems Engineering": (
+            r'information\s*systems?\s*engineering', r'information\s*system\s*engineering',
+            r'systems?\s*engineering', r'\bise\b'
+        ),
+        "Computer Science": (
+            r'computer\s*science', r'\bcs\b', r'computer\s*studies', r'computer\s*systems',
+            r'\bcomputing\b'
+        ),
+        "Information Technology": (
+            r'information\s*technology', r'information\s*systems', r'\bict\b', r'\bbit\b', r'\bit\b'
+        ),
+        "Data Science": (
+            r'data\s*science', r'artificial\s*intelligence', r'machine\s*learning',
+            r'big\s*data', r'data\s*engineering', r'business\s*intelligence', r'\bai\b', r'\bml\b'
+        ),
+        "Cybersecurity": (
+            r'cyber\s*security', r'cybersecurity', r'information\s*security', r'network\s*security'
+        ),
+        "Networking": (
+            r'network\s*engineering', r'telecommunications', r'computer\s*networks', r'cloud\s*architecture'
+        ),
+        "Engineering": (
+            r'computer\s*engineering', r'electrical\s*engineering', r'electronic\s*engineering'
+        ),
+        "Mathematics": (
+            r'applied\s*mathematics', r'statistics', r'actuarial', r'\bmathematics\b'
+        ),
     }
 
     non_it_major_patterns = {
@@ -1189,40 +1265,51 @@ def extract_education_level(text: str) -> Dict[str, Any]:
     # Deep Specialization / Concentration / Track Extraction
     specializations = []
     spec_patterns = {
+        "Net-Centric Web Application Development": (
+            r'speciali[zs](?:ing|ation)?\s*in\s*net[\-\s]*centric',
+            r'net[\-\s]*centric\s*web\s*application',
+            r'track[:\s]+net[\-\s]*centric'
+        ),
         "Data Science & AI": (
-            r'speciali[zs](?:ing|ation)?\s+in\s+data\s+science',
-            r'speciali[zs](?:ing|ation)?\s+in\s+(?:ai|artificial intelligence|machine learning|deep learning)',
-            r'track[:\s]+data\s+science', r'concentration[:\s]+data\s+science', r'major\s+in\s+data\s+science'
+            r'speciali[zs](?:ing|ation)?\s*in\s*data\s*science',
+            r'speciali[zs](?:ing|ation)?\s*in\s*(?:ai|artificial intelligence|machine learning|deep learning)',
+            r'data\s*science\s*&\s*engineering',
+            r'track[:\s]+data\s*science', r'concentration[:\s]+data\s*science', r'major\s+in\s+data\s+science'
+        ),
+        "Mobile Computing": (
+            r'speciali[zs](?:ing|ation)?\s*in\s*mobile\s*computing',
+            r'mobile\s*computing',
+            r'track[:\s]+mobile'
         ),
         "Cybersecurity": (
-            r'speciali[zs](?:ing|ation)?\s+in\s+cyber\s*security',
-            r'speciali[zs](?:ing|ation)?\s+in\s+information\s+security',
+            r'speciali[zs](?:ing|ation)?\s*in\s*cyber\s*security',
+            r'speciali[zs](?:ing|ation)?\s*in\s*information\s*security',
             r'track[:\s]+cyber\s*security', r'concentration[:\s]+security', r'major\s+in\s+cybersecurity'
         ),
         "Cloud & DevOps": (
-            r'speciali[zs](?:ing|ation)?\s+in\s+cloud',
-            r'speciali[zs](?:ing|ation)?\s+in\s+devops',
+            r'speciali[zs](?:ing|ation)?\s*in\s*cloud',
+            r'speciali[zs](?:ing|ation)?\s*in\s*devops',
             r'track[:\s]+cloud', r'concentration[:\s]+cloud\s+computing'
         ),
         "Software Engineering": (
-            r'speciali[zs](?:ing|ation)?\s+in\s+software\s+engineering',
-            r'speciali[zs](?:ing|ation)?\s+in\s+software\s+development',
+            r'speciali[zs](?:ing|ation)?\s*in\s*software\s*engineering',
+            r'speciali[zs](?:ing|ation)?\s*in\s*software\s*development',
             r'track[:\s]+software', r'concentration[:\s]+software'
         ),
         "Computer Networks & Systems": (
-            r'speciali[zs](?:ing|ation)?\s+in\s+network',
-            r'speciali[zs](?:ing|ation)?\s+in\s+systems',
+            r'speciali[zs](?:ing|ation)?\s*in\s*network',
+            r'speciali[zs](?:ing|ation)?\s*in\s*systems',
             r'track[:\s]+network', r'concentration[:\s]+telecommunications'
         ),
         "Interactive Media & HCI": (
-            r'speciali[zs](?:ing|ation)?\s+in\s+interactive\s+media',
-            r'speciali[zs](?:ing|ation)?\s+in\s+ui\/ux',
-            r'speciali[zs](?:ing|ation)?\s+in\s+human\s+computer\s+interaction'
+            r'speciali[zs](?:ing|ation)?\s*in\s*interactive\s*media',
+            r'speciali[zs](?:ing|ation)?\s*in\s*ui\/ux',
+            r'speciali[zs](?:ing|ation)?\s*in\s*human\s*computer\s*interaction'
         ),
         "Business Information Systems": (
-            r'speciali[zs](?:ing|ation)?\s+in\s+business\s+information',
-            r'speciali[zs](?:ing|ation)?\s+in\s+management\s+information',
-            r'track[:\s]+information\s+systems'
+            r'speciali[zs](?:ing|ation)?\s*in\s*business\s*information',
+            r'speciali[zs](?:ing|ation)?\s*in\s*management\s*information',
+            r'track[:\s]+information\s*systems'
         )
     }
 
@@ -1239,9 +1326,16 @@ def extract_education_level(text: str) -> Dict[str, Any]:
     elif any(re.search(p, lowered) for p in [r'second\s+lower', r'cum\s+laude', r'gpa\s*[:=]?\s*3\.[0-2]']):
         academic_honors = "Second Class Lower"
 
+    # Search in education section first for highest accuracy
     for major_name, p_tuple in major_patterns.items():
-        if any(re.search(p, lowered) for p in p_tuple):
+        if any(re.search(p, edu_low) for p in p_tuple):
             majors.append(major_name)
+
+    # If no major found in education section, check full text
+    if not majors:
+        for major_name, p_tuple in major_patterns.items():
+            if any(re.search(p, lowered) for p in p_tuple):
+                majors.append(major_name)
 
     if not majors:
         for non_it_name, p_tuple in non_it_major_patterns.items():
@@ -1388,29 +1482,38 @@ def extract_education_details(text: str, target_role: str = "Software Engineer")
         w_course /= total_w
         w_cert /= total_w
 
-    edu_rel_composite = (
-        (w_level * (deg_level_match / 0.60 if deg_level_match <= 0.60 else 1.0)) +
-        (w_field * best_field_rel) +
-        (w_spec * spec_rel) +
-        (w_course * coursework_rel) +
-        (w_cert * cert_max_rel)
-    )
-    edu_rel_composite = round(max(0.0, min(1.0, edu_rel_composite)) * 100.0, 1)
+    # If candidate degree is direct core match (e.g. SE / CS for Software Engineer) and meets degree level, award 100%
+    if best_field_rel >= 0.95 and deg_level_match >= 0.60:
+        edu_rel_composite = 100.0
+    else:
+        edu_rel_composite = (
+            (w_level * (deg_level_match / 0.60 if deg_level_match <= 0.60 else 1.0)) +
+            (w_field * best_field_rel) +
+            (w_spec * spec_rel) +
+            (w_course * coursework_rel) +
+            (w_cert * cert_max_rel)
+        )
+        edu_rel_composite = round(max(0.0, min(1.0, edu_rel_composite)) * 100.0, 1)
 
     # Confidence estimation
     ext_conf = 0.95 if (institution != "Recognized Higher Education Institution" and grad_year) else (0.80 if grad_year else 0.65)
 
     # Explanation construction
     deg_level = edu_info["level_name"]
+    if "hons" in deg_level.lower():
+        qual_title = f"{deg_level} {matched_field}"
+    else:
+        qual_title = f"{deg_level} in {matched_field}"
+
     if field_rel_cat in ["HIGH", "RELEVANT"]:
-        explanation = f"{deg_level} in {matched_field} is highly relevant to {target_role}."
+        explanation = f"{qual_title} is highly relevant and a core academic foundation for {target_role}."
     elif field_rel_cat == "PARTIAL":
-        explanation = f"{deg_level} in {matched_field} shares foundational quantitative/analytical overlap with {target_role}."
+        explanation = f"{qual_title} shares foundational quantitative/analytical overlap with {target_role}."
     else:
         explanation = f"{deg_level} level is acceptable, but {matched_field} is not directly related to {target_role}."
 
     return {
-        "qualification": f"{deg_level} in {matched_field}",
+        "qualification": qual_title,
         "degree_level": deg_level,
         "degree_field": matched_field,
         "field": matched_field,
@@ -1659,15 +1762,34 @@ def extract_projects(text: str) -> List[Dict[str, Any]]:
     return projects
 
 
+def extract_candidate_name(text: str) -> str:
+    """Extract candidate full name from top lines of raw resume text."""
+    if not text:
+        return "Candidate Profile"
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    for line in lines[:6]:
+        # Skip contact info, urls, links, addresses, headers
+        if re.search(r'[@\+]|\b(?:http|www|github|linkedin|resume|curriculum|vitae|profile|summary|education|skills|experience|phone|email)\b', line, re.I):
+            continue
+        cleaned = re.sub(r'[\(\[\{].*?[\)\]\}]', '', line).strip()
+        cleaned = re.sub(r'^(?:name\s*[:\-]|profile\s*[:\-])\s*', '', cleaned, flags=re.I).strip()
+        words = [w for w in re.split(r'[\s,·|•/]+', cleaned) if w.isalpha() and len(w) > 1]
+        if 1 <= len(words) <= 4:
+            return " ".join(words).title()
+    return "Candidate Profile"
+
+
 def extract_deep_cv_profile(text: str, target_role: str = "Software Engineer") -> Dict[str, Any]:
     """Consolidated deep extraction returning the full candidate understanding profile."""
     cleaned = clean_text(text)
+    candidate_name = extract_candidate_name(text)
     skills_certs = extract_skills_and_certifications(text, target_role)
     exp_details = extract_experience_details(text, target_role)
     edu_details = extract_education_details(text, target_role)
     projects = extract_projects(text)
 
     return {
+        "candidate_name": candidate_name,
         "cleaned_text": cleaned,
         "skills": skills_certs["detected_skills"],
         "skill_evidence": skills_certs["skill_evidence"],

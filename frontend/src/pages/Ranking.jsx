@@ -18,6 +18,9 @@ export default function Ranking() {
   const [result, setResult] = useState(null)
   const [busy, setBusy] = useState(false)
   const [loadingJobs, setLoadingJobs] = useState(true)
+  const [myJobs, setMyJobs] = useState([])
+  const [allJobs, setAllJobs] = useState([])
+  const [viewScope, setViewScope] = useState('my') // 'my' | 'all'
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -32,14 +35,25 @@ export default function Ranking() {
   const loadCompanyJobs = async () => {
     setLoadingJobs(true)
     try {
-      // Load ONLY jobs posted by the logged-in company
-      const r = await uJobsMy()
-      const companyJobs = Array.isArray(r.data) ? r.data : []
-      setJobs(companyJobs)
-      if (companyJobs.length > 0) {
-        const firstJobId = companyJobs[0].id || companyJobs[0]._id
-        setSelectedJob(firstJobId)
-        computePipeline(firstJobId)
+      const [myRes, allRes] = await Promise.all([
+        uJobsMy().catch(() => ({ data: [] })),
+        c0JobsAll().catch(() => ({ data: [] }))
+      ])
+      const userCompanyJobs = Array.isArray(myRes.data) ? myRes.data : []
+      const platformAllJobs = Array.isArray(allRes.data) ? allRes.data : []
+      
+      setMyJobs(userCompanyJobs)
+      setAllJobs(platformAllJobs)
+
+      const activeList = userCompanyJobs.length > 0 ? userCompanyJobs : platformAllJobs
+      setJobs(activeList)
+
+      if (activeList.length > 0) {
+        const targetJobId = (paramJobId && activeList.some(j => (j.id || j._id) === paramJobId))
+          ? paramJobId
+          : (activeList[0].id || activeList[0]._id)
+        setSelectedJob(targetJobId)
+        computePipeline(targetJobId)
       }
     } catch {
       toast.error('Failed to load company jobs')
