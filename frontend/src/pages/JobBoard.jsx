@@ -16,6 +16,19 @@ import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
+const cleanCompanyName = (rawCompany) => {
+  if (!rawCompany) return 'Enterprise Partner'
+  let c = String(rawCompany).trim().replace(/\s*\d{6,}\b/g, '')
+  if (c.toLowerCase() === 'virtusa') return 'Virtusa'
+  if (c.toLowerCase() === 'syscolabs' || c.toLowerCase() === 'sysco labs') return 'Sysco LABS'
+  if (c.toLowerCase() === 'ifs') return 'IFS'
+  if (c.toLowerCase() === 'wso2') return 'WSO2'
+  if (c.toLowerCase() === '99x') return '99x'
+  if (c.toLowerCase() === 'codegen') return 'CodeGen'
+  if (c.toLowerCase() === 'tech corp' || c.toLowerCase() === 'techcorp') return 'TechCorp Global'
+  return c.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 export default function JobBoard() {
   const navigate = useNavigate()
   useAuth('candidate')
@@ -258,8 +271,8 @@ export default function JobBoard() {
                   </div>
 
                   <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 8 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-fg-secondary)', fontWeight: 600 }}>
-                      <Building2 size={13} /> {job.company_name || 'Employer'}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 4, color: 'var(--color-primary)', fontWeight: 600 }}>
+                      <Building2 size={13} /> {cleanCompanyName(job.company_name)}
                     </span>
                     <span>·</span>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>

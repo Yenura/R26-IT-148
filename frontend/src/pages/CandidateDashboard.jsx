@@ -74,6 +74,7 @@ export default function CandidateDashboard() {
   const [jobs, setJobs] = useState([])
   const [applications, setApplications] = useState([])
   const [predictions, setPredictions] = useState([])
+  const [jobSearch, setJobSearch] = useState('')
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [selectedFile, setSelectedFile] = useState(null)

@@ -13,6 +13,19 @@ import PageHeader from '../components/PageHeader'
 import ConfirmDialog from '../components/ConfirmDialog'
 import SkeletonLoader from '../components/SkeletonLoader'
 
+const cleanCompanyName = (rawCompany) => {
+  if (!rawCompany) return 'Enterprise Partner'
+  let c = String(rawCompany).trim().replace(/\s*\d{6,}\b/g, '')
+  if (c.toLowerCase() === 'virtusa') return 'Virtusa'
+  if (c.toLowerCase() === 'syscolabs' || c.toLowerCase() === 'sysco labs') return 'Sysco LABS'
+  if (c.toLowerCase() === 'ifs') return 'IFS'
+  if (c.toLowerCase() === 'wso2') return 'WSO2'
+  if (c.toLowerCase() === '99x') return '99x'
+  if (c.toLowerCase() === 'codegen') return 'CodeGen'
+  if (c.toLowerCase() === 'tech corp' || c.toLowerCase() === 'techcorp') return 'TechCorp Global'
+  return c.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+}
+
 export default function JobDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -219,7 +232,7 @@ export default function JobDetail() {
 
             <div style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', paddingBottom: 16, borderBottom: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                <Building2 size={15} style={{ color: 'var(--color-primary)' }} /> {job.company_name || 'Hiring Employer'}
+                <Building2 size={15} style={{ color: 'var(--color-primary)' }} /> {cleanCompanyName(job.company_name)}
               </span>
               <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <MapPin size={15} /> {job.location || 'Remote'}

@@ -1189,30 +1189,29 @@ export default function CVMatch() {
           {/* CARD 1: CANDIDATE RESUME */}
           <div style={{
             padding: '22px',
-            background: 'rgba(15, 23, 42, 0.75)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--color-bg-elevated)',
+            border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             gap: 14,
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
-            backdropFilter: 'blur(12px)'
+            boxShadow: 'var(--shadow-sm)'
           }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <UserCheck size={16} /> 1. Candidate Profile
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', background: 'var(--color-bg-soft)', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border-subtle)' }}>
                     {resumes.length} Ingested
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowUploadZone(!showUploadZone)}
                     className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid rgba(59, 130, 246, 0.3)', color: 'var(--color-primary-light, #93c5fd)' }}
+                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid var(--color-border)', color: 'var(--color-primary)' }}
                   >
                     {showUploadZone ? 'Close Upload' : '+ Upload New CV'}
                   </button>
@@ -1233,7 +1232,7 @@ export default function CVMatch() {
               )}
 
               {/* Candidate Dropdown Selector */}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 10 }}>
                 <select
                   value={selectedResume}
                   onChange={(e) => {
@@ -1268,38 +1267,40 @@ export default function CVMatch() {
                     type="button"
                     className="btn-ghost btn-sm"
                     onClick={() => deleteResume(selectedResume)}
-                    style={{ padding: '8px', color: 'var(--color-danger)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)' }}
-                    title="Delete resume"
+                    aria-label="Delete selected resume"
+                    title="Delete resume from system"
+                    style={{ padding: 8, color: 'var(--color-danger)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)' }}
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={14} />
                   </button>
                 )}
               </div>
 
-              {/* Active Candidate Profile Card Showcase */}
+              {/* Ingested Resume Micro-Preview */}
               {currentResumeDoc && (
                 <div style={{
                   padding: '12px 14px',
-                  background: 'rgba(30, 41, 59, 0.4)',
-                  border: '1px solid rgba(59, 130, 246, 0.2)',
                   borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-bg-soft)',
+                  border: '1px solid var(--color-border-subtle)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: 8
+                  gap: 8,
+                  marginTop: 8
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 'var(--radius-md)',
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                      width: 34,
+                      height: 34,
+                      borderRadius: 'var(--radius-sm)',
+                      background: 'linear-gradient(135deg, #2563eb 0%, #4f46e5 100%)',
                       color: '#ffffff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 800,
-                      fontSize: '14px',
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                      fontSize: '13px',
+                      boxShadow: '0 2px 8px rgba(37, 99, 235, 0.3)',
                       flexShrink: 0
                     }}>
                       {cleanCandidateName(currentResumeDoc.candidate_name, currentResumeDoc.filename).split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
@@ -1317,9 +1318,9 @@ export default function CVMatch() {
                   </div>
 
                   {currentResumeDoc.skills?.length > 0 && (
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', paddingTop: 6, borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', paddingTop: 6, borderTop: '1px solid var(--color-border-subtle)' }}>
                       {[...new Set(currentResumeDoc.skills)].slice(0, 5).map((s, i) => (
-                        <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '2px 7px', background: 'rgba(255, 255, 255, 0.04)' }}>
+                        <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '2px 7px' }}>
                           {s}
                         </span>
                       ))}
@@ -1346,23 +1347,22 @@ export default function CVMatch() {
           {/* CARD 2: TARGET COMPANY & ROLE */}
           <div style={{
             padding: '22px',
-            background: 'rgba(15, 23, 42, 0.75)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
+            background: 'var(--color-bg-elevated)',
+            border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between',
             gap: 14,
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
-            backdropFilter: 'blur(12px)'
+            boxShadow: 'var(--shadow-sm)'
           }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Briefcase size={16} /> 2. Target Evaluation Standard
                 </span>
                 {/* Mode Selector Tabs */}
-                <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div style={{ display: 'flex', gap: 4, background: 'var(--color-bg-soft)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
                   <button
                     type="button"
                     onClick={() => setTargetMode('company')}
@@ -1388,7 +1388,7 @@ export default function CVMatch() {
                       borderRadius: '4px',
                       border: 'none',
                       cursor: 'pointer',
-                      background: targetMode === 'benchmark' ? '#9333ea' : 'transparent',
+                      background: targetMode === 'benchmark' ? 'var(--color-purple)' : 'transparent',
                       color: targetMode === 'benchmark' ? '#fff' : 'var(--color-fg-muted)',
                       fontWeight: targetMode === 'benchmark' ? 700 : 500
                     }}
