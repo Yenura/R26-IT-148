@@ -29,17 +29,26 @@ const mk = (rawUrl) => {
   const originalPut = instance.put.bind(instance)
   const originalDelete = instance.delete.bind(instance)
 
-  instance.post = (...args) => {
-    responseCache.clear()
-    return originalPost(...args)
+  const invalidatePrefix = (reqUrl) => {
+    const prefix = `${url}:${(reqUrl || '').split('?')[0]}`
+    for (const key of responseCache.keys()) {
+      if (key.startsWith(prefix) || key.startsWith(url)) {
+        responseCache.delete(key)
+      }
+    }
   }
-  instance.put = (...args) => {
-    responseCache.clear()
-    return originalPut(...args)
+
+  instance.post = (reqUrl, ...args) => {
+    invalidatePrefix(reqUrl)
+    return originalPost(reqUrl, ...args)
   }
-  instance.delete = (...args) => {
-    responseCache.clear()
-    return originalDelete(...args)
+  instance.put = (reqUrl, ...args) => {
+    invalidatePrefix(reqUrl)
+    return originalPut(reqUrl, ...args)
+  }
+  instance.delete = (reqUrl, ...args) => {
+    invalidatePrefix(reqUrl)
+    return originalDelete(reqUrl, ...args)
   }
 
   // Fast Cached GET with SWR background revalidation
@@ -137,6 +146,7 @@ export const uJobsApply        = (id, payload)   => C0.post(`/jobs/${id}/apply`,
 export const uJobsWithdraw     = (id)             => C0.delete(`/jobs/${id}/apply`)
 export const uJobsApplicants   = (id)            => C0.get(`/jobs/${id}/applicants`)
 export const uJobsApplicantCounts = ()            => C0.get('/jobs/applicant-counts')
+export const uJobsCompanyApplicants = ()          => C0.get('/jobs/company-applicants')
 
 // ── Unified: Resume ───────────────────────────────────────────
 export const uResumeUpload     = (formData)      => C0.post('/resume/upload', formData)

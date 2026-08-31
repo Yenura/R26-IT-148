@@ -13,12 +13,46 @@ import SkeletonLoader from '../components/SkeletonLoader'
 
 export default function Ranking() {
   const navigate = useNavigate()
-  const [jobs, setJobs] = useState([])
-  const [selectedJob, setSelectedJob] = useState('')
-  const [result, setResult] = useState(null)
+  const [searchParams] = useSearchParams()
+  const paramJobId = searchParams.get('jobId') || ''
+
+  const [jobs, setJobs] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.company.jobs')
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  const [selectedJob, setSelectedJob] = useState(paramJobId || '')
+  const [result, setResult] = useState(() => {
+    try {
+      if (paramJobId) {
+        const cached = sessionStorage.getItem(`recruitai.ranking.${paramJobId}`)
+        return cached ? JSON.parse(cached) : null
+      }
+      return null
+    } catch {
+      return null
+    }
+  })
   const [busy, setBusy] = useState(false)
-  const [loadingJobs, setLoadingJobs] = useState(true)
-  const [myJobs, setMyJobs] = useState([])
+  const [loadingJobs, setLoadingJobs] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.company.jobs')
+      return !cached
+    } catch {
+      return true
+    }
+  })
+  const [myJobs, setMyJobs] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.company.jobs')
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
   const [allJobs, setAllJobs] = useState([])
   const [viewScope, setViewScope] = useState('my') // 'my' | 'all'
 
@@ -33,7 +67,6 @@ export default function Ranking() {
   }, [])
 
   const loadCompanyJobs = async () => {
-    setLoadingJobs(true)
     try {
       const [myRes, allRes] = await Promise.all([
         uJobsMy().catch(() => ({ data: [] })),
@@ -51,7 +84,7 @@ export default function Ranking() {
       if (activeList.length > 0) {
         const targetJobId = (paramJobId && activeList.some(j => (j.id || j._id) === paramJobId))
           ? paramJobId
-          : (activeList[0].id || activeList[0]._id)
+          : (selectedJob || activeList[0].id || activeList[0]._id)
         setSelectedJob(targetJobId)
         computePipeline(targetJobId)
       }
@@ -64,13 +97,30 @@ export default function Ranking() {
 
   const computePipeline = async (targetJobId) => {
     const jobIdToUse = targetJobId || selectedJob
-    if (!jobIdToUse) return toast.error('Please select a job opening')
-    setBusy(true)
+    if (!jobIdToUse) return
+
+    // Fast-hydrate from session cache if available
+    try {
+      const cached = sessionStorage.getItem(`recruitai.ranking.${jobIdToUse}`)
+      if (cached) {
+        setResult(JSON.parse(cached))
+      } else {
+        setBusy(true)
+      }
+    } catch {
+      setBusy(true)
+    }
+
     try {
       const r = await c3Pipeline(jobIdToUse)
-      setResult(r.data)
-      toast.success('Applicant evaluation and ranking updated!')
-    } catch {
+      if (r?.data) {
+        setResult(r.data)
+        try {
+          sessionStorage.setItem(`recruitai.ranking.${jobIdToUse}`, JSON.stringify(r.data))
+        } catch {}
+      }
+    } catch (err) {
+      console.error('computePipeline error:', err)
       toast.error('Failed to compute candidate rankings')
     } finally {
       setBusy(false)
