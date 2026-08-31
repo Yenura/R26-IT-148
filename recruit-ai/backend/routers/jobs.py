@@ -122,6 +122,18 @@ def _app_out(doc: dict) -> ApplicationOut:
         overall_score=doc.get("overall_score") or doc.get("cv_score"),
         hire_probability=doc.get("hire_probability"),
         skills=doc.get("skills", []),
+        skill_score=doc.get("skill_score"),
+        experience_score=doc.get("experience_score"),
+        education_score=doc.get("education_score"),
+        mcq_score=doc.get("mcq_score"),
+        descriptive_score=doc.get("descriptive_score"),
+        coding_score=doc.get("coding_score"),
+        S_cv=doc.get("cv_score") or doc.get("overall_score"),
+        S_int=doc.get("interview_score"),
+        CSS=doc.get("hire_probability"),
+        passed_filter=doc.get("passed_filter", True),
+        verdict=doc.get("verdict"),
+        badge_color=doc.get("badge_color"),
     )
 
 
@@ -785,7 +797,7 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
 
         hire_prob = None
         if int_score is not None and cv_score is not None:
-            hire_prob = round(0.55 * float(int_score) + 0.45 * float(cv_score), 1)
+            hire_prob = round(0.40 * float(cv_score) + 0.60 * float(int_score), 1)
         elif int_score is not None:
             hire_prob = round(float(int_score), 1)
         elif cv_score is not None:
@@ -804,6 +816,16 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             "cv_score": cv_score,
             "hire_probability": hire_prob,
             "skills": skills,
+            "skill_score": p.get("skill_score"),
+            "experience_score": p.get("experience_score"),
+            "education_score": p.get("education_score"),
+            "mcq_score": s.get("mcq_score"),
+            "descriptive_score": s.get("descriptive_score"),
+            "coding_score": s.get("coding_score"),
+            "S_cv": cv_score,
+            "S_int": int_score,
+            "CSS": hire_prob,
+            "passed_filter": True,
         })
 
     result_apps = [_app_out(doc) for doc in enriched]

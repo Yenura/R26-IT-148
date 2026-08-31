@@ -276,7 +276,7 @@ export default function Ranking() {
                     <tr>
                       <th style={{ width: 50 }}>Rank</th>
                       <th>Candidate</th>
-                      <th>Overall Fit Score</th>
+                      <th>Overall Fit Score (CSS)</th>
                       <th>CV Match (S_cv)</th>
                       <th>Skills / Exp / Edu</th>
                       <th>Interview (S_int)</th>

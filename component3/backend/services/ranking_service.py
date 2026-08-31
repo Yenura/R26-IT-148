@@ -65,13 +65,10 @@ class RankingService:
         return role_str
 
     def _build_features(self, c, job):
-        if c.S_edu is not None and c.S_exp is not None and c.S_skill is not None:
-            s_edu, s_exp, s_skill = c.S_edu, c.S_exp, c.S_skill
-        else:
-            eng = CSSEngine(job)
-            s_edu = eng.s_edu(c.edu_level, c.edu_relevance)
-            s_exp = eng.s_exp(c.years_experience)
-            s_skill = round(max(0.0, min(1.0, c.skill_score_raw)), 4)
+        eng = CSSEngine(job)
+        s_edu = round(max(0.0, min(1.0, float(c.S_edu))), 4) if c.S_edu is not None else eng.s_edu(c.edu_level, c.edu_relevance)
+        s_exp = round(max(0.0, min(1.0, float(c.S_exp))), 4) if c.S_exp is not None else eng.s_exp(c.years_experience)
+        s_skill = round(max(0.0, min(1.0, float(c.S_skill))), 4) if c.S_skill is not None else round(max(0.0, min(1.0, c.skill_score_raw)), 4)
         return s_edu, s_exp, s_skill
 
     def rank(self, job_role, candidates, w_cv=0.40, w_int=0.60, use_ltr=True):
@@ -102,6 +99,9 @@ class RankingService:
                 P_code=max(0.0, min(1.0, c.P_code)),
                 gender=c.gender,
                 age_group=c.age_group,
+                S_edu=s_edu,
+                S_exp=s_exp,
+                S_skill=s_skill,
             )
             s = eng.score_one(f)
             rows.append({
