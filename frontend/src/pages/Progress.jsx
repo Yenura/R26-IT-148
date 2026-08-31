@@ -58,6 +58,7 @@ export default function Progress() {
   }
 
   const loadData = async () => {
+    if (!data) setLoading(true)
     try {
       const uId = await resolveCandidateId()
       let r = await c4Progress(uId)

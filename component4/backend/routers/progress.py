@@ -7,10 +7,29 @@ from typing import Any, Dict, Optional, List
 from pydantic import BaseModel, Field, field_validator
 from slowapi import Limiter
 from slowapi.util import get_remote_address
-import re
+import re, time
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# In-memory TTL cache for progress
+_PROGRESS_CACHE: Dict[str, Any] = {}
+_PROGRESS_CACHE_TTL = 30.0
+
+def _get_cached_progress(cid: str):
+    entry = _PROGRESS_CACHE.get(cid)
+    if entry and time.time() - entry[0] < _PROGRESS_CACHE_TTL:
+        return entry[1]
+    return None
+
+def _set_cached_progress(cid: str, data: dict):
+    _PROGRESS_CACHE[cid] = (time.time(), data)
+
+def _invalidate_progress_cache(cid: Optional[str] = None):
+    if cid and cid in _PROGRESS_CACHE:
+        del _PROGRESS_CACHE[cid]
+    elif not cid:
+        _PROGRESS_CACHE.clear()
 
 
 class ProgressUpdateRequest(BaseModel):
@@ -91,6 +110,7 @@ async def update_progress(payload: ProgressUpdateRequest, request: Request):
         doc,
         upsert=True,
     )
+    _invalidate_progress_cache(payload.candidate_id)
     return {"success": True, "message": "Progress updated", "data": doc}
 
 
@@ -389,6 +409,10 @@ async def populate_progress(request: Request):
 
 @router.get("/{candidate_id}", summary="Get full progress for a candidate")
 async def get_progress(candidate_id: str, request: Request):
+    cached = _get_cached_progress(candidate_id)
+    if cached:
+        return cached
+
     db = request.app.state.db
     query_filters = [{"candidate_id": candidate_id}]
     if ObjectId.is_valid(candidate_id):
@@ -417,7 +441,9 @@ async def get_progress(candidate_id: str, request: Request):
     pct = (stats["completed"] / stats["total"] * 100) if stats["total"] else 0
     stats["completion_pct"] = round(pct, 1)
 
-    return {"success": True, "candidate_id": candidate_id, "stats": stats, "skills": docs}
+    resp_data = {"success": True, "candidate_id": candidate_id, "stats": stats, "skills": docs}
+    _set_cached_progress(candidate_id, resp_data)
+    return resp_data
 
 
 @router.delete("/{candidate_id}/{skill}", summary="Delete a specific progress skill goal")
@@ -425,6 +451,7 @@ async def get_progress(candidate_id: str, request: Request):
 async def delete_progress_skill(candidate_id: str, skill: str, request: Request):
     db = request.app.state.db
     res = await db.progress_tracking.delete_one({"candidate_id": candidate_id, "skill": skill})
+    _invalidate_progress_cache(candidate_id)
     return {"success": True, "deleted": res.deleted_count > 0, "skill": skill}
 
 
@@ -433,4 +460,5 @@ async def delete_progress_skill(candidate_id: str, skill: str, request: Request)
 async def reset_progress(candidate_id: str, request: Request):
     db = request.app.state.db
     res = await db.progress_tracking.delete_many({"candidate_id": candidate_id})
+    _invalidate_progress_cache(candidate_id)
     return {"success": True, "deleted": res.deleted_count}

@@ -158,6 +158,7 @@ class CVScores:
     jd_similarity_score: Optional[float] = None
     optional_legacy_score: Optional[float] = None
     cv_matching_score: Optional[float] = None
+    technical_roadmap: List[Dict[str, Any]] = field(default_factory=list)
 
 
 SENIORITY_RANKS = {
@@ -395,6 +396,7 @@ def calculate_experience_score(
 def calculate_education_score(
     candidate_edu: Union[str, List[str]],
     edu_level: int,
+    degree_field: Optional[str] = None,
     required_education: Optional[List[str]] = None,
     verified_certifications: Optional[List[Dict[str, Any]]] = None,
     target_role: str = "Software Engineer",
@@ -429,47 +431,46 @@ def calculate_education_score(
     # 2. Degree Field & Domain Relevance for Target Role
     field_map = EDUCATION_FIELD_ROLE_RELEVANCE.get(target_role, {})
 
-    # Detect candidate degree field from text
-    matched_field = "General / Unspecified"
+    # Detect candidate degree field from text with flexible whitespace and proper domain priority
+    matched_field = degree_field if (degree_field and degree_field != "General IT") else "General / Unspecified"
     best_field_rel = 0.20
 
     import re
-    if re.search(r'\b(?:computer science|\bcs\b|computing|computer studies|computer engineering)\b', cand_text):
-        matched_field = "Computer Science"
-    elif re.search(r'\b(?:software engineering|software development|software systems)\b', cand_text):
+    if re.search(r'\b(?:software\s*engineering|software\s*development|software\s*systems|\bse\b)\b', cand_text):
         matched_field = "Software Engineering"
-    elif re.search(r'\b(?:information technology|\bit\b|\bbit\b|\bbcs\b|information systems|\bict\b)\b', cand_text):
+    elif re.search(r'\b(?:information\s*systems?\s*engineering|information\s*system\s*engineering|\bise\b)\b', cand_text):
+        matched_field = "Information Systems Engineering"
+    elif re.search(r'\b(?:computer\s*science|\bcs\b|computing|computer\s*studies|computer\s*systems)\b', cand_text):
+        matched_field = "Computer Science"
+    elif re.search(r'\b(?:information\s*technology|\bbit\b|\bict\b|\bbcs\b|information\s*systems|\bit\b)\b', cand_text):
         matched_field = "Information Technology"
-    elif re.search(r'\b(?:data science|analytics|artificial intelligence|\bai\b|machine learning|\bml\b)\b', cand_text):
+    elif re.search(r'\b(?:data\s*science|analytics|artificial\s*intelligence|\bai\b|machine\s*learning|\bml\b)\b', cand_text):
         matched_field = "Data Science"
-    elif re.search(r'\b(?:mathematics|applied mathematics|statistics|actuarial|\bmath\b)\b', cand_text):
+    elif re.search(r'\b(?:mathematics|applied\s*mathematics|statistics|actuarial|\bmath\b)\b', cand_text):
         matched_field = "Mathematics"
-    elif re.search(r'\b(?:cybersecurity|cyber security|information security|network security)\b', cand_text):
+    elif re.search(r'\b(?:cyber\s*security|cybersecurity|information\s*security|network\s*security)\b', cand_text):
         matched_field = "Cybersecurity"
-    elif re.search(r'\b(?:electrical engineering|electronic engineering|systems engineering|engineering)\b', cand_text):
+    elif re.search(r'\b(?:network\s*engineering|telecommunications|computer\s*networks|cloud\s*architecture)\b', cand_text):
+        matched_field = "Networking"
+    elif re.search(r'\b(?:computer\s*engineering|electrical\s*engineering|electronic\s*engineering|systems\s*engineering)\b', cand_text):
         matched_field = "Engineering"
     elif re.search(r'\b(?:accounting|finance|accountancy|commerce|banking|auditing)\b', cand_text):
         matched_field = "Accounting & Finance"
-    elif re.search(r'\b(?:business administration|\bmba\b|\bbba\b|management|marketing)\b', cand_text):
+    elif re.search(r'\b(?:business\s*administration|\bmba\b|\bbba\b|management|marketing)\b', cand_text):
         matched_field = "Business Administration"
-    elif re.search(r'\b(?:culinary|hospitality|hotel management|catering|tourism)\b', cand_text):
+    elif re.search(r'\b(?:culinary|hospitality|hotel\s*management|catering|tourism|pastry|chef)\b', cand_text):
         matched_field = "Culinary & Hospitality"
-    elif re.search(r'\b(?:nursing|medicine|pharmacy|medical|healthcare)\b', cand_text):
+    elif re.search(r'\b(?:nursing|medicine|pharmacy|medical|healthcare|nurse)\b', cand_text):
         matched_field = "Medicine & Health"
-    elif re.search(r'\b(?:history|english|literature|philosophy|fine arts)\b', cand_text):
+    elif re.search(r'\b(?:history|english|literature|philosophy|fine\s*arts|chemistry\s*teacher|teacher)\b', cand_text):
         matched_field = "Arts & Humanities"
     elif re.search(r'\b(?:law|\bllb\b|legal)\b', cand_text):
         matched_field = "Law"
-    else:
-        if any(k in cand_text for k in ["bsc level", "bsc", "b.sc", "bachelor", "master", "msc", "phd", "degree in"]):
-            matched_field = "Information Technology"
-        else:
-            matched_field = "General / Unspecified"
 
     if matched_field in field_map:
         best_field_rel = field_map[matched_field]
     elif matched_field in ["Accounting & Finance", "Culinary & Hospitality", "Medicine & Health", "Arts & Humanities", "Law"]:
-        best_field_rel = 0.05
+        best_field_rel = 0.0
     elif matched_field == "General / Unspecified":
         best_field_rel = 0.60
 
@@ -504,10 +505,9 @@ def calculate_education_score(
 
     # 4. Compute S_edu Score
     if field_rel_cat in ["HIGH", "RELEVANT"]:
-        if deg_level_str in ["PhD", "MSc", "BSc"]:
+        if deg_level_str in ["PhD", "MSc", "BSc (Hons)", "BSc"]:
             base_score = 100.0
             match_status = "FULL_MATCH"
-            f_rel = "HIGH"
         else:
             base_score = 75.0
             match_status = "PARTIAL_MATCH (DIPLOMA)"
@@ -515,17 +515,17 @@ def calculate_education_score(
         if deg_level_str in ["PhD", "MSc"]:
             base_score = 80.0
             match_status = "PARTIAL_MATCH (ADVANCED DEGREE IN RELATED FIELD)"
-        elif deg_level_str == "BSc":
+        elif deg_level_str in ["BSc (Hons)", "BSc"]:
             base_score = 65.0
             match_status = "PARTIAL_MATCH (QUANTITATIVE/ANALYTICAL FIELD)"
         else:
             base_score = 45.0
             match_status = "WEAK_MATCH"
     elif field_rel_cat == "LOW":
-        base_score = 30.0 if deg_level_str in ["PhD", "MSc", "BSc"] else 20.0
+        base_score = 25.0 if deg_level_str in ["PhD", "MSc", "BSc (Hons)", "BSc"] else 15.0
         match_status = "LOW_RELEVANCE_FIELD"
-    else:  # IRRELEVANT
-        base_score = 25.0 if deg_level_str in ["PhD", "MSc", "BSc"] else 15.0
+    else:  # IRRELEVANT (Non-IT degrees like Nursing, Culinary, Chemistry Teacher)
+        base_score = 0.0
         match_status = "NON_RELEVANT_DEGREE"
 
     raw_score = min(100.0, base_score + cert_bonus)
@@ -533,11 +533,11 @@ def calculate_education_score(
 
     # Explanation construction
     if field_rel_cat in ["HIGH", "RELEVANT"]:
-        explanation = f"{deg_level_str} in {matched_field} is highly relevant to {target_role}."
+        explanation = f"{deg_level_str} in {matched_field} is a core academic foundation for {target_role}, perfectly satisfying degree level and domain requirements."
     elif field_rel_cat == "PARTIAL":
         explanation = f"{deg_level_str} in {matched_field} provides valuable analytical foundation for {target_role}."
     else:
-        explanation = f"{deg_level_str} degree level is acceptable, but {matched_field} is not directly related to {target_role}."
+        explanation = f"{deg_level_str} in {matched_field} is not directly related to {target_role}."
 
     analysis = EducationAnalysis(
         candidate_education=cand_edu_list,
@@ -547,10 +547,10 @@ def calculate_education_score(
         degree_level=deg_level_str,
         degree_field=matched_field,
         field_relevance=field_rel_cat,
-        education_relevance_score=round(s_edu, 2),
+        education_relevance_score=round(best_field_rel * 100.0, 1),
         relevant_certifications=relevant_certs,
         verified_certifications=certs,
-        explanation=explanation
+        explanation=explanation,
     )
     return round(s_edu, 2), analysis
 
@@ -565,6 +565,7 @@ def score(
     required_years: Optional[float] = None,
     required_education: Optional[List[str]] = None,
     candidate_education: Optional[Union[str, List[str]]] = None,
+    degree_field: Optional[str] = None,
     # Deep understanding optional parameters
     preferred_skills_spec: Optional[List[str]] = None,
     role_relevant_experience_years: Optional[float] = None,
@@ -618,6 +619,7 @@ def score(
     s_edu, edu_analysis = calculate_education_score(
         candidate_edu=cand_edu,
         edu_level=edu_level,
+        degree_field=degree_field,
         required_education=required_education,
         verified_certifications=verified_certifications,
         target_role=role,
@@ -637,6 +639,13 @@ def score(
     cv_match = (s_skill * w_skill) + (s_exp * w_exp) + (s_edu * w_edu)
     cv_match = max(0.0, min(100.0, cv_match))
 
+    from ml.roadmap import build_backend_learning_roadmap
+    technical_roadmap = build_backend_learning_roadmap(
+        missing_skills=skill_analysis.missing_skills,
+        target_role=role,
+        max_items=6
+    )
+
     return CVScores(
         component_1_scores=c1_scores,
         S_skill=round(s_skill, 2),
@@ -649,4 +658,5 @@ def score(
         jd_similarity_score=jd_similarity_score,
         optional_legacy_score=round(cv_match, 2),
         cv_matching_score=round(cv_match, 2),
+        technical_roadmap=technical_roadmap,
     )

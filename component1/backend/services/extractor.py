@@ -19,6 +19,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 from data.role_requirements import REQUIRED_SKILLS
 from ml.extractor import (
     clean_text,
+    extract_candidate_name,
     extract_education_level,
     extract_education_details,
     extract_experience_years,
@@ -33,7 +34,8 @@ logger = logging.getLogger("component1.extractor")
 
 @dataclass
 class ExtractedFeatures:
-    # Core legacy fields for backward compatibility
+    # Candidate identity & core fields
+    candidate_name:            str   = "Candidate Profile"
     edu_level:                 int   = 2         # 1=Diploma, 2=BSc, 3=MSc, 4=PhD
     edu_relevance:             float = 0.5
     education:                 str   = ""
@@ -137,26 +139,40 @@ def extract(text: str, target_role: str = "Software Engineer") -> ExtractedFeatu
     for line in edu_section_lines:
         line_l = line.lower()
         if "scrum master" not in line_l and any(kw in line_l for kw in degree_kw):
-            edu_sentence = line.strip()
+            # Normalize glued tokens like BSc(Hons)SoftwareEngineering
+            c_line = re.sub(r'([a-z])([A-Z])', r'\1 \2', line)
+            c_line = re.sub(r'(\))\s*([A-Za-z])', r'\1 \2', c_line)
+            c_line = re.sub(r'([A-Za-z])\s*(\()', r'\1 \2', c_line)
+            c_line = re.sub(r'\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$', '', c_line, flags=re.I)
+            c_line = re.sub(r'\s*\(?\s*expected\s*(?:[A-Za-z]+\s*)?(?:20\d\d|19\d\d)?\s*\)?.*$', '', c_line, flags=re.I)
+            c_line = re.sub(r'\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$', '', c_line)
+            edu_sentence = c_line.strip(' -–—|:,')
             break
 
     if not edu_sentence:
         for line in lines:
             line_l = line.lower()
             if "scrum master" not in line_l and any(kw in line_l for kw in degree_kw):
-                edu_sentence = line.strip()
+                c_line = re.sub(r'([a-z])([A-Z])', r'\1 \2', line)
+                c_line = re.sub(r'(\))\s*([A-Za-z])', r'\1 \2', c_line)
+                c_line = re.sub(r'([A-Za-z])\s*(\()', r'\1 \2', c_line)
+                c_line = re.sub(r'\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$', '', c_line, flags=re.I)
+                c_line = re.sub(r'\s*\(?\s*expected\s*(?:[A-Za-z]+\s*)?(?:20\d\d|19\d\d)?\s*\)?.*$', '', c_line, flags=re.I)
+                c_line = re.sub(r'\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$', '', c_line)
+                edu_sentence = c_line.strip(' -–—|:,')
                 break
 
-    if not edu_sentence or len(edu_sentence) < 5:
-        spec_suffix = f" (Specializing in {specializations[0]})" if specializations else ""
-        edu_sentence = f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}{spec_suffix}"
+    if not edu_sentence or len(edu_sentence) < 5 or "general" in edu_sentence.lower():
+        edu_sentence = edu_full.get("qualification", f"{edu_info.get('level_name', 'BSc')} in {majors[0] if majors else 'Information Technology'}")
 
     # 3. Skills & Evidence
     skills_certs = extract_skills_and_certifications(text, target_role=target_role)
     projects = extract_projects(text)
 
     # 4. Feature Assembly & Multi-Layer Cross-Validation
+    cand_name = extract_candidate_name(text)
     res_feat = ExtractedFeatures(
+        candidate_name=cand_name,
         edu_level=edu_level,
         edu_relevance=round(edu_relevance, 2),
         education=edu_sentence,

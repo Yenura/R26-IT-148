@@ -5,7 +5,7 @@ import {
   Briefcase, Plus, Users, Trash2, MapPin, Clock, ChevronRight,
   MessageSquare, Sparkles, Building2, Trophy, Eye, CheckCircle2, ListOrdered, Settings, Download
 } from 'lucide-react'
-import { uJobsMy, uJobsCreate, uJobsUpdate, uJobsDelete, uJobsApplicantCounts, uJobsApplicants, c0ExportCSV, c0ExportExcel, c0ExportPDF } from '../api'
+import { uJobsMy, uJobsCreate, uJobsUpdate, uJobsDelete, uJobsApplicantCounts, uJobsApplicants, uJobsCompanyApplicants, c0ExportCSV, c0ExportExcel, c0ExportPDF } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
@@ -63,13 +63,34 @@ export default function CompanyDashboard() {
   useAuth('company')
   const companyName = localStorage.getItem('recruitai.name') || 'Employer'
 
-  const [jobs, setJobs] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [jobs, setJobs] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.company.jobs')
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.company.jobs')
+      return !cached
+    } catch {
+      return true
+    }
+  })
   const [showModal, setShowModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [editJob, setEditJob] = useState(null)
   const [form, setForm] = useState(emptyForm)
-  const [applicantCounts, setApplicantCounts] = useState({})
+  const [applicantCounts, setApplicantCounts] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.company.counts')
+      return cached ? JSON.parse(cached) : {}
+    } catch {
+      return {}
+    }
+  })
   const [submitting, setSubmitting] = useState(false)
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
   const [exportOpen, setExportOpen] = useState(false)
@@ -103,30 +124,26 @@ export default function CompanyDashboard() {
   }
 
   const loadJobs = async () => {
-    setLoading(true)
     try {
-      const [r, countsR] = await Promise.all([
-        uJobsMy().catch(() => ({ data: [] })),
-        uJobsApplicantCounts().catch(() => ({}))
-      ])
-      const jobList = Array.isArray(r.data) ? r.data : []
-      setJobs(jobList)
-      const bulkCounts = countsR?.data || countsR
-      if (bulkCounts && typeof bulkCounts === 'object' && Object.keys(bulkCounts).length > 0) {
-        setApplicantCounts(bulkCounts)
+      const bundleRes = await uJobsCompanyApplicants().catch(() => null)
+      if (bundleRes?.data?.jobs) {
+        const jobList = bundleRes.data.jobs || []
+        const counts = bundleRes.data.applicant_counts || {}
+        setJobs(jobList)
+        setApplicantCounts(counts)
+        try {
+          sessionStorage.setItem('recruitai.company.jobs', JSON.stringify(jobList))
+          sessionStorage.setItem('recruitai.company.counts', JSON.stringify(counts))
+        } catch {}
       } else {
-        const countEntries = await Promise.all(
-          jobList.map(async (job) => {
-            try {
-              const ar = await uJobsApplicants(job.id).catch(() => ({ data: [] }))
-              const apps = Array.isArray(ar.data) ? ar.data : []
-              return [job.id, apps.length]
-            } catch {
-              return [job.id, 0]
-            }
-          })
-        )
-        setApplicantCounts(Object.fromEntries(countEntries))
+        const [r, countsR] = await Promise.all([
+          uJobsMy().catch(() => ({ data: [] })),
+          uJobsApplicantCounts().catch(() => ({}))
+        ])
+        const jobList = Array.isArray(r.data) ? r.data : []
+        setJobs(jobList)
+        const bulkCounts = countsR?.data || countsR || {}
+        setApplicantCounts(bulkCounts)
       }
     } catch {
       toast.error('Failed to load jobs')
@@ -141,7 +158,7 @@ export default function CompanyDashboard() {
     setForm((f) => ({
       ...f,
       title: roleName,
-      required_skills: f.required_skills ? f.required_skills : suggestedSkills,
+      required_skills: suggestedSkills,
     }))
   }
 
@@ -442,8 +459,8 @@ export default function CompanyDashboard() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 260 }}>
-                          {(job.required_skills || []).slice(0, 3).map((s) => (
-                            <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                          {[...new Set(job.required_skills || [])].slice(0, 3).map((s, i) => (
+                            <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                               {s}
                             </span>
                           ))}

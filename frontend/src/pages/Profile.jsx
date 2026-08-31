@@ -207,8 +207,8 @@ export default function Profile() {
             <div style={{ gridColumn: 'span 2' }}>
               <div style={{ color: 'var(--color-fg-muted)', marginBottom: 4 }}>Extracted Skills:</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                {(resumeData.skills || []).slice(0, 8).map((s) => (
-                  <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>{s}</span>
+                 {[...new Set(resumeData.skills || [])].slice(0, 8).map((s, i) => (
+                   <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>{s}</span>
                 ))}
               </div>
             </div>

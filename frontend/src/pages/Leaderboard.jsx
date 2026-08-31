@@ -5,7 +5,7 @@ import {
   Award, Trophy, Search, RefreshCw, CheckCircle2,
   Send, ShieldCheck, Sparkles, UserCheck, Briefcase, Plus
 } from 'lucide-react'
-import { c4Leaderboard, uJobsMy, uJobsApplicants, c3Pipeline } from '../api'
+import { c4Leaderboard, uJobsMy, uJobsApplicants, uJobsCompanyApplicants, c3Pipeline } from '../api'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
@@ -15,10 +15,31 @@ import SkeletonLoader from '../components/SkeletonLoader'
 export default function Leaderboard() {
   const navigate = useNavigate()
   const userRole = localStorage.getItem('recruitai.role')
-  const [data, setData] = useState([])
-  const [companyJobs, setCompanyJobs] = useState([])
+  const [data, setData] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`recruitai.leaderboard.${userRole}`)
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  const [companyJobs, setCompanyJobs] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem('recruitai.company.jobs')
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
   const [selectedJobFilter, setSelectedJobFilter] = useState('all')
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(() => {
+    try {
+      const cached = sessionStorage.getItem(`recruitai.leaderboard.${userRole}`)
+      return !cached
+    } catch {
+      return true
+    }
+  })
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDomain, setSelectedDomain] = useState('all')
 
@@ -35,67 +56,81 @@ export default function Leaderboard() {
     if (data.length === 0) setLoading(true)
     try {
       if (userRole === 'company') {
-        // 1. Fetch only jobs posted by this company
-        const myJobsRes = await uJobsMy().catch(() => ({ data: [] }))
-        const jobs = Array.isArray(myJobsRes.data) ? myJobsRes.data : []
-        setCompanyJobs(jobs)
+        const bundleRes = await uJobsCompanyApplicants().catch(() => null)
+        if (bundleRes?.data?.applicants !== undefined) {
+          const jobs = bundleRes.data.jobs || []
+          const applicants = bundleRes.data.applicants || []
+          setCompanyJobs(jobs)
+          setData(applicants)
+          try {
+            sessionStorage.setItem('recruitai.company.jobs', JSON.stringify(jobs))
+            sessionStorage.setItem(`recruitai.leaderboard.${userRole}`, JSON.stringify(applicants))
+          } catch {}
+        } else {
+          // Fallback
+          const myJobsRes = await uJobsMy().catch(() => ({ data: [] }))
+          const jobs = Array.isArray(myJobsRes.data) ? myJobsRes.data : []
+          setCompanyJobs(jobs)
+          const companyApplicants = []
+          const seenCandidates = new Set()
 
-        const companyApplicants = []
-        const seenCandidates = new Set()
+          const resultsPerJob = await Promise.all(
+            jobs.map(async (job) => {
+              const jobId = job.id || job._id
+              const jobApps = []
+              try {
+                const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
+                const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
+                for (const app of rawApps) {
+                  const hasInterview = app.interview_score != null || app.interview_completed
+                  const hasCV = app.cv_score != null || app.overall_score != null
+                  const cvScore = app.cv_score ?? app.overall_score ?? (hasInterview ? 75 : 0)
+                  const intScore = app.interview_score ?? (hasCV ? 70 : 0)
+                  const hireProb = app.hire_probability ?? app.css_score ?? (hasInterview && hasCV ? (0.4 * cvScore + 0.6 * intScore) : (hasInterview ? intScore : cvScore))
+                  jobApps.push({
+                    candidate_id: app.candidate_id,
+                    candidate_name: app.candidate_name || app.name || 'Applicant',
+                    job_id: jobId,
+                    job_role: job.title || 'Technical Role',
+                    company_name: job.company_name || localStorage.getItem('recruitai.name') || 'Your Company',
+                    skills: app.skills || app.resume_skills || job.required_skills || [],
+                    hire_probability: hireProb,
+                    interview_completed: Boolean(hasInterview),
+                    interview_score: app.interview_score || null,
+                    cv_score: app.cv_score || app.overall_score || null,
+                    has_cv: Boolean(hasCV),
+                    passed_filter: app.passed_filter !== false
+                  })
+                }
+              } catch {}
+              return jobApps
+            })
+          )
 
-        // 2. Fetch applicants strictly applied to this company's jobs
-        const resultsPerJob = await Promise.all(
-          jobs.map(async (job) => {
-            const jobId = job.id || job._id
-            const jobApps = []
-            try {
-              const appRes = await uJobsApplicants(jobId).catch(() => ({ data: [] }))
-              const rawApps = Array.isArray(appRes.data) ? appRes.data : appRes.data?.applicants || []
-              for (const app of rawApps) {
-                const hasInterview = app.interview_score != null || app.interview_completed
-                const hasCV = app.cv_score != null || app.overall_score != null
-                const cvScore = app.cv_score ?? app.overall_score ?? (hasInterview ? 75 : 0)
-                const intScore = app.interview_score ?? (hasCV ? 70 : 0)
-                const hireProb = app.hire_probability ?? app.css_score ?? (hasInterview && hasCV ? (0.4 * cvScore + 0.6 * intScore) : (hasInterview ? intScore : cvScore))
-                jobApps.push({
-                  candidate_id: app.candidate_id,
-                  candidate_name: app.candidate_name || app.name || 'Applicant',
-                  job_id: jobId,
-                  job_role: job.title || 'Technical Role',
-                  company_name: job.company_name || localStorage.getItem('recruitai.name') || 'Your Company',
-                  skills: app.skills || app.resume_skills || job.required_skills || [],
-                  hire_probability: hireProb,
-                  interview_completed: Boolean(hasInterview),
-                  interview_score: app.interview_score || null,
-                  cv_score: app.cv_score || app.overall_score || null,
-                  has_cv: Boolean(hasCV),
-                  passed_filter: app.passed_filter !== false
-                })
+          for (const list of resultsPerJob) {
+            for (const cand of list) {
+              const uniqueKey = `${cand.candidate_id || cand.candidate_name}_${cand.job_id}`
+              if (!seenCandidates.has(uniqueKey)) {
+                seenCandidates.add(uniqueKey)
+                companyApplicants.push(cand)
               }
-            } catch {
-              /* ignore error for individual job */
-            }
-            return jobApps
-          })
-        )
-
-        for (const list of resultsPerJob) {
-          for (const cand of list) {
-            const uniqueKey = `${cand.candidate_id || cand.candidate_name}_${cand.job_id}`
-            if (!seenCandidates.has(uniqueKey)) {
-              seenCandidates.add(uniqueKey)
-              companyApplicants.push(cand)
             }
           }
-        }
 
-        // Sort descending by candidate score
-        companyApplicants.sort((a, b) => (b.hire_probability || 0) - (a.hire_probability || 0))
-        setData(companyApplicants)
+          companyApplicants.sort((a, b) => (b.hire_probability || 0) - (a.hire_probability || 0))
+          setData(companyApplicants)
+          try {
+            sessionStorage.setItem(`recruitai.leaderboard.${userRole}`, JSON.stringify(companyApplicants))
+          } catch {}
+        }
       } else {
         // Candidate view: general benchmark standings
         const r = await c4Leaderboard(50)
-        setData(r.data?.data || [])
+        const standings = r.data?.data || []
+        setData(standings)
+        try {
+          sessionStorage.setItem(`recruitai.leaderboard.${userRole}`, JSON.stringify(standings))
+        } catch {}
       }
     } catch (err) {
       toast.error('Failed to load standings')
@@ -309,8 +344,8 @@ export default function Leaderboard() {
                       </td>
                       <td>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 280 }}>
-                          {(c.skills || []).slice(0, 4).map((s) => (
-                            <span key={s} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                           {[...new Set(c.skills || [])].slice(0, 4).map((s, i) => (
+                             <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                               {s}
                             </span>
                           ))}

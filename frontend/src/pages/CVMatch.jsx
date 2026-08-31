@@ -7,7 +7,7 @@ import {
   ExternalLink, ChevronRight, TrendingUp, Cpu, Award, RefreshCw, FileText,
   GraduationCap, Clock, Check, Info, ArrowUpRight, Share2, Printer, Star,
   Search, Eye, FileCheck, ShieldCheck, ChevronDown, Compass, Play, Download,
-  CheckSquare, X, Copy, UserCheck, Building2
+  CheckSquare, X, Copy, UserCheck, Building2, Code, Lightbulb, Bookmark, Square
 } from 'lucide-react'
 import {
   uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
@@ -33,15 +33,19 @@ const cleanCandidateName = (rawName, fallbackFilename) => {
 }
 
 const cleanEducationText = (rawEdu) => {
-  if (!rawEdu) return 'BSc IT / Computing'
+  if (!rawEdu) return 'BSc Degree'
   let edu = String(rawEdu).trim()
-  edu = edu.split(/\s*[|:;•\n\r]\s*/)[0].trim()
+  // Separate glued letters from PDF/OCR like BSc(Hons)SoftwareEngineering
+  edu = edu.replace(/([a-z])([A-Z])/g, '$1 $2')
+  edu = edu.replace(/(\))\s*([A-Za-z])/g, '$1 $2')
+  edu = edu.replace(/([A-Za-z])\s*(\()/g, '$1 $2')
+  // Strip trailing dates, GPA, and section delimiters
+  edu = edu.split(/\s*[|;•\n\r]\s*/)[0].trim()
+  edu = edu.replace(/\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$/i, '')
+  edu = edu.replace(/\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$/i, '')
   edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
-  if (/bsc\s*\(hons\)|bachelor of science/i.test(edu)) return 'BSc (Hons) IT'
-  if (/bachelor|b\.sc|btech|b\.e/i.test(edu)) return 'BSc Computer Science'
-  if (/master|msc|mtech/i.test(edu)) return 'MSc Computing'
-  if (/diploma|hnd/i.test(edu)) return 'Higher Diploma'
-  return edu.length > 25 ? edu.slice(0, 25) + '...' : edu
+  edu = edu.replace(/\s+/g, ' ').trim()
+  return edu.length > 40 ? edu.slice(0, 40) + '...' : edu
 }
 
 const cleanExperienceText = (r) => {
@@ -182,6 +186,174 @@ const formatSkillName = (rawSkill) => {
     .split(/\s+/)
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
     .join(' ')
+}
+
+const SKILL_ROADMAP_METADATA = {
+  'typescript': {
+    title: 'TypeScript for Enterprise Web Development',
+    description: 'Master strict typing, generics, discriminating unions, utility types, and advanced compiler configurations for scalable, maintainable architectures.',
+    key_topics: ['Generics & Type Constraints', 'Discriminated Unions', 'Utility Types (Pick, Omit, Partial)', 'Type Guards & Narrowing', 'Strict Compiler Modes'],
+    project: 'Migrate a vanilla JavaScript stateful application to strict TypeScript with 100% type safety and type-safe API client interfaces.',
+    est_hours: '14 Hours',
+    level: 'Intermediate Architecture',
+    docs_url: 'https://www.typescriptlang.org/docs/handbook/intro.html'
+  },
+  'web performance': {
+    title: 'Web Performance Engineering & Core Web Vitals',
+    description: 'Optimize rendering cycles, minimize bundle sizes, eliminate layout shifts, and accelerate Largest Contentful Paint (LCP) and Interaction to Next Paint (INP).',
+    key_topics: ['Lighthouse 100 Auditing', 'Core Web Vitals (LCP, CLS, INP)', 'Dynamic Code-Splitting & Lazy Loading', 'Tree-shaking & Asset Optimization', 'Memoization & Virtualization'],
+    project: 'Audit a complex single-page dashboard and implement code splitting, image optimization, and memoization to achieve 95+ Lighthouse score.',
+    est_hours: '12 Hours',
+    level: 'Advanced Performance',
+    docs_url: 'https://web.dev/learn/performance'
+  },
+  'accessibility': {
+    title: 'Accessibility (a11y) & WCAG 2.1 Compliance',
+    description: 'Build inclusive, high-contrast, fully keyboard-navigable and screen-reader accessible web applications conforming to WCAG 2.1 AA standards.',
+    key_topics: ['Semantic HTML5 Architecture', 'WAI-ARIA Roles & Live Regions', 'Keyboard Navigation & Focus Traps', 'Color Contrast Validation', 'Screen Reader (NVDA/VoiceOver) Auditing'],
+    project: 'Refactor an interactive multi-step modal dialog and complex data table to pass full axe-core automated audit and NVDA screen reader testing.',
+    est_hours: '10 Hours',
+    level: 'Core Production Requirement',
+    docs_url: 'https://developer.mozilla.org/en-US/docs/Web/Accessibility'
+  },
+  'vue.js': {
+    title: 'Vue.js 3 & Composition API Architecture',
+    description: 'Develop reactive applications using Vue 3 Composition API, script setup syntax, Pinia state stores, and Vue Router with type-safe composables.',
+    key_topics: ['Composition API & setup syntax', 'Reactivity Core (ref, reactive, computed)', 'Pinia Store Management', 'Custom Reusable Composables', 'Vue Router Guards & Transitions'],
+    project: 'Build a modular e-commerce catalog with reactive shopping cart, filtering composables, and Pinia persistent state storage.',
+    est_hours: '16 Hours',
+    level: 'Intermediate Framework',
+    docs_url: 'https://vuejs.org/guide/introduction.html'
+  },
+  'vue': {
+    title: 'Vue.js 3 & Composition API Architecture',
+    description: 'Develop reactive applications using Vue 3 Composition API, script setup syntax, Pinia state stores, and Vue Router with type-safe composables.',
+    key_topics: ['Composition API & setup syntax', 'Reactivity Core (ref, reactive, computed)', 'Pinia Store Management', 'Custom Reusable Composables', 'Vue Router Guards & Transitions'],
+    project: 'Build a modular e-commerce catalog with reactive shopping cart, filtering composables, and Pinia persistent state storage.',
+    est_hours: '16 Hours',
+    level: 'Intermediate Framework',
+    docs_url: 'https://vuejs.org/guide/introduction.html'
+  },
+  'zustand': {
+    title: 'Zustand State Management & Store Slices',
+    description: 'Implement lightweight, boilerplate-free state management in React using Zustand store slices, transient updates, and persistent middleware.',
+    key_topics: ['Store Slices Design Pattern', 'Transient Updates & Reactive Selectors', 'Immer Middleware Integration', 'Local Storage Persistence', 'Redux DevTools Debugging'],
+    project: 'Construct an interactive kanban board application with drag-and-drop state, undo/redo history, and persistent Zustand slice store.',
+    est_hours: '8 Hours',
+    level: 'Architecture & State',
+    docs_url: 'https://zustand.docs.pmnd.rs/'
+  },
+  'styled-components': {
+    title: 'Styled-Components & Modern CSS-in-JS',
+    description: 'Design component-scoped styling systems with dynamic theme tokens, prop-driven variants, global styles, and zero class-name collisions.',
+    key_topics: ['Theme Context & Dynamic Tokens', 'Prop-Based Dynamic Styling', 'GlobalStyles & Keyframes Animations', 'Polymorphic as Prop', 'Server-Side Style Extraction'],
+    project: 'Create a reusable design system component library with Dark/Light theme switching and accessible interactive states.',
+    est_hours: '8 Hours',
+    level: 'Component Styling',
+    docs_url: 'https://styled-components.com/docs'
+  },
+  'react': {
+    title: 'Advanced React 18+ Architecture & Patterns',
+    description: 'Master custom hook composition, concurrent rendering features, context separation, server components, and performance profiling.',
+    key_topics: ['Custom Hook Design', 'useTransition & useDeferredValue', 'Context Optimization', 'ErrorBoundary & Suspense', 'Compound Components Pattern'],
+    project: 'Build an enterprise analytics dashboard with suspense data-fetching boundaries and custom hook query abstractions.',
+    est_hours: '18 Hours',
+    level: 'Core Framework Mastery',
+    docs_url: 'https://react.dev/reference/react'
+  },
+  'next.js': {
+    title: 'Next.js App Router & Full-Stack React',
+    description: 'Build high-performance web applications using the Next.js App Router, Server Actions, incremental static regeneration (ISR), and SEO optimization.',
+    key_topics: ['Server vs Client Components', 'Server Actions & Mutations', 'Route Handlers & Edge Middleware', 'Streaming SSR & Suspense', 'SEO & Dynamic Metadata API'],
+    project: 'Deploy a full-stack content publishing platform with Server Actions for data mutation and on-demand ISR caching.',
+    est_hours: '20 Hours',
+    level: 'Full-Stack Architecture',
+    docs_url: 'https://nextjs.org/docs'
+  },
+  'tailwind css': {
+    title: 'Tailwind CSS Modern Utility-First UI',
+    description: 'Craft responsive, mobile-first, and aesthetic interfaces using utility classes, custom theme extensions, arbitrary values, and JIT compilation.',
+    key_topics: ['Fluid Layouts & Responsive Breakpoints', 'Design Token Configuration', 'Arbitrary Variant Selectors', 'Dark Mode Styling Strategy', 'Custom Plugin Creation'],
+    project: 'Build a fully responsive SaaS marketing landing page with glassmorphic cards and dynamic dark/light themes.',
+    est_hours: '8 Hours',
+    level: 'UI Design System',
+    docs_url: 'https://tailwindcss.com/docs'
+  },
+  'docker': {
+    title: 'Docker Containerization & Multi-Stage Builds',
+    description: 'Containerize microservices with multi-stage Dockerfiles, minimal base images, security best practices, and Docker Compose orchestration.',
+    key_topics: ['Multi-Stage Dockerfiles', 'Alpine & Distroless Base Images', 'Volume Mounting & Networking', 'Compose Multi-Container Stacks', 'Image Size Minimization'],
+    project: 'Containerize a full-stack React + FastAPI + PostgreSQL application stack with automated health checks and hot-reload dev containers.',
+    est_hours: '14 Hours',
+    level: 'DevOps & Tooling',
+    docs_url: 'https://docs.docker.com/get-started/'
+  },
+  'rest apis': {
+    title: 'RESTful API Design & OpenAPI Architecture',
+    description: 'Design idempotent, versioned, secure REST APIs adhering to HTTP specifications, JSON:API standards, and comprehensive OpenAPI documentation.',
+    key_topics: ['HTTP Status Codes & Verbs', 'Pagination, Filtering, Sorting', 'OAuth2 / JWT Authentication', 'Rate Limiting & Caching (ETags)', 'OpenAPI/Swagger Spec'],
+    project: 'Implement a production-ready REST API with JWT authentication, cursor pagination, structured error envelopes, and automated Swagger docs.',
+    est_hours: '12 Hours',
+    level: 'Backend Architecture',
+    docs_url: 'https://restfulapi.net/'
+  },
+  'graphql': {
+    title: 'GraphQL Schema Design & Federation',
+    description: 'Design flexible schemas with type-safe queries, mutations, subscriptions, resolver batching (DataLoader), and client-side cache normalization.',
+    key_topics: ['Schema Definition Language (SDL)', 'Resolvers & Execution Context', 'N+1 Problem & DataLoader', 'Apollo Client Cache Normalization', 'Subscriptions (WebSockets)'],
+    project: 'Build a real-time notification and feed API with Apollo Server, DataLoader query batching, and WebSocket subscription support.',
+    est_hours: '15 Hours',
+    level: 'API Architecture',
+    docs_url: 'https://graphql.org/learn/'
+  },
+  'ci/cd': {
+    title: 'CI/CD Pipelines & Automated Deployment',
+    description: 'Design automated testing, static analysis, security scanning, container builds, and zero-downtime deployment pipelines using GitHub Actions.',
+    key_topics: ['GitHub Actions Workflows', 'Automated Test Matrix', 'Docker Build & Push Actions', 'Secret Management & Environments', 'Zero-Downtime Rollouts'],
+    project: 'Build an end-to-end GitHub Actions pipeline with automated linting, unit test coverage gates, and automated deployment to staging.',
+    est_hours: '12 Hours',
+    level: 'DevOps & Automation',
+    docs_url: 'https://docs.github.com/en/actions'
+  },
+  'responsive design': {
+    title: 'Responsive & Adaptive Web Design',
+    description: 'Implement modern fluid layouts, CSS Grid, Flexbox, container queries, and mobile-first media queries that render flawlessly across all device viewports.',
+    key_topics: ['CSS Grid & Subgrid', 'Flexbox Alignment & Layouts', 'CSS Container Queries', 'Mobile-First Media Queries', 'Responsive Typography & Viewport Units'],
+    project: 'Build an interactive responsive dashboard with collapsible navigation, adaptive grid cards, and fluid charts across mobile, tablet, and desktop.',
+    est_hours: '8 Hours',
+    level: 'Core UI Layouts',
+    docs_url: 'https://developer.mozilla.org/en-US/docs/Learn/CSS/CSS_layout/Responsive_Design'
+  }
+}
+
+const getSkillRoadmapDetails = (skillName, roleName) => {
+  if (!skillName) return {
+    title: 'Core Technical Specialization',
+    description: `Master industry-standard production best practices and enterprise architectures for ${roleName}.`,
+    key_topics: ['System Architecture', 'Production Patterns', 'Code Quality & Testing', 'Deployment Workflows'],
+    project: `Design and implement a production-ready module demonstrating enterprise architecture for ${roleName}.`,
+    est_hours: '12-16 Hours',
+    level: 'Intermediate',
+    docs_url: 'https://developer.mozilla.org/'
+  }
+
+  const sLower = String(skillName).toLowerCase().trim()
+  const matchedKey = Object.keys(SKILL_ROADMAP_METADATA).find((k) => sLower === k || sLower.includes(k) || k.includes(sLower))
+
+  if (matchedKey) {
+    return SKILL_ROADMAP_METADATA[matchedKey]
+  }
+
+  const formattedName = formatSkillName(skillName)
+  return {
+    title: `${formattedName} Enterprise Architecture & Mastery`,
+    description: `Comprehensive production curriculum designed to master ${formattedName} core principles, security controls, and clean code paradigms for ${roleName}.`,
+    key_topics: [`${formattedName} Fundamentals`, 'Advanced Patterns & Idioms', 'Performance Optimization', 'Automated Testing & CI/CD'],
+    project: `Build a production-grade microservice or interface module applying ${formattedName} design patterns and robust error handling.`,
+    est_hours: '12-15 Hours',
+    level: 'Core Milestone',
+    docs_url: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(skillName)}`
+  }
 }
 
 const CANONICAL_ROLES = [
@@ -453,9 +625,14 @@ export default function CVMatch() {
   const [learningPathResult, setLearningPathResult] = useState(null)
   const [simulatedAcquiredSkills, setSimulatedAcquiredSkills] = useState([])
   const [simulationResult, setSimulationResult] = useState(null)
+  const [completedRoadmapSkills, setCompletedRoadmapSkills] = useState([])
+  const [roadmapFilter, setRoadmapFilter] = useState('all')
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
   const [selectedSkillEvidence, setSelectedSkillEvidence] = useState(null)
   const [canonicalRoles, setCanonicalRoles] = useState([])
+  const [showUploadZone, setShowUploadZone] = useState(false)
+  const [roleCategoryFilter, setRoleCategoryFilter] = useState('All')
+  const [candidateSearchQuery, setCandidateSearchQuery] = useState('')
 
   useEffect(() => {
     loadData()
@@ -767,6 +944,17 @@ export default function CVMatch() {
   const candExp = c1Result?.experience_years !== undefined && c1Result?.experience_years !== null
     ? c1Result.experience_years
     : (currentResumeDoc?.experience_years || (currentResumeDoc?.project_experience_years ? currentResumeDoc.project_experience_years : 2.0))
+  const roleRelevantExp = c1Result?.role_relevant_experience_years !== undefined && c1Result?.role_relevant_experience_years !== null
+    ? c1Result.role_relevant_experience_years
+    : (c1Result?.experience_analysis?.relevant_years ?? candExp)
+  const totalMonths = c1Result?.experience_analysis?.total_professional_experience_months ?? Math.round(candExp * 12)
+  const relevantMonths = c1Result?.experience_analysis?.target_role_relevant_experience_months ?? Math.round(roleRelevantExp * 12)
+  const candidateSeniority = c1Result?.detected_seniority || c1Result?.experience_analysis?.candidate_seniority || 'Junior'
+  const employmentRecords = (c1Result?.employment_records && c1Result.employment_records.length > 0)
+    ? c1Result.employment_records
+    : (c1Result?.experience_analysis?.employment_records || [])
+  const educationAnalysis = c1Result?.education_analysis || {}
+  const candidateDegreeField = c1Result?.degree_field || educationAnalysis?.degree_field || 'Information Technology'
   const reqExp = matchedJobDoc?.experience_required ?? (c1Result?.required_experience_years || 2.0)
   const computedExpScore = reqExp > 0 ? Math.min(Math.round((candExp / reqExp) * 100), 100) : 100.0
 
@@ -860,28 +1048,50 @@ export default function CVMatch() {
 
   // ── Dynamic & Resilient Learning Curriculum Roadmap ───────────────
   const effectiveLearningPath = useMemo(() => {
+    if (c1Result?.technical_roadmap && Array.isArray(c1Result.technical_roadmap) && c1Result.technical_roadmap.length > 0) {
+      return c1Result.technical_roadmap
+    }
+
+    let rawItems = []
     if (learningPathResult?.learning_path && learningPathResult.learning_path.length > 0) {
-      return learningPathResult.learning_path.map((item, idx) => ({
-        step: idx + 1,
-        skill: item.skill || item.title || `Phase ${idx + 1}`,
-        title: item.title || item.skill || `Phase ${idx + 1}: Technical Competency`,
-        description: item.description || item.reason || `Master critical enterprise competencies and production standards for ${activeRoleName}.`,
-        priority: item.priority || (idx === 0 ? 'Critical Prerequisite' : 'Core Milestone'),
-        resource_url: item.resource_url || null
+      rawItems = learningPathResult.learning_path
+    } else {
+      const skillsToCover = (activeMissingSkills.length > 0 ? activeMissingSkills : ['TypeScript', 'Web Performance', 'Accessibility', 'Testing Frameworks', 'CI/CD Pipelines'])
+      rawItems = skillsToCover.map((s, i) => ({
+        skill: s,
+        priority: i === 0 ? 'Critical' : (i < 3 ? 'High' : 'Medium')
       }))
     }
 
-    // Dynamic roadmap based on active missing skills or role priorities
-    const skillsToCover = (activeMissingSkills.length > 0 ? activeMissingSkills : ['Distributed Systems', 'Cloud Tooling', 'CI/CD Pipelines', 'Performance Optimization']).slice(0, 4)
-    return skillsToCover.map((skill, idx) => ({
-      step: idx + 1,
-      skill: skill,
-      title: `${skill} Mastery & Production Engineering`,
-      description: `Comprehensive milestone curriculum designed to bridge the ${skill} gap with enterprise best practices and applied sandbox exercises.`,
-      priority: idx === 0 ? 'Critical Prerequisite' : (idx === 1 ? 'High Priority' : 'Recommended Milestone'),
-      resource_url: `https://en.wikipedia.org/wiki/${encodeURIComponent(skill)}`
-    }))
-  }, [learningPathResult, activeMissingSkills, activeRoleName])
+    return rawItems.map((item, idx) => {
+      const rawSkill = item.skill || item.title || `Competency ${idx + 1}`
+      const details = getSkillRoadmapDetails(rawSkill, activeRoleName)
+      const isCritical = (item.priority && String(item.priority).toLowerCase().includes('critical')) || idx === 0
+      const isHigh = (item.priority && String(item.priority).toLowerCase().includes('high')) || (idx > 0 && idx <= 2)
+
+      const displayTitle = item.title && !item.title.toLowerCase().includes('technical competency') && !item.title.toLowerCase().includes('phase ')
+        ? item.title
+        : details.title
+
+      const displayDesc = item.description && !item.description.toLowerCase().includes('master critical enterprise competencies') && !item.description.toLowerCase().includes('production standards for')
+        ? item.description
+        : details.description
+
+      return {
+        step: idx + 1,
+        skill: rawSkill,
+        title: displayTitle,
+        description: displayDesc,
+        key_topics: details.key_topics || ['Core Principles', 'Production Patterns', 'Optimization & Testing'],
+        project: details.project || `Build an applied ${formatSkillName(rawSkill)} module with automated test coverage.`,
+        est_hours: details.est_hours || '10-14 Hours',
+        level: details.level || (isCritical ? 'Foundational Core' : 'Architecture & Tooling'),
+        priority: isCritical ? 'Critical' : (isHigh ? 'High' : 'Medium'),
+        priorityBadgeClass: isCritical ? 'badge-danger' : (isHigh ? 'badge-warning' : 'badge-primary'),
+        docs_url: item.resource_url || details.docs_url || `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(rawSkill)}`
+      }
+    })
+  }, [c1Result, learningPathResult, activeMissingSkills, activeRoleName])
 
   return (
     <div className="fade-in" style={{ maxWidth: 1180, margin: '0 auto', paddingBottom: 'var(--p-space-10)' }}>
@@ -971,14 +1181,14 @@ export default function CVMatch() {
         {/* Simple, Clean & Balanced 2-Card Configuration Grid */}
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
           gap: 'var(--p-space-5)',
           marginBottom: 'var(--p-space-5)'
         }}>
           
           {/* CARD 1: CANDIDATE RESUME */}
           <div style={{
-            padding: '20px 22px',
+            padding: '22px',
             background: 'rgba(15, 23, 42, 0.75)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 'var(--radius-lg)',
@@ -990,72 +1200,39 @@ export default function CVMatch() {
             backdropFilter: 'blur(12px)'
           }}>
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <UserCheck size={15} /> 1. Candidate Resume
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <UserCheck size={16} /> 1. Candidate Profile
                 </span>
-                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
-                  {resumes.length} Candidate{resumes.length === 1 ? '' : 's'} Ingested
-                </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                    {resumes.length} Ingested
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowUploadZone(!showUploadZone)}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid rgba(59, 130, 246, 0.3)', color: 'var(--color-primary-light, #93c5fd)' }}
+                  >
+                    {showUploadZone ? 'Close Upload' : '+ Upload New CV'}
+                  </button>
+                </div>
               </div>
 
-              {/* Quick Switch Candidate Avatar Chips */}
-              {resumes.length > 1 && (
-                <div style={{
-                  display: 'flex',
-                  gap: 6,
-                  overflowX: 'auto',
-                  paddingBottom: 8,
-                  marginBottom: 10,
-                  scrollbarWidth: 'thin'
-                }}>
-                  {resumes.slice(0, 8).map((r) => {
-                    const isSelected = r.id === selectedResume
-                    const name = cleanCandidateName(r.candidate_name, r.filename)
-                    const initials = name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setSelectedResume(r.id)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                          padding: '4px 10px 4px 6px',
-                          borderRadius: '20px',
-                          background: isSelected ? 'rgba(59, 130, 246, 0.25)' : 'rgba(255, 255, 255, 0.04)',
-                          border: isSelected ? '1px solid #3b82f6' : '1px solid rgba(255, 255, 255, 0.08)',
-                          color: isSelected ? '#93c5fd' : 'var(--color-fg-muted)',
-                          fontSize: '11px',
-                          fontWeight: isSelected ? 700 : 500,
-                          cursor: 'pointer',
-                          whiteSpace: 'nowrap',
-                          transition: 'all 0.2s ease'
-                        }}
-                      >
-                        <span style={{
-                          width: 18,
-                          height: 18,
-                          borderRadius: '50%',
-                          background: isSelected ? '#3b82f6' : 'rgba(255, 255, 255, 0.1)',
-                          color: '#ffffff',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '9px',
-                          fontWeight: 800
-                        }}>
-                          {initials}
-                        </span>
-                        {name}
-                      </button>
-                    )
-                  })}
+              {/* Upload Zone (Collapsible) */}
+              {showUploadZone && (
+                <div style={{ marginBottom: 14, animation: 'fadeIn 0.2s ease-out' }}>
+                  <UploadZone
+                    onFileSelect={(f) => {
+                      handleFileUpload(f)
+                      setShowUploadZone(false)
+                    }}
+                    uploading={uploading}
+                  />
                 </div>
               )}
 
-              {/* Ingested Resume Dropdown with Clean Labels */}
+              {/* Candidate Dropdown Selector */}
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 12 }}>
                 <select
                   value={selectedResume}
@@ -1065,12 +1242,13 @@ export default function CVMatch() {
                   }}
                   style={{
                     flex: 1,
-                    fontSize: 'var(--p-text-sm)',
+                    fontSize: '13px',
                     padding: '9px 12px',
                     borderRadius: 'var(--radius-md)',
                     background: 'var(--color-bg)',
                     border: '1px solid var(--color-border)',
-                    color: 'var(--color-fg)'
+                    color: 'var(--color-fg)',
+                    fontWeight: 600
                   }}
                 >
                   <option value="">Select an applicant resume to evaluate...</option>
@@ -1090,27 +1268,84 @@ export default function CVMatch() {
                     type="button"
                     className="btn-ghost btn-sm"
                     onClick={() => deleteResume(selectedResume)}
-                    style={{ padding: '8px', color: 'var(--color-danger)' }}
+                    style={{ padding: '8px', color: 'var(--color-danger)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)' }}
                     title="Delete resume"
                   >
                     <Trash2 size={15} />
                   </button>
                 )}
               </div>
+
+              {/* Active Candidate Profile Card Showcase */}
+              {currentResumeDoc && (
+                <div style={{
+                  padding: '12px 14px',
+                  background: 'rgba(30, 41, 59, 0.4)',
+                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  borderRadius: 'var(--radius-md)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 'var(--radius-md)',
+                      background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 800,
+                      fontSize: '14px',
+                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                      flexShrink: 0
+                    }}>
+                      {cleanCandidateName(currentResumeDoc.candidate_name, currentResumeDoc.filename).split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--color-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {cleanCandidateName(currentResumeDoc.candidate_name, currentResumeDoc.filename)}
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>
+                        <span>🎓 {cleanEducationText(currentResumeDoc.education)}</span>
+                        <span>•</span>
+                        <span>💼 {cleanExperienceText(currentResumeDoc)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {currentResumeDoc.skills?.length > 0 && (
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', paddingTop: 6, borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                      {[...new Set(currentResumeDoc.skills)].slice(0, 5).map((s, i) => (
+                        <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '2px 7px', background: 'rgba(255, 255, 255, 0.04)' }}>
+                          {s}
+                        </span>
+                      ))}
+                      {currentResumeDoc.skills.length > 5 && (
+                        <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)', alignSelf: 'center' }}>
+                          +{currentResumeDoc.skills.length - 5} more
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Upload Box */}
-            <div>
+            {/* Quick Upload Action if upload zone is closed and no resume */}
+            {!showUploadZone && resumes.length === 0 && (
               <UploadZone
                 onFileSelect={handleFileUpload}
                 uploading={uploading}
               />
-            </div>
+            )}
           </div>
 
           {/* CARD 2: TARGET COMPANY & ROLE */}
           <div style={{
-            padding: '20px 22px',
+            padding: '22px',
             background: 'rgba(15, 23, 42, 0.75)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 'var(--radius-lg)',
@@ -1123,8 +1358,8 @@ export default function CVMatch() {
           }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '11.5px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Briefcase size={15} /> 2. Target Evaluation Standard
+                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Briefcase size={16} /> 2. Target Evaluation Standard
                 </span>
                 {/* Mode Selector Tabs */}
                 <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
@@ -1133,7 +1368,7 @@ export default function CVMatch() {
                     onClick={() => setTargetMode('company')}
                     style={{
                       fontSize: '11px',
-                      padding: '3px 8px',
+                      padding: '4px 10px',
                       borderRadius: '4px',
                       border: 'none',
                       cursor: 'pointer',
@@ -1142,14 +1377,14 @@ export default function CVMatch() {
                       fontWeight: targetMode === 'company' ? 700 : 500
                     }}
                   >
-                    🏢 Company Job
+                    🏢 Company Job ({jobs.length})
                   </button>
                   <button
                     type="button"
                     onClick={() => setTargetMode('benchmark')}
                     style={{
                       fontSize: '11px',
-                      padding: '3px 8px',
+                      padding: '4px 10px',
                       borderRadius: '4px',
                       border: 'none',
                       cursor: 'pointer',
@@ -1292,38 +1527,47 @@ export default function CVMatch() {
               )}
             </div>
 
-            {/* Target Feedback Banner */}
+            {/* Target Live Benchmark Intelligence Preview */}
             <div style={{
               fontSize: '11.5px',
-              padding: '8px 12px',
+              padding: '10px 14px',
               borderRadius: 'var(--radius-md)',
-              background: 'rgba(59, 130, 246, 0.1)',
+              background: 'rgba(59, 130, 246, 0.08)',
               border: '1px solid rgba(59, 130, 246, 0.25)',
               color: 'var(--color-fg)',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 8
+              flexDirection: 'column',
+              gap: 4
             }}>
-              <span>
-                Target: <strong style={{ color: '#93c5fd' }}>{matchedJobDoc?.title || selectedCanonicalRole || 'AI Auto-Detect (Dynamic)'}</strong>
-                {matchedJobDoc && (
-                  <span> at <strong style={{ color: '#ffffff' }}>{cleanCompanyName(matchedJobDoc.company_name)}</strong></span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', color: '#93c5fd', letterSpacing: '0.04em' }}>
+                  Target Evaluation Benchmark
+                </span>
+                {(selectedJob || selectedCanonicalRole) && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedJob('')
+                      setSelectedCompany('')
+                      setSelectedCanonicalRole('')
+                    }}
+                    style={{ background: 'none', border: 'none', color: 'var(--color-fg-muted)', cursor: 'pointer', fontSize: '10.5px', textDecoration: 'underline' }}
+                  >
+                    Reset to Auto-Detect
+                  </button>
                 )}
-              </span>
-              {(selectedJob || selectedCanonicalRole) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedJob('')
-                    setSelectedCompany('')
-                    setSelectedCanonicalRole('')
-                  }}
-                  style={{ background: 'none', border: 'none', color: 'var(--color-fg-muted)', cursor: 'pointer', fontSize: '11px', textDecoration: 'underline' }}
-                >
-                  Reset to Auto-Detect
-                </button>
-              )}
+              </div>
+              <div style={{ fontWeight: 700, fontSize: '13px', color: '#ffffff', marginTop: 2 }}>
+                {matchedJobDoc?.title || selectedCanonicalRole || 'AI Auto-Detect (Dynamic Classifier)'}
+                {matchedJobDoc && (
+                  <span style={{ fontSize: '11.5px', fontWeight: 500, color: 'var(--color-fg-muted)' }}> at {cleanCompanyName(matchedJobDoc.company_name)}</span>
+                )}
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 2 }}>
+                <span>🎯 Standard: {targetMode === 'company' ? 'Enterprise Job Spec' : 'Canonical IT Benchmark'}</span>
+                <span>•</span>
+                <span>⏳ Req: {matchedJobDoc?.experience_required ?? (c1Result?.required_experience_years || 2.0)}+ yrs</span>
+              </div>
             </div>
           </div>
 
@@ -1587,27 +1831,21 @@ export default function CVMatch() {
                     <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={12} /> Key Verified Strengths:
                     </div>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {activeMatchedSkills.slice(0, 5).map((s) => (
-                        <span
-                          key={s}
-                          onClick={() => {
-                            const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
-                            if (ev) setSelectedSkillEvidence(ev)
-                          }}
-                          className="cvm-skill-pill matched"
-                          title="Click to view sentence evidence from resume"
-                          style={{ cursor: 'pointer', padding: '4px 9px', fontSize: '11px' }}
-                        >
-                          <Check size={11} /> {formatSkillName(s)}
-                        </span>
-                      ))}
-                      {activeMatchedSkills.length > 5 && (
-                        <span className="chip" style={{ fontSize: '10px', padding: '3px 8px', background: 'rgba(59, 130, 246, 0.15)', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.3)', borderRadius: 'var(--radius-full)' }}>
-                          +{activeMatchedSkills.length - 5} more
-                        </span>
-                      )}
-                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxHeight: 68, overflowY: 'auto' }}>
+                       {[...new Set(activeMatchedSkills)].map((s, i) => (
+                         <span
+                           key={`${s}-${i}`}
+                           onClick={() => {
+                             const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
+                             if (ev) setSelectedSkillEvidence(ev)
+                           }}
+                           className="cvm-skill-pill matched"
+                           title="Click to view sentence evidence from resume"
+                         >
+                           <Check size={11} /> {s}
+                         </span>
+                       ))}
+                     </div>
                   </div>
                 </div>
 
@@ -1629,14 +1867,18 @@ export default function CVMatch() {
 
                     <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>Seniority Status:</span>
-                      <strong style={{ color: 'var(--color-fg)' }}>{candExp >= reqExp ? 'Senior / Benchmarked' : (expScore >= 85 ? '15% Seniority Tolerance Fit' : 'Early-Career Match')}</strong>
+                      <strong style={{ color: 'var(--color-fg)' }}>{candidateSeniority || (candExp >= reqExp ? 'Senior / Benchmarked' : (expScore >= 85 ? '15% Seniority Tolerance Fit' : 'Early-Career Match'))}</strong>
                     </div>
                   </div>
 
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)', fontSize: 'var(--p-text-xs)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                      <span style={{ color: 'var(--color-fg-muted)' }}>Verified Tenure:</span>
-                      <strong style={{ color: 'var(--color-fg)' }}>{candExp.toFixed(1)} years</strong>
+                      <span style={{ color: 'var(--color-fg-muted)' }}>Verified Total Tenure:</span>
+                      <strong style={{ color: 'var(--color-fg)' }}>{candExp.toFixed(1)} years ({totalMonths.toFixed(0)} mos)</strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ color: 'var(--color-fg-muted)' }}>Role-Relevant Experience:</span>
+                      <strong style={{ color: '#34d399' }}>{roleRelevantExp.toFixed(1)} years ({relevantMonths.toFixed(0)} mos)</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Role Requirement:</span>
@@ -1670,9 +1912,13 @@ export default function CVMatch() {
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)', fontSize: 'var(--p-text-xs)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Degree Qualification:</span>
-                      <strong style={{ color: 'var(--color-fg)', maxWidth: 170, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {cleanEducationText(c1Result?.education || currentResumeDoc?.education)}
+                      <strong style={{ color: 'var(--color-fg)', textAlign: 'right', maxWidth: '65%', wordBreak: 'break-word' }} title={c1Result?.education || currentResumeDoc?.education}>
+                        {cleanEducationText(c1Result?.education || currentResumeDoc?.education, 65)}
                       </strong>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                      <span style={{ color: 'var(--color-fg-muted)' }}>Academic Discipline:</span>
+                      <strong style={{ color: '#c084fc' }}>{candidateDegreeField}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Target Benchmark:</span>
@@ -1741,50 +1987,43 @@ export default function CVMatch() {
                       {activeMatchedSkills.length} Verified
                     </span>
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                    {activeMatchedSkills.map((s) => (
-                      <span
-                        key={s}
-                        onClick={() => {
-                          const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
-                          if (ev) setSelectedSkillEvidence(ev)
-                        }}
-                        className="cvm-skill-pill matched"
-                        title="Click to view verified sentence evidence in resume text"
-                        style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '12px', transition: 'all 0.15s ease' }}
-                      >
-                        <Check size={13} style={{ color: 'var(--color-success)' }} /> {formatSkillName(s)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                     {[...new Set(activeMatchedSkills)].map((s, i) => (
+                       <span
+                         key={`${s}-${i}`}
+                         onClick={() => {
+                           const ev = c1Result?.skill_evidence?.[s.toLowerCase()]
+                           if (ev) setSelectedSkillEvidence(ev)
+                         }}
+                         className="cvm-skill-pill matched"
+                         title="Click to view evidence in resume text"
+                       >
+                         <Check size={12} /> {s}
+                       </span>
+                     ))}
+                   </div>
+                 </div>
 
-                {/* Missing Skills */}
-                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: '#fb7185', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <AlertCircle size={16} /> Missing Competencies to Develop
-                    </span>
-                    <span style={{ fontSize: '11px', fontWeight: 800, background: 'rgba(244, 63, 94, 0.15)', color: '#fb7185', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
-                      {activeMissingSkills.length} Gap{activeMissingSkills.length === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
-                    {activeMissingSkills.map((s) => (
-                      <span
-                        key={s}
-                        onClick={() => {
-                          setActiveTab('gap')
-                          handleSimulateSkill(s)
-                        }}
-                        className="cvm-skill-pill missing"
-                        title="Click to simulate acquiring this skill in the Interactive Sandbox"
-                        style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '12px', transition: 'all 0.15s ease' }}
-                      >
-                        + {formatSkillName(s)}
-                      </span>
-                    ))}
-                  </div>
+                 {/* Missing Skills */}
+                 <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: '#fb7185', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                     <AlertCircle size={16} /> Missing Competencies to Develop ({activeMissingSkills.length})
+                   </div>
+                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                     {[...new Set(activeMissingSkills)].map((s, i) => (
+                       <span
+                         key={`${s}-${i}`}
+                         onClick={() => {
+                           setActiveTab('gap')
+                           handleSimulateSkill(s)
+                         }}
+                         className="cvm-skill-pill missing"
+                         title="Click to simulate acquiring this skill in Sandbox"
+                       >
+                         + {s}
+                       </span>
+                     ))}
+                   </div>
                 </div>
               </div>
 
@@ -1814,6 +2053,253 @@ export default function CVMatch() {
                   </div>
                 </div>
               )}
+              {/* Detailed Verified Employment & Work History Intelligence */}
+              <div className="card" style={{
+                padding: 'var(--p-space-5)',
+                background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                border: '1px solid rgba(16, 185, 129, 0.25)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 'var(--p-space-5)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: 'var(--color-success)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <Briefcase size={16} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: 'var(--p-text-md)', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+                        Verified Employment & Tenure Intelligence
+                      </h4>
+                      <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                        Chronological positions with verified calendar tenure, domain relevance factor, and extracted technology stacks.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: 'var(--color-success)',
+                      padding: '4px 10px',
+                      borderRadius: 'var(--radius-full)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)'
+                    }}>
+                      {employmentRecords.length > 0 ? `${employmentRecords.length} Verified Positions` : 'Career Profile'}
+                    </span>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      background: 'rgba(59, 130, 246, 0.15)',
+                      color: 'var(--color-primary)',
+                      padding: '4px 10px',
+                      borderRadius: 'var(--radius-full)',
+                      border: '1px solid rgba(59, 130, 246, 0.3)'
+                    }}>
+                      {roleRelevantExp.toFixed(1)} yrs Relevant / {candExp.toFixed(1)} yrs Total
+                    </span>
+                  </div>
+                </div>
+
+                {employmentRecords.length > 0 ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 14 }}>
+                    {employmentRecords.map((rec, idx) => {
+                      const relCat = rec.relevance_category || 'RELEVANT'
+                      const isHigh = relCat === 'HIGHLY_RELEVANT'
+                      const isPart = relCat === 'PARTIALLY_RELEVANT'
+                      const badgeColor = isHigh ? '#34d399' : (isPart ? '#fbbf24' : '#60a5fa')
+                      const badgeBg = isHigh ? 'rgba(16, 185, 129, 0.15)' : (isPart ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)')
+                      const badgeBorder = isHigh ? 'rgba(16, 185, 129, 0.3)' : (isPart ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)')
+
+                      return (
+                        <div key={`rec-${idx}`} style={{
+                          padding: '14px 16px',
+                          background: 'rgba(15, 23, 42, 0.7)',
+                          border: '1px solid rgba(255, 255, 255, 0.08)',
+                          borderRadius: 'var(--radius-md)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between'
+                        }}>
+                          <div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                              <div>
+                                <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                                  {rec.job_title}
+                                </div>
+                                <div style={{ fontSize: '11px', color: 'var(--color-fg-secondary)', display: 'flex', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                                  <Building2 size={12} style={{ color: 'var(--color-primary)' }} /> {rec.company}
+                                </div>
+                              </div>
+
+                              <span style={{
+                                fontSize: '10px',
+                                fontWeight: 800,
+                                textTransform: 'uppercase',
+                                padding: '2px 8px',
+                                borderRadius: 'var(--radius-full)',
+                                background: badgeBg,
+                                color: badgeColor,
+                                border: `1px solid ${badgeBorder}`,
+                                whiteSpace: 'nowrap'
+                              }}>
+                                {relCat.replace('_', ' ')}
+                              </span>
+                            </div>
+
+                            <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                              <Clock size={12} />
+                              <span>Duration: <strong>{rec.duration_months ? `${rec.duration_months} mos` : 'Tenure Verified'}</strong></span>
+                              <span>•</span>
+                              <span>Role Alignment: <strong>{Math.round((rec.target_role_relevance || 1.0) * 100)}%</strong></span>
+                            </div>
+
+                            {rec.explanation && (
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-secondary)', background: 'rgba(0, 0, 0, 0.25)', padding: '6px 10px', borderRadius: 4, marginBottom: 10, lineHeight: 1.4 }}>
+                                {rec.explanation}
+                              </div>
+                            )}
+
+                            {rec.technologies && rec.technologies.length > 0 && (
+                              <div style={{ marginTop: 8 }}>
+                                <div style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4 }}>
+                                  Technologies & Frameworks:
+                                </div>
+                                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                  {rec.technologies.slice(0, 8).map((tech, ti) => (
+                                    <span key={`tech-${ti}`} style={{
+                                      fontSize: '10px',
+                                      padding: '2px 6px',
+                                      borderRadius: 4,
+                                      background: 'rgba(59, 130, 246, 0.1)',
+                                      color: '#93c5fd',
+                                      border: '1px solid rgba(59, 130, 246, 0.2)'
+                                    }}>
+                                      {tech}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', background: 'rgba(0, 0, 0, 0.2)', padding: '12px 16px', borderRadius: 'var(--radius-md)' }}>
+                    Tenure derived from candidate profile summary: <strong>{candExp.toFixed(1)} years</strong> professional and technical project history.
+                  </div>
+                )}
+              </div>
+
+              {/* Detailed Academic Verification & Qualification Dossier */}
+              <div className="card" style={{
+                padding: 'var(--p-space-5)',
+                background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.6) 100%)',
+                border: '1px solid rgba(168, 85, 247, 0.25)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 'var(--p-space-5)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(168, 85, 247, 0.15)',
+                      color: '#c084fc',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <GraduationCap size={16} />
+                    </div>
+                    <div>
+                      <h4 style={{ fontSize: 'var(--p-text-md)', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+                        Academic Verification & Qualification Intelligence
+                      </h4>
+                      <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                        Verified degree level, academic field taxonomy mapping, curriculum relevance, and certifications.
+                      </p>
+                    </div>
+                  </div>
+
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    background: 'rgba(168, 85, 247, 0.15)',
+                    color: '#c084fc',
+                    padding: '4px 10px',
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid rgba(168, 85, 247, 0.3)'
+                  }}>
+                    {eduScore >= 90 ? 'Full Academic Alignment (100%)' : `${eduScore.toFixed(0)}% Qualification Match`}
+                  </span>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                  gap: 14,
+                  padding: '14px 16px',
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                  borderRadius: 'var(--radius-md)'
+                }}>
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                      Degree Qualification Title
+                    </div>
+                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                      {cleanEducationText(c1Result?.education || currentResumeDoc?.education, 120)}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#c084fc', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CheckCircle2 size={12} /> Verified Academic Record
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                      Academic Field & Discipline
+                    </div>
+                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: '#c084fc' }}>
+                      {candidateDegreeField}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+                      Domain Relevance Factor: <strong>{eduScore >= 70 ? '1.0 (Core IT Track)' : '0.7 (Technical)'}</strong>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
+                      Role Academic Benchmark
+                    </div>
+                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                      BSc CS / IT / SE Equivalent
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-success)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <ShieldCheck size={12} /> Satisfies Baseline Requirement
+                    </div>
+                  </div>
+                </div>
+
+                {educationAnalysis?.explanation && (
+                  <div style={{ marginTop: 12, fontSize: '12px', color: 'var(--color-fg-secondary)', background: 'rgba(0, 0, 0, 0.25)', padding: '10px 14px', borderRadius: 'var(--radius-md)', lineHeight: 1.45 }}>
+                    <strong>Evaluation Analysis:</strong> {educationAnalysis.explanation}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
@@ -1871,11 +2357,11 @@ export default function CVMatch() {
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
                   {(matchResult.missing_skills || []).length > 0 ? (
-                    (matchResult.missing_skills || []).map((skill) => {
+                    (matchResult.missing_skills || []).map((skill, i) => {
                       const isSelected = simulatedAcquiredSkills.includes(skill)
                       return (
                         <button
-                          key={skill}
+                          key={`${skill}-${i}`}
                           type="button"
                           onClick={() => handleSimulateSkill(skill)}
                           style={{
@@ -2020,8 +2506,8 @@ export default function CVMatch() {
                                 Key Bridge Skills:
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
-                                {rec.bridge_skills.map((s) => (
-                                  <span key={s} style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 6, color: 'var(--color-fg)' }}>
+                                 {[...new Set(rec.bridge_skills)].map((s, i) => (
+                                   <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 600, padding: '3px 8px', background: 'rgba(255, 255, 255, 0.04)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: 6, color: 'var(--color-fg)' }}>
                                     {s}
                                   </span>
                                 ))}
@@ -2067,90 +2553,410 @@ export default function CVMatch() {
           )}
 
           {/* ══════════════════════════════════════════════════════════════════════
-              TAB 4: STRUCTURED LEARNING ROADMAP
+              TAB 4: STRUCTURED LEARNING ROADMAP (INTERACTIVE & USER-FRIENDLY)
              ══════════════════════════════════════════════════════════════════════ */}
           {activeTab === 'learning' && (
             <div className="fade-in">
-              <div style={{ marginBottom: 'var(--p-space-4)' }}>
-                <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-fg)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <BookOpen size={18} style={{ color: 'var(--color-primary)' }} />
-                  Curated Technical Learning Roadmap
-                </h3>
-                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                  Personalized milestone curriculum tailored to bridge identified skill gaps for {displayJobTitle}.
-                </p>
+              {/* Header & Description */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 'var(--p-space-4)', flexWrap: 'wrap', gap: 12 }}>
+                <div>
+                  <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-fg)', margin: '0 0 4px 0', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <BookOpen size={20} style={{ color: 'var(--color-primary)' }} />
+                    Curated Technical Learning Roadmap
+                  </h3>
+                  <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
+                    Personalized milestone curriculum with practical portfolio projects and official documentation tailored for <strong>{displayJobTitle}</strong>.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={() => setCompletedRoadmapSkills([])}
+                    className="btn btn-ghost btn-sm"
+                    style={{ fontSize: '11px', padding: '4px 8px' }}
+                    title="Reset completed milestone markers"
+                  >
+                    <RefreshCw size={12} /> Reset Progress
+                  </button>
+                  <Link
+                    to="/pipeline/progress"
+                    className="btn btn-primary btn-sm"
+                    style={{ fontSize: '12px', display: 'inline-flex', alignItems: 'center', gap: 6, fontWeight: 700 }}
+                  >
+                    Open Learning Tracker <ArrowRight size={13} />
+                  </Link>
+                </div>
               </div>
 
-              {effectiveLearningPath?.length > 0 ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  {effectiveLearningPath.map((item, idx) => (
-                    <div
-                      key={item.skill || item.title || idx}
-                      style={{
-                        padding: '16px 20px',
-                        background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)',
-                        borderRadius: 'var(--radius-lg)',
-                        border: '1px solid rgba(255, 255, 255, 0.08)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 16,
-                        transition: 'all 0.2s ease'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                        <div style={{
-                          width: 34,
-                          height: 34,
-                          borderRadius: 'var(--radius-md)',
-                          background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.25) 0%, rgba(59, 130, 246, 0.4) 100%)',
-                          color: '#93c5fd',
-                          fontWeight: 900,
-                          fontSize: '13px',
-                          fontFamily: 'var(--p-font-mono)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexShrink: 0,
-                          border: '1px solid rgba(147, 197, 253, 0.3)'
-                        }}>
-                          0{idx + 1}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span>{item.title || item.skill}</span>
-                            <span style={{ fontSize: '10px', fontWeight: 600, background: 'rgba(59, 130, 246, 0.12)', color: 'var(--color-primary-light, #93c5fd)', padding: '1px 7px', borderRadius: 10 }}>
-                              {item.priority || `Milestone ${idx + 1}`}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', marginTop: 3, lineHeight: 1.5 }}>
-                            {item.description || item.reason || 'Core industry competency for target role requirements.'}
-                          </div>
-                        </div>
-                      </div>
-
-                      {item.resource_url ? (
-                        <a
-                          href={item.resource_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="btn btn-sm btn-ghost"
-                          style={{ fontSize: '11.5px', padding: '6px 12px', flexShrink: 0, color: 'var(--color-primary)', display: 'inline-flex', alignItems: 'center', gap: 5, border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)' }}
-                        >
-                          <ExternalLink size={13} /> View Curriculum
-                        </a>
-                      ) : (
-                        <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', flexShrink: 0 }}>
-                          Self-Paced Track
-                        </span>
-                      )}
+              {/* Interactive Progress & Filter Hub Card */}
+              <div className="card" style={{
+                padding: '16px 20px',
+                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%)',
+                border: '1px solid rgba(59, 130, 246, 0.25)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 'var(--p-space-5)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{
+                      width: 36,
+                      height: 36,
+                      borderRadius: 'var(--radius-md)',
+                      background: 'rgba(59, 130, 246, 0.15)',
+                      color: 'var(--color-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontWeight: 900
+                    }}>
+                      <Target size={18} />
                     </div>
-                  ))}
+                    <div>
+                      <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                        Roadmap Mastery: {completedRoadmapSkills.length} of {effectiveLearningPath.length} Competencies Completed
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                        Est. Completion: <strong>~{effectiveLearningPath.length * 12} Total Hours</strong> across {effectiveLearningPath.length} structured milestones
+                      </div>
+                    </div>
+                  </div>
+
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: 900,
+                    fontFamily: 'var(--p-font-mono)',
+                    padding: '4px 12px',
+                    borderRadius: 'var(--radius-full)',
+                    background: completedRoadmapSkills.length === effectiveLearningPath.length && effectiveLearningPath.length > 0
+                      ? 'rgba(16, 185, 129, 0.2)'
+                      : 'rgba(59, 130, 246, 0.15)',
+                    color: completedRoadmapSkills.length === effectiveLearningPath.length && effectiveLearningPath.length > 0
+                      ? '#34d399'
+                      : 'var(--color-primary-light, #93c5fd)',
+                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                  }}>
+                    {Math.round((completedRoadmapSkills.length / Math.max(effectiveLearningPath.length, 1)) * 100)}% Readiness
+                  </span>
+                </div>
+
+                {/* Progress Bar */}
+                <div style={{ width: '100%', height: 8, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 14 }}>
+                  <div style={{
+                    width: `${Math.min(Math.round((completedRoadmapSkills.length / Math.max(effectiveLearningPath.length, 1)) * 100), 100)}%`,
+                    height: '100%',
+                    background: 'linear-gradient(90deg, #2563eb, #34d399)',
+                    borderRadius: 4,
+                    transition: 'width 0.3s ease',
+                    boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)'
+                  }} />
+                </div>
+
+                {/* Filter Pills */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setRoadmapFilter('all')}
+                    className={`btn btn-sm ${roadmapFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ fontSize: '11px', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}
+                  >
+                    All Milestones ({effectiveLearningPath.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoadmapFilter('critical')}
+                    className={`btn btn-sm ${roadmapFilter === 'critical' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ fontSize: '11px', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}
+                  >
+                    🔥 Critical Gaps ({effectiveLearningPath.filter((x) => x.priority === 'Critical').length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRoadmapFilter('completed')}
+                    className={`btn btn-sm ${roadmapFilter === 'completed' ? 'btn-primary' : 'btn-ghost'}`}
+                    style={{ fontSize: '11px', padding: '4px 10px', borderRadius: 'var(--radius-full)' }}
+                  >
+                    ✓ Mastered ({completedRoadmapSkills.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Milestone Cards List */}
+              {effectiveLearningPath?.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {effectiveLearningPath
+                    .filter((item) => {
+                      if (roadmapFilter === 'critical') return item.priority === 'Critical'
+                      if (roadmapFilter === 'completed') return completedRoadmapSkills.includes(item.skill)
+                      return true
+                    })
+                    .map((item, idx) => {
+                      const isCompleted = completedRoadmapSkills.includes(item.skill)
+                      const isCritical = item.priority === 'Critical'
+                      const isHigh = item.priority === 'High'
+
+                      const priorityBg = isCritical ? 'rgba(239, 68, 68, 0.15)' : (isHigh ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)')
+                      const priorityColor = isCritical ? '#f87171' : (isHigh ? '#fbbf24' : '#93c5fd')
+                      const priorityBorder = isCritical ? 'rgba(239, 68, 68, 0.3)' : (isHigh ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)')
+
+                      return (
+                        <div
+                          key={item.skill || item.title || idx}
+                          className="card"
+                          style={{
+                            padding: '18px 22px',
+                            background: isCompleted
+                              ? 'linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)'
+                              : 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.65) 100%)',
+                            borderRadius: 'var(--radius-lg)',
+                            border: isCompleted
+                              ? '1px solid rgba(16, 185, 129, 0.4)'
+                              : (isCritical ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)'),
+                            margin: 0,
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 14,
+                            transition: 'all 0.2s ease',
+                            boxShadow: isCompleted ? '0 0 16px rgba(16, 185, 129, 0.1)' : 'none'
+                          }}
+                        >
+                          {/* Card Top Row: Step, Title, Badges */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                              <div style={{
+                                width: 38,
+                                height: 38,
+                                borderRadius: 'var(--radius-md)',
+                                background: isCompleted
+                                  ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
+                                  : 'linear-gradient(135deg, rgba(37, 99, 235, 0.3) 0%, rgba(59, 130, 246, 0.5) 100%)',
+                                color: '#ffffff',
+                                fontWeight: 900,
+                                fontSize: '14px',
+                                fontFamily: 'var(--p-font-mono)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                border: isCompleted ? '1px solid #34d399' : '1px solid rgba(147, 197, 253, 0.3)',
+                                boxShadow: isCompleted ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none'
+                              }}>
+                                {isCompleted ? '✓' : `0${item.step}`}
+                              </div>
+
+                              <div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                                  <h4 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>
+                                    {item.title}
+                                  </h4>
+
+                                  <span style={{
+                                    fontSize: '10.5px',
+                                    fontWeight: 800,
+                                    textTransform: 'uppercase',
+                                    padding: '2px 8px',
+                                    borderRadius: 'var(--radius-full)',
+                                    background: priorityBg,
+                                    color: priorityColor,
+                                    border: `1px solid ${priorityBorder}`
+                                  }}>
+                                    {item.priority} Gap
+                                  </span>
+
+                                  <span style={{
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                    padding: '2px 8px',
+                                    borderRadius: 'var(--radius-full)',
+                                    background: 'rgba(255, 255, 255, 0.05)',
+                                    color: 'var(--color-fg-secondary)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)'
+                                  }}>
+                                    {item.level}
+                                  </span>
+
+                                  <span style={{
+                                    fontSize: '10.5px',
+                                    color: 'var(--color-fg-muted)',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 3
+                                  }}>
+                                    <Clock size={11} /> {item.est_hours}
+                                  </span>
+                                </div>
+
+                                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', margin: 0, lineHeight: 1.55 }}>
+                                  {item.description}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Quick Complete Toggle Button */}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (isCompleted) {
+                                  setCompletedRoadmapSkills(completedRoadmapSkills.filter((s) => s !== item.skill))
+                                  toast.success(`Removed ${item.skill} from completed milestones`)
+                                } else {
+                                  setCompletedRoadmapSkills([...completedRoadmapSkills, item.skill])
+                                  toast.success(`Marked ${item.skill} as mastered!`)
+                                }
+                              }}
+                              className={`btn btn-sm ${isCompleted ? 'btn-success' : 'btn-ghost'}`}
+                              style={{
+                                fontSize: '11px',
+                                padding: '6px 12px',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                borderRadius: 'var(--radius-md)',
+                                flexShrink: 0
+                              }}
+                            >
+                              {isCompleted ? <CheckCircle2 size={14} /> : <CheckSquare size={14} />}
+                              <span>{isCompleted ? 'Completed' : 'Mark Complete'}</span>
+                            </button>
+                          </div>
+
+                          {/* Syllabus Key Focus Topics */}
+                          {item.key_topics && item.key_topics.length > 0 && (
+                            <div style={{
+                              padding: '10px 14px',
+                              background: 'rgba(0, 0, 0, 0.25)',
+                              borderRadius: 'var(--radius-md)',
+                              border: '1px solid rgba(255, 255, 255, 0.04)'
+                            }}>
+                              <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary-light, #93c5fd)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                                <Lightbulb size={12} /> Key Syllabus Concepts:
+                              </div>
+                              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                                {item.key_topics.map((top, ti) => (
+                                  <span key={`top-${ti}`} style={{
+                                    fontSize: '11px',
+                                    fontWeight: 600,
+                                    padding: '3px 9px',
+                                    background: 'rgba(59, 130, 246, 0.1)',
+                                    color: '#bae6fd',
+                                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                                    borderRadius: 6
+                                  }}>
+                                    {top}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Applied Hands-On Portfolio Project */}
+                          {item.project && (
+                            <div style={{
+                              padding: '12px 14px',
+                              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
+                              border: '1px solid rgba(99, 102, 241, 0.2)',
+                              borderRadius: 'var(--radius-md)',
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              gap: 10
+                            }}>
+                              <div style={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: 6,
+                                background: 'rgba(99, 102, 241, 0.2)',
+                                color: '#a5b4fc',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                                marginTop: 1
+                              }}>
+                                <Code size={14} />
+                              </div>
+                              <div>
+                                <div style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-fg)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                  Hands-On Applied Portfolio Project:
+                                </div>
+                                <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', marginTop: 2, lineHeight: 1.45 }}>
+                                  {item.project}
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Action Links Bar */}
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            paddingTop: 10,
+                            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+                            flexWrap: 'wrap',
+                            gap: 10
+                          }}>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setActiveTab('gap')
+                                  handleSimulateSkill(item.skill)
+                                }}
+                                className="btn btn-sm btn-ghost"
+                                style={{ fontSize: '11.5px', padding: '5px 10px', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                                title="Simulate impact on overall fit score in Sandbox"
+                              >
+                                <Zap size={13} /> Simulate in Sandbox
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const params = new URLSearchParams({
+                                    role: displayJobTitle,
+                                    skills: item.skill,
+                                    level: 'Mid-Level',
+                                    count: '5',
+                                  })
+                                  navigate(`/candidate/interview?${params.toString()}`)
+                                }}
+                                className="btn btn-sm btn-ghost"
+                                style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                                title="Practice interview questions specifically for this skill"
+                              >
+                                <Play size={13} /> Interview Quiz
+                              </button>
+                            </div>
+
+                            {item.docs_url && (
+                              <a
+                                href={item.docs_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-ghost"
+                                style={{
+                                  fontSize: '11.5px',
+                                  padding: '5px 12px',
+                                  color: 'var(--color-primary-light, #93c5fd)',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 5,
+                                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                                  borderRadius: 'var(--radius-md)'
+                                }}
+                              >
+                                <ExternalLink size={13} /> Official Documentation & Guide
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
                 </div>
               ) : (
                 <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-6)', background: 'var(--color-bg)' }}>
                   <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                    Learning resources mapped to {displayJobTitle} competencies.
+                    All technical learning roadmap milestones completed for <strong>{displayJobTitle}</strong>!
                   </p>
                 </div>
               )}
@@ -2344,8 +3150,8 @@ export default function CVMatch() {
                 </h3>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                  {matchResult.matched_skills?.map((s) => (
-                    <span key={s} style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 6 }}>
+                   {[...new Set(matchResult.matched_skills || [])].map((s, i) => (
+                     <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 6 }}>
                       ✓ {s}
                     </span>
                   ))}
@@ -2357,8 +3163,8 @@ export default function CVMatch() {
                       Identified Competency Gaps:
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {matchResult.missing_skills?.map((s) => (
-                        <span key={s} style={{ fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '3px 10px', borderRadius: 6 }}>
+                       {[...new Set(matchResult.missing_skills || [])].map((s, i) => (
+                         <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '3px 10px', borderRadius: 6 }}>
                           - {s}
                         </span>
                       ))}

@@ -40,7 +40,11 @@ def _load_model_and_tokenizer(model_dir: str):
         try:
             from transformers import T5ForConditionalGeneration, AutoTokenizer
             tokenizer = AutoTokenizer.from_pretrained(t5_path)
-            model = T5ForConditionalGeneration.from_pretrained(t5_path)
+            model = T5ForConditionalGeneration.from_pretrained(t5_path, low_cpu_mem_usage=False, torch_dtype=torch.float32)
+            try:
+                model.config.tie_word_embeddings = False
+            except:
+                pass
             model.eval()
             param_count = sum(p.numel() for p in model.parameters())
             logger.info("T5 QG model loaded from %s (%s params)", t5_path, f"{param_count:,}")
@@ -135,6 +139,34 @@ def _parse_t(text: str) -> List[Dict]:
 def _parse_c(text: str) -> str:
     m = re.search(r"[Cc]:\s*(.+?)$", text)
     return m.group(1).strip() if m else "O(n)"
+
+
+def _detect_language(skills: List[str]) -> str:
+    if not skills:
+        return "Python"
+    joined = " ".join(s.lower() for s in skills)
+    low_list = [s.lower().strip() for s in skills]
+    if "c#" in joined or "c sharp" in joined or ".net" in joined or "asp.net" in joined:
+        return "C#"
+    if "java" in low_list:
+        return "Java"
+    if any(x in joined for x in ["javascript", "typescript", "react", "vue", "angular", "node.js", "node"]):
+        return "JavaScript"
+    if "kotlin" in joined:
+        return "Kotlin"
+    if "swift" in joined:
+        return "Swift"
+    if "dart" in joined or "flutter" in joined:
+        return "Dart"
+    if " go " in f" {joined} " or "golang" in joined:
+        return "Go"
+    if "rust" in joined:
+        return "Rust"
+    if "c++" in joined or "c plus plus" in joined:
+        return "C++"
+    if "sql" in low_list and len(skills) <= 3:
+        return "SQL"
+    return "Python"
 
 
 class QuestionGenerator:
@@ -300,7 +332,7 @@ class QuestionGenerator:
 
     def _make_coding_from_qa(self, qtext: str, answer: str, diff: str, skills: List[str]) -> Dict:
         import random
-        lang = "Python" if not skills or "Python" in str(skills).lower() else skills[0]
+        lang = _detect_language(skills)
         test_cases = []
         answer_lower = answer.lower().strip()
         if any(kw in answer_lower for kw in ["return ", "output:", "result:", "prints"]):
@@ -334,6 +366,12 @@ class QuestionGenerator:
             out = self._generate(f"[Coding] {job_role} | {skill_str} | {diff}")
             qtext = _parse_q(out)
             lang = _parse_l(out)
+            # Override with skill-driven language (C#, Java, etc.) if detected
+            detected = _detect_language(skills)
+            if detected != "Python" and lang == "Python":
+                lang = detected
+            elif detected != "Python":
+                lang = detected
             test_cases = _parse_t(out)
             complexity = _parse_c(out)
             answer = _parse_a(out)
@@ -361,6 +399,19 @@ class QuestionGenerator:
     def generate_for_session(
         self, job_role: str, skills: List[str], num_mcq: int, num_desc: int, num_code: int
     ) -> List[Dict]:
+        # Respect scoring config: non-coding roles (coding weight 0) get 0 code questions
+        try:
+            import json, pathlib
+            cfg_path = pathlib.Path(__file__).parent.parent / "models" / "interview_scoring_config.json"
+            if cfg_path.exists():
+                cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
+                w = cfg.get("interview_weights", {}).get(job_role, {})
+                if w.get("coding", 1) == 0 and num_code > 0:
+                    # Redistribute coding questions to descriptive
+                    num_desc += num_code
+                    num_code = 0
+        except:
+            pass
         qs = []
         if num_mcq > 0:
             qs.extend(self.generate_mcq(job_role, skills, num_mcq))

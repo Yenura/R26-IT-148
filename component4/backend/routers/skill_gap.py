@@ -22,6 +22,75 @@ except ImportError:
 from services.ml_engine import run_skill_gap_analysis
 from src.gap_analysis.skill_gap import analyze_skill_gap
 import time
+import pickle
+import numpy as np
+
+# Load LambdaMART model from Component 3 if available
+_LAMBDAMART_MODEL = None
+_C3_MODEL_PATH = os.path.normpath(os.path.join(str(COMPONENT_ROOT), "..", "component3", "models", "lambdamart_model.pkl"))
+if os.path.exists(_C3_MODEL_PATH):
+    try:
+        with open(_C3_MODEL_PATH, "rb") as f:
+            _LAMBDAMART_MODEL = pickle.load(f)
+    except Exception:
+        pass
+
+# Role CV and Interview weights from Component 3 CSS Engine
+ROLE_CV_WEIGHTS = {
+    "Software_Engineer":         {"w_edu": 0.20, "w_exp": 0.30, "w_skill": 0.50},
+    "Data_Scientist":            {"w_edu": 0.30, "w_exp": 0.30, "w_skill": 0.40},
+    "Machine_Learning_Engineer": {"w_edu": 0.25, "w_exp": 0.30, "w_skill": 0.45},
+    "DevOps_Engineer":           {"w_edu": 0.15, "w_exp": 0.40, "w_skill": 0.45},
+    "Cybersecurity_Analyst":     {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+    "Cloud_Solutions_Architect": {"w_edu": 0.20, "w_exp": 0.40, "w_skill": 0.40},
+    "Database_Administrator":    {"w_edu": 0.20, "w_exp": 0.40, "w_skill": 0.40},
+    "Frontend_Developer":        {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "Backend_Developer":         {"w_edu": 0.20, "w_exp": 0.30, "w_skill": 0.50},
+    "Mobile_App_Developer":      {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "Full_Stack_Developer":      {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "QA_Test_Automation_Engineer": {"w_edu": 0.15, "w_exp": 0.35, "w_skill": 0.50},
+    "Data_Engineer":             {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+    "Site_Reliability_Engineer": {"w_edu": 0.15, "w_exp": 0.40, "w_skill": 0.45},
+    "UI_UX_Designer":            {"w_edu": 0.20, "w_exp": 0.25, "w_skill": 0.55},
+    "Network_Engineer":          {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+    "Business_Systems_Analyst":  {"w_edu": 0.25, "w_exp": 0.35, "w_skill": 0.40},
+    "AI_NLP_Engineer":           {"w_edu": 0.25, "w_exp": 0.30, "w_skill": 0.45},
+    "Blockchain_Developer":      {"w_edu": 0.15, "w_exp": 0.30, "w_skill": 0.55},
+    "Embedded_Systems_Engineer": {"w_edu": 0.20, "w_exp": 0.35, "w_skill": 0.45},
+}
+
+ROLE_INTERVIEW_WEIGHTS = {
+    "Software_Engineer":         {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Data_Scientist":            {"w_mcq": 0.30, "w_desc": 0.50, "w_code": 0.20},
+    "Machine_Learning_Engineer": {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "DevOps_Engineer":           {"w_mcq": 0.25, "w_desc": 0.30, "w_code": 0.45},
+    "Cybersecurity_Analyst":     {"w_mcq": 0.35, "w_desc": 0.45, "w_code": 0.20},
+    "Cloud_Solutions_Architect": {"w_mcq": 0.30, "w_desc": 0.50, "w_code": 0.20},
+    "Database_Administrator":    {"w_mcq": 0.30, "w_desc": 0.35, "w_code": 0.35},
+    "Frontend_Developer":        {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Backend_Developer":         {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Mobile_App_Developer":      {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Full_Stack_Developer":      {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "QA_Test_Automation_Engineer": {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "Data_Engineer":             {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "Site_Reliability_Engineer": {"w_mcq": 0.25, "w_desc": 0.30, "w_code": 0.45},
+    "UI_UX_Designer":            {"w_mcq": 0.30, "w_desc": 0.50, "w_code": 0.20},
+    "Network_Engineer":          {"w_mcq": 0.30, "w_desc": 0.40, "w_code": 0.30},
+    "Business_Systems_Analyst":  {"w_mcq": 0.35, "w_desc": 0.50, "w_code": 0.15},
+    "AI_NLP_Engineer":           {"w_mcq": 0.25, "w_desc": 0.35, "w_code": 0.40},
+    "Blockchain_Developer":      {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50},
+    "Embedded_Systems_Engineer": {"w_mcq": 0.25, "w_desc": 0.30, "w_code": 0.45},
+}
+
+def _resolve_role_weights(job_title: str):
+    clean = job_title.strip().replace(" ", "_")
+    for k in ROLE_CV_WEIGHTS:
+        if k.lower() == clean.lower() or k.replace("_", "").lower() == clean.replace("_", "").lower():
+            return ROLE_CV_WEIGHTS[k], ROLE_INTERVIEW_WEIGHTS[k]
+    for k in ROLE_CV_WEIGHTS:
+        if k.lower() in clean.lower() or clean.lower() in k.lower():
+            return ROLE_CV_WEIGHTS[k], ROLE_INTERVIEW_WEIGHTS[k]
+    return {"w_edu": 0.20, "w_exp": 0.30, "w_skill": 0.50}, {"w_mcq": 0.20, "w_desc": 0.30, "w_code": 0.50}
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -297,26 +366,76 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
     db = request.app.state.db
     from bson import ObjectId
-    from services.ml_engine import RESOURCES, JOB_REQ, compute_gap
+    from services.ml_engine import RESOURCES, JOB_REQ, compute_gap, _resolve_role_weights, _LAMBDAMART_MODEL
 
-    # 1. Fetch candidate jobs from Applications, CV Match Predictions, and Interview Scores
-    seen_job_ids = set()
-    candidate_jobs = []
-
-    # Fetch candidate resume IDs first
-    cand_resume_ids = []
     cand_id_filters = [{"candidate_id": candidate_id}]
     if ObjectId.is_valid(candidate_id):
         cand_id_filters.append({"candidate_id": ObjectId(candidate_id)})
+        cand_id_filters.append({"_id": ObjectId(candidate_id)})
 
-    async for r in db.resumes.find({"$or": cand_id_filters}):
-        cand_resume_ids.append(str(r["_id"]))
+    # Parallel batch fetch of candidate's core collections
+    resumes_task = db.resumes.find({"$or": [{"candidate_id": candidate_id}] + ([{"candidate_id": ObjectId(candidate_id)}] if ObjectId.is_valid(candidate_id) else [])}).sort("created_at", -1).to_list(10)
+    apps_task = db.applications.find({"$or": cand_id_filters}).sort("applied_at", -1).to_list(100)
+    preds_task = db.predictions.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
+    scores_task = db.interview_scores.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
+    results_task = db.results.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
+    sessions_task = db.sessions.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
 
-    # A. From Applications
-    cursor = db.applications.find({"$or": cand_id_filters}).sort("applied_at", -1)
-    async for app in cursor:
-        jid = str(app.get("job_id", ""))
-        if jid and jid not in seen_job_ids:
+    resumes_list, apps_list, preds_list, scores_list, results_list, sessions_list = await asyncio.gather(
+        resumes_task, apps_task, preds_task, scores_task, results_task, sessions_task
+    )
+
+    resume = resumes_list[0] if resumes_list else None
+
+    # Collect all job IDs from applications, predictions, scores, results
+    raw_job_ids = set()
+    for app in apps_list:
+        jid = str(app.get("job_id", "")).strip()
+        if jid:
+            raw_job_ids.add(jid)
+    for p in preds_list:
+        jid = str(p.get("job_id", "")).strip()
+        if jid:
+            raw_job_ids.add(jid)
+    for s in scores_list:
+        jid = str(s.get("job_id", "")).strip()
+        if jid:
+            raw_job_ids.add(jid)
+    for res in results_list:
+        jid = str(res.get("job_id", "")).strip()
+        if jid:
+            raw_job_ids.add(jid)
+
+    # Batch fetch all matching jobs in a single query
+    job_docs_map = {}
+    if raw_job_ids:
+        job_query_oids = [ObjectId(jid) for jid in raw_job_ids if ObjectId.is_valid(jid)]
+        job_query_filters = [{"_id": {"$in": list(raw_job_ids)}}]
+        if job_query_oids:
+            job_query_filters.append({"_id": {"$in": job_query_oids}})
+        job_docs = await db.jobs.find({"$or": job_query_filters}).to_list(200)
+        for jdoc in job_docs:
+            job_docs_map[str(jdoc["_id"])] = jdoc
+
+    # Batch fetch company names for all jobs
+    company_ids = list({jdoc.get("company_id") for jdoc in job_docs_map.values() if jdoc.get("company_id")})
+    company_names_map = {}
+    if company_ids:
+        comp_oids = [ObjectId(c) for c in company_ids if ObjectId.is_valid(c)]
+        comp_filters = [{"_id": {"$in": company_ids}}]
+        if comp_oids:
+            comp_filters.append({"_id": {"$in": comp_oids}})
+        comp_users = await db.users.find({"$or": comp_filters}).to_list(100)
+        for u in comp_users:
+            company_names_map[str(u["_id"])] = u.get("company_name", u.get("full_name", "Tech Employer"))
+
+    # Build unique candidate_jobs list
+    seen_job_ids = set()
+    candidate_jobs = []
+
+    for app in apps_list:
+        jid = str(app.get("job_id", "")).strip()
+        if jid and jid in job_docs_map and jid not in seen_job_ids:
             seen_job_ids.add(jid)
             candidate_jobs.append({
                 "job_id": jid,
@@ -324,88 +443,35 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                 "applied_at": app.get("applied_at")
             })
 
-    # B. From CV Match Predictions
-    pred_query = list(cand_id_filters)
-    if cand_resume_ids:
-        pred_query.append({"resume_id": {"$in": cand_resume_ids}})
+    for p in preds_list:
+        jid = str(p.get("job_id", "")).strip()
+        if jid and jid in job_docs_map and jid not in seen_job_ids:
+            seen_job_ids.add(jid)
+            candidate_jobs.append({
+                "job_id": jid,
+                "status": "cv_matched",
+                "applied_at": p.get("created_at")
+            })
 
-    pred_cursor = db.predictions.find({"$or": pred_query}).sort("created_at", -1)
-    async for pred_doc in pred_cursor:
-        jid = str(pred_doc.get("job_id", ""))
-        if jid:
-            job_found = None
-            try:
-                if ObjectId.is_valid(jid):
-                    job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
-                if not job_found:
-                    job_found = await db.jobs.find_one({"_id": jid})
-            except Exception:
-                pass
-            if job_found:
-                actual_jid = str(job_found["_id"])
-                if actual_jid not in seen_job_ids:
-                    seen_job_ids.add(actual_jid)
-                    candidate_jobs.append({
-                        "job_id": actual_jid,
-                        "status": "cv_matched",
-                        "applied_at": pred_doc.get("created_at")
-                    })
+    for s in scores_list:
+        jid = str(s.get("job_id", "")).strip()
+        if jid and jid in job_docs_map and jid not in seen_job_ids:
+            seen_job_ids.add(jid)
+            candidate_jobs.append({
+                "job_id": jid,
+                "status": "interviewed",
+                "applied_at": s.get("created_at")
+            })
 
-    # C. From Interview Scores (C0 db.interview_scores)
-    score_cursor = db.interview_scores.find({"$or": cand_id_filters}).sort("created_at", -1)
-    async for sc_doc in score_cursor:
-        jid = str(sc_doc.get("job_id", ""))
-        if jid:
-            job_found = None
-            try:
-                if ObjectId.is_valid(jid):
-                    job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
-                if not job_found:
-                    job_found = await db.jobs.find_one({"_id": jid})
-            except Exception:
-                pass
-            if job_found:
-                actual_jid = str(job_found["_id"])
-                if actual_jid not in seen_job_ids:
-                    seen_job_ids.add(actual_jid)
-                    candidate_jobs.append({
-                        "job_id": actual_jid,
-                        "status": "interviewed",
-                        "applied_at": sc_doc.get("created_at")
-                    })
-
-    # D. From Interview Results (C2 db.results)
-    results_cursor = db.results.find({"$or": cand_id_filters}).sort("created_at", -1)
-    async for res_doc in results_cursor:
-        jid = str(res_doc.get("job_id", ""))
-        if jid:
-            job_found = None
-            try:
-                if ObjectId.is_valid(jid):
-                    job_found = await db.jobs.find_one({"_id": ObjectId(jid)})
-                if not job_found:
-                    job_found = await db.jobs.find_one({"_id": jid})
-            except Exception:
-                pass
-            if job_found:
-                actual_jid = str(job_found["_id"])
-                if actual_jid not in seen_job_ids:
-                    seen_job_ids.add(actual_jid)
-                    candidate_jobs.append({
-                        "job_id": actual_jid,
-                        "status": "interviewed",
-                        "applied_at": res_doc.get("created_at")
-                    })
-
-    # 2. Fetch candidate resume strictly for this candidate
-    resume = None
-    try:
-        if ObjectId.is_valid(candidate_id):
-            resume = await db.resumes.find_one({"$or": [{"candidate_id": candidate_id}, {"candidate_id": ObjectId(candidate_id)}]}, sort=[("created_at", -1)])
-        else:
-            resume = await db.resumes.find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
-    except Exception:
-        pass
+    for res in results_list:
+        jid = str(res.get("job_id", "")).strip()
+        if jid and jid in job_docs_map and jid not in seen_job_ids:
+            seen_job_ids.add(jid)
+            candidate_jobs.append({
+                "job_id": jid,
+                "status": "interviewed",
+                "applied_at": res.get("created_at")
+            })
 
     # If new candidate has no applications, predictions, or interviews, return clean empty reports
     if not candidate_jobs and not resume:
@@ -416,28 +482,16 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     cand_exp = resume.get("experience_years", 0) if resume else 0
     cand_edu = resume.get("education", "B.Sc. Computer Science") if resume else "B.Sc. Computer Science"
 
-    if not cand_name:
-        try:
-            user_doc = await db.users.find_one({"_id": ObjectId(candidate_id)}) if ObjectId.is_valid(candidate_id) else await db.users.find_one({"_id": candidate_id})
-            if user_doc:
-                cand_name = user_doc.get("full_name", user_doc.get("email", "Candidate"))
-        except Exception:
-            pass
-
     reports = []
 
     # If no specific jobs found, create a baseline report from resume so candidate gets instant insights
     if not candidate_jobs and cand_skills:
-        # Fallback to general skill gap for candidate's top predicted role
-        pred = await db.predictions.find_one({"candidate_id": candidate_id}, sort=[("created_at", -1)])
+        pred = preds_list[0] if preds_list else None
         target_role = pred.get("predicted_role", "Software Engineer") if pred else "Software Engineer"
-        
-        # Check if interview exists
-        interview_res = await db.results.find_one({"candidate_id": candidate_id, "job_role": target_role}, sort=[("created_at", -1)])
+        interview_res = results_list[0] if results_list else None
         interview_score = interview_res.get("interview_score") if interview_res else None
         
-        analysis = await run_in_threadpool(
-            run_skill_gap_analysis,
+        analysis = run_skill_gap_analysis(
             candidate_id=candidate_id,
             candidate_name=cand_name or "Candidate",
             job_role=target_role,
@@ -449,8 +503,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             mcq_score=interview_res.get("mcq_score") if interview_res else None,
             descriptive_score=interview_res.get("descriptive_score") if interview_res else None,
             coding_score=interview_res.get("coding_score") if interview_res else None,
-            weak_topics=interview_res.get("weak_topics", []) if interview_res else [],
-            failed_mcq_topics=interview_res.get("failed_mcq_topics", []) if interview_res else [],
         )
         reports.append({
             "job_id": "general_baseline",
@@ -479,68 +531,25 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "is_baseline": True
         })
 
-    async def process_app(app):
+    def process_app_sync(app):
         job_id = str(app.get("job_id", ""))
-        job = None
-        try:
-            job = await db.jobs.find_one({"_id": ObjectId(job_id)})
-        except Exception:
-            pass
-        if not job:
-            job = await db.jobs.find_one({"_id": job_id})
-        
+        job = job_docs_map.get(job_id)
         if not job:
             return None
 
         job_title = job.get("title", "Software Engineer")
         job_skills = job.get("required_skills", [])
-        
-        # Resolve company name
-        company_name = job.get("company_name", "")
-        if not company_name and job.get("company_id"):
-            try:
-                comp_user = await db.users.find_one({"_id": ObjectId(job["company_id"])})
-                if comp_user:
-                    company_name = comp_user.get("company_name", comp_user.get("full_name", "Tech Company"))
-            except Exception:
-                pass
-        if not company_name:
-            company_name = "Tech Employer"
+        company_name = job.get("company_name") or company_names_map.get(str(job.get("company_id", "")), "Tech Employer")
 
-        # Parallel database lookups for this application
-        pred_or_conditions = [
-            {"candidate_id": candidate_id, "job_id": job_id},
-            {"candidate_id": candidate_id, "job_id": str(job.get("_id", ""))},
-            {"candidate_id": candidate_id, "predicted_role": job_title},
-        ]
-        if ObjectId.is_valid(candidate_id):
-            pred_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_id": job_id})
-            pred_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_id": str(job.get("_id", ""))})
-            pred_or_conditions.append({"candidate_id": ObjectId(candidate_id), "predicted_role": job_title})
-        if cand_resume_ids:
-            pred_or_conditions.append({"resume_id": {"$in": cand_resume_ids}, "job_id": job_id})
-            pred_or_conditions.append({"resume_id": {"$in": cand_resume_ids}, "job_id": str(job.get("_id", ""))})
-            pred_or_conditions.append({"resume_id": {"$in": cand_resume_ids}, "predicted_role": job_title})
+        # In-memory lookup for predictions
+        pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", "")) or p.get("predicted_role") == job_title), None)
+        # In-memory lookup for interview results & scores
+        interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id or r.get("job_role") == job_title), None)
+        session = next((s for s in sessions_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
+        score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
 
-        pred_task = db.predictions.find_one({"$or": pred_or_conditions}, sort=[("created_at", -1)])
-
-        int_or_conditions = [
-            {"candidate_id": candidate_id, "job_role": job_title},
-            {"candidate_id": candidate_id, "job_role": job.get("title", "")},
-            {"candidate_id": candidate_id, "job_id": job_id},
-            {"candidate_id": candidate_id, "job_id": str(job.get("_id", ""))}
-        ]
-        if ObjectId.is_valid(candidate_id):
-            int_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_role": job_title})
-            int_or_conditions.append({"candidate_id": ObjectId(candidate_id), "job_id": job_id})
-
-        interview_res_task = db.results.find_one({"$or": int_or_conditions}, sort=[("created_at", -1)])
-        session_task = db.sessions.find_one({"$or": int_or_conditions}, sort=[("created_at", -1)])
-        score_doc_task = db.interview_scores.find_one({"$or": int_or_conditions}, sort=[("created_at", -1)])
-
-        pred, interview_res, session, score_doc = await asyncio.gather(
-            pred_task, interview_res_task, session_task, score_doc_task
-        )
+        # Resolve role weights for CSS engine
+        cv_w, int_w = _resolve_role_weights(job_title)
 
         skill_score = pred.get("skill_score") if pred else None
         experience_score = pred.get("experience_score") if pred else None
@@ -561,7 +570,9 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             education_score = 80.0
 
         if cv_matching_score is None:
-            cv_matching_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
+            cv_matching_score = round(cv_w["w_skill"] * skill_score + cv_w["w_exp"] * experience_score + cv_w["w_edu"] * education_score, 1)
+        else:
+            cv_matching_score = round(float(cv_matching_score), 1)
 
         interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None
         interview_score = None
@@ -574,10 +585,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         topic_scores = {}
 
         if interview_res:
-            interview_score = interview_res.get("interview_score", 0)
-            mcq_score = interview_res.get("mcq_score", 0)
-            descriptive_score = interview_res.get("descriptive_score", 0)
-            coding_score = interview_res.get("coding_score", 0)
+            mcq_score = float(interview_res.get("mcq_score", 0))
+            descriptive_score = float(interview_res.get("descriptive_score", 0))
+            coding_score = float(interview_res.get("coding_score", 0))
+            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
             grade = interview_res.get("grade", "Average")
             weak_topics = interview_res.get("weak_topics", [])
             failed_mcq_topics = interview_res.get("failed_mcq_topics", [])
@@ -598,10 +609,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                 topic_scores.setdefault(t, []).append(float(s))
 
         elif score_doc:
-            interview_score = score_doc.get("interview_score", 0)
-            mcq_score = score_doc.get("mcq_score", 0)
-            descriptive_score = score_doc.get("descriptive_score", 0)
-            coding_score = score_doc.get("coding_score", 0)
+            mcq_score = float(score_doc.get("mcq_score", 0))
+            descriptive_score = float(score_doc.get("descriptive_score", 0))
+            coding_score = float(score_doc.get("coding_score", 0))
+            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
             grade = score_doc.get("grade", "Average")
 
         topic_performance = []
@@ -643,8 +654,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
                     "severity": "High"
                 })
 
-        analysis = await run_in_threadpool(
-            run_skill_gap_analysis,
+        analysis = run_skill_gap_analysis(
             candidate_id=candidate_id,
             candidate_name=cand_name or "Candidate",
             job_role=job_title,
@@ -701,10 +711,17 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         all_strengths = interview_strengths + cv_strengths
         all_weaknesses = interview_weaknesses + cv_weaknesses
 
-        if interview_score is not None and cv_matching_score is not None:
-            composite_fit = round(0.55 * interview_score + 0.45 * cv_matching_score, 1)
-        elif interview_score is not None:
-            composite_fit = round(interview_score, 1)
+        # Master CSS calculation (40% CV + 60% Interview) and LambdaMART score
+        ltr_score = None
+        if interview_completed and interview_score is not None:
+            composite_fit = round(0.40 * cv_matching_score + 0.60 * interview_score, 1)
+            if _LAMBDAMART_MODEL is not None:
+                try:
+                    X_cand = np.array([[education_score / 100.0, experience_score / 100.0, skill_score / 100.0,
+                                       (mcq_score or 0.0) / 100.0, (descriptive_score or 0.0) / 100.0, (coding_score or 0.0) / 100.0]])
+                    ltr_score = round(float(_LAMBDAMART_MODEL.predict(X_cand)[0]), 4)
+                except Exception:
+                    pass
         elif cv_matching_score is not None:
             composite_fit = round(cv_matching_score, 1)
         else:
@@ -762,6 +779,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             },
             "composite_score": composite_fit,
             "total_mark": composite_fit,
+            "ltr_score": ltr_score,
             "interview_breakdown": {
                 "mcq_score": mcq_score,
                 "descriptive_score": descriptive_score,
@@ -779,9 +797,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "gap_severity": analysis.get("gap_severity", "Medium"),
         }
 
-    if candidate_jobs:
-        results = await asyncio.gather(*[process_app(app) for app in candidate_jobs])
-        reports.extend([r for r in results if r is not None])
+    for app in candidate_jobs:
+        rep = process_app_sync(app)
+        if rep is not None:
+            reports.append(rep)
 
     resp_data = {"success": True, "candidate_id": candidate_id, "total_applied_jobs": len(reports), "reports": reports, "data": reports}
     set_cached_applied_jobs(candidate_id, resp_data)

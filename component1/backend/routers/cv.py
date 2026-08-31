@@ -85,6 +85,7 @@ async def _full_analysis(
     scored_role = target_role if (target_role and target_role in ALL_ROLES) else pred.job_role
 
     features = extractor.extract(text, target_role=scored_role)
+    resolved_name = candidate_name.strip() if candidate_name and candidate_name.strip() not in ("Unknown", "Candidate") else getattr(features, "candidate_name", "Candidate Profile")
 
     jd_sim: Optional[float] = None
     if job_description and job_description.strip():
@@ -108,6 +109,7 @@ async def _full_analysis(
         required_years=job_reqs.required_experience_years,
         required_education=job_reqs.required_education,
         candidate_education=features.education,
+        degree_field=getattr(features, "degree_field", None),
         role_relevant_experience_years=features.role_relevant_experience_years,
         candidate_seniority=features.seniority,
         target_seniority=job_reqs.required_seniority,
@@ -133,7 +135,7 @@ async def _full_analysis(
 
     return CVAnalysisResponse(
         candidate_id=candidate_id,
-        candidate_name=candidate_name,
+        candidate_name=resolved_name,
         job_id=job_id or "JOB001",
         job_role=pred.job_role,
         role_confidence=pred.confidence,
@@ -162,6 +164,7 @@ async def _full_analysis(
         target_job_profile=target_profile.to_dict(),
         cross_evidence_validation=getattr(features, "cross_evidence_validation", {}),
         overall_analysis_confidence=getattr(features, "overall_analysis_confidence", 0.85),
+        technical_roadmap=scores.technical_roadmap,
         component_1_scores={
             "S_skill": scores.S_skill,
             "S_exp": scores.S_exp,
@@ -323,11 +326,10 @@ async def screen_resume(
         raise HTTPException(status_code=422, detail="Could not extract meaningful text from the uploaded file.")
 
     c_id = _make_candidate_id(candidate_id)
-    c_name = (candidate_name or "Candidate").strip()
     j_id = job_id or "JOB001"
-
     pred = predictor.predict(text)
     features = extractor.extract(text, target_role=pred.job_role)
+    c_name = candidate_name.strip() if candidate_name and candidate_name.strip() not in ("Unknown", "Candidate") else getattr(features, "candidate_name", "Candidate Profile")
     job_reqs = extract_job_requirements(target_role=pred.job_role)
 
     scores = scorer.score(
