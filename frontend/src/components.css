@@ -135,7 +135,7 @@ code {
 }
 
 .nav-item:hover {
-  background: var(--color-bg-soft);
+  background: var(--color-surface);
   color: var(--color-fg);
 }
 
@@ -275,7 +275,7 @@ code {
 }
 
 .navbar-link:hover {
-  background: var(--color-bg-soft);
+  background: var(--color-surface);
   color: var(--color-fg);
 }
 
@@ -303,7 +303,7 @@ code {
 }
 
 .navbar-user:hover {
-  background: var(--color-bg-soft);
+  background: var(--color-surface);
 }
 
 .navbar-avatar {
@@ -362,7 +362,7 @@ code {
 }
 
 .navbar-dropdown button:hover {
-  background: var(--color-bg-soft);
+  background: var(--color-surface);
 }
 
 .navbar-hamburger {
@@ -379,7 +379,7 @@ code {
 }
 
 .navbar-hamburger:hover {
-  background: var(--color-bg-soft);
+  background: var(--color-surface);
 }
 
 .navbar-mobile {
@@ -408,7 +408,7 @@ code {
 }
 
 .navbar-mobile-link:hover {
-  background: var(--color-bg-soft);
+  background: var(--color-surface);
   color: var(--color-fg);
 }
 
@@ -568,38 +568,31 @@ code {
   align-items: center;
   justify-content: center;
   gap: var(--p-space-2);
-  background: var(--btn-bg, var(--color-primary));
-  color: var(--btn-fg, #ffffff);
-  border: 1px solid transparent;
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border: none;
   border-radius: var(--btn-radius);
   padding: var(--btn-padding-y) var(--btn-padding-x);
   font: inherit;
   font-weight: var(--btn-font-weight);
   font-size: var(--btn-font-size);
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease;
+  transition: background 0.15s ease, opacity 0.15s ease;
   white-space: nowrap;
   position: relative;
-  user-select: none;
-  text-decoration: none;
 }
 
 .btn:hover {
-  background: var(--btn-bg-hover, var(--color-primary-hover));
-  color: var(--btn-fg, #ffffff);
+  background: var(--btn-bg-hover);
 }
 
 .btn:active {
-  background: var(--btn-bg-active, var(--color-primary-active));
-  color: var(--btn-fg, #ffffff);
-  transform: translateY(1px);
+  opacity: 0.9;
 }
 
 .btn:disabled {
-  opacity: 0.72;
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
 .btn:focus-visible {
@@ -607,205 +600,54 @@ code {
   box-shadow: var(--color-focus-ring);
 }
 
-/* ── Primary Button ──────────────────────────────────────────────── */
-.btn-primary {
-  background: var(--color-primary);
-  color: var(--color-primary-fg, #ffffff) !important;
-  border: 1px solid transparent;
-}
-
-.btn-primary:hover {
-  background: var(--color-primary-hover);
-  color: var(--color-primary-fg, #ffffff) !important;
-  box-shadow: 0 2px 10px var(--color-primary-muted);
-}
-
-.btn-primary:active {
-  background: var(--color-primary-active);
-  color: var(--color-primary-fg, #ffffff) !important;
-  transform: translateY(1px);
-}
-
-.btn-primary:focus,
-.btn-primary:focus-visible {
-  outline: none;
-  box-shadow: var(--color-focus-ring);
-  color: var(--color-primary-fg, #ffffff) !important;
-}
-
-.btn-primary:disabled {
-  background: var(--color-primary);
-  color: var(--color-primary-fg, #ffffff) !important;
-  opacity: 0.72;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* ── Secondary Button ────────────────────────────────────────────── */
-.btn-secondary {
-  background: var(--color-bg-soft);
-  color: var(--color-fg);
-  border: 1px solid var(--color-border);
-}
-
-.btn-secondary:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-fg);
-  border-color: var(--color-border-strong);
-}
-
-.btn-secondary:active {
-  background: var(--color-border-subtle);
-  transform: translateY(1px);
-}
-
-.btn-secondary:focus-visible {
-  outline: none;
-  box-shadow: var(--color-focus-ring);
-}
-
-.btn-secondary:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ── Ghost Button ────────────────────────────────────────────────── */
 .btn-ghost {
-  background: var(--btn-ghost-bg, transparent);
-  border: 1px solid var(--btn-ghost-border, var(--color-border));
-  color: var(--btn-ghost-fg, var(--color-fg-secondary));
+  background: var(--btn-ghost-bg);
+  border: 1px solid var(--btn-ghost-border);
+  color: var(--btn-ghost-fg);
 }
 
 .btn-ghost:hover {
-  background: var(--color-bg-soft);
-  color: var(--color-fg);
+  background: var(--btn-ghost-bg-hover);
+  color: var(--btn-ghost-fg-hover);
   border-color: var(--color-border-strong);
 }
 
 .btn-ghost:active {
-  background: var(--color-border-subtle);
-  color: var(--color-fg);
-  transform: translateY(1px);
+  background: var(--color-bg-elevated);
 }
 
-.btn-ghost:focus-visible {
-  outline: none;
-  box-shadow: var(--color-focus-ring);
-}
-
-.btn-ghost:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ── Success Button ──────────────────────────────────────────────── */
 .btn-success {
-  background: var(--color-success);
-  color: var(--color-success-fg, #ffffff) !important;
-  border: 1px solid transparent;
+  background: var(--btn-success-bg);
+  color: var(--btn-success-fg);
 }
 
 .btn-success:hover {
-  background: var(--color-success-hover);
-  color: var(--color-success-fg, #ffffff) !important;
-  box-shadow: 0 2px 10px var(--color-success-muted);
+  background: var(--btn-success-bg-hover);
+  box-shadow: 0 0 20px var(--color-success-muted);
 }
 
-.btn-success:active {
-  background: var(--p-emerald-700);
-  color: var(--color-success-fg, #ffffff) !important;
-  transform: translateY(1px);
-}
-
-.btn-success:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--color-success-muted);
-}
-
-.btn-success:disabled {
-  background: var(--color-success);
-  color: var(--color-success-fg, #ffffff) !important;
-  opacity: 0.72;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ── Danger Button ───────────────────────────────────────────────── */
 .btn-danger {
-  background: var(--color-danger);
-  color: var(--color-danger-fg, #ffffff) !important;
-  border: 1px solid transparent;
+  background: var(--btn-danger-bg);
+  color: var(--btn-danger-fg);
 }
 
 .btn-danger:hover {
   background: var(--color-danger-hover);
-  color: var(--color-danger-fg, #ffffff) !important;
-  box-shadow: 0 2px 10px var(--color-danger-muted);
 }
 
-.btn-danger:active {
-  background: var(--p-rose-700);
-  color: var(--color-danger-fg, #ffffff) !important;
-  transform: translateY(1px);
-}
-
-.btn-danger:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--color-danger-muted);
-}
-
-.btn-danger:disabled {
-  background: var(--color-danger);
-  color: var(--color-danger-fg, #ffffff) !important;
-  opacity: 0.72;
-  cursor: not-allowed;
-  transform: none;
-}
-
-/* ── Warning Button ──────────────────────────────────────────────── */
 .btn-warn {
-  background: var(--color-warning);
-  color: var(--color-warning-fg, #ffffff) !important;
-  border: 1px solid transparent;
+  background: var(--btn-warn-bg);
+  color: var(--btn-warn-fg);
 }
 
 .btn-warn:hover {
   background: var(--color-warning-hover);
-  color: var(--color-warning-fg, #ffffff) !important;
-}
-
-.btn-warn:active {
-  background: var(--p-amber-700);
-  color: var(--color-warning-fg, #ffffff) !important;
-  transform: translateY(1px);
-}
-
-.btn-warn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--color-warning-muted);
-}
-
-.btn-warn:disabled {
-  background: var(--color-warning);
-  color: var(--color-warning-fg, #ffffff) !important;
-  opacity: 0.72;
-  cursor: not-allowed;
-  transform: none;
 }
 
 .btn-sm {
   padding: var(--p-space-2) var(--p-space-3);
   font-size: var(--p-text-sm);
   border-radius: var(--p-radius-sm);
-}
-
-.btn-lg {
-  padding: var(--p-space-3) var(--p-space-6);
-  font-size: var(--p-text-lg);
-  border-radius: var(--p-radius-md);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2087,19 +1929,7 @@ DASHBOARD LAYOUTS (responsive two-column)
   transform: translateY(-1px);
 }
 
-/* ═══════════════════════════════════════════════════════════════════
-   PERFORMANCE & 60FPS SMOOTH RENDERING
-   ═══════════════════════════════════════════════════════════════════ */
-.card, .stat-card, .table-container, .modal-dialog, .sidebar {
-  will-change: transform, opacity;
-  transform: translate3d(0, 0, 0);
-  backface-visibility: hidden;
-}
 
-.table-row, .applicant-row, .job-card-interactive {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 64px;
-}
 
 .fade-in {
   animation: fadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;

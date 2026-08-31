@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Target, RefreshCw, TrendingUp, Briefcase, HelpCircle,
@@ -15,12 +15,7 @@ import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
-  useAuth()
-  const [searchParams] = useSearchParams()
-  const paramJobId = searchParams.get('jobId') || ''
-  const paramRole = searchParams.get('role') || ''
-
-  const userRole = localStorage.getItem('recruitai.role') || 'candidate'
+  useAuth('candidate')
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [activeTab, setActiveTab] = useState(userRole === 'company' ? 'explorer' : 'applied')
@@ -54,7 +49,8 @@ export default function SkillGap() {
   const [result, setResult] = useState(null)
 
   useEffect(() => {
-    // Concurrent parallel background revalidation & pre-fetching
+
+    // Concurrent parallel background revalidation
     Promise.all([
       c4SkillGapRoles().then((r) => setRoles(r?.data?.roles || [])).catch(() => {}),
       loadAppliedJobsAnalysis(),
@@ -67,33 +63,13 @@ export default function SkillGap() {
     const currentId = overrideId || localStorage.getItem('recruitai.user_id') || candidateId
     if (appliedReports.length === 0) setLoadingApplied(true)
     try {
-      let r = await c4SkillGapApplied(currentId)
-      let raw = r?.data || {}
-      let reports = Array.isArray(raw) ? raw : (raw.reports || raw.data || (Array.isArray(raw.data) ? raw.data : []))
-      let arr = Array.isArray(reports) ? reports : []
-
-      // If no reports found and ID might be default/stale, resolve authentic user ID
-      if (arr.length === 0) {
-        try {
-          const me = await authGetProfile()
-          const resolvedId = me?.data?.id || me?.data?._id || me?.data?.user_id
-          if (resolvedId && resolvedId !== currentId) {
-            localStorage.setItem('recruitai.user_id', resolvedId)
-            const r2 = await c4SkillGapApplied(resolvedId)
-            const raw2 = r2?.data || {}
-            const reports2 = Array.isArray(raw2) ? raw2 : (raw2.reports || raw2.data || [])
-            if (Array.isArray(reports2) && reports2.length > 0) {
-              arr = reports2
-              raw = raw2
-            }
-          }
-        } catch {}
-      }
-
-      setAppliedReports(arr)
-      setResult(raw)
+      const r = await c4SkillGapApplied(candidateId)
+      const data = r?.data?.data || r?.data || {}
+      const reports = data.reports || []
+      setAppliedReports(Array.isArray(reports) ? reports : [])
+      setResult(data)
       try {
-        sessionStorage.setItem(`recruitai.skillgap.${currentId}`, JSON.stringify(arr))
+        sessionStorage.setItem(`recruitai.skillgap.${candidateId}`, JSON.stringify(reports))
       } catch {}
       if (arr.length === 0) {
         setSelectedJobId(null)
@@ -103,7 +79,7 @@ export default function SkillGap() {
         setSelectedJobId(arr[0].job_id)
       }
     } catch {
-      // Graceful fallback for empty or initial states
+      if (appliedReports.length === 0) toast.error('Failed to load applied jobs analysis')
     }
     finally { setLoadingApplied(false) }
   }
@@ -287,14 +263,14 @@ export default function SkillGap() {
                     </div>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                       <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Overall Mark</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Match</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
                           {selectedReport.cv_score != null ? `${selectedReport.cv_score}%` : 'N/A'}
                         </div>
                       </div>
                       <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedReport.interview_completed ? 'var(--color-purple)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
+                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Score</div>
+                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedReport.interview_completed ? 'var(--color-success)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
                           {selectedReport.interview_score != null ? `${selectedReport.interview_score}%` : 'Pending'}
                         </div>
                       </div>
@@ -327,10 +303,10 @@ export default function SkillGap() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <HelpCircle size={20} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
                         <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg)' }}>
-                          Your CV Match score is recorded! Complete the AI Technical Interview to unlock your full combined score and top ranking.
+                          You have applied but haven&apos;t taken the technical assessment yet. Complete the interview to unlock complete gap diagnostics!
                         </span>
                       </div>
-                      <Link to={`/candidate/interview?role=${selectedReport.job_title}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      <Link to="/candidate/interview" className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         Start Technical Assessment
                       </Link>
                     </div>
@@ -423,11 +399,11 @@ export default function SkillGap() {
                   )}
                 </div>
               )}
-            </div>
-          )}
         </div>
       )}
-
+    </div>
+  )
+}
       {/* TAB 2: EXPLORER & WHAT-IF SIMULATOR */}
       {activeTab === 'explorer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>

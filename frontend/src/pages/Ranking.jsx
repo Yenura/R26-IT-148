@@ -1,28 +1,15 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link, useSearchParams } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   ListOrdered, Trophy, Briefcase, Award, Brain,
   CheckCircle2, Users, ArrowRight, Eye, ChevronRight, Plus
 } from 'lucide-react'
-import { uJobsMy, c3Pipeline, c0JobsAll } from '../api'
+import { uJobsMy, c3Pipeline } from '../api'
 import PageHeader from '../components/PageHeader'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
-
-const cleanCandidateName = (rawName, fallbackId) => {
-  if (!rawName) return `Candidate ${(fallbackId || '01').slice(-4)}`
-  let name = String(rawName).trim()
-  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
-  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
-  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
-  const words = name.split(/\s+/).filter(Boolean)
-  if (words.length > 3) {
-    name = words.slice(0, 3).join(' ')
-  }
-  return name || 'Candidate'
-}
 
 export default function Ranking() {
   const navigate = useNavigate()
@@ -102,20 +89,9 @@ export default function Ranking() {
         computePipeline(targetJobId)
       }
     } catch {
-      toast.error('Failed to load job openings')
+      toast.error('Failed to load company jobs')
     } finally {
       setLoadingJobs(false)
-    }
-  }
-
-  const handleScopeChange = (newScope) => {
-    setViewScope(newScope)
-    const activeList = newScope === 'my' && myJobs.length > 0 ? myJobs : allJobs
-    setJobs(activeList)
-    if (activeList.length > 0) {
-      const firstJobId = activeList[0].id || activeList[0]._id
-      setSelectedJob(firstJobId)
-      computePipeline(firstJobId)
     }
   }
 
@@ -178,32 +154,12 @@ export default function Ranking() {
         <>
           {/* Job Selection Card */}
           <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
-                </h3>
-                {myJobs.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, background: 'var(--color-bg)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                    <button
-                      className={`btn btn-xs ${viewScope === 'my' ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => handleScopeChange('my')}
-                      style={{ fontSize: '11px', padding: '2px 8px' }}
-                    >
-                      🏢 My Openings ({myJobs.length})
-                    </button>
-                    <button
-                      className={`btn btn-xs ${viewScope === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => handleScopeChange('all')}
-                      style={{ fontSize: '11px', padding: '2px 8px' }}
-                    >
-                      🌐 All 20 IT Roles ({allJobs.length})
-                    </button>
-                  </div>
-                )}
-              </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Your Company Job Opening
+              </h3>
               <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                {jobs.length} Active Role{jobs.length > 1 ? 's' : ''} Available
+                {jobs.length} Active Company Opening{jobs.length > 1 ? 's' : ''}
               </span>
             </div>
 
@@ -219,10 +175,9 @@ export default function Ranking() {
               >
                 {jobs.map((j) => {
                   const id = j.id || j._id
-                  const compName = j.company_name ? ` [${j.company_name}]` : ''
                   return (
                     <option key={id} value={id}>
-                      {j.title}{compName} · {j.experience_required ? `${j.experience_required}+ yrs` : (j.department || 'Engineering')} ({j.location || 'Remote'})
+                      {j.title} · {j.department || 'Engineering'} ({j.location || 'Remote'})
                     </option>
                   )
                 })}
@@ -241,8 +196,8 @@ export default function Ranking() {
             {selectedJobObj && (
               <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>Required Skills:</span>
-                {(selectedJobObj.required_skills || []).map((s, idx) => (
-                  <span key={`${s}-${idx}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                {[...new Set(selectedJobObj.required_skills || [])].map((s, i) => (
+                  <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                     {s}
                   </span>
                 ))}
@@ -274,29 +229,19 @@ export default function Ranking() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th style={{ width: 50 }}>Rank</th>
+                      <th style={{ width: 60 }}>Rank</th>
                       <th>Candidate</th>
                       <th>Overall Fit Score</th>
-                      <th>CV Match (S_cv)</th>
-                      <th>Skills / Exp / Edu</th>
-                      <th>Interview (S_int)</th>
-                      <th>MCQ / Theory / Code</th>
-                      <th>Recommendation</th>
+                      <th>Skills Match</th>
+                      <th>Experience Match</th>
+                      <th>Education Match</th>
+                      <th>Interview Score</th>
+                      <th>Qualification</th>
                     </tr>
                   </thead>
                   <tbody>
                     {candidatesList.map((cand, idx) => {
-                      const isTop3 = (cand.rank <= 3 || idx < 3) && cand.passed_hard_filter
-                      const cssVal = cand.final_score ?? (cand.CSS != null ? cand.CSS * 100 : (cand.blended_score ?? 0))
-                      const sCvVal = cand.cv_score ?? (cand.S_cv != null ? cand.S_cv * 100 : 75)
-                      const sSkillVal = cand.skill_score ?? (cand.S_skill != null ? cand.S_skill * 100 : 80)
-                      const sExpVal = cand.experience_score ?? (cand.S_exp != null ? cand.S_exp * 100 : 70)
-                      const sEduVal = cand.education_score ?? (cand.S_edu != null ? cand.S_edu * 100 : 80)
-                      const sIntVal = cand.interview_score ?? (cand.S_int != null ? cand.S_int * 100 : (cand.p_int ?? 0))
-                      const pMcqVal = cand.mcq_score ?? (cand.P_mcq != null ? cand.P_mcq * 100 : 0)
-                      const pDescVal = cand.descriptive_score ?? (cand.P_desc != null ? cand.P_desc * 100 : 0)
-                      const pCodeVal = cand.coding_score ?? (cand.P_code != null ? cand.P_code * 100 : 0)
-
+                      const isTop3 = cand.rank <= 3 && cand.passed_hard_filter
                       return (
                         <tr
                           key={cand.candidate_id || idx}
@@ -324,35 +269,35 @@ export default function Ranking() {
                           </td>
                           <td>
                             <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
-                              {cleanCandidateName(cand.candidate_name, cand.candidate_id)}
+                              {cand.candidate_name || 'Candidate'}
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
                               ID: {cand.candidate_id?.slice(0, 10) || 'Verified'}
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {Number(cssVal).toFixed(1)}%
+                            <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                              {(cand.final_score || cand.blended_score || 0).toFixed(1)}%
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                              {Number(sCvVal).toFixed(0)}%
+                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
+                              {(cand.skill_score || cand.s_skill || 0).toFixed(0)}%
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                              <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal).toFixed(0)}%</span>
+                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
+                              {(cand.experience_score || cand.s_exp || 0).toFixed(0)}%
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 800 }}>
-                              {Number(sIntVal).toFixed(0)}%
+                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
+                              {(cand.education_score || cand.s_edu || 100).toFixed(0)}%
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                              <span title="MCQ Score" style={{ color: 'var(--color-primary)' }}>{Number(pMcqVal).toFixed(0)}%</span> / <span title="Theory Score" style={{ color: 'var(--color-info)' }}>{Number(pDescVal).toFixed(0)}%</span> / <span title="Coding Score" style={{ color: 'var(--color-purple)' }}>{Number(pCodeVal).toFixed(0)}%</span>
+                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 600 }}>
+                              {(cand.interview_score || cand.p_int || 0).toFixed(0)}%
                             </div>
                           </td>
                           <td>
@@ -360,13 +305,13 @@ export default function Ranking() {
                               <span style={{
                                 fontSize: '10px',
                                 fontWeight: 700,
-                                color: cand.badge_color || 'var(--color-success)',
-                                background: 'var(--color-bg-elevated)',
+                                color: 'var(--color-success)',
+                                background: 'var(--color-success-muted)',
                                 padding: '2px 8px',
                                 borderRadius: 'var(--radius-full)',
-                                border: `1px solid ${cand.badge_color || 'var(--color-success)'}40`
+                                border: '1px solid rgba(16, 185, 129, 0.3)'
                               }}>
-                                {cand.verdict || 'Qualified'}
+                                Qualified
                               </span>
                             ) : (
                               <span style={{
