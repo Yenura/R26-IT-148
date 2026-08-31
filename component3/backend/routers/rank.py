@@ -408,26 +408,34 @@ async def rank_pipeline(request: Request, job_id: str):
                 resume_skills = ["Python", "SQL", "Git"]
 
             # Real interview scores from completed interviews
-            mcq_score = 0.8
-            descriptive_score = 0.75
-            coding_score = 0.85
             latest_score = scores_map.get(candidate_id)
             if latest_score:
-                mcq_score = (float(latest_score.get("mcq_score", 80) or 80)) / 100
-                descriptive_score = (float(latest_score.get("descriptive_score", 75) or 75)) / 100
-                coding_score = (float(latest_score.get("coding_score", 85) or 85)) / 100
-            
-            # Skill matching from predictions or bidirectional check
-            pred_doc = pred_map.get(candidate_id)
-            if pred_doc and pred_doc.get("skill_score") is not None:
-                skill_score_raw = pred_doc.get("skill_score", 80) / 100
+                mcq_score = (float(latest_score.get("mcq_score", 0) or 0)) / 100
+                descriptive_score = (float(latest_score.get("descriptive_score", 0) or 0)) / 100
+                coding_score = (float(latest_score.get("coding_score", 0) or 0)) / 100
+                int_score_num = float(latest_score.get("interview_score", 0) or 0)
             else:
-                matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() or rs.lower() in s.lower() for rs in resume_skills)) if resume_skills else 0
-                skill_score_raw = matched / max(len(required_skills), 1)
+                mcq_score = 0.0
+                descriptive_score = 0.0
+                coding_score = 0.0
+                int_score_num = None
             
-            if pred_doc and pred_doc.get("experience_score") is not None and not experience_years:
-                exp_req = float((job.get("experience_required") or 2.0) if job else 2.0)
-                experience_years = (pred_doc.get("experience_score", 60) / 100) * exp_req
+            # Skill matching and CV 3-pillar scores from predictions
+            pred_doc = pred_map.get(candidate_id)
+            s_skill_val = None
+            s_exp_val = None
+            s_edu_val = None
+            if pred_doc:
+                if pred_doc.get("skill_score") is not None:
+                    s_skill_val = float(pred_doc["skill_score"]) / 100.0
+                if pred_doc.get("experience_score") is not None:
+                    s_exp_val = float(pred_doc["experience_score"]) / 100.0
+                if pred_doc.get("education_score") is not None:
+                    s_edu_val = float(pred_doc["education_score"]) / 100.0
+            
+            if s_skill_val is None:
+                matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() or rs.lower() in s.lower() for rs in resume_skills)) if resume_skills else 0
+                s_skill_val = matched / max(len(required_skills), 1)
 
             candidates.append(CandidateInput(
                 candidate_id=candidate_id,
@@ -435,11 +443,15 @@ async def rank_pipeline(request: Request, job_id: str):
                 job_role=job_role,
                 years_experience=float(experience_years or 2.0),
                 edu_level=int(edu_level),
-                skill_score_raw=float(skill_score_raw),
+                skill_score_raw=float(s_skill_val),
+                S_edu=s_edu_val,
+                S_exp=s_exp_val,
+                S_skill=s_skill_val,
                 P_mcq=float(mcq_score),
                 P_desc=float(descriptive_score),
                 P_code=float(coding_score),
                 skills=resume_skills,
+                interview_score=int_score_num,
             ))
         
         if not candidates:
@@ -458,9 +470,15 @@ async def rank_pipeline(request: Request, job_id: str):
         
         out = []
         for r in ranked:
-            css = round(r["CSS"], 4)
             s_cv = round(r["S_cv"], 4)
             s_int = round(r["S_int"], 4)
+            cand_inp = r.get("input")
+            cand_has_interview = (cand_inp and cand_inp.interview_score is not None) or (s_int > 0.0)
+            
+            if cand_has_interview:
+                css = round(0.40 * s_cv + 0.60 * s_int, 4)
+            else:
+                css = s_cv
             s_edu = round(r.get("S_edu", 0), 4)
             s_exp = round(r.get("S_exp", 0), 4)
             s_skill = round(r.get("S_skill", 0), 4)
