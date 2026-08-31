@@ -230,18 +230,30 @@ export default function Ranking() {
                   <thead>
                     <tr>
                       <th style={{ width: 60 }}>Rank</th>
-                      <th>Candidate</th>
-                      <th>Overall Fit Score</th>
-                      <th>Skills Match</th>
-                      <th>Experience Match</th>
-                      <th>Education Match</th>
-                      <th>Interview Score</th>
-                      <th>Qualification</th>
+                      <th>Candidate</th>                      <th>Overall Fit Score (CSS)</th>
+                      <th>CV Match (S_cv)</th>
+                      <th>Skills / Exp / Edu</th>
+                      <th>Interview (S_int)</th>
+                      <th>MCQ / Theory / Code</th>
+                      <th>Recommendation</th>
                     </tr>
                   </thead>
                   <tbody>
                     {candidatesList.map((cand, idx) => {
-                      const isTop3 = cand.rank <= 3 && cand.passed_hard_filter
+                      const isTop3 = (cand.rank <= 3 || idx < 3) && cand.passed_hard_filter
+                      const hasCV = cand.has_cv !== false && (cand.S_cv != null || cand.cv_score != null)
+                      const hasInt = cand.interview_completed === true && (cand.S_int != null || cand.interview_score != null)
+
+                      const cssVal = cand.final_score ?? (cand.CSS != null ? (cand.CSS <= 1 ? cand.CSS * 100 : cand.CSS) : (cand.blended_score ?? (hasCV ? cand.cv_score : cand.interview_score) ?? 0))
+                      const sCvVal = cand.cv_score ?? (cand.S_cv != null ? (cand.S_cv <= 1 ? cand.S_cv * 100 : cand.S_cv) : null)
+                      const sSkillVal = cand.skill_score ?? (cand.S_skill != null ? (cand.S_skill <= 1 ? cand.S_skill * 100 : cand.S_skill) : null)
+                      const sExpVal = cand.experience_score ?? (cand.S_exp != null ? (cand.S_exp <= 1 ? cand.S_exp * 100 : cand.S_exp) : null)
+                      const sEduVal = cand.education_score ?? (cand.S_edu != null ? (cand.S_edu <= 1 ? cand.S_edu * 100 : cand.S_edu) : null)
+                      
+                      const sIntVal = cand.interview_score ?? (cand.S_int != null ? (cand.S_int <= 1 ? cand.S_int * 100 : cand.S_int) : null)
+                      const pMcqVal = cand.mcq_score ?? (cand.P_mcq != null ? (cand.P_mcq <= 1 ? cand.P_mcq * 100 : cand.P_mcq) : null)
+                      const pDescVal = cand.descriptive_score ?? (cand.P_desc != null ? (cand.P_desc <= 1 ? cand.P_desc * 100 : cand.P_desc) : null)
+                      const pCodeVal = cand.coding_score ?? (cand.P_code != null ? (cand.P_code <= 1 ? cand.P_code * 100 : cand.P_code) : null)n
                       return (
                         <tr
                           key={cand.candidate_id || idx}
@@ -268,8 +280,15 @@ export default function Ranking() {
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
-                              {cand.candidate_name || 'Candidate'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
+                                {cleanCandidateName(cand.candidate_name, cand.candidate_id)}
+                              </div>
+                              {hasInt && (
+                                <span style={{ fontSize: '10px', color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '1px 6px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
+                                  ✓ Assessed
+                                </span>
+                              )}
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
                               ID: {cand.candidate_id?.slice(0, 10) || 'Verified'}
@@ -279,26 +298,47 @@ export default function Ranking() {
                             <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
                               {(cand.final_score || cand.blended_score || 0).toFixed(1)}%
                             </div>
-                          </td>
-                          <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {(cand.skill_score || cand.s_skill || 0).toFixed(0)}%
+                            <div style={{ fontSize: '10px', color: hasCV && hasInt ? 'var(--color-success)' : (hasCV ? 'var(--color-warning)' : 'var(--color-info)'), fontWeight: 600 }}>
+                              {hasCV && hasInt ? 'Combined CSS' : (hasCV ? 'CV Fit Score' : 'Interview Score')}
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {(cand.experience_score || cand.s_exp || 0).toFixed(0)}%
-                            </div>
+                            {hasCV && sCvVal != null ? (
+                              <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                                {Number(sCvVal).toFixed(0)}%
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>Pending</span>
+                            )}
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {(cand.education_score || cand.s_edu || 100).toFixed(0)}%
-                            </div>
+                            {hasCV && sSkillVal != null ? (
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
+                                <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal ?? 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal ?? 0).toFixed(0)}%</span>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>—</span>
+                            )}
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 600 }}>
-                              {(cand.interview_score || cand.p_int || 0).toFixed(0)}%
-                            </div>
+                            {hasInt && sIntVal != null ? (
+                              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 800 }}>
+                                {Number(sIntVal).toFixed(0)}%
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '10px', color: 'var(--color-warning)', background: 'var(--color-warning-muted)', padding: '2px 6px', borderRadius: 'var(--radius-sm)', fontWeight: 600 }}>
+                                Pending
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {hasInt && pMcqVal != null ? (
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
+                                <span title="MCQ Score" style={{ color: 'var(--color-primary)' }}>{Number(pMcqVal).toFixed(0)}%</span> / <span title="Theory Score" style={{ color: 'var(--color-info)' }}>{Number(pDescVal ?? 0).toFixed(0)}%</span> / <span title="Coding Score" style={{ color: 'var(--color-purple)' }}>{Number(pCodeVal ?? 0).toFixed(0)}%</span>
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>—</span>
+                            )}
                           </td>
                           <td>
                             {cand.passed_hard_filter ? (
