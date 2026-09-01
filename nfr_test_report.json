@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-08-28T13:33:57.811967",
+  "timestamp": "2026-09-01T22:49:02.703511",
   "summary": {
     "total": 57,
     "pass": 50,
@@ -44,87 +44,87 @@
       "category": "Performance",
       "test": "Frontend: Landing",
       "status": "PASS",
-      "metric": 58.8,
+      "metric": 123.6,
       "unit": "ms",
-      "details": "min=7 max=160"
+      "details": "min=15 max=326"
     },
     {
       "category": "Performance",
       "test": "Frontend: Candidate Login",
       "status": "PASS",
-      "metric": 23.7,
+      "metric": 26.1,
       "unit": "ms",
-      "details": "min=12 max=38"
+      "details": "min=14 max=49"
     },
     {
       "category": "Performance",
       "test": "Frontend: Company Login",
       "status": "PASS",
-      "metric": 14.4,
+      "metric": 43.8,
       "unit": "ms",
-      "details": "min=11 max=20"
+      "details": "min=16 max=97"
     },
     {
       "category": "Performance",
       "test": "API: C0: Jobs List",
       "status": "PASS",
-      "metric": 16.6,
+      "metric": 44.6,
       "unit": "ms",
-      "details": "p95=45ms"
+      "details": "p95=194ms"
     },
     {
       "category": "Performance",
       "test": "API: C0: Health",
       "status": "PASS",
-      "metric": 10.4,
+      "metric": 11.6,
       "unit": "ms",
-      "details": "p95=33ms"
+      "details": "p95=22ms"
     },
     {
       "category": "Performance",
       "test": "API: C1: Health",
       "status": "PASS",
-      "metric": 125.7,
+      "metric": 250.5,
       "unit": "ms",
-      "details": "p95=127ms"
+      "details": "p95=349ms"
     },
     {
       "category": "Performance",
       "test": "API: C2: Health",
       "status": "PASS",
-      "metric": 12.4,
+      "metric": 36.4,
       "unit": "ms",
-      "details": "p95=28ms"
+      "details": "p95=143ms"
     },
     {
       "category": "Performance",
       "test": "API: C3: Health",
       "status": "PASS",
-      "metric": 5.2,
+      "metric": 42.7,
       "unit": "ms",
-      "details": "p95=8ms"
+      "details": "p95=187ms"
     },
     {
       "category": "Performance",
       "test": "API: C4: Health",
       "status": "PASS",
-      "metric": 119.1,
+      "metric": 297.5,
       "unit": "ms",
-      "details": "p95=144ms"
+      "details": "p95=367ms"
     },
     {
       "category": "Performance",
       "test": "API: C4: Skill Graph",
       "status": "PASS",
-      "metric": 5.7,
+      "metric": 11.0,
       "unit": "ms",
-      "details": "p95=8ms"
+      "details": "p95=23ms"
     },
     {
       "category": "Performance",
       "test": "Build: JS bundle",
       "status": "WARN",
-      "metric": 998.4,
+      "metric": 1089.1,
       "unit": "KB",
       "details": ""
     },
@@ -132,7 +132,7 @@
       "category": "Performance",
       "test": "Build: CSS bundle",
       "status": "PASS",
-      "metric": 39.4,
+      "metric": 43.3,
       "unit": "KB",
       "details": ""
     },
@@ -140,7 +140,7 @@
       "category": "Security",
       "test": "Auth: Valid candidate login",
       "status": "PASS",
-      "metric": 612.5,
+      "metric": 1171.8,
       "unit": "ms",
       "details": ""
     },
@@ -190,7 +190,7 @@
       "status": "PASS",
       "metric": null,
       "unit": "",
-      "details": "HTTP 401"
+      "details": "HTTP 422"
     },
     {
       "category": "Security",
@@ -198,7 +198,7 @@
       "status": "PASS",
       "metric": null,
       "unit": "",
-      "details": "HTTP 401"
+      "details": "HTTP 422"
     },
     {
       "category": "Security",
@@ -210,25 +210,25 @@
     },
     {
       "category": "Security",
-      "test": "CORS: Checked",
-      "status": "WARN",
-      "metric": null,
-      "unit": "",
-      "details": "ACAO=not set, HTTP 400"
-    },
-    {
-      "category": "Security",
-      "test": "Rate limiting: Active",
+      "test": "CORS: Evil origin rejected",
       "status": "PASS",
       "metric": null,
       "unit": "",
-      "details": ""
+      "details": "ACAO not set, HTTP 400 (correct rejection)"
+    },
+    {
+      "category": "Security",
+      "test": "Rate limiting: Not triggered",
+      "status": "WARN",
+      "metric": null,
+      "unit": "",
+      "details": "No 429 after 20 rapid requests"
     },
     {
       "category": "Scalability",
       "test": "Concurrent: 5 API requests",
       "status": "WARN",
-      "metric": 11.2,
+      "metric": 374.9,
       "unit": "ms",
       "details": "success=0%"
     },
@@ -236,7 +236,7 @@
       "category": "Scalability",
       "test": "Concurrent: 10 API requests",
       "status": "WARN",
-      "metric": 8.2,
+      "metric": 261.0,
       "unit": "ms",
       "details": "success=0%"
     },
@@ -244,7 +244,7 @@
       "category": "Scalability",
       "test": "Concurrent: 20 API requests",
       "status": "WARN",
-      "metric": 15.9,
+      "metric": 522.2,
       "unit": "ms",
       "details": "success=0%"
     },
@@ -252,7 +252,7 @@
       "category": "Scalability",
       "test": "Concurrent: 5 frontend loads",
       "status": "PASS",
-      "metric": 20.0,
+      "metric": 769.1,
       "unit": "ms",
       "details": "success=100%"
     },
@@ -260,7 +260,7 @@
       "category": "Scalability",
       "test": "Concurrent: 10 frontend loads",
       "status": "PASS",
-      "metric": 38.1,
+      "metric": 59.2,
       "unit": "ms",
       "details": "success=100%"
     },
@@ -268,7 +268,7 @@
       "category": "Scalability",
       "test": "Sustained: 30 req / 5s",
       "status": "PASS",
-      "metric": 6.8,
+      "metric": 11.4,
       "unit": "ms",
       "details": ""
     },
@@ -276,7 +276,7 @@
       "category": "Scalability",
       "test": "Load: C0 health",
       "status": "PASS",
-      "metric": 6.2,
+      "metric": 8.6,
       "unit": "ms",
       "details": ""
     },
@@ -284,7 +284,7 @@
       "category": "Scalability",
       "test": "Load: C1 health",
       "status": "PASS",
-      "metric": 125.8,
+      "metric": 145.6,
       "unit": "ms",
       "details": ""
     },
@@ -292,7 +292,7 @@
       "category": "Scalability",
       "test": "Load: C2 health",
       "status": "PASS",
-      "metric": 8.2,
+      "metric": 42.6,
       "unit": "ms",
       "details": ""
     },
@@ -300,7 +300,7 @@
       "category": "Scalability",
       "test": "Load: C3 health",
       "status": "PASS",
-      "metric": 11.6,
+      "metric": 108.7,
       "unit": "ms",
       "details": ""
     },
@@ -308,15 +308,15 @@
       "category": "Scalability",
       "test": "Load: C4 health",
       "status": "PASS",
-      "metric": 113.5,
+      "metric": 196.2,
       "unit": "ms",
       "details": ""
     },
     {
       "category": "Usability",
       "test": "Login page loads",
-      "status": "PASS",
-      "metric": 2975.0,
+      "status": "WARN",
+      "metric": 5077.0,
       "unit": "ms",
       "details": ""
     },
@@ -348,7 +348,7 @@
       "category": "Usability",
       "test": "Nav: Dashboard",
       "status": "PASS",
-      "metric": 723.0,
+      "metric": 4932.0,
       "unit": "ms",
       "details": ""
     },
@@ -356,7 +356,7 @@
       "category": "Usability",
       "test": "Nav: Job Board",
       "status": "PASS",
-      "metric": 659.0,
+      "metric": 4677.0,
       "unit": "ms",
       "details": ""
     },
@@ -364,7 +364,7 @@
       "category": "Usability",
       "test": "Nav: AI Interview",
       "status": "PASS",
-      "metric": 645.0,
+      "metric": 3259.0,
       "unit": "ms",
       "details": ""
     },
@@ -372,7 +372,7 @@
       "category": "Usability",
       "test": "Nav: CV Match",
       "status": "PASS",
-      "metric": 646.0,
+      "metric": 1382.0,
       "unit": "ms",
       "details": ""
     },
@@ -380,7 +380,7 @@
       "category": "Usability",
       "test": "Nav: Skill Gap",
       "status": "PASS",
-      "metric": 753.0,
+      "metric": 1315.0,
       "unit": "ms",
       "details": ""
     },
@@ -388,17 +388,17 @@
       "category": "Usability",
       "test": "Nav: Progress",
       "status": "PASS",
-      "metric": 719.0,
+      "metric": 798.0,
       "unit": "ms",
       "details": ""
     },
     {
       "category": "Usability",
       "test": "Theme toggle",
-      "status": "WARN",
+      "status": "PASS",
       "metric": null,
       "unit": "",
-      "details": "Button not found"
+      "details": "dark -> light"
     },
     {
       "category": "Usability",
