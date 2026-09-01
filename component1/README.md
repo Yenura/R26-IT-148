@@ -1,6 +1,6 @@
 # Component 1 — AI Resume Screening & IT Job Role Classification
 **Research Paper & Ecosystem Component 1 — R26-IT-148 (SLIIT Final Year Project)**  
-**Author:** Dulnith K.D. (IT22094872)
+**Author:** D T D Perera (IT22089236)
 
 ---
 

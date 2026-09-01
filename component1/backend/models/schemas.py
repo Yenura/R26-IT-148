@@ -1,5 +1,5 @@
 """Pydantic v2 schemas for Component 1 — Resume Screening & Role Matching
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Style mirrors component4/backend/models/schemas.py (pydantic v2, field_validator).
 """

@@ -78,6 +78,9 @@ class CandidateFeatures:
     P_code: float
     gender:    Optional[str] = None
     age_group: Optional[str] = None
+    S_edu:     Optional[float] = None
+    S_exp:     Optional[float] = None
+    S_skill:   Optional[float] = None
 
 
 @dataclass
@@ -110,9 +113,10 @@ class CSSEngine:
             return False, f"Education {EDU_LEVEL_NAMES[f.edu_level]} < min {EDU_LEVEL_NAMES[j.min_edu]}"
         if f.years_experience < j.min_exp_years:
             return False, f"Experience {f.years_experience:.1f}y < min {j.min_exp_years:.1f}y"
-        if f.skill_score_raw < j.min_skill_threshold:
-            return False, f"Skill {f.skill_score_raw:.2f} < threshold {j.min_skill_threshold:.2f}"
-        if f.P_code < j.min_code_threshold:
+        skill_val = f.S_skill if f.S_skill is not None else f.skill_score_raw
+        if skill_val < j.min_skill_threshold:
+            return False, f"Skill {skill_val:.2f} < threshold {j.min_skill_threshold:.2f}"
+        if f.P_code > 0.0 and f.P_code < j.min_code_threshold:
             return False, f"Coding {f.P_code:.2f} < threshold {j.min_code_threshold:.2f}"
         return True, ""
 
@@ -145,17 +149,24 @@ class CSSEngine:
         res = CandidateScore(candidate_id=f.candidate_id,
                               job_role=f.job_role,
                               P_mcq=f.P_mcq, P_desc=f.P_desc, P_code=f.P_code)
-        passed, reason = self.hard_filter(f)
-        res.passed_hard_filter = passed
-        res.filter_fail_reason = reason
-        if not passed:
-            return res
-        res.S_edu   = self.s_edu(f.edu_level, f.edu_relevance)
-        res.S_exp   = self.s_exp(f.years_experience)
-        res.S_skill = round(float(np.clip(f.skill_score_raw, 0, 1)), 4)
+        
+        # Always compute true component scores and S_cv / S_int
+        if f.S_edu is not None and f.S_exp is not None and f.S_skill is not None:
+            res.S_edu   = round(float(np.clip(f.S_edu, 0, 1)), 4)
+            res.S_exp   = round(float(np.clip(f.S_exp, 0, 1)), 4)
+            res.S_skill = round(float(np.clip(f.S_skill, 0, 1)), 4)
+        else:
+            res.S_edu   = self.s_edu(f.edu_level, f.edu_relevance)
+            res.S_exp   = self.s_exp(f.years_experience)
+            res.S_skill = round(float(np.clip(f.skill_score_raw, 0, 1)), 4)
         res.S_cv    = self.s_cv(res.S_edu, res.S_exp, res.S_skill)
         res.S_int   = self.s_int(f.P_mcq, f.P_desc, f.P_code)
         res.CSS     = self.css(res.S_cv, res.S_int)
+
+        # Check hard filter eligibility
+        passed, reason = self.hard_filter(f)
+        res.passed_hard_filter = passed
+        res.filter_fail_reason = reason
         return res
 
     def rank_pool(self, candidates: List[CandidateFeatures]) -> List[CandidateScore]:

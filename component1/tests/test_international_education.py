@@ -1,7 +1,7 @@
 """
 Tests for International and Non-Standard Degree Qualifications Recognition
 Component 1 — AI Resume Screening & IT Job Role Classification
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 """
 
 import pytest

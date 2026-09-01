@@ -1,7 +1,7 @@
 """
 Comprehensive IT Skill Lexicon, Certifications Taxonomy, Aliases & Related Skills Graph
 Component 1: AI Resume Screening & IT Job Role Classification
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Covers 20 Canonical IT Roles:
 - Software Engineer, Frontend Developer, Backend Developer, Full Stack Developer

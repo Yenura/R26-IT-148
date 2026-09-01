@@ -1,5 +1,5 @@
 """JD-Resume semantic matcher — Component 1
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 PROPOSED: Sentence-BERT cosine similarity (resume embedding ↔ JD embedding).
 FALLBACK : TF-IDF cosine similarity when sentence-transformers is unavailable.

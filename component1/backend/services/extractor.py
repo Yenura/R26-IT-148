@@ -1,6 +1,6 @@
 """
 Entity extractor service — Component 1
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Extracts structured fields from raw resume text using regex + keyword matching,
 alias normalization, contextual evidence scoring, employment record decomposition,

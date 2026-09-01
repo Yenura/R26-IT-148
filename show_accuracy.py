@@ -52,7 +52,7 @@ def print_subheader(title):
 # ───────────────────────────────────────────────────────────────────────────────────────
 def evaluate_model_1():
     print_header("MODEL 1: AI RESUME SCREENING & IT JOB ROLE CLASSIFIER")
-    print("Component:    Component 1 | IT22094872 | Dulnith K.D.")
+    print("Component:    Component 1 | IT22089236 | D T D Perera")
     print("Architecture: NLP Entity Feature Engineering + Balanced Multi-Class Logistic Regression")
     print("Objective:    Resume Parsing, Information Extraction (S_skill, S_exp, S_edu), & Role Classification")
 

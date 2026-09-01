@@ -1,5 +1,5 @@
 """Component 1 Research Experiment: Empirical Weight Analysis
-IT22094872 | Dulnith K.D. | R26-IT-148
+IT22089236 | D T D Perera | R26-IT-148
 
 Empirically investigates the contribution of:
 - S_skill (Technical Skills Alignment)

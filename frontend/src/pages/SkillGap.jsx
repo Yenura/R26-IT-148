@@ -4,9 +4,10 @@ import toast from 'react-hot-toast'
 import {
   Target, RefreshCw, TrendingUp, Briefcase, HelpCircle,
   Code, Building2, Sparkles, AlertCircle, CheckCircle2,
-  ExternalLink, Layers, Lightbulb, ArrowRight, Network
+  ExternalLink, Layers, Lightbulb, ArrowRight,
+  Search, Clock, BookOpen
 } from 'lucide-react'
-import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync, c4SkillGapGraph } from '../api'
+import { c0JobsAll, c4SkillGapAnalyze, c4SkillGapApplied, c4SkillGapSimulate, c4SkillGapRoles, c4ProgressSync, authGetProfile } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
@@ -18,7 +19,15 @@ export default function SkillGap() {
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
   const [activeTab, setActiveTab] = useState(userRole === 'company' ? 'explorer' : 'applied')
-  const [appliedReports, setAppliedReports] = useState([])
+  const [appliedReports, setAppliedReports] = useState(() => {
+    try {
+      const uId = localStorage.getItem('recruitai.user_id') || 'web-user'
+      const cached = sessionStorage.getItem(`recruitai.skillgap.${uId}`)
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
   const [selectedJobId, setSelectedJobId] = useState(paramJobId || null)
   const [loadingApplied, setLoadingApplied] = useState(false)
   const [syncingProgress, setSyncingProgress] = useState(false)
@@ -38,10 +47,6 @@ export default function SkillGap() {
   const [simulationResult, setSimulationResult] = useState(null)
   const [simulating, setSimulating] = useState(false)
   const [result, setResult] = useState(null)
-  const [graphNodes, setGraphNodes] = useState([])
-  const [graphEdges, setGraphEdges] = useState([])
-  const [graphLoading, setGraphLoading] = useState(false)
-  const [graphSelectedNode, setGraphSelectedNode] = useState(null)
 
   useEffect(() => {
 
@@ -53,20 +58,9 @@ export default function SkillGap() {
     ])
   }, [])
 
-  const loadGraph = async () => {
-    setGraphLoading(true)
-    try {
-      const r = await c4SkillGapGraph()
-      setGraphNodes(r?.data?.nodes || [])
-      setGraphEdges(r?.data?.edges || [])
-    } catch {
-      toast.error('Failed to load skill dependency graph')
-    } finally {
-      setGraphLoading(false)
-    }
-  }
-
-  const loadAppliedJobsAnalysis = async () => {
+  const loadAppliedJobsAnalysis = async (overrideId) => {
+    if (userRole === 'company') return
+    const currentId = overrideId || localStorage.getItem('recruitai.user_id') || candidateId
     if (appliedReports.length === 0) setLoadingApplied(true)
     try {
       const r = await c4SkillGapApplied(candidateId)
@@ -195,13 +189,6 @@ export default function SkillGap() {
           style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
         >
           <Sparkles size={15} /> What-If Simulator & Explorer
-        </button>
-        <button
-          onClick={() => { setActiveTab('graph'); if (graphNodes.length === 0) loadGraph() }}
-          className={`btn btn-sm ${activeTab === 'graph' ? 'btn-primary' : 'btn-ghost'}`}
-          style={{ borderRadius: 'var(--radius-md) var(--radius-md) 0 0', borderBottom: 'none' }}
-        >
-          <Network size={15} /> Skill Dependency Graph
         </button>
       </div>
 
@@ -609,125 +596,6 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                     </div>
                   )}
                 </>
-              )}
-            </>
-          )}
-        </div>
-      )}
-      {/* TAB 3: SKILL DEPENDENCY GRAPH */}
-      {activeTab === 'graph' && (
-        <div style={{ padding: 'var(--p-space-4) 0' }}>
-          {graphLoading ? (
-            <div style={{ textAlign: 'center', padding: 40, color: 'var(--color-fg-muted)' }}>
-              <RefreshCw size={20} className="spin" style={{ marginBottom: 8 }} />
-              <div style={{ fontSize: 'var(--p-text-sm)' }}>Loading skill dependency graph...</div>
-            </div>
-          ) : graphNodes.length === 0 ? (
-            <EmptyState
-              title="No skill dependency data"
-              description="The skill dependency graph could not be loaded."
-              icon={Network}
-            />
-          ) : (
-            <>
-              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>Skill Dependency DAG</h3>
-                  <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '4px 0 0' }}>
-                    {graphNodes.length} skills · {graphEdges.length} dependencies · Click a node to highlight its connections
-                  </p>
-                </div>
-                <button onClick={loadGraph} className="btn btn-ghost btn-sm">
-                  <RefreshCw size={14} /> Reload
-                </button>
-              </div>
-
-              {/* Graph Visualization */}
-              <div style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', padding: 20, overflow: 'auto' }}>
-                <svg
-                  width="100%"
-                  height={Math.max(400, graphNodes.length * 28)}
-                  viewBox={`0 0 900 ${Math.max(400, graphNodes.length * 28)}`}
-                  style={{ minWidth: 700 }}
-                >
-                  {/* Edges */}
-                  {graphEdges.map((edge, i) => {
-                    const srcIdx = graphNodes.findIndex(n => n.id === edge.source)
-                    const tgtIdx = graphNodes.findIndex(n => n.id === edge.target)
-                    if (srcIdx === -1 || tgtIdx === -1) return null
-                    const srcX = 120
-                    const srcY = srcIdx * 28 + 14
-                    const tgtX = 780
-                    const tgtY = tgtIdx * 28 + 14
-                    const isHighlighted = graphSelectedNode && (edge.source === graphSelectedNode || edge.target === graphSelectedNode)
-                    return (
-                      <line
-                        key={i}
-                        x1={srcX} y1={srcY} x2={tgtX} y2={tgtY}
-                        stroke={isHighlighted ? 'var(--color-primary)' : 'var(--color-border)'}
-                        strokeWidth={isHighlighted ? 2 : 1}
-                        strokeDasharray={isHighlighted ? 'none' : '4 3'}
-                        opacity={graphSelectedNode ? (isHighlighted ? 1 : 0.2) : 0.5}
-                      />
-                    )
-                  })}
-                  {/* Nodes */}
-                  {graphNodes.map((node, i) => {
-                    const x = i % 2 === 0 ? 40 : 840
-                    const y = i * 28 + 14
-                    const isSelected = graphSelectedNode === node.id
-                    const isConnected = graphSelectedNode && graphEdges.some(
-                      e => (e.source === graphSelectedNode && e.target === node.id) || (e.target === graphSelectedNode && e.source === node.id)
-                    )
-                    return (
-                      <g
-                        key={node.id}
-                        onClick={() => setGraphSelectedNode(isSelected ? null : node.id)}
-                        style={{ cursor: 'pointer' }}
-                      >
-                        <rect
-                          x={x - 38} y={y - 10} width={76} height={20} rx={10}
-                          fill={isSelected ? 'var(--color-primary)' : isConnected ? 'var(--color-primary-muted)' : 'var(--color-bg)'}
-                          stroke={isSelected || isConnected ? 'var(--color-primary)' : 'var(--color-border)'}
-                          strokeWidth={isSelected ? 2 : 1}
-                          opacity={graphSelectedNode ? (isSelected || isConnected ? 1 : 0.3) : 1}
-                        />
-                        <text
-                          x={x} y={y + 4}
-                          textAnchor="middle"
-                          fontSize={10}
-                          fontWeight={isSelected ? 800 : 600}
-                          fill={isSelected ? '#fff' : isConnected ? 'var(--color-primary)' : 'var(--color-fg)'}
-                          opacity={graphSelectedNode ? (isSelected || isConnected ? 1 : 0.3) : 1}
-                        >
-                          {node.label}
-                        </text>
-                      </g>
-                    )
-                  })}
-                </svg>
-              </div>
-
-              {/* Selected Node Info */}
-              {graphSelectedNode && (
-                <div style={{ marginTop: 16, padding: 16, background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-primary)' }}>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-primary)', marginBottom: 8 }}>
-                    {graphSelectedNode}
-                  </div>
-                  <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)' }}>
-                    {(() => {
-                      const deps = graphEdges.filter(e => e.target === graphSelectedNode).map(e => e.source)
-                      const dependents = graphEdges.filter(e => e.source === graphSelectedNode).map(e => e.target)
-                      return (
-                        <>
-                          {deps.length > 0 && <div style={{ marginBottom: 4 }}><strong>Prerequisites:</strong> {deps.join(', ')}</div>}
-                          {dependents.length > 0 && <div><strong>Unlocks:</strong> {dependents.join(', ')}</div>}
-                          {deps.length === 0 && dependents.length === 0 && <div>No dependencies or dependents found.</div>}
-                        </>
-                      )
-                    })()}
-                  </div>
-                </div>
               )}
             </>
           )}
