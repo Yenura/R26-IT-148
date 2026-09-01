@@ -31,7 +31,12 @@ class RankingService:
         if os.path.exists(pkl):
             try:
                 with open(pkl, "rb") as f:
-                    self.ltr = pickle.load(f)
+                    data = pickle.load(f)
+                if isinstance(data, dict) and "model" in data:
+                    self.ltr = data["model"]
+                    self.ltr.scaler = data.get("scaler")
+                else:
+                    self.ltr = data
                 logger.info("LambdaMART LTR model loaded")
             except Exception as exc:
                 logger.warning("Failed to load LTR model: %s", exc)
@@ -127,10 +132,12 @@ class RankingService:
 
         if use_ltr and self.ltr is not None:
             import numpy as np
-            X = np.array([[r["S_edu"], r["S_exp"], r["S_skill"],
-                           r["P_mcq"], r["P_desc"], r["P_code"]]
-                          for r in rows])
-            ltr_scores = self.ltr.predict(X)
+            import pandas as pd
+            df_ltr = pd.DataFrame([{
+                "S_edu": r["S_edu"], "S_exp": r["S_exp"], "S_skill": r["S_skill"],
+                "P_mcq": r["P_mcq"], "P_desc": r["P_desc"], "P_code": r["P_code"]
+            } for r in rows])
+            ltr_scores = self.ltr.predict(df_ltr)
             for r, sc in zip(rows, ltr_scores):
                 r["ltr_score"] = round(float(sc), 4)
 
@@ -141,12 +148,16 @@ class RankingService:
 
         passed = sorted([r for r in rows if r["passed_hard_filter"]],
                         key=_rank_key, reverse=True)
-        failed = [r for r in rows if not r["passed_hard_filter"]]
+        near_miss = sorted([r for r in rows if not r["passed_hard_filter"] and r["CSS"] > 0],
+                          key=_rank_key, reverse=True)
+        failed = [r for r in rows if not r["passed_hard_filter"] and r["CSS"] <= 0]
         for i, r in enumerate(passed, 1):
+            r["rank"] = i
+        for i, r in enumerate(near_miss, len(passed) + 1):
             r["rank"] = i
         for r in failed:
             r["rank"] = 0
-        return job, passed + failed
+        return job, passed + near_miss + failed
 
 
 _service = None

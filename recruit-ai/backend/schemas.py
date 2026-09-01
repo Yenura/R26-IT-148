@@ -35,6 +35,23 @@ class CandidateRegister(BaseModel):
         return v
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if not __import__("re").match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
+            raise ValueError("Invalid email format")
+        return v
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=10, max_length=500)
+    new_password: str = Field(..., min_length=6, max_length=200)
+
+
 class LoginRequest(BaseModel):
     email: str = Field(..., max_length=200)
     password: str = Field(..., max_length=200)

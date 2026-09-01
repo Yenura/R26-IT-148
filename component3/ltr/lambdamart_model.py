@@ -17,7 +17,8 @@ warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data.role_configs import ROLES, ROLE_DISPLAY_NAMES
 
-FEATURE_COLS = ["S_edu", "S_exp", "S_skill", "P_mcq", "P_desc", "P_code"]
+FEATURE_COLS = ["S_edu", "S_exp", "S_skill", "P_mcq", "P_desc", "P_code",
+                "S_cv", "S_int", "CSS", "skill_x_mcq", "skill_x_code", "exp_x_code"]
 LABEL_COL    = "relevance_label"
 GROUP_COL    = "job_role"
 
@@ -115,14 +116,16 @@ class LambdaMARTRanker:
             "metric": "ndcg",
             "ndcg_eval_at": [5, 10],
             "label_gain": [0, 1, 3, 7],
-            "num_leaves": 20,
-            "max_depth": -1,
-            "min_child_samples": 20,
-            "n_estimators": 500,
-            "learning_rate": 0.06,
-            "feature_fraction": 0.90,
-            "bagging_fraction": 0.90,
-            "bagging_freq": 3,
+            "num_leaves": 31,
+            "max_depth": 6,
+            "min_child_samples": 15,
+            "n_estimators": 800,
+            "learning_rate": 0.05,
+            "feature_fraction": 0.85,
+            "bagging_fraction": 0.85,
+            "bagging_freq": 5,
+            "reg_alpha": 0.1,
+            "reg_lambda": 0.1,
             "verbose": -1,
             "random_state": 42,
         }
@@ -133,7 +136,36 @@ class LambdaMARTRanker:
         groups = df_sorted.groupby(GROUP_COL, sort=False).size().tolist()
         return df_sorted, groups
 
+    def _engineer_features(self, df):
+        """Add interaction features to improve ranking accuracy."""
+        df = df.copy()
+        df["S_cv"] = 0.40 * df["S_edu"] + 0.30 * df["S_exp"] + 0.50 * df["S_skill"]
+        df["S_int"] = 0.20 * df["P_mcq"] + 0.30 * df["P_desc"] + 0.50 * df["P_code"]
+        df["CSS"] = 0.40 * df["S_cv"] + 0.60 * df["S_int"]
+        df["skill_x_mcq"] = df["S_skill"] * df["P_mcq"]
+        df["skill_x_code"] = df["S_skill"] * df["P_code"]
+        df["exp_x_code"] = df["S_exp"] * df["P_code"]
+        return df
+
+    def _standardize_fit(self, df):
+        """Fit standardization parameters from training data."""
+        from sklearn.preprocessing import StandardScaler
+        self.scaler = StandardScaler()
+        self.scaler.fit(df[FEATURE_COLS].values)
+
+    def _standardize_transform(self, df):
+        """Apply standardization to features."""
+        scaler = getattr(self, 'scaler', None)
+        if scaler is not None:
+            df[FEATURE_COLS] = scaler.transform(df[FEATURE_COLS].values)
+        return df
+
     def train(self, tr, va):
+        tr = self._engineer_features(tr)
+        va = self._engineer_features(va)
+        self._standardize_fit(tr)
+        tr = self._standardize_transform(tr)
+        va = self._standardize_transform(va)
         tr_sorted, tr_groups = self._prepare_grouped(tr)
         va_sorted, va_groups = self._prepare_grouped(va)
 
@@ -149,6 +181,8 @@ class LambdaMARTRanker:
 
     def predict(self, df):
         if isinstance(df, pd.DataFrame):
+            df = self._engineer_features(df)
+            df = self._standardize_transform(df)
             X = df[FEATURE_COLS].values
         else:
             X = df
@@ -156,7 +190,7 @@ class LambdaMARTRanker:
 
     def save(self, path):
         with open(path, "wb") as f:
-            pickle.dump(self.model, f)
+            pickle.dump({"model": self.model, "scaler": self.scaler}, f)
         print(f"  Model saved -> {path}")
 
     def feature_importance(self):

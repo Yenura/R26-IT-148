@@ -812,8 +812,9 @@ class InterviewService:
     def _evaluate_mcq_answers(self, answers: List[Dict]) -> float:
         if not answers:
             return 0
-        correct_count = sum(1 for a in answers if a.get("is_correct", False))
-        return round(correct_count / len(answers) * 100, 2)
+        total_score = sum(a.get("mcq_score", 1.0 if a.get("is_correct", False) else -0.25) for a in answers)
+        mcq_score = max(0.0, total_score) / len(answers) * 100
+        return round(mcq_score, 2)
     
     def _evaluate_descriptive_answers(self, answers: List[Dict]) -> float:
         """Evaluate descriptive answers"""

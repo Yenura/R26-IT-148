@@ -258,6 +258,10 @@ export default function CompanyLogin() {
               {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
             </div>
 
+            <div style={{ textAlign: 'right', marginBottom: 12, marginTop: -8 }}>
+              <Link to="/forgot-password?role=company" style={{ fontSize: 11, color: 'var(--color-purple)', fontWeight: 700 }}>Forgot password?</Link>
+            </div>
+
             <button
               className="btn btn-primary"
               type="submit"

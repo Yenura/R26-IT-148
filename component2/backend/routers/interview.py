@@ -344,10 +344,12 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 correct_choice = question.get("correct_option")
                 if correct_choice is None:
                     correct_choice = question.get("correct_answer_index", 0)
+                is_correct = candidate_choice == correct_choice
                 processed_answer["selected_option"] = candidate_choice
                 processed_answer["correct_option"] = correct_choice
-                processed_answer["is_correct"] = candidate_choice == correct_choice
+                processed_answer["is_correct"] = is_correct
                 processed_answer["options"] = question.get("options", [])
+                processed_answer["mcq_score"] = 1.0 if is_correct else -0.25
 
             elif question_type == "Descriptive":
                 answer_text = answer.get("answer_text") or answer.get("answer") or ""

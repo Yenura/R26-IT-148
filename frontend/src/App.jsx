@@ -15,6 +15,8 @@ const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
 const CompanyRegister= lazy(() => import('./pages/auth/CompanyRegister'))
 const CandidateLogin = lazy(() => import('./pages/auth/CandidateLogin'))
 const CandidateRegister = lazy(() => import('./pages/auth/CandidateRegister'))
+const ForgotPassword    = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword     = lazy(() => import('./pages/auth/ResetPassword'))
 const CandidateDashboard = lazy(() => import('./pages/CandidateDashboard'))
 const CompanyDashboard   = lazy(() => import('./pages/CompanyDashboard'))
 const ApplicantPipeline = lazy(() => import('./pages/ApplicantPipeline'))
@@ -319,6 +321,8 @@ export default function App() {
               <Route path="/register/company" element={<CompanyRegister />} />
               <Route path="/login/candidate" element={<CandidateLogin />} />
               <Route path="/register/candidate" element={<CandidateRegister />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               <Route path="/candidate/dashboard" element={<PrivateRoute role="candidate"><CandidateDashboard /></PrivateRoute>} />
               <Route path="/candidate/jobs" element={<PrivateRoute role="candidate"><JobBoard /></PrivateRoute>} />

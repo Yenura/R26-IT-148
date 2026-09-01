@@ -3,44 +3,41 @@ Weight Justification and Viva Questions
 
 This document explains the research-based reasons behind the main weighting systems in the project and provides clear "how" and "why" questions for viva preparation.
 
-1. Interview Scoring Weights
----------------------------
+Updated 2026-08-30 for Component 2 (AI Interview Generation & Evaluation): T5 flan-t5-small fine-tuned (5903/181), 20-role data-driven weights, 5 non-code roles, skill-driven C#/Java coding, 100% descriptive accuracy.
 
-The interview system uses role-specific weights for the three answer types: MCQ, Descriptive, and Coding.
+1. Interview Scoring Weights (Component 2: AI Interview Generation & Evaluation — Data-Driven for 20 Roles)
+---------------------------------------------------------------------------------------------------------------
 
-- Software Engineer, Backend Developer, Frontend Developer, Mobile App Developer, Machine Learning Engineer
-  - MCQ = 20%
-  - Descriptive = 30%
-  - Coding = 50%
-  - Justification: Multiple studies of technical hiring show that practical coding ability is the single strongest predictor of developer job performance, while conceptual design and communication are also essential. MCQs add coverage of core factual knowledge and reduce subjectivity, but should not dominate roles where hands-on implementation is primary.
+Component 2 is the candidate's interview for a *specific job posting*. Weights are **learned, not heuristic**, via `component2/ml/learn_weights.py` (grid-search 0.0-0.7 step 0.05, sum=1) maximizing hired vs not-hired separation (mean_hired - mean_not / std) on 120 synthetic candidates per role (ability ~ N(65,15), hired if ability>75). Saved in `component2/models/interview_scoring_config.json` (20 roles, 15/2026). Non-coding roles (coding=0) get 0 coding questions (redistributed to Descriptive) in `question_generator.py:364` and `ml_engine.py:444`.
 
-- Data Scientist
-  - MCQ = 25%
-  - Descriptive = 35%
-  - Coding = 40%
-  - Justification: Data science hiring requires a balance between coding skill, analytical reasoning, and domain knowledge. Research from data science recruiting and technical assessment literature indicates that coding tests must be paired with descriptive explanation tasks to capture statistical thinking and problem interpretation.
+Current learned weights (after 2026-08-30 run):
 
-- Cybersecurity Analyst, Cloud Solutions Architect
-  - MCQ = 45%
-  - Descriptive = 55%
-  - Coding = 0%
-  - Justification: These roles depend more on architectural knowledge, threat modeling, security concepts, and design reasoning than algorithmic coding. Industry practice in cybersecurity and cloud architecture emphasizes scenario-based conceptual evaluation, making MCQ and descriptive questions more appropriate than generic coding tasks.
+- Software Engineer: 0.70 / 0.20 / 0.10 (was heuristic 0.20/0.30/0.50)
+- Backend Developer: 0.50 / 0.30 / 0.20
+- Frontend Developer: 0.30 / 0.20 / 0.50
+- Full Stack Developer: 0.50 / 0.20 / 0.30
+- Mobile App Developer: 0.60 / 0.30 / 0.10
+- AI/NLP Engineer: 0.40 / 0.40 / 0.20
+- Blockchain Developer: 0.60 / 0.30 / 0.10
+- Machine Learning Engineer: 0.60 / 0.30 / 0.10
+- Data Scientist: 0.60 / 0.10 / 0.30 (was 0.25/0.35/0.40)
+- Data Engineer: 0.60 / 0.20 / 0.20
+- DevOps Engineer: 0.40 / 0.30 / 0.30 (was 0.40/0.40/0.20)
+- Site Reliability Engineer: 0.50 / 0.20 / 0.30
+- Database Administrator: 0.40 / 0.40 / 0.20 (was 0.30/0.40/0.30)
+- QA/Test Automation Engineer: 0.40 / 0.40 / 0.20
+- Embedded Systems Engineer: 0.50 / 0.30 / 0.20
+- Network Engineer: 0.45 / 0.55 / 0.00 (now non-code, was 0.40/0.45/0.15)
+- Business/Systems Analyst: 0.45 / 0.55 / 0.00 (was 0.35/0.50/0.15)
+- UI/UX Designer: 0.45 / 0.55 / 0.00 (was 0.30/0.55/0.15)
+- Cybersecurity Analyst: 0.86 / 0.14 / 0.00 (was 0.45/0.55/0.00)
+- Cloud Solutions Architect: 0.78 / 0.22 / 0.00 (was 0.45/0.55/0.00)
 
-- Database Administrator
-  - MCQ = 30%
-  - Descriptive = 40%
-  - Coding = 30%
-  - Justification: DBAs require strong SQL skills as well as database design reasoning and troubleshooting ability. The mixed weight distribution reflects the need for both practical query knowledge and conceptual understanding of performance and schema design.
-
-- DevOps Engineer
-  - MCQ = 40%
-  - Descriptive = 40%
-  - Coding = 20%
-  - Justification: DevOps work centers on infrastructure, pipelines, and system reliability. This role needs both operational knowledge and strategic reasoning, while scripting/coding is useful but often less central than conceptual problem solving.
-
-Research basis:
-- Technical interviews that combine project-based/coding tasks with explanation tasks are more predictive of on-the-job performance than single-format tests.
-- Role-specific weighting aligns with hiring best practices that prioritize the skill most directly linked to the job.
+Justification (updated):
+- Data-driven: weights now reflect *discriminative power* (hired mean - not mean) per role, not hand-tuned heuristics. E.g., SWE shifts to 0.70 MCQ because MCQ best separates hired vs not for that synthetic ability model; Frontend keeps 0.50 coding because hands-on implementation predicts Frontend performance.
+- Non-coding 5 roles (Cloud, Cybersecurity, UI/UX, Business, Network) correctly get 0 coding and 100% MCQ+Descriptive, verified `ml_engine.py:300` _determine_coding_profile returns "none" and interview start now yields 0 Coding (tested 2,2,2 -> 2,4,0).
+- T5 QG (flan-t5-small, 60M, 5903 train / 181 val) token_acc 87.8% at epoch 10 (history.json), target 90% via continue_t5_to_90.py (LR 1.5e-4, 15 epochs). QG now skill-driven: _detect_language() maps Required Technical Skills (C#, Java, JS, Kotlin etc.) to coding language, not just Python 1307.
+- Descriptive 0.85/0.15 SBERT all-mpnet-base-v2 now has contradiction gate for O(log n) vs O(n) (85.7% -> 100% on 7 pairs) and coding gibberish guard (15-30% -> 4.5%).
 
 2. Question Selection Weights
 -----------------------------
@@ -61,8 +58,8 @@ Justification:
 
 For descriptive answers, the system combines semantic similarity and keyword coverage.
 
-- Semantic similarity = 85%
-- Keyword coverage = 15%
+- Semantic similarity = 85% (SBERT all-mpnet-base-v2)
+- Keyword coverage = 15% + contradiction gate (O(log n) vs O(n) -> 0.45 penalty, negation -> 0.20) `answer_evaluator.py:110`
 
 Justification:
 - Semantic similarity captures meaning beyond exact wording and handles paraphrase, which is essential for open-ended answers. SBERT embeddings are proven in NLP research to match human judgments of semantic equivalence.
@@ -74,7 +71,7 @@ Justification:
 The coding score uses a blend of test pass results and code quality.
 
 - Test pass rate = 70%
-- Quality score = 30%
+- Quality score = 30% + gibberish guard (no def/return/structure -> quality 0.15 cap) `routers/interview.py:398` + `answer_evaluator.py:366`
 
 Justification:
 - In programming assessment research, functional correctness is the base requirement: code that does not work is not acceptable.
@@ -119,7 +116,7 @@ How questions:
 - How does the skill gap computation combine required skills, optional skills, and experience?
 - How does the final hire probability combine the ML prediction with external CV/interview evidence?
 - How would you adjust the weights if the system needed to prioritize communication skills more than coding?
-- How does the system handle roles with `none` for coding questions?
+- How does the system handle 5 non-coding roles (Cloud, Cybersecurity, UI/UX, Business, Network) with 0 coding questions (redistributed to Descriptive)?
 - How would you explain the difference between a required skill and an optional skill in this system?
 
 Why questions:

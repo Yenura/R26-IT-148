@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, useSearchParams, Link } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Target, RefreshCw, TrendingUp, Briefcase, HelpCircle,
@@ -15,6 +15,9 @@ import EmptyState from '../components/EmptyState'
 
 export default function SkillGap() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const userRole = localStorage.getItem('recruitai.role') || 'candidate'
+  const paramJobId = searchParams.get('jobId')
   useAuth('candidate')
   const candidateId = localStorage.getItem('recruitai.user_id') || 'web-user'
 
@@ -71,12 +74,12 @@ export default function SkillGap() {
       try {
         sessionStorage.setItem(`recruitai.skillgap.${candidateId}`, JSON.stringify(reports))
       } catch {}
-      if (arr.length === 0) {
+      if (reports.length === 0) {
         setSelectedJobId(null)
-      } else if (paramJobId && arr.some((a) => a.job_id === paramJobId)) {
+      } else if (paramJobId && reports.some((a) => a.job_id === paramJobId)) {
         setSelectedJobId(paramJobId)
-      } else if (!selectedJobId || !arr.some((a) => a.job_id === selectedJobId)) {
-        setSelectedJobId(arr[0].job_id)
+      } else if (!selectedJobId || !reports.some((a) => a.job_id === selectedJobId)) {
+        setSelectedJobId(reports[0].job_id)
       }
     } catch {
       if (appliedReports.length === 0) toast.error('Failed to load applied jobs analysis')

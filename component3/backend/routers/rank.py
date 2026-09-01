@@ -537,9 +537,14 @@ async def rank_pipeline(request: Request, job_id: str):
                 weaknesses.append(f"Weak descriptive theory answers ({p_desc*100:.0f}%)")
                 
             if not r["passed_hard_filter"]:
-                verdict = "Disqualified (Filter Failed)"
-                badge_color = "#ef4444"
-                reasoning = f"Failed mandatory role filter: {r.get('filter_fail_reason', 'Did not meet prerequisites')}."
+                if r["CSS"] > 0:
+                    verdict = "Near-Miss (Conditional)"
+                    badge_color = "#f59e0b"
+                    reasoning = f"Near-miss candidate: {r.get('filter_fail_reason', 'Slightly below threshold')}. CSS score penalized but still ranked."
+                else:
+                    verdict = "Disqualified (Filter Failed)"
+                    badge_color = "#ef4444"
+                    reasoning = f"Failed mandatory role filter: {r.get('filter_fail_reason', 'Did not meet prerequisites')}."
             elif css >= 0.80:
                 verdict = "Highly Recommended"
                 badge_color = "#22c55e"

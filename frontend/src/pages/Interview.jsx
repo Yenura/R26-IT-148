@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Play, CheckCircle2, Code, FileText, Settings, Sparkles,
-  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy
+  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
@@ -258,7 +258,7 @@ export default function Interview() {
 
   const questions = session?.questions || []
   const q = questions[currentQ]
-  if (step === 'interview' && !q) {
+  if (step === 'quiz' && !q) {
     return (
       <div style={{ padding: 60, textAlign: 'center' }}>
         <p>Loading question...</p>

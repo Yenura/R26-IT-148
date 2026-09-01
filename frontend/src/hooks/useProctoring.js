@@ -232,7 +232,7 @@ export default function useProctoring(active, options = {}) {
         const faceWidth = Math.abs(rightCheek.x - leftCheek.x) || 0.01
         const cheekOffset = (rightCheek.x - leftCheek.x) / faceWidth
         // Roll (tilt): eye angle
-        const eyeAngle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x)
+        const eyeAngle = Math.atan2(rightEyeOuter.y - leftEyeOuter.y, rightEyeOuter.x - leftEyeOuter.x)
         const roll = Math.round(eyeAngle * 100) / 100
         const pitch = Math.round((chinOffset - 0.5) * 100) / 100
         const yaw = Math.round((cheekOffset - 0.5) * 100) / 100

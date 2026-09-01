@@ -80,6 +80,7 @@ export default function CandidateDashboard() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
+const [jobSearch, setJobSearch] = useState('')
 
   useEffect(() => { loadData() }, [])
 

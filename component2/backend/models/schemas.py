@@ -141,8 +141,8 @@ class DescriptiveScoreDetail(BaseModel):
     keyword_coverage: float
     raw_score: float
     final_score: float
-    alpha: float = 0.7
-    beta: float = 0.3
+    alpha: float = 0.85
+    beta: float = 0.15
 
 
 class CodeScoreDetail(BaseModel):

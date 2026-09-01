@@ -9,7 +9,7 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from security import hash_password, verify_password, create_access_token, decode_access_token
 
-from schemas import CompanyRegister, CandidateRegister, LoginRequest, Token, UserOut, ProfileUpdate, PasswordChange
+from schemas import CompanyRegister, CandidateRegister, LoginRequest, Token, UserOut, ProfileUpdate, PasswordChange, ForgotPasswordRequest, ResetPasswordRequest
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
@@ -135,6 +135,45 @@ async def login_candidate(request: Request, payload: LoginRequest):
         raise HTTPException(status_code=401, detail="Incorrect password. Please verify and try again.")
     token = create_access_token(str(user["_id"]), role="candidate")
     return Token(access_token=token, role="candidate", user_id=str(user["_id"]))
+
+
+
+# ── Forgot / Reset ──────────────────────────────────────────────
+import secrets
+
+@router.post("/forgot-password")
+@limiter.limit("5/minute")
+async def forgot_password(request: Request, payload: ForgotPasswordRequest):
+    db = request.app.state.db
+    email = payload.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    # Always return success to avoid email enumeration
+    if not user:
+        return {"success": True, "message": "If an account exists, a reset link has been generated.", "reset_token": None}
+    token = secrets.token_urlsafe(32)
+    expires = datetime.now(timezone.utc).timestamp() + 900  # 15 min
+    await db.password_resets.update_many({"email": email, "used": False}, {"$set": {"used": True}})
+    await db.password_resets.insert_one({"email": email, "user_id": str(user["_id"]), "role": user.get("role","candidate"), "token": token, "expires_at": expires, "used": False, "created_at": datetime.now(timezone.utc)})
+    # For demo, return token directly (in prod, email it)
+    return {"success": True, "message": "If an account exists, a reset link has been generated.", "reset_token": token, "expires_in": 900}
+
+
+@router.post("/reset-password")
+@limiter.limit("5/minute")
+async def reset_password(request: Request, payload: ResetPasswordRequest):
+    db = request.app.state.db
+    doc = await db.password_resets.find_one({"token": payload.token, "used": False})
+    if not doc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+    if datetime.now(timezone.utc).timestamp() > doc["expires_at"]:
+        await db.password_resets.update_one({"_id": doc["_id"]}, {"$set": {"used": True}})
+        raise HTTPException(status_code=400, detail="Reset token has expired")
+    user = await db.users.find_one({"_id": ObjectId(doc["user_id"])})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    await db.users.update_one({"_id": user["_id"]}, {"$set": {"password": hash_password(payload.new_password)}})
+    await db.password_resets.update_one({"_id": doc["_id"]}, {"$set": {"used": True}})
+    return {"success": True, "message": "Password has been reset. Please sign in."}
 
 
 # ── Common ──────────────────────────────────────────────────────

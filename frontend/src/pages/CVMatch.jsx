@@ -32,7 +32,7 @@ const cleanCandidateName = (rawName, fallbackFilename) => {
   return name || 'Candidate Profile'
 }
 
-const cleanEducationText = (rawEdu) => {
+const cleanEducationText = (rawEdu, maxLen = 40) => {
   if (!rawEdu) return 'BSc Degree'
   let edu = String(rawEdu).trim()
   // Separate glued letters from PDF/OCR like BSc(Hons)SoftwareEngineering
@@ -45,7 +45,7 @@ const cleanEducationText = (rawEdu) => {
   edu = edu.replace(/\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$/i, '')
   edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
   edu = edu.replace(/\s+/g, ' ').trim()
-  return edu.length > 40 ? edu.slice(0, 40) + '...' : edu
+  return edu.length > maxLen ? edu.slice(0, maxLen) + '...' : edu
 }
 
 const cleanExperienceText = (r) => {
