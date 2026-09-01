@@ -17,10 +17,28 @@ warnings.filterwarnings("ignore")
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from data.role_configs import ROLES, ROLE_DISPLAY_NAMES
 
-FEATURE_COLS = ["S_edu", "S_exp", "S_skill", "P_mcq", "P_desc", "P_code",
-                "S_cv", "S_int", "CSS", "skill_x_mcq", "skill_x_code", "exp_x_code"]
+BASE_COLS    = ["S_edu", "S_exp", "S_skill", "P_mcq", "P_desc", "P_code"]
+FEATURE_COLS = BASE_COLS + ["S_cv", "S_int", "CSS", "skill_x_mcq", "skill_x_code", "exp_x_code"]
 LABEL_COL    = "relevance_label"
 GROUP_COL    = "job_role"
+
+
+def ensure_features(df):
+    """Compute engineered columns if missing from CSV."""
+    df = df.copy()
+    if "S_cv" not in df.columns:
+        df["S_cv"] = 0.40 * df["S_edu"] + 0.30 * df["S_exp"] + 0.50 * df["S_skill"]
+    if "S_int" not in df.columns:
+        df["S_int"] = 0.20 * df["P_mcq"] + 0.30 * df["P_desc"] + 0.50 * df["P_code"]
+    if "CSS" not in df.columns:
+        df["CSS"] = 0.40 * df["S_cv"] + 0.60 * df["S_int"]
+    if "skill_x_mcq" not in df.columns:
+        df["skill_x_mcq"] = df["S_skill"] * df["P_mcq"]
+    if "skill_x_code" not in df.columns:
+        df["skill_x_code"] = df["S_skill"] * df["P_code"]
+    if "exp_x_code" not in df.columns:
+        df["exp_x_code"] = df["S_exp"] * df["P_code"]
+    return df
 
 
 # ── Metrics ──────────────────────────────────────────────────────
@@ -272,9 +290,9 @@ if __name__ == "__main__":
     for p in [RESULTS, MODELS]:
         os.makedirs(p, exist_ok=True)
 
-    tr = pd.read_csv(f"{BASE}/train_set.csv")
-    va = pd.read_csv(f"{BASE}/val_set.csv")
-    te = pd.read_csv(f"{BASE}/test_set.csv")
+    tr = ensure_features(pd.read_csv(f"{BASE}/train_set.csv"))
+    va = ensure_features(pd.read_csv(f"{BASE}/val_set.csv"))
+    te = ensure_features(pd.read_csv(f"{BASE}/test_set.csv"))
     print(f"Train={len(tr)} | Val={len(va)} | Test={len(te)}")
 
     # CSS baseline evaluation across all 20 roles
