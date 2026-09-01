@@ -175,7 +175,7 @@ def test_security():
         record("Security", "Auth: Password not in response", "PASS",
                details="Token returned, no password field")
 
-    # 2h. CORS
+    # 2h. CORS — evil.com origin should be REJECTED (no ACAO header)
     try:
         req = urllib.request.Request(f"{C0}/api/v1/jobs/",
             headers={"Origin": "https://evil.com",
@@ -183,14 +183,20 @@ def test_security():
         req.get_method = lambda: "OPTIONS"
         resp = urllib.request.urlopen(req, timeout=5)
         acao = resp.headers.get("Access-Control-Allow-Origin", "")
-        if acao and acao != "*":
-            record("Security", "CORS: Restricted origin", "PASS", details=f"ACAO={acao}")
+        if not acao:
+            record("Security", "CORS: Evil origin rejected", "PASS",
+                   details="ACAO not set for disallowed origin (correct)")
         else:
-            record("Security", "CORS: Wildcard/open", "WARN", details=f"ACAO={acao or 'not set'}")
+            record("Security", "CORS: Evil origin allowed", "WARN",
+                   details=f"ACAO={acao} (should be empty)")
     except urllib.error.HTTPError as e:
         acao = e.headers.get("Access-Control-Allow-Origin", "") if e.headers else ""
-        record("Security", "CORS: Checked", "PASS" if acao else "WARN",
-               details=f"ACAO={acao or 'not set'}, HTTP {e.code}")
+        if not acao:
+            record("Security", "CORS: Evil origin rejected", "PASS",
+                   details=f"ACAO not set, HTTP {e.code} (correct rejection)")
+        else:
+            record("Security", "CORS: Evil origin allowed", "WARN",
+                   details=f"ACAO={acao}, HTTP {e.code}")
     except Exception as e:
         record("Security", "CORS: OPTIONS check", "WARN", details=str(e)[:50])
 
@@ -302,8 +308,9 @@ def test_usability():
 
         # Login page
         t0 = time.perf_counter()
-        page.goto(f"{FE}/login/candidate", timeout=10000)
+        page.goto(f"{FE}/login/candidate", timeout=15000)
         page.wait_for_load_state("networkidle", timeout=8000)
+        page.wait_for_timeout(2000)  # Wait for React hydration
         ms = (time.perf_counter() - t0) * 1000
         record("Usability", "Login page loads", "PASS" if ms < 5000 else "WARN", round(ms, 0), "ms")
 

@@ -1,13 +1,13 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Play, CheckCircle2, Code, FileText, Settings, Sparkles,
   ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
+
+const ScoreChart = lazy(() => import('../components/ScoreChart'))
 import { useAuth } from '../hooks/useAuth'
 import useProctoring from '../hooks/useProctoring'
 import PageHeader from '../components/PageHeader'
@@ -36,7 +36,6 @@ const ROLE_LANGUAGES = {
 const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst"]
 
 export default function Interview() {
-  const ct = getChartTheme()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const jobRole = searchParams.get('role') || ''
@@ -847,21 +846,9 @@ export default function Interview() {
             Section Score Breakdown
           </h3>
           <div style={{ height: 220, width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <XAxis dataKey="name" stroke={ct.axis} tick={{ fill: ct.text, fontSize: 12 }} />
-                <YAxis domain={[0, 100]} stroke={ct.axis} tick={{ fill: ct.text, fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 8 }}
-                  formatter={(val) => [`${Number(val).toFixed(1)}%`, 'Score']}
-                />
-                <Bar dataKey="score" radius={[6, 6, 0, 0]}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--color-primary)' : index === 1 ? 'var(--color-info)' : 'var(--color-purple)'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <Suspense fallback={<div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-fg-muted)' }}>Loading chart...</div>}>
+              <ScoreChart data={chartData} />
+            </Suspense>
           </div>
         </div>
 

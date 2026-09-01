@@ -21,6 +21,8 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -45,6 +47,7 @@ from data.role_requirements import ALL_ROLES, REQUIRED_SKILLS, REQUIRED_YEARS
 
 logger = logging.getLogger("component1.router.cv")
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 _CANDIDATE_ID_RE = re.compile(r'^[A-Za-z0-9\-_]+$')
 
@@ -186,7 +189,8 @@ async def _full_analysis(
 # ── GET /api/v1/roles ──────────────────────────────────────────────────────────
 
 @router.get("/roles", response_model=RolesListResponse, summary="List all 20 canonical roles")
-async def list_roles():
+@limiter.limit("60/minute")
+async def list_roles(request: Request):
     """Return all 20 canonical job roles with their required skills and experience."""
     roles = [
         RoleInfo(
@@ -202,7 +206,9 @@ async def list_roles():
 # ── POST /api/v1/cv/classify ───────────────────────────────────────────────────
 
 @router.post("/classify", response_model=ClassifyResponse, summary="Role classification only")
+@limiter.limit("20/minute")
 async def classify_cv(
+    request: Request,
     payload: ClassifyRequest,
     predictor=Depends(_get_predictor),
 ):
@@ -230,7 +236,9 @@ async def classify_cv(
 
 @router.post("/analyze", response_model=CVAnalysisResponse, status_code=status.HTTP_201_CREATED,
              summary="Analyze a CV (text or file upload)")
+@limiter.limit("10/minute")
 async def analyze_cv_text(
+    request: Request,
     payload: CVTextRequest,
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
