@@ -30,18 +30,20 @@ class QGDataset(Dataset):
 
 def main():
     device=torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Device: {device}, resuming {OUTPUT_DIR}")
+    print(f"Device: {device}, resuming {OUTPUT_DIR}", flush=True)
     tok=AutoTokenizer.from_pretrained(OUTPUT_DIR)
+    print("Tokenizer loaded", flush=True)
     model=T5ForConditionalGeneration.from_pretrained(OUTPUT_DIR)
+    print("Model loaded", flush=True)
     model.to(device)
-    print(f"Loaded checkpoint params {sum(p.numel() for p in model.parameters()):,}")
+    print(f"Loaded checkpoint params {sum(p.numel() for p in model.parameters()):,}", flush=True)
     data=json.loads(DATASET_PATH.read_text(encoding="utf-8"))
     train, val = data["train"], data["val"]
-    print(f"train {len(train)} val {len(val)}")
+    print(f"train {len(train)} val {len(val)}", flush=True)
     # resume history if exists
     hist_path=OUTPUT_DIR/"history.json"
     hist=json.loads(hist_path.read_text()) if hist_path.exists() else {"train_loss":[],"val_loss":[],"val_token_acc":[],"bleu1":[],"rouge_l":[]}
-    print(f"Current best tok_acc {max(hist['val_token_acc']) if hist['val_token_acc'] else 0:.4f}")
+    print(f"Current best tok_acc {max(hist['val_token_acc']) if hist['val_token_acc'] else 0:.4f}", flush=True)
 
     train_ds=QGDataset(train,tok,MAX_SRC,MAX_TGT)
     val_ds=QGDataset(val,tok,MAX_SRC,MAX_TGT)
