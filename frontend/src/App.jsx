@@ -23,13 +23,30 @@ const ApplicantPipeline = lazy(() => import('./pages/ApplicantPipeline'))
 const JobBoard      = lazy(() => import('./pages/JobBoard'))
 const JobDetail     = lazy(() => import('./pages/JobDetail'))
 const InterviewPage = lazy(() => import('./pages/Interview'))
+const InterviewResultPage = lazy(() => import('./pages/InterviewResult'))
+const ProctoringDashboardPage = lazy(() => import('./pages/ProctoringDashboard'))
+const QuestionBankPage = lazy(() => import('./pages/QuestionBank'))
 const CVMatchPage   = lazy(() => import('./pages/CVMatch'))
 const RankingPage   = lazy(() => import('./pages/Ranking'))
+const RankingResultsPage = lazy(() => import('./pages/RankingResults'))
+const RankingWeightsPage = lazy(() => import('./pages/RankingWeights'))
+const AnalyticsDashboardPage = lazy(() => import('./pages/AnalyticsDashboard'))
+const RoleInsightsPage = lazy(() => import('./pages/RoleInsights'))
 const SkillGapPage  = lazy(() => import('./pages/SkillGap'))
+const SkillGapReportsPage = lazy(() => import('./pages/SkillGapReports'))
+const SkillGapReportDetailPage = lazy(() => import('./pages/SkillGapReportDetail'))
+const SkillDependencyGraphPage = lazy(() => import('./pages/SkillDependencyGraph'))
+const CareerResourcesPage = lazy(() => import('./pages/CareerResources'))
+const CareerRoadmapPage = lazy(() => import('./pages/CareerRoadmap'))
 const ProgressPage  = lazy(() => import('./pages/Progress'))
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard'))
 const ProfilePage   = lazy(() => import('./pages/Profile'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfile'))
+const ResumeDetailPage = lazy(() => import('./pages/ResumeDetail'))
+const ResumeParsePage = lazy(() => import('./pages/ResumeParse'))
+const RolePredictPage = lazy(() => import('./pages/RolePredict'))
+const CVManagementPage = lazy(() => import('./pages/CVManagement'))
+const CVAnalyzeFilePage = lazy(() => import('./pages/CVAnalyzeFile'))
 
 const Loading = () => (
   <div style={{ padding: 60, textAlign: 'center' }}>
@@ -137,6 +154,7 @@ export default function App() {
     else if (path.includes('/cv-match')) title = 'CV Match | RecruitAI'
     else if (path.includes('/skill-gap')) title = 'Skill Gap Analysis | RecruitAI'
     else if (path.includes('/ranking')) title = 'Candidate Ranking | RecruitAI'
+    else if (path.includes('/analytics')) title = 'Analytics | RecruitAI'
     else if (path.includes('/leaderboard')) title = 'Leaderboard | RecruitAI'
     else if (path.includes('/progress')) title = 'Progress Tracking | RecruitAI'
     else if (path.includes('/profile')) title = 'Profile | RecruitAI'
@@ -328,41 +346,49 @@ export default function App() {
               <Route path="/candidate/jobs" element={<PrivateRoute role="candidate"><JobBoard /></PrivateRoute>} />
               <Route path="/candidate/jobs/:id" element={<PrivateRoute role="candidate"><JobDetail /></PrivateRoute>} />
               <Route path="/candidate/interview" element={<PrivateRoute role="candidate"><InterviewPage /></PrivateRoute>} />
+              <Route path="/candidate/interview/result/:interviewId" element={<PrivateRoute role="candidate"><InterviewResultPage /></PrivateRoute>} />
+              <Route path="/candidate/interview/proctoring/:interviewId" element={<PrivateRoute role="candidate"><ProctoringDashboardPage /></PrivateRoute>} />
               <Route path="/profile" element={<PrivateRoute role="candidate"><ProfilePage /></PrivateRoute>} />
+              <Route path="/candidate/resume/:resumeId" element={<PrivateRoute role="candidate"><ResumeDetailPage /></PrivateRoute>} />
+              <Route path="/candidate/resume/parse" element={<PrivateRoute role="candidate"><ResumeParsePage /></PrivateRoute>} />
+              <Route path="/candidate/resume/predict-role" element={<PrivateRoute role="candidate"><RolePredictPage /></PrivateRoute>} />
+              <Route path="/candidate/cv/analyze-file" element={<PrivateRoute role="candidate"><CVAnalyzeFilePage /></PrivateRoute>} />
 
               <Route path="/company/dashboard" element={<PrivateRoute role="company"><CompanyDashboard /></PrivateRoute>} />
               <Route path="/company/jobs/:id" element={<PrivateRoute role="company"><JobDetail /></PrivateRoute>} />
               <Route path="/company/pipeline/:jobId" element={<PrivateRoute role="company"><ApplicantPipeline /></PrivateRoute>} />
               <Route path="/company/profile" element={<PrivateRoute role="company"><CompanyProfilePage /></PrivateRoute>} />
+              <Route path="/company/questions/:role" element={<PrivateRoute role="company"><QuestionBankPage /></PrivateRoute>} />
+              <Route path="/company/cv-management" element={<PrivateRoute role="company"><CVManagementPage /></PrivateRoute>} />
 
-              {/* Seamless Universal Route Aliases */}
+              {/* Universal Route Aliases */}
               <Route path="/pipeline/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
               <Route path="/candidate/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
-              <Route path="/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
 
               <Route path="/pipeline/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
               <Route path="/company/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
-              <Route path="/candidate/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
-              <Route path="/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
+
+              <Route path="/company/ranking/results/:jobId" element={<PrivateRoute role="company"><RankingResultsPage /></PrivateRoute>} />
+              <Route path="/company/ranking/weights" element={<PrivateRoute role="company"><RankingWeightsPage /></PrivateRoute>} />
+
+              <Route path="/company/analytics" element={<PrivateRoute role="company"><AnalyticsDashboardPage /></PrivateRoute>} />
+              <Route path="/company/analytics/role-insights/:role" element={<PrivateRoute role="company"><RoleInsightsPage /></PrivateRoute>} />
+              <Route path="/company/analytics/role-insights" element={<PrivateRoute role="company"><RoleInsightsPage /></PrivateRoute>} />
 
               <Route path="/pipeline/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
               <Route path="/candidate/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
-              <Route path="/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
-
-              <Route path="/pipeline/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
-              <Route path="/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
+              <Route path="/candidate/skill-gap/reports" element={<PrivateRoute><SkillGapReportsPage /></PrivateRoute>} />
+              <Route path="/candidate/skill-gap/reports/:candidateId" element={<PrivateRoute><SkillGapReportDetailPage /></PrivateRoute>} />
+              <Route path="/candidate/skill-gap/graph" element={<PrivateRoute><SkillDependencyGraphPage /></PrivateRoute>} />
+              <Route path="/candidate/career/resources/:role" element={<PrivateRoute><CareerResourcesPage /></PrivateRoute>} />
+              <Route path="/candidate/career/roadmap" element={<PrivateRoute><CareerRoadmapPage /></PrivateRoute>} />
+              <Route path="/candidate/career/roadmap/:candidateId" element={<PrivateRoute><CareerRoadmapPage /></PrivateRoute>} />
 
               <Route path="/pipeline/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
               <Route path="/candidate/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
-              <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
 
               <Route path="/pipeline/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
               <Route path="/company/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
-              <Route path="/candidate/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
-              <Route path="/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
-
-              <Route path="/jobs" element={<PrivateRoute><JobBoard /></PrivateRoute>} />
-              <Route path="/interview" element={<PrivateRoute><InterviewPage /></PrivateRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

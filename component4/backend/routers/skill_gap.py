@@ -366,7 +366,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
     db = request.app.state.db
     from bson import ObjectId
-    from services.ml_engine import RESOURCES, JOB_REQ, compute_gap, _resolve_role_weights, _LAMBDAMART_MODEL
+    from services.ml_engine import RESOURCES, JOB_REQ, compute_gap
 
     cand_id_filters = [{"candidate_id": candidate_id}]
     if ObjectId.is_valid(candidate_id):

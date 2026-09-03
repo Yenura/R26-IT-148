@@ -14,23 +14,11 @@ import {
   c1Analyze, c1Classify, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
+import { cleanCandidateName, cleanCompanyName } from '../utils'
 import PageHeader from '../components/PageHeader'
 import UploadZone from '../components/UploadZone'
 import LoadingState from '../components/LoadingState'
 import ConfirmDialog from '../components/ConfirmDialog'
-
-const cleanCandidateName = (rawName, fallbackFilename) => {
-  if (!rawName) return (fallbackFilename || 'Candidate').replace(/\.[^/.]+$/, '').replace(/[_-]/g, ' ')
-  let name = String(rawName).trim()
-  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
-  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
-  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
-  const words = name.split(/\s+/).filter(Boolean)
-  if (words.length > 3) {
-    name = words.slice(0, 3).join(' ')
-  }
-  return name || 'Candidate Profile'
-}
 
 const cleanEducationText = (rawEdu, maxLen = 40) => {
   if (!rawEdu) return 'BSc Degree'
@@ -53,14 +41,6 @@ const cleanExperienceText = (r) => {
   if (yrs <= 0) return 'Graduate / Entry'
   if (yrs === 1) return '1.0 yr exp'
   return `${yrs.toFixed(1)} yrs exp`
-}
-
-const cleanCompanyName = (name) => {
-  if (!name) return 'General Tech'
-  const trimmed = name.trim()
-  if (/^techcorp\b/i.test(trimmed)) return 'TechCorp'
-  if (trimmed.toLowerCase() === 'slt') return 'SLT Mobitel'
-  return trimmed
 }
 
 const SKILL_CASE_MAP = {

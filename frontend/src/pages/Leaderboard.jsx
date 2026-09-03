@@ -6,24 +6,12 @@ import {
   Send, ShieldCheck, Sparkles, UserCheck, Briefcase, Plus
 } from 'lucide-react'
 import { c4Leaderboard, uJobsMy, uJobsApplicants, uJobsCompanyApplicants, c3Pipeline } from '../api'
+import { cleanCandidateName } from '../utils'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
-
-const cleanCandidateName = (rawName, fallbackId) => {
-  if (!rawName) return `Candidate ${(fallbackId || '01').slice(-4)}`
-  let name = String(rawName).trim()
-  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
-  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
-  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
-  const words = name.split(/\s+/).filter(Boolean)
-  if (words.length > 3) {
-    name = words.slice(0, 3).join(' ')
-  }
-  return name || 'Candidate'
-}
 
 export default function Leaderboard() {
   const navigate = useNavigate()

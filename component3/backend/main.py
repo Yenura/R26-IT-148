@@ -31,7 +31,7 @@ logger = logging.getLogger("component3")
 
 PORT = int(os.getenv("PORT", "8003"))
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:5174"
+    "ALLOWED_ORIGINS", "http://localhost:5174,http://127.0.0.1:5174"
 ).split(",")
 
 limiter = Limiter(key_func=get_remote_address)

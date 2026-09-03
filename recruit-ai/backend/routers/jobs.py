@@ -43,6 +43,14 @@ _DEFAULT_LEVEL = "Mid-Level"
 _LEVEL_WORDS = set(w for _, ws in _LEVEL_PATTERNS for w in ws) | {"lead", "associate", "mid", "level", "l3"}
 
 
+def _normalize_job_role(title: str) -> str:
+    """Derive a display role from a job title by stripping level words."""
+    words = re.findall(r"[a-z0-9+#.]+", (title or "").lower())
+    kept = [w for w in words if w not in _LEVEL_WORDS]
+    role = " ".join(kept).strip()
+    return role.title() if role else (title or "").strip().title()
+
+
 def _normalize_role_match(role_str: str) -> str:
     if not role_str:
         return ""

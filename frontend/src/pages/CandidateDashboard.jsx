@@ -11,7 +11,7 @@ import {
   c0JobsAll, c0Predictions, c0Applications
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
-import { toArr } from '../utils'
+import { toArr, cleanCandidateName, cleanCompanyName } from '../utils'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
@@ -19,38 +19,6 @@ import UploadZone from '../components/UploadZone'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
-
-const cleanCandidateTitle = (candName, filename) => {
-  if (candName && String(candName).trim() && !candName.toLowerCase().includes('.pdf') && !candName.toLowerCase().includes('candidate')) {
-    return candName.trim()
-  }
-  if (filename) {
-    let name = filename
-      .replace(/\.[^/.]+$/, '')
-      .replace(/[\(\[\d\)\]]/g, '')
-      .replace(/[_-]+/g, ' ')
-      .replace(/\b(?:cv|resume|se|swe|intern|developer)\b/gi, '')
-      .trim()
-    if (name.length > 2) {
-      return name.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-    }
-  }
-  return 'Candidate Profile'
-}
-
-const cleanCompanyName = (rawCompany) => {
-  if (!rawCompany) return 'Enterprise Partner'
-  let c = String(rawCompany).trim()
-  c = c.replace(/\s*\d{6,}\b/g, '')
-  if (c.toLowerCase() === 'virtusa') return 'Virtusa'
-  if (c.toLowerCase() === 'syscolabs' || c.toLowerCase() === 'sysco labs') return 'Sysco LABS'
-  if (c.toLowerCase() === 'ifs') return 'IFS'
-  if (c.toLowerCase() === 'wso2') return 'WSO2'
-  if (c.toLowerCase() === '99x') return '99x'
-  if (c.toLowerCase() === 'codegen') return 'CodeGen'
-  if (c.toLowerCase() === 'tech corp' || c.toLowerCase() === 'techcorp') return 'TechCorp Global'
-  return c.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-}
 
 const cleanEducationText = (rawEdu) => {
   if (!rawEdu) return 'BSc Degree in Computing / IT'
@@ -379,7 +347,7 @@ const [jobSearch, setJobSearch] = useState('')
                       /* Standard View Mode */
                       <div>
                         {(() => {
-                          const candDisplayName = cleanCandidateTitle(r.candidate_name, r.filename)
+                          const candDisplayName = cleanCandidateName(r.candidate_name, r.filename)
                           const initials = candDisplayName.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'CV'
                           return (
                             <>

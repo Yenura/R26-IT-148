@@ -123,7 +123,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 # CORS Configuration
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:5174"
+    "http://localhost:5174,http://127.0.0.1:5174"
 ).split(",")
 app.add_middleware(
     CORSMiddleware,
