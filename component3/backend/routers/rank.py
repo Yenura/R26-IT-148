@@ -285,17 +285,13 @@ async def rank_pipeline(request: Request, job_id: str):
         required_skills = job.get("required_skills", ["Python", "SQL", "Git"]) if job else ["Python", "SQL"]
         
         # 2. Fetch candidates for this job (Applications + CV Match + Interviewed + Results) in parallel
+        # Strict job-ID scoping: only documents explicitly linked to THIS job posting.
+        # Title/role-based fallbacks were removed — they matched candidates from other
+        # companies' jobs sharing the same title (e.g. every "Software Engineer" posting),
+        # making brand-new jobs appear to already have applicants.
         query_conditions = [{"job_id": job_id}, {"job_id": str(job_id)}]
         if ObjectId.is_valid(job_id):
             query_conditions.append({"job_id": ObjectId(job_id)})
-
-        if job:
-            j_t = job.get("title")
-            j_r = job.get("job_role")
-            if j_t:
-                query_conditions.extend([{"job_id": j_t}, {"job_title": j_t}, {"job_role": j_t}])
-            if j_r:
-                query_conditions.extend([{"job_id": j_r}, {"job_role": j_r}])
 
         apps_task = db.applications.find({"$or": query_conditions}).to_list(300)
         preds_task = db.predictions.find({"$or": query_conditions}).to_list(300)
