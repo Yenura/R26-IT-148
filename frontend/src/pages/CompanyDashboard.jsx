@@ -813,8 +813,15 @@ export default function CompanyDashboard() {
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
-                  <AutoValue value={derivedTotalMinutes(form)} />
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Coding time (sec):</label>
+                  <input
+                    type="number"
+                    min={60}
+                    max={1800}
+                    value={form.interview_coding_time}
+                    onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })}
+                    style={{ width: 80, padding: '4px 8px' }}
+                  />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
