@@ -5,7 +5,7 @@ import {
   ListOrdered, Trophy, Briefcase, Award, Brain,
   CheckCircle2, Users, ArrowRight, Eye, ChevronRight, Plus
 } from 'lucide-react'
-import { uJobsMy, c3Pipeline } from '../api'
+import { uJobsMy, c0JobsAll, c3Pipeline } from '../api'
 import PageHeader from '../components/PageHeader'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
