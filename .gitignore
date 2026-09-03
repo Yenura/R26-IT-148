@@ -593,3 +593,6 @@ screenshots/skillgap_light.png
 *.py
 nfr_test_report.json
 R26-IT-148_PLANNER_TASKS.json
+
+# Playwright test artifacts
+.playwright-mcp/
