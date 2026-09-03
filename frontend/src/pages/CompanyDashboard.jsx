@@ -48,15 +48,53 @@ const emptyForm = {
   experience_required: 0,
   education_required: 'Bachelor Degree',
   interview_required: true,
-  interview_question_count: 10,
   interview_mcq_count: 4,
   interview_desc_count: 3,
   interview_coding_count: 3,
   interview_mcq_time: 60,
   interview_desc_time: 300,
   interview_coding_time: 600,
-  interview_total_time: 60,
 }
+
+const clampInt = (v, fb, lo, hi) => {
+  const n = parseInt(v, 10)
+  return isNaN(n) ? fb : Math.max(lo, Math.min(hi, n))
+}
+
+// Auto-calculated interview totals (per-question section times, matching Interview.jsx).
+// Total Questions = sum of section counts; Total minutes = ceil of summed section seconds.
+const derivedQuestionCount = (f) =>
+  clampInt(f.interview_mcq_count, 4, 0, 30) +
+  clampInt(f.interview_desc_count, 3, 0, 30) +
+  clampInt(f.interview_coding_count, 3, 0, 30)
+
+const derivedTotalMinutes = (f) => {
+  const secs =
+    clampInt(f.interview_mcq_count, 4, 0, 30) * clampInt(f.interview_mcq_time, 60, 10, 300) +
+    clampInt(f.interview_desc_count, 3, 0, 30) * clampInt(f.interview_desc_time, 300, 30, 900) +
+    clampInt(f.interview_coding_count, 3, 0, 30) * clampInt(f.interview_coding_time, 600, 60, 1800)
+  return Math.max(10, Math.min(180, Math.ceil(secs / 60)))
+}
+
+const AutoValue = ({ value, suffix }) => (
+  <span style={{
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    minWidth: 80, padding: '4px 8px',
+    background: 'var(--color-bg-elevated)',
+    border: '1px dashed var(--color-border)',
+    borderRadius: 'var(--radius-sm)',
+    fontWeight: 700, color: 'var(--color-fg)',
+  }}>
+    {value}{suffix || ''}
+    <span style={{
+      fontSize: '9px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em',
+      padding: '1px 6px', borderRadius: 'var(--radius-full)',
+      background: 'var(--color-primary-muted)', color: 'var(--color-primary)',
+    }}>
+      Auto
+    </span>
+  </span>
+)
 
 export default function CompanyDashboard() {
   const navigate = useNavigate()
@@ -181,14 +219,17 @@ export default function CompanyDashboard() {
     }
 
     const expReq = parseInt(form.experience_required, 10)
-    const iqCount = parseInt(form.interview_question_count, 10)
-    const mcqCount = parseInt(form.interview_mcq_count, 10)
-    const descCount = parseInt(form.interview_desc_count, 10)
-    const codingCount = parseInt(form.interview_coding_count, 10)
-    const mcqTime = parseInt(form.interview_mcq_time, 10)
-    const descTime = parseInt(form.interview_desc_time, 10)
-    const codingTime = parseInt(form.interview_coding_time, 10)
-    const totalTime = parseInt(form.interview_total_time, 10)
+    const mcqCount = clampInt(form.interview_mcq_count, 4, 0, 30)
+    const descCount = clampInt(form.interview_desc_count, 3, 0, 30)
+    const codingCount = clampInt(form.interview_coding_count, 3, 0, 30)
+    const mcqTime = clampInt(form.interview_mcq_time, 60, 10, 300)
+    const descTime = clampInt(form.interview_desc_time, 300, 30, 900)
+    const codingTime = clampInt(form.interview_coding_time, 600, 60, 1800)
+    const iqCount = mcqCount + descCount + codingCount
+    if (iqCount < 3) {
+      return toast.error('Total questions must be at least 3 — increase a section count')
+    }
+    const totalTime = derivedTotalMinutes(form)
 
     const payload = {
       title: form.title.trim(),
@@ -205,14 +246,14 @@ export default function CompanyDashboard() {
       salary_range: '',
       status: 'open',
       interview_required: Boolean(form.interview_required),
-      interview_question_count: isNaN(iqCount) ? 10 : Math.max(3, Math.min(30, iqCount)),
-      interview_mcq_count: isNaN(mcqCount) ? 4 : Math.max(0, Math.min(30, mcqCount)),
-      interview_desc_count: isNaN(descCount) ? 3 : Math.max(0, Math.min(30, descCount)),
-      interview_coding_count: isNaN(codingCount) ? 3 : Math.max(0, Math.min(30, codingCount)),
-      interview_mcq_time: isNaN(mcqTime) ? 60 : Math.max(10, Math.min(300, mcqTime)),
-      interview_desc_time: isNaN(descTime) ? 300 : Math.max(30, Math.min(900, descTime)),
-      interview_coding_time: isNaN(codingTime) ? 600 : Math.max(60, Math.min(1800, codingTime)),
-      interview_total_time: isNaN(totalTime) ? 60 : Math.max(10, Math.min(180, totalTime)),
+      interview_question_count: iqCount,
+      interview_mcq_count: mcqCount,
+      interview_desc_count: descCount,
+      interview_coding_count: codingCount,
+      interview_mcq_time: mcqTime,
+      interview_desc_time: descTime,
+      interview_coding_time: codingTime,
+      interview_total_time: totalTime,
     }
 
     setSubmitting(true)
@@ -242,14 +283,12 @@ export default function CompanyDashboard() {
       required_skills: (job.required_skills || []).join(', '),
       description: job.description || '',
       interview_required: Boolean(job.interview_required),
-      interview_question_count: job.interview_question_count || 10,
       interview_mcq_count: job.interview_mcq_count ?? 4,
       interview_desc_count: job.interview_desc_count ?? 3,
       interview_coding_count: job.interview_coding_count ?? 3,
       interview_mcq_time: job.interview_mcq_time || 60,
       interview_desc_time: job.interview_desc_time || 300,
       interview_coding_time: job.interview_coding_time || 600,
-      interview_total_time: job.interview_total_time || 60,
     })
     setShowEditModal(true)
   }
@@ -263,14 +302,17 @@ export default function CompanyDashboard() {
       ? form.required_skills.split(',').map((s) => s.trim()).filter(Boolean)
       : form.required_skills || []
     const expReq = parseInt(form.experience_required, 10)
-    const iqCount = parseInt(form.interview_question_count, 10)
-    const mcqCount = parseInt(form.interview_mcq_count, 10)
-    const descCount = parseInt(form.interview_desc_count, 10)
-    const codingCount = parseInt(form.interview_coding_count, 10)
-    const mcqTime = parseInt(form.interview_mcq_time, 10)
-    const descTime = parseInt(form.interview_desc_time, 10)
-    const codingTime = parseInt(form.interview_coding_time, 10)
-    const totalTime = parseInt(form.interview_total_time, 10)
+    const mcqCount = clampInt(form.interview_mcq_count, 4, 0, 30)
+    const descCount = clampInt(form.interview_desc_count, 3, 0, 30)
+    const codingCount = clampInt(form.interview_coding_count, 3, 0, 30)
+    const mcqTime = clampInt(form.interview_mcq_time, 60, 10, 300)
+    const descTime = clampInt(form.interview_desc_time, 300, 30, 900)
+    const codingTime = clampInt(form.interview_coding_time, 600, 60, 1800)
+    const iqCount = mcqCount + descCount + codingCount
+    if (iqCount < 3) {
+      return toast.error('Total questions must be at least 3 — increase a section count')
+    }
+    const totalTime = derivedTotalMinutes(form)
     const payload = {
       title: form.title.trim(),
       department: form.department?.trim() || '',
@@ -282,14 +324,14 @@ export default function CompanyDashboard() {
       required_skills: skillsArray,
       description: form.description?.trim() || '',
       interview_required: Boolean(form.interview_required),
-      interview_question_count: isNaN(iqCount) ? 10 : Math.max(3, Math.min(30, iqCount)),
-      interview_mcq_count: isNaN(mcqCount) ? 4 : Math.max(0, Math.min(30, mcqCount)),
-      interview_desc_count: isNaN(descCount) ? 3 : Math.max(0, Math.min(30, descCount)),
-      interview_coding_count: isNaN(codingCount) ? 3 : Math.max(0, Math.min(30, codingCount)),
-      interview_mcq_time: isNaN(mcqTime) ? 60 : Math.max(10, Math.min(300, mcqTime)),
-      interview_desc_time: isNaN(descTime) ? 300 : Math.max(30, Math.min(900, descTime)),
-      interview_coding_time: isNaN(codingTime) ? 600 : Math.max(60, Math.min(1800, codingTime)),
-      interview_total_time: isNaN(totalTime) ? 60 : Math.max(10, Math.min(180, totalTime)),
+      interview_question_count: iqCount,
+      interview_mcq_count: mcqCount,
+      interview_desc_count: descCount,
+      interview_coding_count: codingCount,
+      interview_mcq_time: mcqTime,
+      interview_desc_time: descTime,
+      interview_coding_time: codingTime,
+      interview_total_time: totalTime,
     }
     setSubmitting(true)
     try {
@@ -711,14 +753,7 @@ export default function CompanyDashboard() {
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total Questions:</label>
-                  <input
-                    type="number"
-                    min={3}
-                    max={30}
-                    value={form.interview_question_count}
-                    onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })}
-                    style={{ width: 80, padding: '4px 8px' }}
-                  />
+                  <AutoValue value={derivedQuestionCount(form)} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                   <div>
@@ -778,26 +813,12 @@ export default function CompanyDashboard() {
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Coding time (sec):</label>
-                  <input
-                    type="number"
-                    min={60}
-                    max={1800}
-                    value={form.interview_coding_time}
-                    onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })}
-                    style={{ width: 80, padding: '4px 8px' }}
-                  />
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
+                  <AutoValue value={derivedTotalMinutes(form)} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total duration (min):</label>
-                  <input
-                    type="number"
-                    min={10}
-                    max={180}
-                    value={form.interview_total_time}
-                    onChange={(e) => setForm({ ...form, interview_total_time: e.target.value })}
-                    style={{ width: 80, padding: '4px 8px' }}
-                  />
+                  <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
+                  <AutoValue value={derivedTotalMinutes(form)} />
                 </div>
               </div>
             )}
@@ -887,7 +908,7 @@ export default function CompanyDashboard() {
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total Questions:</label>
-                  <input type="number" min={3} max={30} value={form.interview_question_count} onChange={(e) => setForm({ ...form, interview_question_count: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                  <AutoValue value={derivedQuestionCount(form)} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                   <div>
@@ -917,7 +938,7 @@ export default function CompanyDashboard() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
-                  <input type="number" min={10} max={180} value={form.interview_total_time} onChange={(e) => setForm({ ...form, interview_total_time: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                  <AutoValue value={derivedTotalMinutes(form)} />
                 </div>
               </div>
             )}
