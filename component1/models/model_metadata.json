@@ -1,11 +1,11 @@
 {
   "model_name": "Component 1 IT Role Classifier",
   "version": "2.1.0",
-  "training_timestamp": "2026-08-30T11:53:12Z",
+  "training_timestamp": "2026-09-03T04:43:59Z",
   "selected_model": "Feature Engineering + Balanced Logistic Regression",
-  "accuracy": 0.873,
-  "macro_f1": 0.9219,
-  "weighted_f1": 0.8702,
+  "accuracy": 0.985,
+  "macro_f1": 0.9852,
+  "weighted_f1": 0.9852,
   "target_roles_count": 20,
   "leakage_checks_passed": true
 }

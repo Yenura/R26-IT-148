@@ -30,7 +30,7 @@
       "Jupyter"
     ],
     "required_years": 2.5,
-    "min_edu": 3,
+    "min_edu": 2,
     "w_edu": 0.3,
     "w_exp": 0.3,
     "w_skill": 0.4
@@ -47,7 +47,7 @@
       "SQL"
     ],
     "required_years": 3.0,
-    "min_edu": 3,
+    "min_edu": 2,
     "w_edu": 0.25,
     "w_exp": 0.3,
     "w_skill": 0.45
@@ -166,5 +166,180 @@
     "w_edu": 0.15,
     "w_exp": 0.3,
     "w_skill": 0.55
+  },
+  "Full_Stack_Developer": {
+    "required_skills": [
+      "React",
+      "Node.js",
+      "Python",
+      "SQL",
+      "REST APIs",
+      "Docker",
+      "Git",
+      "HTML/CSS",
+      "TypeScript"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.15,
+    "w_exp": 0.3,
+    "w_skill": 0.55
+  },
+  "QA_Test_Automation_Engineer": {
+    "required_skills": [
+      "Selenium",
+      "Pytest",
+      "Jest",
+      "CI/CD",
+      "API Testing",
+      "Test Strategy",
+      "Python",
+      "Postman"
+    ],
+    "required_years": 2.0,
+    "min_edu": 2,
+    "w_edu": 0.15,
+    "w_exp": 0.35,
+    "w_skill": 0.5
+  },
+  "Data_Engineer": {
+    "required_skills": [
+      "Python",
+      "SQL",
+      "Spark",
+      "Kafka",
+      "Airflow",
+      "ETL",
+      "AWS/GCP",
+      "Data Modeling",
+      "Hadoop"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.35,
+    "w_skill": 0.45
+  },
+  "Site_Reliability_Engineer": {
+    "required_skills": [
+      "Linux",
+      "Kubernetes",
+      "Prometheus",
+      "Grafana",
+      "Terraform",
+      "Python",
+      "Go",
+      "CI/CD",
+      "incident Response"
+    ],
+    "required_years": 4.0,
+    "min_edu": 2,
+    "w_edu": 0.15,
+    "w_exp": 0.4,
+    "w_skill": 0.45
+  },
+  "UI_UX_Designer": {
+    "required_skills": [
+      "Figma",
+      "Sketch",
+      "Adobe XD",
+      "CSS",
+      "HTML",
+      "Prototyping",
+      "User Research",
+      "Wireframing",
+      "Accessibility"
+    ],
+    "required_years": 2.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.25,
+    "w_skill": 0.55
+  },
+  "Network_Engineer": {
+    "required_skills": [
+      "TCP/IP",
+      "Cisco",
+      "Routing",
+      "Switching",
+      "Firewalls",
+      "VPN",
+      "DNS",
+      "Linux",
+      "Python"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.35,
+    "w_skill": 0.45
+  },
+  "Business_Systems_Analyst": {
+    "required_skills": [
+      "SQL",
+      "Requirements Gathering",
+      "UML",
+      "BPMN",
+      "Stakeholder Management",
+      "Agile",
+      "JIRA",
+      "Data Analysis"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.25,
+    "w_exp": 0.35,
+    "w_skill": 0.4
+  },
+  "AI_NLP_Engineer": {
+    "required_skills": [
+      "Python",
+      "TensorFlow",
+      "PyTorch",
+      "NLP",
+      "Transformers",
+      "Hugging Face",
+      "spaCy",
+      "Deep Learning"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.25,
+    "w_exp": 0.3,
+    "w_skill": 0.45
+  },
+  "Blockchain_Developer": {
+    "required_skills": [
+      "Solidity",
+      "Ethereum",
+      "Web3.js",
+      "Smart Contracts",
+      "Rust",
+      "C++",
+      "Cryptography",
+      "DApps"
+    ],
+    "required_years": 2.5,
+    "min_edu": 2,
+    "w_edu": 0.15,
+    "w_exp": 0.3,
+    "w_skill": 0.55
+  },
+  "Embedded_Systems_Engineer": {
+    "required_skills": [
+      "C",
+      "C++",
+      "Rust",
+      "RTOS",
+      "Microcontrollers",
+      "ARM",
+      "Linux Kernel",
+      "Communication Protocols"
+    ],
+    "required_years": 3.0,
+    "min_edu": 2,
+    "w_edu": 0.2,
+    "w_exp": 0.35,
+    "w_skill": 0.45
   }
 }

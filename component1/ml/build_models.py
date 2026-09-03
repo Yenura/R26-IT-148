@@ -81,7 +81,7 @@ def _train_classifier(train_csv, test_csv):
     scaler = StandardScaler().fit(Xtr)
     Xtr_s, Xte_s = scaler.transform(Xtr), scaler.transform(Xte)
 
-    clf = LogisticRegression(max_iter=2000, multi_class="multinomial",
+    clf = LogisticRegression(max_iter=2000,
                              solver="lbfgs", random_state=42)
     clf.fit(Xtr_s, ytr)
     pred = clf.predict(Xte_s)
