@@ -61,6 +61,24 @@ const clampInt = (v, fb, lo, hi) => {
   return isNaN(n) ? fb : Math.max(lo, Math.min(hi, n))
 }
 
+// Roles whose interviews never include a live coding section.
+// Mirrors C2 backend _determine_coding_profile "none" set.
+const NON_CODING_ROLES = [
+  "Cloud Solutions Architect",
+  "Cybersecurity Analyst",
+  "UI/UX Designer",
+  "Business/Systems Analyst",
+  "Network Engineer",
+]
+
+const matchRoleName = (title, role) => {
+  const t = (title || '').toLowerCase().replace(/[_-]/g, ' ').trim()
+  const r = (role || '').toLowerCase().trim()
+  return t.length > 0 && (t.includes(r) || r.includes(t))
+}
+
+const isNonCodingTitle = (title) => NON_CODING_ROLES.some((r) => matchRoleName(title, r))
+
 // Auto-calculated interview totals (per-question section times, matching Interview.jsx).
 // Total Questions = sum of section counts; Total minutes = ceil of summed section seconds.
 const derivedQuestionCount = (f) =>
@@ -121,6 +139,13 @@ export default function CompanyDashboard() {
   const [showEditModal, setShowEditModal] = useState(false)
   const [editJob, setEditJob] = useState(null)
   const [form, setForm] = useState(emptyForm)
+  // Non-coding roles (matched from the job title) never include a live coding
+  // section: coding count/time are forced to 0 in the effective config below.
+  // Raw values stay untouched in `form` so retitling restores them.
+  const nonCodingRole = isNonCodingTitle(form.title)
+  const effForm = nonCodingRole
+    ? { ...form, interview_coding_count: 0, interview_coding_time: 0 }
+    : form
   const [applicantCounts, setApplicantCounts] = useState(() => {
     try {
       const cached = sessionStorage.getItem('recruitai.company.counts')
@@ -219,17 +244,17 @@ export default function CompanyDashboard() {
     }
 
     const expReq = parseInt(form.experience_required, 10)
-    const mcqCount = clampInt(form.interview_mcq_count, 4, 0, 30)
-    const descCount = clampInt(form.interview_desc_count, 3, 0, 30)
-    const codingCount = clampInt(form.interview_coding_count, 3, 0, 30)
-    const mcqTime = clampInt(form.interview_mcq_time, 60, 10, 300)
-    const descTime = clampInt(form.interview_desc_time, 300, 30, 900)
-    const codingTime = clampInt(form.interview_coding_time, 600, 60, 1800)
+    const mcqCount = clampInt(effForm.interview_mcq_count, 4, 0, 30)
+    const descCount = clampInt(effForm.interview_desc_count, 3, 0, 30)
+    const codingCount = clampInt(effForm.interview_coding_count, 3, 0, 30)
+    const mcqTime = clampInt(effForm.interview_mcq_time, 60, 10, 300)
+    const descTime = clampInt(effForm.interview_desc_time, 300, 30, 900)
+    const codingTime = clampInt(effForm.interview_coding_time, 600, 60, 1800)
     const iqCount = mcqCount + descCount + codingCount
     if (iqCount < 3) {
       return toast.error('Total questions must be at least 3 — increase a section count')
     }
-    const totalTime = derivedTotalMinutes(form)
+    const totalTime = derivedTotalMinutes(effForm)
 
     const payload = {
       title: form.title.trim(),
@@ -302,17 +327,17 @@ export default function CompanyDashboard() {
       ? form.required_skills.split(',').map((s) => s.trim()).filter(Boolean)
       : form.required_skills || []
     const expReq = parseInt(form.experience_required, 10)
-    const mcqCount = clampInt(form.interview_mcq_count, 4, 0, 30)
-    const descCount = clampInt(form.interview_desc_count, 3, 0, 30)
-    const codingCount = clampInt(form.interview_coding_count, 3, 0, 30)
-    const mcqTime = clampInt(form.interview_mcq_time, 60, 10, 300)
-    const descTime = clampInt(form.interview_desc_time, 300, 30, 900)
-    const codingTime = clampInt(form.interview_coding_time, 600, 60, 1800)
+    const mcqCount = clampInt(effForm.interview_mcq_count, 4, 0, 30)
+    const descCount = clampInt(effForm.interview_desc_count, 3, 0, 30)
+    const codingCount = clampInt(effForm.interview_coding_count, 3, 0, 30)
+    const mcqTime = clampInt(effForm.interview_mcq_time, 60, 10, 300)
+    const descTime = clampInt(effForm.interview_desc_time, 300, 30, 900)
+    const codingTime = clampInt(effForm.interview_coding_time, 600, 60, 1800)
     const iqCount = mcqCount + descCount + codingCount
     if (iqCount < 3) {
       return toast.error('Total questions must be at least 3 — increase a section count')
     }
-    const totalTime = derivedTotalMinutes(form)
+    const totalTime = derivedTotalMinutes(effForm)
     const payload = {
       title: form.title.trim(),
       department: form.department?.trim() || '',
@@ -753,7 +778,7 @@ export default function CompanyDashboard() {
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total Questions:</label>
-                  <AutoValue value={derivedQuestionCount(form)} />
+                  <AutoValue value={derivedQuestionCount(effForm)} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                   <div>
@@ -784,12 +809,19 @@ export default function CompanyDashboard() {
                       type="number"
                       min={0}
                       max={30}
-                      value={form.interview_coding_count}
+                      value={nonCodingRole ? 0 : form.interview_coding_count}
+                      disabled={nonCodingRole}
+                      title={nonCodingRole ? 'No coding section for non-coding roles' : undefined}
                       onChange={(e) => setForm({ ...form, interview_coding_count: e.target.value })}
-                      style={{ width: '100%', padding: '4px 8px', marginTop: 2 }}
+                      style={{ width: '100%', padding: '4px 8px', marginTop: 2, opacity: nonCodingRole ? 0.5 : 1 }}
                     />
                   </div>
                 </div>
+                {nonCodingRole && (
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                    Coding section disabled — detected a non-coding role from the job title.
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>MCQ time (sec):</label>
                   <input
@@ -818,14 +850,16 @@ export default function CompanyDashboard() {
                     type="number"
                     min={60}
                     max={1800}
-                    value={form.interview_coding_time}
+                    value={nonCodingRole ? 0 : form.interview_coding_time}
+                    disabled={nonCodingRole}
+                    title={nonCodingRole ? 'No coding section for non-coding roles' : undefined}
                     onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })}
-                    style={{ width: 80, padding: '4px 8px' }}
+                    style={{ width: 80, padding: '4px 8px', opacity: nonCodingRole ? 0.5 : 1 }}
                   />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
-                  <AutoValue value={derivedTotalMinutes(form)} />
+                  <AutoValue value={derivedTotalMinutes(effForm)} />
                 </div>
               </div>
             )}
@@ -915,7 +949,7 @@ export default function CompanyDashboard() {
               <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total Questions:</label>
-                  <AutoValue value={derivedQuestionCount(form)} />
+                  <AutoValue value={derivedQuestionCount(effForm)} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
                   <div>
@@ -928,9 +962,14 @@ export default function CompanyDashboard() {
                   </div>
                   <div>
                     <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>Coding Count</label>
-                    <input type="number" min={0} max={30} value={form.interview_coding_count} onChange={(e) => setForm({ ...form, interview_coding_count: e.target.value })} style={{ width: '100%', padding: '4px 8px', marginTop: 2 }} />
+                    <input type="number" min={0} max={30} value={nonCodingRole ? 0 : form.interview_coding_count} disabled={nonCodingRole} title={nonCodingRole ? 'No coding section for non-coding roles' : undefined} onChange={(e) => setForm({ ...form, interview_coding_count: e.target.value })} style={{ width: '100%', padding: '4px 8px', marginTop: 2, opacity: nonCodingRole ? 0.5 : 1 }} />
                   </div>
                 </div>
+                {nonCodingRole && (
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                    Coding section disabled — detected a non-coding role from the job title.
+                  </div>
+                )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>MCQ time (sec):</label>
                   <input type="number" min={10} max={300} value={form.interview_mcq_time} onChange={(e) => setForm({ ...form, interview_mcq_time: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
@@ -941,11 +980,11 @@ export default function CompanyDashboard() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Coding time (sec):</label>
-                  <input type="number" min={60} max={1800} value={form.interview_coding_time} onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })} style={{ width: 80, padding: '4px 8px' }} />
+                  <input type="number" min={60} max={1800} value={nonCodingRole ? 0 : form.interview_coding_time} disabled={nonCodingRole} title={nonCodingRole ? 'No coding section for non-coding roles' : undefined} onChange={(e) => setForm({ ...form, interview_coding_time: e.target.value })} style={{ width: 80, padding: '4px 8px', opacity: nonCodingRole ? 0.5 : 1 }} />
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <label style={{ fontSize: '12px', margin: 0, minWidth: 120 }}>Total time (min):</label>
-                  <AutoValue value={derivedTotalMinutes(form)} />
+                  <AutoValue value={derivedTotalMinutes(effForm)} />
                 </div>
               </div>
             )}

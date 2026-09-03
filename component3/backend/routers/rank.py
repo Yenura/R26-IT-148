@@ -432,11 +432,19 @@ async def rank_pipeline(request: Request, job_id: str):
                 descriptive_score = (float(latest_score.get("descriptive_score", 0) or 0)) / 100
                 coding_score = (float(latest_score.get("coding_score", 0) or 0)) / 100
                 int_score_num = float(latest_score.get("interview_score", 0) or 0)
+                # No coding section administered (non-coding roles) vs scored zero:
+                # only an explicit coding_total == 0 proves the section was absent.
+                # Docs without the field keep legacy behavior (gate applies).
+                _ct = latest_score.get("coding_total", None)
+                has_coding = True if _ct is None else int(_ct or 0) > 0
             else:
                 mcq_score = 0.0
                 descriptive_score = 0.0
                 coding_score = 0.0
                 int_score_num = None
+                # No interview data at all: keep legacy behavior (gates apply),
+                # so uninterviewed candidates cannot outrank interviewed ones.
+                has_coding = True
             
             # Skill matching and CV 3-pillar scores from predictions
             pred_doc = pred_map.get(candidate_id)
@@ -468,6 +476,7 @@ async def rank_pipeline(request: Request, job_id: str):
                 P_mcq=float(mcq_score),
                 P_desc=float(descriptive_score),
                 P_code=float(coding_score),
+                has_coding=has_coding,
                 skills=resume_skills,
                 interview_score=int_score_num,
             ))

@@ -485,6 +485,9 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 "interview_score": result["interview_score"],
                 "grade": result["grade"],
                 "integrity_score": proctoring.get("integrity_score") if proctoring else None,
+                "mcq_total": result["mcq_total"],
+                "descriptive_total": result["descriptive_total"],
+                "coding_total": result["coding_total"],
             }).encode()
             req = urllib.request.Request(
                 f"{c0_url}/api/v1/resume/interview-scores",

@@ -33,7 +33,7 @@ const ROLE_LANGUAGES = {
   "Site Reliability Engineer": ["Python","Go","Bash"],
   "Network Engineer": ["Python"],
 }
-const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst"]
+const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst","Network Engineer"]
 
 export default function Interview() {
   const navigate = useNavigate()

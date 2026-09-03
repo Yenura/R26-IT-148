@@ -104,6 +104,7 @@ class RankingService:
                 P_code=max(0.0, min(1.0, c.P_code)),
                 gender=c.gender,
                 age_group=c.age_group,
+                has_coding=bool(getattr(c, "has_coding", True)),
             )
             s = eng.score_one(f)
             rows.append({

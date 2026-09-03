@@ -511,6 +511,9 @@ async def save_interview_scores(payload: InterviewScoresCreate, request: Request
         "interview_score": payload.interview_score,
         "grade": payload.grade,
         "integrity_score": payload.integrity_score,
+        "mcq_total": payload.mcq_total,
+        "descriptive_total": payload.descriptive_total,
+        "coding_total": payload.coding_total,
         "created_at": datetime.now(timezone.utc),
     }
     # Update or insert interview score
