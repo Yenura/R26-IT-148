@@ -587,7 +587,7 @@ async def save_interview_scores(payload: InterviewScoresCreate, request: Request
 
 
 @router.get("/interview-scores/{candidate_id}")
-async def get_interview_scores(candidate_id: str, request: Request):
+async def get_interview_scores(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
     cursor = db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1)
     scores = []
@@ -597,7 +597,7 @@ async def get_interview_scores(candidate_id: str, request: Request):
     return scores
 
 @router.get("/interview-detail/{candidate_id}")
-async def get_interview_detail(candidate_id: str, request: Request):
+async def get_interview_detail(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
     cursor = db.results.find({"candidate_id": candidate_id}).sort("created_at", -1)
     results = []

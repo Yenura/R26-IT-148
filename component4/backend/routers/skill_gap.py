@@ -553,12 +553,14 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         job_skills = job.get("required_skills", [])
         company_name = job.get("company_name") or company_names_map.get(str(job.get("company_id", "")), "Tech Employer")
 
-        # In-memory lookup for predictions
-        pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", "")) or p.get("predicted_role") == job_title), None)
-        # In-memory lookup for interview results & scores
-        interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id or r.get("job_role") == job_title), None)
-        session = next((s for s in sessions_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
-        score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
+        # In-memory lookup for predictions — job-ID match only. Role-name fallback
+        # removed: it attributed this candidate's interviews for OTHER same-titled
+        # jobs to this application, corrupting per-job scores.
+        pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", ""))), None)
+        # In-memory lookup for interview results & scores — job-ID match only (same reason).
+        interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id), None)
+        session = next((s for s in sessions_list if str(s.get("job_id")) == job_id), None)
+        score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id), None)
 
         # Resolve role weights for CSS engine
         cv_w, int_w = _resolve_role_weights(job_title)

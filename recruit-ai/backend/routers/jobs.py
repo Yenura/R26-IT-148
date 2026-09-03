@@ -247,15 +247,12 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
     job_id_strings = [str(j["_id"]) for j in job_docs]
     job_id_oids = [j["_id"] for j in job_docs]
-    job_titles = [j.get("title", "") for j in job_docs if j.get("title")]
     job_map = {str(j["_id"]): j for j in job_docs}
 
-    # Query criteria matching any of this company's jobs
+    # Query criteria matching any of this company's jobs.
+    # Strict job-ID scoping only: title/role-based fallbacks were removed because
+    # they pulled in other companies' candidates whose docs carry the same title.
     match_criteria = [{"job_id": {"$in": job_id_strings + job_id_oids}}]
-    if job_titles:
-        match_criteria.append({"job_id": {"$in": job_titles}})
-        match_criteria.append({"job_title": {"$in": job_titles}})
-        match_criteria.append({"job_role": {"$in": job_titles}})
 
     # Parallel fetch applications, predictions, interview_scores, results
     apps_task = db.applications.find({"$or": match_criteria}).sort("applied_at", -1).to_list(500)
@@ -608,15 +605,18 @@ async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request
     job = await db.jobs.find_one({"_id": oid})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    # Enforce interview requirement
+    # Enforce interview requirement: the interview must have been completed
+    # for THIS job (job_id match). Role-name matching was removed — it let a
+    # candidate bypass the gate with an interview taken for another company's
+    # same-titled job.
     if job.get("interview_required"):
-        job_role = job.get("job_role") or _normalize_job_role(job.get("title", ""))
+        id_conds = [{"job_id": job_id}, {"job_id": oid}]
         interview_done = await db.results.find_one({
             "candidate_id": payload.candidate_id,
-            "$or": [{"job_role": job_role}, {"job_id": job_id}],
+            "$or": id_conds,
         }) or await db.interview_scores.find_one({
             "candidate_id": payload.candidate_id,
-            "$or": [{"job_role": job_role}, {"job_id": job_id}],
+            "$or": id_conds,
         })
         if not interview_done:
             raise HTTPException(status_code=403, detail="AI Technical Interview is required for this job. Complete the interview before applying.")
@@ -657,21 +657,12 @@ _JOB_APPLICANTS_CACHE = {}
 
 @router.get("/{job_id}/applicants", response_model=list[ApplicationOut])
 async def get_applicants(job_id: str, request: Request, company: dict = Depends(require_company)):
-    now = time.time()
-    if job_id in _JOB_APPLICANTS_CACHE:
-        ts, data = _JOB_APPLICANTS_CACHE[job_id]
-        if now - ts < _SUB_CACHE_TTL:
-            return data
-
     db = request.app.state.db
     from bson import ObjectId
     try:
         oid = ObjectId(job_id)
     except Exception:
         oid = None
-    job_filters = [{"job_id": str(job_id)}]
-    if oid:
-        job_filters.append({"job_id": oid})
 
     job_doc = None
     try:
@@ -679,18 +670,24 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             job_doc = await db.jobs.find_one({"_id": oid})
         if not job_doc:
             job_doc = await db.jobs.find_one({"_id": str(job_id)})
-        if not job_doc:
-            job_doc = await db.jobs.find_one({"title": job_id})
     except Exception:
         pass
 
-    if job_doc:
-        j_title = job_doc.get("title")
-        j_role = job_doc.get("job_role")
-        if j_title:
-            job_filters.extend([{"job_id": j_title}, {"job_title": j_title}, {"job_role": j_title}])
-        if j_role:
-            job_filters.extend([{"job_id": j_role}, {"job_role": j_role}])
+    # Ownership check BEFORE cache: a company may only view applicants for its own postings.
+    if job_doc and str(job_doc.get("company_id", "")) != str(company.get("_id", "")):
+        raise HTTPException(status_code=403, detail="Not authorized to view applicants for this job")
+
+    now = time.time()
+    if job_id in _JOB_APPLICANTS_CACHE:
+        ts, data = _JOB_APPLICANTS_CACHE[job_id]
+        if now - ts < _SUB_CACHE_TTL:
+            return data
+
+    # Strict job-ID scoping only (title-based fallbacks removed — they leaked
+    # other companies' candidates sharing the same job title).
+    job_filters = [{"job_id": str(job_id)}]
+    if oid:
+        job_filters.append({"job_id": oid})
 
     seen_candidates = set()
     applicants = []

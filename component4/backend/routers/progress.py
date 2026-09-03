@@ -184,11 +184,25 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
         if not comp_name:
             comp_name = "Applied Employer"
 
-        # Fetch Interview Results for this role
+        # Fetch Interview Results for this job: prefer documents explicitly linked
+        # to THIS job_id; fall back to same-title match only within this candidate's
+        # own history (role-only docs predate job-linked interviews).
+        id_conds = [{"job_id": job_id}]
+        try:
+            from bson import ObjectId as _O
+            if _O.is_valid(job_id):
+                id_conds.append({"job_id": _O(job_id)})
+        except Exception:
+            pass
         interview_res = await db.results.find_one({
             "candidate_id": candidate_id,
-            "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
+            "$or": id_conds,
         }, sort=[("created_at", -1)])
+        if not interview_res:
+            interview_res = await db.results.find_one({
+                "candidate_id": candidate_id,
+                "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
+            }, sort=[("created_at", -1)])
 
         # Extract weak topics from interview
         if interview_res:
