@@ -1167,7 +1167,7 @@ export default function CVMatch() {
         }}>
           
           {/* CARD 1: CANDIDATE RESUME */}
-          <div style={{
+          <div className="panel-dark" style={{
             padding: '22px',
             background: 'rgba(15, 23, 42, 0.75)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -1324,7 +1324,7 @@ export default function CVMatch() {
           </div>
 
           {/* CARD 2: TARGET COMPANY & ROLE */}
-          <div style={{
+          <div className="panel-dark" style={{
             padding: '22px',
             background: 'rgba(15, 23, 42, 0.75)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -1629,7 +1629,7 @@ export default function CVMatch() {
           boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)'
         }}>
           {/* Executive Candidate Fit Banner */}
-          <div style={{
+          <div className="panel-dark" style={{
             padding: 'var(--p-space-5)',
             background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%)',
             borderRadius: 'var(--radius-lg)',
@@ -1958,7 +1958,7 @@ export default function CVMatch() {
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
-                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
+                <div className="card panel-dark" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <CheckCircle2 size={16} /> Matched Role Competencies
@@ -1984,8 +1984,8 @@ export default function CVMatch() {
                    </div>
                  </div>
 
-                 {/* Missing Skills */}
-                 <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                  {/* Missing Skills */}
+                  <div className="card panel-dark" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: '#fb7185', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                      <AlertCircle size={16} /> Missing Competencies to Develop ({activeMissingSkills.length})
                    </div>
@@ -2034,7 +2034,7 @@ export default function CVMatch() {
                 </div>
               )}
               {/* Detailed Verified Employment & Work History Intelligence */}
-              <div className="card" style={{
+              <div className="card panel-dark" style={{
                 padding: 'var(--p-space-5)',
                 background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.6) 100%)',
                 border: '1px solid rgba(16, 185, 129, 0.25)',
@@ -2102,7 +2102,7 @@ export default function CVMatch() {
                       const badgeBorder = isHigh ? 'rgba(16, 185, 129, 0.3)' : (isPart ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)')
 
                       return (
-                        <div key={`rec-${idx}`} style={{
+                        <div key={`rec-${idx}`} className="panel-dark" style={{
                           padding: '14px 16px',
                           background: 'rgba(15, 23, 42, 0.7)',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
@@ -2184,7 +2184,7 @@ export default function CVMatch() {
               </div>
 
               {/* Detailed Academic Verification & Qualification Dossier */}
-              <div className="card" style={{
+              <div className="card panel-dark" style={{
                 padding: 'var(--p-space-5)',
                 background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.6) 100%)',
                 border: '1px solid rgba(168, 85, 247, 0.25)',
@@ -2228,7 +2228,7 @@ export default function CVMatch() {
                   </span>
                 </div>
 
-                <div style={{
+                <div className="panel-dark" style={{
                   display: 'grid',
                   gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                   gap: 14,
@@ -2329,7 +2329,7 @@ export default function CVMatch() {
               </div>
 
               {/* Simulation Sandbox Card */}
-              <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--p-space-5)' }}>
+              <div className="card panel-dark" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--p-space-5)' }}>
                 <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span>Missing Competencies for {displayJobTitle}:</span>
                   <span style={{ fontSize: '10px', color: 'var(--color-primary)', background: 'rgba(59, 130, 246, 0.1)', padding: '1px 7px', borderRadius: 10 }}>Click pill to toggle</span>
@@ -2445,7 +2445,7 @@ export default function CVMatch() {
                     return (
                       <div
                         key={rec.target_role || rec.role}
-                        className="card"
+                        className="card panel-dark"
                         style={{
                           padding: 'var(--p-space-5)',
                           background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.55) 100%)',
@@ -2570,7 +2570,7 @@ export default function CVMatch() {
               </div>
 
               {/* Interactive Progress & Filter Hub Card */}
-              <div className="card" style={{
+              <div className="card panel-dark" style={{
                 padding: '16px 20px',
                 background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%)',
                 border: '1px solid rgba(59, 130, 246, 0.25)',
@@ -2682,7 +2682,7 @@ export default function CVMatch() {
                       return (
                         <div
                           key={item.skill || item.title || idx}
-                          className="card"
+                          className="card panel-dark"
                           style={{
                             padding: '18px 22px',
                             background: isCompleted

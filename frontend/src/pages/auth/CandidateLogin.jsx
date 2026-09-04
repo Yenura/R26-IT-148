@@ -116,24 +116,18 @@ export default function CandidateLogin() {
         </div>
 
         {/* Main Auth Box */}
-        <div className="card" style={{
+        <div className="card auth-card" style={{
           padding: '28px 26px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(16px)'
+          borderRadius: 'var(--radius-xl)'
         }}>
           {/* Dual Role Segmented Selector */}
-          <div style={{
+          <div className="auth-track" style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 4,
-            background: 'rgba(0, 0, 0, 0.35)',
             padding: '4px',
             borderRadius: 'var(--radius-md)',
-            marginBottom: 20,
-            border: '1px solid rgba(255, 255, 255, 0.06)'
+            marginBottom: 20
           }}>
             <button
               type="button"
@@ -193,8 +187,7 @@ export default function CandidateLogin() {
                   style={{
                     paddingLeft: 36,
                     fontSize: '13px',
-                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined,
-                    background: 'rgba(0, 0, 0, 0.25)'
+                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined
                   }}
                   required
                 />
@@ -219,8 +212,7 @@ export default function CandidateLogin() {
                     paddingLeft: 36,
                     paddingRight: 36,
                     fontSize: '13px',
-                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined,
-                    background: 'rgba(0, 0, 0, 0.25)'
+                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined
                   }}
                   required
                 />
@@ -275,7 +267,7 @@ export default function CandidateLogin() {
 
           <div style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
             <span>Don't have a candidate account? </span>
-            <Link to="/register/candidate" style={{ color: 'var(--color-primary-light, #93c5fd)', fontWeight: 700 }}>
+            <Link to="/register/candidate" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
               Create Account
             </Link>
           </div>
@@ -284,3 +276,5 @@ export default function CandidateLogin() {
     </div>
   )
 }
+
+

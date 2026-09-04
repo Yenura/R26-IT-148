@@ -689,7 +689,7 @@ const [jobSearch, setJobSearch] = useState('')
 
           {/* AI Career Acceleration Suite Hub */}
           <div
-            className="card"
+            className="card panel-dark"
             style={{
               background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%)',
               border: '1px solid rgba(59, 130, 246, 0.3)',

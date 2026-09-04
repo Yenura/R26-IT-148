@@ -4,7 +4,8 @@ import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
   Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,
   Sun, Moon, Briefcase, BarChart3, Route as RouteIcon, Target, Award,
-  Menu, X, User, LogOut, ChevronDown
+  Menu, X, User, LogOut, ChevronDown, MoreHorizontal, FileText,
+  Network, Map as MapIcon, ScanSearch, Wand2, FolderSearch
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
 import GlobalBackground from './components/GlobalBackground'
@@ -111,11 +112,29 @@ export default function App() {
     { to: '/pipeline/progress', icon: TrendingUp, label: 'Progress' },
   ]
 
+  // Secondary pages reachable only by URL otherwise — grouped under More.
+  const candidateMoreLinks = [
+    { to: '/candidate/skill-gap/reports', icon: FileText, label: 'Gap Reports' },
+    { to: '/candidate/skill-gap/graph', icon: Network, label: 'Skill Graph' },
+    { to: '/candidate/career/roadmap', icon: MapIcon, label: 'Career Roadmap' },
+    { to: '/candidate/resume/parse', icon: ScanSearch, label: 'Parse Resume Text' },
+    { to: '/candidate/resume/predict-role', icon: Wand2, label: 'Predict My Role' },
+    { to: '/candidate/cv/analyze-file', icon: FolderSearch, label: 'Analyze CV File' },
+  ]
+
   const companyLinks = [
     { to: '/company/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/pipeline/ranking', icon: ListOrdered, label: 'Candidate Ranking' },
     { to: '/pipeline/leaderboard', icon: Award, label: 'Leaderboard' },
   ]
+
+  const companyMoreLinks = [
+    { to: '/company/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/company/cv-management', icon: FolderSearch, label: 'CV Management' },
+    { to: '/company/ranking/weights', icon: Layers, label: 'Ranking Weights' },
+  ]
+
+  const moreLinks = role === 'candidate' ? candidateMoreLinks : role === 'company' ? companyMoreLinks : []
 
   const navLinks = role === 'candidate' ? candidateLinks : role === 'company' ? companyLinks : []
 
@@ -133,16 +152,23 @@ export default function App() {
   const profileLink = role === 'candidate' ? '/profile' : role === 'company' ? '/company/profile' : null
 
   const userMenuRef = useRef(null)
+  const moreMenuRef = useRef(null)
+  const [moreOpen, setMoreOpen] = useState(false)
   useEffect(() => {
-    if (!userMenu) return
+    if (!userMenu && !moreOpen) return
     const handleClick = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setUserMenu(false)
       }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setMoreOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
-  }, [userMenu])
+  }, [userMenu, moreOpen])
+
+  const moreActive = moreLinks.some((l) => location.pathname === l.to || location.pathname.startsWith(l.to + '/'))
 
   useEffect(() => {
     const path = location.pathname
@@ -218,6 +244,35 @@ export default function App() {
                     <span>{l.label}</span>
                   </NavLink>
                 ))}
+                {moreLinks.length > 0 && (
+                  <div ref={moreMenuRef} style={{ position: 'relative' }}>
+                    <button
+                      className={`navbar-link ${moreActive || moreOpen ? 'active' : ''}`}
+                      onClick={() => setMoreOpen(!moreOpen)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') setMoreOpen(false) }}
+                      aria-expanded={moreOpen}
+                      aria-haspopup="true"
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', font: 'inherit' }}
+                    >
+                      <MoreHorizontal size={15} />
+                      <span>More</span>
+                      <ChevronDown size={12} style={{ opacity: 0.7 }} />
+                    </button>
+                    {moreOpen && (
+                      <div className="navbar-dropdown" style={{ left: 0, right: 'auto', minWidth: 210 }} onClick={(e) => e.stopPropagation()}>
+                        {moreLinks.map((l) => (
+                          <button
+                            key={l.to}
+                            onClick={() => { navigate(l.to); setMoreOpen(false) }}
+                            style={location.pathname === l.to ? { background: 'var(--sidebar-item-active-bg)', color: 'var(--sidebar-item-active-fg)', fontWeight: 600 } : undefined}
+                          >
+                            <l.icon size={14} /> {l.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -306,6 +361,16 @@ export default function App() {
                 </span>
               </div>
               {navLinks.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  className={({ isActive }) => `navbar-mobile-link ${isActive ? 'active' : ''}`}
+                  onClick={() => setMobileMenu(false)}
+                >
+                  <l.icon size={18} /> {l.label}
+                </NavLink>
+              ))}
+              {moreLinks.map((l) => (
                 <NavLink
                   key={l.to}
                   to={l.to}

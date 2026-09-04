@@ -329,7 +329,9 @@ code {
   top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
-  background: var(--card-bg);
+  /* Opaque: the themed --card-bg is translucent and lets page content
+     bleed through the open menu. */
+  background: var(--navbar-dropdown-bg, var(--card-bg));
   border: 1px solid var(--card-border);
   border-radius: var(--p-radius-md);
   box-shadow: var(--shadow-lg);
@@ -363,6 +365,45 @@ code {
 
 .navbar-dropdown button:hover {
   background: var(--color-surface);
+}
+
+/* Dark-glass panels (hardcoded dark surfaces) keep their look in light mode;
+   remap text tokens inside them so theme-var text stays readable. */
+[data-theme="light"] .panel-dark {
+  --color-fg: #f1f5f9;
+  --color-fg-secondary: #cbd5e1;
+  --color-fg-muted: #94a3b8;
+  --chip-fg: #e2e8f0;
+  --chip-bg: rgba(255, 255, 255, 0.08);
+  --chip-border: rgba(255, 255, 255, 0.14);
+}
+
+/* Direct light-mode rules below would otherwise beat the scoped tokens above
+   (direct color beats inherited custom properties; !important beats inline). */
+[data-theme="light"] .panel-dark .chip {
+  color: #e2e8f0;
+}
+
+/* Form controls inside dark panels are light surfaces — force dark text,
+   overriding both the light-theme rule and per-element inline colors. */
+[data-theme="light"] .panel-dark input,
+[data-theme="light"] .panel-dark select,
+[data-theme="light"] .panel-dark textarea {
+  color: #0f172a !important;
+}
+
+/* Tables inside dark panels keep dark-header styling readable. */
+[data-theme="light"] .panel-dark .table th {
+  background-color: rgba(255, 255, 255, 0.06);
+  color: #e2e8f0;
+  border-bottom-color: rgba(255, 255, 255, 0.12);
+}
+[data-theme="light"] .panel-dark .table td {
+  color: #f1f5f9;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+[data-theme="light"] .panel-dark .table tbody tr:hover {
+  background-color: rgba(255, 255, 255, 0.04);
 }
 
 .navbar-hamburger {
@@ -1947,6 +1988,33 @@ DASHBOARD LAYOUTS (responsive two-column)
   background-color: #ffffff;
   border-color: #e2e8f0;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+/* Auth (login) cards: dark glass in dark mode, clean white surface in light. */
+[data-theme="dark"] .auth-card {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+}
+[data-theme="light"] .auth-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+}
+[data-theme="dark"] .auth-track {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+[data-theme="light"] .auth-track {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+}
+[data-theme="dark"] .auth-card input {
+  background: rgba(0, 0, 0, 0.25);
+}
+[data-theme="light"] .auth-card input {
+  background: #f8fafc;
 }
 
 [data-theme="light"] .card:hover {
