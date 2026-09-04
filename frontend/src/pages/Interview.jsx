@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Play, CheckCircle2, Code, FileText, Settings, Sparkles,
-  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase
+  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase, Eye
 } from 'lucide-react'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
 
@@ -809,9 +809,21 @@ export default function Interview() {
           description={`Comprehensive AI evaluation breakdown for ${selectedRole}. Scores are recorded to your candidate profile.`}
           icon={Trophy}
           actions={
-            <button className="btn btn-ghost btn-sm" onClick={() => setStep('setup')}>
-              <RefreshCw size={14} /> Retake Assessment
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {result.interview_id && (
+                <button className="btn btn-primary btn-sm" onClick={() => navigate(`/candidate/interview/result/${result.interview_id}`)}>
+                  <FileText size={14} /> Full Report
+                </button>
+              )}
+              {!isPracticeMode && result.interview_id && (
+                <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/candidate/interview/proctoring/${result.interview_id}`)}>
+                  <Eye size={14} /> Proctoring
+                </button>
+              )}
+              <button className="btn btn-ghost btn-sm" onClick={() => setStep('setup')}>
+                <RefreshCw size={14} /> Retake Assessment
+              </button>
+            </div>
           }
         />
 

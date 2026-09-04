@@ -156,7 +156,7 @@ export default function Ranking() {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) auto', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 12, alignItems: 'center' }}>
               <select
                 value={selectedJob}
                 onChange={(e) => {
@@ -183,6 +183,14 @@ export default function Ranking() {
                 style={{ padding: '10px 20px', whiteSpace: 'nowrap' }}
               >
                 {busy ? 'Evaluating Applicants...' : 'Rank Applicants'}
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => selectedJob && navigate(`/company/ranking/results/${selectedJob}`)}
+                disabled={!selectedJob}
+                style={{ padding: '10px 20px', whiteSpace: 'nowrap' }}
+              >
+                Full Results
               </button>
             </div>
 

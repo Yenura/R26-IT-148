@@ -5,7 +5,7 @@ import {
   Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,
   Sun, Moon, Briefcase, BarChart3, Route as RouteIcon, Target, Award,
   Menu, X, User, LogOut, ChevronDown, MoreHorizontal, FileText,
-  Network, Map as MapIcon, ScanSearch, Wand2, FolderSearch
+  Network, Map as MapIcon, ScanSearch, Wand2, FolderSearch, BookOpen
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
 import GlobalBackground from './components/GlobalBackground'
@@ -132,6 +132,7 @@ export default function App() {
     { to: '/company/analytics', icon: BarChart3, label: 'Analytics' },
     { to: '/company/cv-management', icon: FolderSearch, label: 'CV Management' },
     { to: '/company/ranking/weights', icon: Layers, label: 'Ranking Weights' },
+    { to: '/company/questions', icon: BookOpen, label: 'Question Bank' },
   ]
 
   const moreLinks = role === 'candidate' ? candidateMoreLinks : role === 'company' ? companyMoreLinks : []
@@ -424,6 +425,7 @@ export default function App() {
               <Route path="/company/pipeline/:jobId" element={<PrivateRoute role="company"><ApplicantPipeline /></PrivateRoute>} />
               <Route path="/company/profile" element={<PrivateRoute role="company"><CompanyProfilePage /></PrivateRoute>} />
               <Route path="/company/questions/:role" element={<PrivateRoute role="company"><QuestionBankPage /></PrivateRoute>} />
+              <Route path="/company/questions" element={<PrivateRoute role="company"><QuestionBankPage /></PrivateRoute>} />
               <Route path="/company/cv-management" element={<PrivateRoute role="company"><CVManagementPage /></PrivateRoute>} />
 
               {/* Universal Route Aliases */}

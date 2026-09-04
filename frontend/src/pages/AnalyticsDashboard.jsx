@@ -90,6 +90,11 @@ export default function AnalyticsDashboard() {
         title="Analytics Dashboard"
         description="Platform-wide recruitment metrics, candidate performance insights, and hiring pipeline analytics."
         icon={BarChart3}
+        actions={
+          <button className="btn btn-ghost btn-sm" onClick={() => navigate('/company/analytics/role-insights')}>
+            <Target size={14} /> Role Insights
+          </button>
+        }
       />
 
       {/* Stat Cards */}

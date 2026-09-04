@@ -434,6 +434,13 @@ const [jobSearch, setJobSearch] = useState('')
                               {/* Action CTAs */}
                               <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
                                 <Link
+                                  to={`/candidate/resume/${r.id}`}
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ fontSize: '11px', padding: '4px 10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                >
+                                  <Eye size={12} /> Full Details
+                                </Link>
+                                <Link
                                   to={`/candidate/interview?role=${encodeURIComponent(r.predicted_role || 'Software Engineer')}`}
                                   className="btn btn-ghost btn-sm"
                                   style={{ fontSize: '11px', padding: '4px 10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}
