@@ -329,9 +329,7 @@ code {
   top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
-  /* Opaque: the themed --card-bg is translucent and lets page content
-     bleed through the open menu. */
-  background: var(--navbar-dropdown-bg, var(--card-bg));
+  background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--p-radius-md);
   box-shadow: var(--shadow-lg);
@@ -367,6 +365,15 @@ code {
   background: var(--color-surface);
 }
 
+/* Opaque menus in both themes (the themed --card-bg token is translucent). */
+[data-theme="dark"] .navbar-dropdown {
+  background: #14141f;
+}
+[data-theme="light"] .navbar-dropdown {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
 /* Dark-glass panels (hardcoded dark surfaces) keep their look in light mode;
    remap text tokens inside them so theme-var text stays readable. */
 [data-theme="light"] .panel-dark {
@@ -382,6 +389,16 @@ code {
    (direct color beats inherited custom properties; !important beats inline). */
 [data-theme="light"] .panel-dark .chip {
   color: #e2e8f0;
+}
+
+/* Ghost buttons/links inherit through a var() chain that resolves against
+   :root instead of the scope in some browsers — set direct colors. */
+[data-theme="light"] .panel-dark .btn-ghost {
+  color: #e2e8f0;
+}
+[data-theme="light"] .panel-dark .btn-ghost:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 /* Form controls inside dark panels are light surfaces — force dark text,
