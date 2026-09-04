@@ -596,3 +596,6 @@ R26-IT-148_PLANNER_TASKS.json
 
 # Playwright test artifacts
 .playwright-mcp/
+
+# Research paper draft ( teammate workspace, not app code )
+paper/
