@@ -475,6 +475,14 @@ async def parse_resume_text(
     text: str = "",
     user: dict = Depends(get_current_user),
 ):
+    # Accept JSON body {text} (preferred for long resumes) or ?text= query param.
+    if not text.strip():
+        try:
+            body = await request.json()
+            if isinstance(body, dict) and body.get("text"):
+                text = body["text"]
+        except Exception:
+            pass
     if not text.strip():
         raise HTTPException(status_code=400, detail="Text required")
     entities = extract_entities(text)

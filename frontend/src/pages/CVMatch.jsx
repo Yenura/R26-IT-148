@@ -10,13 +10,13 @@ import {
   CheckSquare, X, Copy, UserCheck, Building2, Code, Lightbulb, Bookmark, Square
 } from 'lucide-react'
 import {
-  uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
+  uResumeDelete, c0JobsAll, uResumeList, c0ResumeMatch,
   c1Analyze, c1Classify, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import { cleanCandidateName, cleanCompanyName } from '../utils'
 import PageHeader from '../components/PageHeader'
-import UploadZone from '../components/UploadZone'
+import CVIngest from '../components/CVIngest'
 import LoadingState from '../components/LoadingState'
 import ConfirmDialog from '../components/ConfirmDialog'
 
@@ -548,7 +548,6 @@ export default function CVMatch() {
   const [selectedCompany, setSelectedCompany] = useState('')
   const [selectedJob, setSelectedJob] = useState('')
   const [selectedCanonicalRole, setSelectedCanonicalRole] = useState('')
-  const [uploading, setUploading] = useState(false)
   const [busy, setBusy] = useState(false)
   const [activeTab, setActiveTab] = useState('match')
   const [showDocPreview, setShowDocPreview] = useState(false)
@@ -652,26 +651,6 @@ export default function CVMatch() {
       }
     } catch (err) {
       toast.error('Failed to load resumes and jobs')
-    }
-  }
-
-  const handleFileUpload = async (file) => {
-    if (!file) return
-    const formData = new FormData()
-    formData.append('file', file)
-    setUploading(true)
-    try {
-      const res = await uResumeUpload(formData)
-      toast.success('Resume uploaded & parsed!')
-      const uploadedId = res.data?.id
-      if (uploadedId) {
-        setSelectedResume(uploadedId)
-      }
-      await loadData()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Upload failed')
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -1202,12 +1181,12 @@ export default function CVMatch() {
               {/* Upload Zone (Collapsible) */}
               {showUploadZone && (
                 <div style={{ marginBottom: 14, animation: 'fadeIn 0.2s ease-out' }}>
-                  <UploadZone
-                    onFileSelect={(f) => {
-                      handleFileUpload(f)
-                      setShowUploadZone(false)
+                  <CVIngest
+                    onIngested={({ data }) => {
+                      if (data?.id) setSelectedResume(data.id)
+                      loadData()
                     }}
-                    uploading={uploading}
+                    onDone={() => setShowUploadZone(false)}
                   />
                 </div>
               )}
@@ -1316,9 +1295,11 @@ export default function CVMatch() {
 
             {/* Quick Upload Action if upload zone is closed and no resume */}
             {!showUploadZone && resumes.length === 0 && (
-              <UploadZone
-                onFileSelect={handleFileUpload}
-                uploading={uploading}
+              <CVIngest
+                onIngested={({ data }) => {
+                  if (data?.id) setSelectedResume(data.id)
+                  loadData()
+                }}
               />
             )}
           </div>

@@ -7,7 +7,7 @@ import {
   Search, GraduationCap, Building2
 } from 'lucide-react'
 import {
-  uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate,
+  uResumeList, uResumeDelete, uResumeUpdate,
   c0JobsAll, c0Predictions, c0Applications
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
@@ -15,7 +15,7 @@ import { toArr, cleanCandidateName, cleanCompanyName } from '../utils'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
-import UploadZone from '../components/UploadZone'
+import CVIngest from '../components/CVIngest'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
@@ -43,8 +43,6 @@ export default function CandidateDashboard() {
   const [applications, setApplications] = useState([])
   const [predictions, setPredictions] = useState([])
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
@@ -78,25 +76,6 @@ const [jobSearch, setJobSearch] = useState('')
       toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleFileUpload = async (file) => {
-    if (!file) return
-    setSelectedFile(file)
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      await uResumeUpload(formData)
-      toast.success('Resume parsed and skills extracted successfully!')
-      setSelectedFile(null)
-      loadData()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Upload failed')
-      setSelectedFile(null)
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -245,11 +224,9 @@ const [jobSearch, setJobSearch] = useState('')
 
             {/* Upload Zone */}
             <div style={{ marginBottom: 'var(--p-space-4)' }}>
-              <UploadZone
-                onFileSelect={handleFileUpload}
-                uploading={uploading}
-                selectedFile={selectedFile}
-                onRemoveFile={() => setSelectedFile(null)}
+              <CVIngest
+                onIngested={() => loadData()}
+                uploadToast="Resume parsed and skills extracted successfully!"
               />
             </div>
 

@@ -5,7 +5,7 @@ import {
   Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,
   Sun, Moon, Briefcase, BarChart3, Route as RouteIcon, Target, Award,
   Menu, X, User, LogOut, ChevronDown, MoreHorizontal, FileText,
-  Network, Map as MapIcon, ScanSearch, Wand2, FolderSearch, BookOpen
+  Network, Map as MapIcon, FolderSearch, BookOpen
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
 import GlobalBackground from './components/GlobalBackground'
@@ -44,10 +44,7 @@ const LeaderboardPage = lazy(() => import('./pages/Leaderboard'))
 const ProfilePage   = lazy(() => import('./pages/Profile'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfile'))
 const ResumeDetailPage = lazy(() => import('./pages/ResumeDetail'))
-const ResumeParsePage = lazy(() => import('./pages/ResumeParse'))
-const RolePredictPage = lazy(() => import('./pages/RolePredict'))
 const CVManagementPage = lazy(() => import('./pages/CVManagement'))
-const CVAnalyzeFilePage = lazy(() => import('./pages/CVAnalyzeFile'))
 
 const Loading = () => (
   <div style={{ padding: 60, textAlign: 'center' }}>
@@ -117,9 +114,6 @@ export default function App() {
     { to: '/candidate/skill-gap/reports', icon: FileText, label: 'Gap Reports' },
     { to: '/candidate/skill-gap/graph', icon: Network, label: 'Skill Graph' },
     { to: '/candidate/career/roadmap', icon: MapIcon, label: 'Career Roadmap' },
-    { to: '/candidate/resume/parse', icon: ScanSearch, label: 'Parse Resume Text' },
-    { to: '/candidate/resume/predict-role', icon: Wand2, label: 'Predict My Role' },
-    { to: '/candidate/cv/analyze-file', icon: FolderSearch, label: 'Analyze CV File' },
   ]
 
   const companyLinks = [
@@ -416,9 +410,6 @@ export default function App() {
               <Route path="/candidate/interview/proctoring/:interviewId" element={<PrivateRoute role="candidate"><ProctoringDashboardPage /></PrivateRoute>} />
               <Route path="/profile" element={<PrivateRoute role="candidate"><ProfilePage /></PrivateRoute>} />
               <Route path="/candidate/resume/:resumeId" element={<PrivateRoute role="candidate"><ResumeDetailPage /></PrivateRoute>} />
-              <Route path="/candidate/resume/parse" element={<PrivateRoute role="candidate"><ResumeParsePage /></PrivateRoute>} />
-              <Route path="/candidate/resume/predict-role" element={<PrivateRoute role="candidate"><RolePredictPage /></PrivateRoute>} />
-              <Route path="/candidate/cv/analyze-file" element={<PrivateRoute role="candidate"><CVAnalyzeFilePage /></PrivateRoute>} />
 
               <Route path="/company/dashboard" element={<PrivateRoute role="company"><CompanyDashboard /></PrivateRoute>} />
               <Route path="/company/jobs/:id" element={<PrivateRoute role="company"><JobDetail /></PrivateRoute>} />
