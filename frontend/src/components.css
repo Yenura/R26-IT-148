@@ -374,53 +374,14 @@ code {
   border-color: #e2e8f0;
 }
 
-/* Dark-glass panels (hardcoded dark surfaces) keep their look in light mode;
-   remap text tokens inside them so theme-var text stays readable. */
+/* Dark-glass panels keep their look in dark mode; in light mode they become
+   clean white surfaces. !important is required: panel backgrounds are set
+   inline, and only !important beats inline styles. */
 [data-theme="light"] .panel-dark {
-  --color-fg: #f1f5f9;
-  --color-fg-secondary: #cbd5e1;
-  --color-fg-muted: #94a3b8;
-  --chip-fg: #e2e8f0;
-  --chip-bg: rgba(255, 255, 255, 0.08);
-  --chip-border: rgba(255, 255, 255, 0.14);
-}
-
-/* Direct light-mode rules below would otherwise beat the scoped tokens above
-   (direct color beats inherited custom properties; !important beats inline). */
-[data-theme="light"] .panel-dark .chip {
-  color: #e2e8f0;
-}
-
-/* Ghost buttons/links inherit through a var() chain that resolves against
-   :root instead of the scope in some browsers — set direct colors. */
-[data-theme="light"] .panel-dark .btn-ghost {
-  color: #e2e8f0;
-}
-[data-theme="light"] .panel-dark .btn-ghost:hover {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.08);
-}
-
-/* Form controls inside dark panels are light surfaces — force dark text,
-   overriding both the light-theme rule and per-element inline colors. */
-[data-theme="light"] .panel-dark input,
-[data-theme="light"] .panel-dark select,
-[data-theme="light"] .panel-dark textarea {
-  color: #0f172a !important;
-}
-
-/* Tables inside dark panels keep dark-header styling readable. */
-[data-theme="light"] .panel-dark .table th {
-  background-color: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
-  border-bottom-color: rgba(255, 255, 255, 0.12);
-}
-[data-theme="light"] .panel-dark .table td {
-  color: #f1f5f9;
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-[data-theme="light"] .panel-dark .table tbody tr:hover {
-  background-color: rgba(255, 255, 255, 0.04);
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03) !important;
+  backdrop-filter: none !important;
 }
 
 .navbar-hamburger {

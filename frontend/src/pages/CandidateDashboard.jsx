@@ -445,7 +445,7 @@ const [jobSearch, setJobSearch] = useState('')
                                   className="btn btn-ghost btn-sm"
                                   style={{ fontSize: '11px', padding: '4px 10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}
                                 >
-                                  <MessagesSquare size={12} style={{ color: '#a78bfa' }} /> Practice Mock Interview
+                                  <MessagesSquare size={12} style={{ color: 'var(--color-purple)' }} /> Practice Mock Interview
                                 </Link>
                                 <Link
                                   to={`/pipeline/cv-match?resumeId=${r.id}`}
@@ -720,28 +720,28 @@ const [jobSearch, setJobSearch] = useState('')
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <Sparkles size={13} style={{ color: '#38bdf8' }} /> 3-Pillar CV Match
+                <Sparkles size={13} style={{ color: 'var(--color-primary)' }} /> 3-Pillar CV Match
               </Link>
               <Link
                 to="/candidate/interview"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <MessagesSquare size={13} style={{ color: '#a78bfa' }} /> Mock Interview
+                <MessagesSquare size={13} style={{ color: 'var(--color-purple)' }} /> Mock Interview
               </Link>
               <Link
                 to="/candidate/skill-gap"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <Target size={13} style={{ color: '#34d399' }} /> Skill Gap Sandbox
+                <Target size={13} style={{ color: 'var(--color-success)' }} /> Skill Gap Sandbox
               </Link>
               <Link
                 to="/pipeline/progress"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <ArrowRight size={13} style={{ color: '#fbbf24' }} /> Roadmap Tracker
+                <ArrowRight size={13} style={{ color: 'var(--color-warning)' }} /> Roadmap Tracker
               </Link>
             </div>
           </div>
@@ -764,3 +764,4 @@ const [jobSearch, setJobSearch] = useState('')
     </div>
   )
 }
+
