@@ -384,6 +384,34 @@ code {
   backdrop-filter: none !important;
 }
 
+/* Sweep residual dark-glass inner borders/chips that are invisible on white.
+   These inline rgba(255,255,255,*) values are set for dark mode; in light they
+   vanish. !important beats inline. */
+[data-theme="light"] .panel-dark .chip,
+[data-theme="light"] .chip {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+[data-theme="light"] .panel-dark [style*="rgba(255, 255, 255"] {
+  border-color: #e2e8f0 !important;
+}
+[data-theme="light"] .cvm-pillar-card {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+[data-theme="light"] .cvm-quick-chip {
+  background: #f1f5f9 !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+}
+[data-theme="light"] .cvm-quick-chip.selected {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: #2563eb !important;
+  color: #2563eb !important;
+}
+
 .navbar-hamburger {
   display: none;
   align-items: center;

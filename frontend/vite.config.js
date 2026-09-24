@@ -24,7 +24,7 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react-dom') || id.includes('react-router')) return 'vendor-react'
+            if (id.includes('react') || id.includes('react-dom') || id.includes('react-router')) return 'vendor-react'
             if (id.includes('lucide-react')) return 'vendor-icons'
             if (id.includes('recharts')) return 'vendor-charts'
             if (id.includes('axios') || id.includes('canvas-confetti')) return 'vendor-utils'
