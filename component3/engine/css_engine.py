@@ -78,6 +78,9 @@ class CandidateFeatures:
     P_code: float
     gender:    Optional[str] = None
     age_group: Optional[str] = None
+    # False when the candidate's interview contained no coding section
+    # (non-coding roles). Gate + weights must then ignore coding entirely.
+    has_coding: bool = True
 
 
 @dataclass
@@ -135,7 +138,9 @@ class CSSEngine:
                 return False, f"Skill near-miss: {f.skill_score_raw:.2f} vs {j.min_skill_threshold:.2f} threshold", penalty
             return False, f"Skill {f.skill_score_raw:.2f} < threshold {j.min_skill_threshold:.2f}", 0.0
             
-        if f.P_code < j.min_code_threshold:
+        # No coding section administered (non-coding roles): a candidate cannot
+        # fail a gate for a test they were never given. Skip the coding check.
+        if f.has_coding and f.P_code < j.min_code_threshold:
             ratio = f.P_code / j.min_code_threshold
             if ratio >= NEAR_MISS_THRESHOLD:
                 penalty = 0.70 + 0.25 * (ratio - NEAR_MISS_THRESHOLD) / (1 - NEAR_MISS_THRESHOLD)
@@ -163,6 +168,16 @@ class CSSEngine:
         j = self.job
         return round(j.w_mcq*pm + j.w_desc*pd_ + j.w_code*pc, 4)
 
+    def s_int_no_coding(self, pm, pd_):
+        """Equation 7 with coding weight redistributed (mirrors C2 _normalize_weights).
+
+        Used when the interview had no coding section: the coding share is
+        reallocated to MCQ/descriptive pro-rata instead of scoring 0.
+        """
+        j = self.job
+        denom = (j.w_mcq + j.w_desc) or 1.0
+        return round((j.w_mcq / denom) * pm + (j.w_desc / denom) * pd_, 4)
+
     def css(self, scv, sint):
         """Equation 8 — MASTER"""
         w_cv  = self.job.W_CV
@@ -180,7 +195,10 @@ class CSSEngine:
         res.S_exp   = self.s_exp(f.years_experience)
         res.S_skill = round(float(np.clip(f.skill_score_raw, 0, 1)), 4)
         res.S_cv    = self.s_cv(res.S_edu, res.S_exp, res.S_skill)
-        res.S_int   = self.s_int(f.P_mcq, f.P_desc, f.P_code)
+        if f.has_coding:
+            res.S_int = self.s_int(f.P_mcq, f.P_desc, f.P_code)
+        else:
+            res.S_int = self.s_int_no_coding(f.P_mcq, f.P_desc)
         res.CSS     = self.css(res.S_cv, res.S_int)
         if not passed:
             res.CSS = round(res.CSS * penalty, 4)

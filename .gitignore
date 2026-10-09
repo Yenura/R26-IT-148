@@ -25,6 +25,13 @@ component2/run_t5_training.py
 # Server logs
 server_logs/
 logs/
+*.log
+
+# Test artifacts & reports (regenerable)
+.playwright/
+.pytest_cache/
+screenshots/
+nfr_test_report.json
 
 # Backup and temp files
 *.bak
@@ -191,6 +198,9 @@ celerybeat.pid
 .env
 .envrc
 .venv*/
+**/.venv*/
+.venv312/
+**/.venv312/
 env/
 venv/
 ENV/
@@ -593,3 +603,9 @@ screenshots/skillgap_light.png
 *.py
 nfr_test_report.json
 R26-IT-148_PLANNER_TASKS.json
+
+# Playwright test artifacts
+.playwright-mcp/
+
+# Research paper draft ( teammate workspace, not app code )
+paper/

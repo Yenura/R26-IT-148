@@ -3,20 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react'
 import { C0 } from '../../api'
+import { getErrorMessage } from '../../utils'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const getErrorMessage = (err) => {
-  const detail = err?.response?.data?.detail
-  if (typeof detail === 'string') return detail
-  if (Array.isArray(detail)) {
-    return detail.map((d) => (d.msg ? d.msg.replace(/^Value error,\s*/i, '') : JSON.stringify(d))).join(', ')
-  }
-  if (typeof detail === 'object' && detail !== null) {
-    return Object.values(detail).join(', ')
-  }
-  return err?.message || 'Registration failed. Please try again.'
-}
 
 export default function CandidateRegister() {
   const [form, setForm] = useState({ full_name: '', email: '', password: '' })

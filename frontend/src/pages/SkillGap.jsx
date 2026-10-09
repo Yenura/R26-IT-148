@@ -265,6 +265,14 @@ export default function SkillGap() {
                       </h2>
                     </div>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <button
+                        className="btn btn-ghost btn-sm"
+                        onClick={() => selectedReport.job_title && navigate(`/candidate/career/resources/${encodeURIComponent(selectedReport.job_title)}`)}
+                        disabled={!selectedReport.job_title}
+                        title="Browse learning resources for this role"
+                      >
+                        <BookOpen size={14} /> Learning Resources
+                      </button>
                       <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                         <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Match</div>
                         <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>

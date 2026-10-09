@@ -218,6 +218,11 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
                     matched_role = "Software Engineer"
             job_role = matched_role
         
+        # Sessions without a job stay unattributed: downstream evidence joins
+        # are strict on job_id, so their scores can never bleed into another
+        # job's ranking. Log the case for observability.
+        if not (interview_request.is_practice or False) and not (interview_request.job_id or "").strip():
+            logger.info("Assessed interview started without job_id (role-only); scores will not attach to any application")
         # Create session (CPU-bound: question generation + filtering)
         # Exclude questions the candidate has seen in past sessions
         seen_ids = await get_seen_question_ids(interview_request.candidate_id or "")
@@ -307,6 +312,13 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
         session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
+
+        # Attribute the submission to a job when possible; job-less sessions
+        # remain visible only via their own session/result ID (strict
+        # downstream joins prevent them from scoring any application).
+        effective_job_id = (getattr(submission, "job_id", "") or session.get("job_id", "") or "").strip()
+        if not session.get("is_practice") and not effective_job_id:
+            logger.info(f"Assessed submit without job_id (session {session_id}); result stays unattributed")
         
         # Enrich answer payload with question_type and correctness
         question_map = {
@@ -470,10 +482,14 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
         await save_result(result)
         await update_session_status(session_id, "completed")
         
-        # Send scores to C0 unified backend for ranking pipeline (fire-and-forget, don't block response)
+        # Send scores to C0 unified backend for ranking pipeline.
+        # Authenticated with the shared internal key and retried: the previous
+        # fire-and-forget dropped scores silently on any network hiccup,
+        # leaving C3 with no interview evidence for the session.
         try:
             import urllib.request
             c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
+            internal_key = os.environ.get("INTERNAL_API_KEY", "")
             payload = json.dumps({
                 "candidate_id": result["candidate_id"],
                 "job_id": submission.job_id or session.get("job_id", ""),
@@ -485,18 +501,28 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 "interview_score": result["interview_score"],
                 "grade": result["grade"],
                 "integrity_score": proctoring.get("integrity_score") if proctoring else None,
+                "mcq_total": result["mcq_total"],
+                "descriptive_total": result["descriptive_total"],
+                "coding_total": result["coding_total"],
             }).encode()
+            headers = {"Content-Type": "application/json"}
+            if internal_key:
+                headers["X-Internal-Key"] = internal_key
             req = urllib.request.Request(
                 f"{c0_url}/api/v1/resume/interview-scores",
                 data=payload,
-                headers={"Content-Type": "application/json"},
+                headers=headers,
                 method="POST"
             )
             def _send_c0():
-                try:
-                    urllib.request.urlopen(req, timeout=2)
-                except:
-                    pass
+                last_err = None
+                for attempt in range(3):
+                    try:
+                        urllib.request.urlopen(req, timeout=5)
+                        return
+                    except Exception as exc:
+                        last_err = exc
+                logger.warning(f"C0 score sync failed after 3 attempts (session {session_id}): {last_err}")
             asyncio.create_task(run_in_threadpool(_send_c0))
         except Exception as e:
             logger.warning(f"Failed to send scores to C0: {e}")
@@ -599,21 +625,41 @@ async def fetch_interview_result(interview_id: str, services: Dict = Depends(get
 async def fetch_interview_session(session_id: str):
     """
     Get interview session by ID
-    
+
     Args:
         session_id: Interview session ID
 
     Returns:
-        Interview session payload
+        Interview session payload (answer keys stripped — same projection
+        as /start, so stored correct_option/answer_text can never be pulled
+        before submitting).
     """
     try:
         session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
 
+        public_questions = []
+        for q in session.get("questions", []) or []:
+            if not isinstance(q, dict):
+                continue
+            public_questions.append({
+                "id": q.get("id"),
+                "sequence": q.get("sequence", 0),
+                "question_text": q.get("question_text"),
+                "question_type": q.get("question_type"),
+                "difficulty": q.get("difficulty"),
+                "category": q.get("category", ""),
+                "topic": q.get("topic", ""),
+                "options": q.get("options"),
+                "test_cases": q.get("test_cases"),
+                "time_limit": q.get("time_limit", q.get("time_limit_seconds", 900)),
+            })
+        public_session = {k: v for k, v in session.items() if k != "questions"}
+        public_session["questions"] = public_questions
         return {
             "success": True,
-            "session": session
+            "session": public_session
         }
     except HTTPException:
         raise

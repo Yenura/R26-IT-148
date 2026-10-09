@@ -3,20 +3,9 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Building2 } from 'lucide-react'
 import { C0 } from '../../api'
+import { getErrorMessage } from '../../utils'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-const getErrorMessage = (err) => {
-  const detail = err?.response?.data?.detail
-  if (typeof detail === 'string') return detail
-  if (Array.isArray(detail)) {
-    return detail.map((d) => (d.msg ? d.msg.replace(/^Value error,\s*/i, '') : JSON.stringify(d))).join(', ')
-  }
-  if (typeof detail === 'object' && detail !== null) {
-    return Object.values(detail).join(', ')
-  }
-  return err?.message || 'Invalid email or password'
-}
 
 export default function CandidateLogin() {
   const [email, setEmail] = useState('')
@@ -54,35 +43,10 @@ export default function CandidateLogin() {
       toast.success('Welcome back to RecruitAI!')
       navigate('/candidate/dashboard')
     } catch (err) {
-      if (email.trim().toLowerCase() === 'candidate@example.com') {
-        try {
-          const reg = await C0.post('/auth/register/candidate', {
-            full_name: 'Demo Candidate',
-            email: 'candidate@example.com',
-            password: 'demo123',
-            phone: '+1 555-0199',
-            education: 'BSc Computer Science'
-          })
-          localStorage.setItem('recruitai.token', reg.data.access_token)
-          localStorage.setItem('recruitai.role', 'candidate')
-          localStorage.setItem('recruitai.user_id', reg.data.user_id || '')
-          localStorage.setItem('recruitai.name', 'Demo Candidate')
-          toast.success('Welcome to RecruitAI!')
-          navigate('/candidate/dashboard')
-          return
-        } catch { }
-      }
       toast.error(getErrorMessage(err))
     } finally {
       setBusy(false)
     }
-  }
-
-  const fillDemo = (demoEmail = 'slt@gmail.com', demoPass = '123456') => {
-    setEmail(demoEmail)
-    setPassword(demoPass)
-    setErrors({})
-    toast.success(`Demo credentials loaded (${demoEmail})`)
   }
 
   return (
@@ -127,24 +91,18 @@ export default function CandidateLogin() {
         </div>
 
         {/* Main Auth Box */}
-        <div className="card" style={{
+        <div className="card auth-card" style={{
           padding: '28px 26px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
-          borderRadius: 'var(--radius-xl)',
-          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(16px)'
+          borderRadius: 'var(--radius-xl)'
         }}>
           {/* Dual Role Segmented Selector */}
-          <div style={{
+          <div className="auth-track" style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 4,
-            background: 'rgba(0, 0, 0, 0.35)',
             padding: '4px',
             borderRadius: 'var(--radius-md)',
-            marginBottom: 20,
-            border: '1px solid rgba(255, 255, 255, 0.06)'
+            marginBottom: 20
           }}>
             <button
               type="button"
@@ -204,8 +162,7 @@ export default function CandidateLogin() {
                   style={{
                     paddingLeft: 36,
                     fontSize: '13px',
-                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined,
-                    background: 'rgba(0, 0, 0, 0.25)'
+                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined
                   }}
                   required
                 />
@@ -230,8 +187,7 @@ export default function CandidateLogin() {
                     paddingLeft: 36,
                     paddingRight: 36,
                     fontSize: '13px',
-                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined,
-                    background: 'rgba(0, 0, 0, 0.25)'
+                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined
                   }}
                   required
                 />
@@ -286,7 +242,7 @@ export default function CandidateLogin() {
 
           <div style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
             <span>Don't have a candidate account? </span>
-            <Link to="/register/candidate" style={{ color: 'var(--color-primary-light, #93c5fd)', fontWeight: 700 }}>
+            <Link to="/register/candidate" style={{ color: 'var(--color-primary)', fontWeight: 700 }}>
               Create Account
             </Link>
           </div>
@@ -295,3 +251,5 @@ export default function CandidateLogin() {
     </div>
   )
 }
+
+

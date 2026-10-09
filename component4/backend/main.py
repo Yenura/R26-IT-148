@@ -49,7 +49,7 @@ if not MONGODB_URI:
     raise SystemExit(1)
 DB_NAME         = os.getenv("DB_NAME", "HR")
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:5174"
+    "ALLOWED_ORIGINS", "http://localhost:5174,http://127.0.0.1:5174"
 ).split(",")
 
 

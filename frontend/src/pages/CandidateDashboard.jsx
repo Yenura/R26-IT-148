@@ -7,50 +7,18 @@ import {
   Search, GraduationCap, Building2
 } from 'lucide-react'
 import {
-  uResumeList, uResumeUpload, uResumeDelete, uResumeUpdate,
+  uResumeList, uResumeDelete, uResumeUpdate,
   c0JobsAll, c0Predictions, c0Applications
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
-import { toArr } from '../utils'
+import { toArr, cleanCandidateName, cleanCompanyName } from '../utils'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
-import UploadZone from '../components/UploadZone'
+import CVIngest from '../components/CVIngest'
 import ConfirmDialog from '../components/ConfirmDialog'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
-
-const cleanCandidateTitle = (candName, filename) => {
-  if (candName && String(candName).trim() && !candName.toLowerCase().includes('.pdf') && !candName.toLowerCase().includes('candidate')) {
-    return candName.trim()
-  }
-  if (filename) {
-    let name = filename
-      .replace(/\.[^/.]+$/, '')
-      .replace(/[\(\[\d\)\]]/g, '')
-      .replace(/[_-]+/g, ' ')
-      .replace(/\b(?:cv|resume|se|swe|intern|developer)\b/gi, '')
-      .trim()
-    if (name.length > 2) {
-      return name.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-    }
-  }
-  return 'Candidate Profile'
-}
-
-const cleanCompanyName = (rawCompany) => {
-  if (!rawCompany) return 'Enterprise Partner'
-  let c = String(rawCompany).trim()
-  c = c.replace(/\s*\d{6,}\b/g, '')
-  if (c.toLowerCase() === 'virtusa') return 'Virtusa'
-  if (c.toLowerCase() === 'syscolabs' || c.toLowerCase() === 'sysco labs') return 'Sysco LABS'
-  if (c.toLowerCase() === 'ifs') return 'IFS'
-  if (c.toLowerCase() === 'wso2') return 'WSO2'
-  if (c.toLowerCase() === '99x') return '99x'
-  if (c.toLowerCase() === 'codegen') return 'CodeGen'
-  if (c.toLowerCase() === 'tech corp' || c.toLowerCase() === 'techcorp') return 'TechCorp Global'
-  return c.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-}
 
 const cleanEducationText = (rawEdu) => {
   if (!rawEdu) return 'BSc Degree in Computing / IT'
@@ -75,8 +43,6 @@ export default function CandidateDashboard() {
   const [applications, setApplications] = useState([])
   const [predictions, setPredictions] = useState([])
   const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-  const [selectedFile, setSelectedFile] = useState(null)
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [confirm, setConfirm] = useState({ open: false, title: '', message: '', danger: false, action: null })
@@ -110,25 +76,6 @@ const [jobSearch, setJobSearch] = useState('')
       toast.error('Failed to load dashboard data')
     } finally {
       setLoading(false)
-    }
-  }
-
-  const handleFileUpload = async (file) => {
-    if (!file) return
-    setSelectedFile(file)
-    setUploading(true)
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-      await uResumeUpload(formData)
-      toast.success('Resume parsed and skills extracted successfully!')
-      setSelectedFile(null)
-      loadData()
-    } catch (err) {
-      toast.error(err?.response?.data?.detail || 'Upload failed')
-      setSelectedFile(null)
-    } finally {
-      setUploading(false)
     }
   }
 
@@ -277,11 +224,9 @@ const [jobSearch, setJobSearch] = useState('')
 
             {/* Upload Zone */}
             <div style={{ marginBottom: 'var(--p-space-4)' }}>
-              <UploadZone
-                onFileSelect={handleFileUpload}
-                uploading={uploading}
-                selectedFile={selectedFile}
-                onRemoveFile={() => setSelectedFile(null)}
+              <CVIngest
+                onIngested={() => loadData()}
+                uploadToast="Resume parsed and skills extracted successfully!"
               />
             </div>
 
@@ -379,7 +324,7 @@ const [jobSearch, setJobSearch] = useState('')
                       /* Standard View Mode */
                       <div>
                         {(() => {
-                          const candDisplayName = cleanCandidateTitle(r.candidate_name, r.filename)
+                          const candDisplayName = cleanCandidateName(r.candidate_name, r.filename)
                           const initials = candDisplayName.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase() || 'CV'
                           return (
                             <>
@@ -466,11 +411,18 @@ const [jobSearch, setJobSearch] = useState('')
                               {/* Action CTAs */}
                               <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'flex-end', gap: 8, flexWrap: 'wrap' }}>
                                 <Link
+                                  to={`/candidate/resume/${r.id}`}
+                                  className="btn btn-ghost btn-sm"
+                                  style={{ fontSize: '11px', padding: '4px 10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}
+                                >
+                                  <Eye size={12} /> Full Details
+                                </Link>
+                                <Link
                                   to={`/candidate/interview?role=${encodeURIComponent(r.predicted_role || 'Software Engineer')}`}
                                   className="btn btn-ghost btn-sm"
                                   style={{ fontSize: '11px', padding: '4px 10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}
                                 >
-                                  <MessagesSquare size={12} style={{ color: '#a78bfa' }} /> Practice Mock Interview
+                                  <MessagesSquare size={12} style={{ color: 'var(--color-purple)' }} /> Practice Mock Interview
                                 </Link>
                                 <Link
                                   to={`/pipeline/cv-match?resumeId=${r.id}`}
@@ -721,7 +673,7 @@ const [jobSearch, setJobSearch] = useState('')
 
           {/* AI Career Acceleration Suite Hub */}
           <div
-            className="card"
+            className="card panel-dark"
             style={{
               background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%)',
               border: '1px solid rgba(59, 130, 246, 0.3)',
@@ -745,28 +697,28 @@ const [jobSearch, setJobSearch] = useState('')
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <Sparkles size={13} style={{ color: '#38bdf8' }} /> 3-Pillar CV Match
+                <Sparkles size={13} style={{ color: 'var(--color-primary)' }} /> 3-Pillar CV Match
               </Link>
               <Link
                 to="/candidate/interview"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <MessagesSquare size={13} style={{ color: '#a78bfa' }} /> Mock Interview
+                <MessagesSquare size={13} style={{ color: 'var(--color-purple)' }} /> Mock Interview
               </Link>
               <Link
                 to="/candidate/skill-gap"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <Target size={13} style={{ color: '#34d399' }} /> Skill Gap Sandbox
+                <Target size={13} style={{ color: 'var(--color-success)' }} /> Skill Gap Sandbox
               </Link>
               <Link
                 to="/pipeline/progress"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <ArrowRight size={13} style={{ color: '#fbbf24' }} /> Roadmap Tracker
+                <ArrowRight size={13} style={{ color: 'var(--color-warning)' }} /> Roadmap Tracker
               </Link>
             </div>
           </div>
@@ -789,3 +741,4 @@ const [jobSearch, setJobSearch] = useState('')
     </div>
   )
 }
+

@@ -17,6 +17,7 @@ from models.schemas import (RankRequest, RankWeightsRequest, RankedCandidate,
 from services.ranking_service import get_service
 
 from engine.css_engine import JobRequirementProfile
+from auth_guard import require_identity
 
 router = APIRouter()
 logger = logging.getLogger("component3")
@@ -70,6 +71,7 @@ async def _fetch_skill_gap(c, job_role):
 @router.post("/rank/compute", summary="Compute CSS and rank candidates")
 @limiter.limit("20/minute")
 async def compute_rank(request: Request, payload: RankRequest):
+    await require_identity(request)
     service = get_service()
     try:
         job, ranked = service.rank(
@@ -115,7 +117,13 @@ async def compute_rank(request: Request, payload: RankRequest):
             predicted_hire=r.get("predicted_hire"),
         ).model_dump())
 
-    job_id = payload.job_id or f"JOB_{payload.job_role}"
+    job_id = payload.job_id
+    if not job_id or not str(job_id).strip():
+        # No shared default bucket: ranking callers must name the job, or
+        # unrelated postings sharing a role would overwrite and expose each
+        # other's candidate lists under JOB_{role}.
+        raise HTTPException(status_code=400, detail="job_id is required")
+    job_id = str(job_id).strip()
     try:
         await request.app.state.store.delete("rankings", {"job_id": job_id})
         await request.app.state.store.delete("ranked_candidates", {"job_id": job_id})
@@ -154,6 +162,7 @@ async def compute_rank(request: Request, payload: RankRequest):
 
 @router.get("/rank/results/{job_id}", summary="Fetch ranked list for a job")
 async def get_results(job_id: str, request: Request):
+    await require_identity(request)
     doc = await request.app.state.store.find_one("rankings", {"job_id": job_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Ranking not found")
@@ -163,6 +172,7 @@ async def get_results(job_id: str, request: Request):
 @router.post("/rank/weights", summary="Set employer scoring weights")
 @limiter.limit("20/minute")
 async def set_weights(payload: RankWeightsRequest, request: Request):
+    await require_identity(request)
     if payload.job_role not in get_service().roles():
         raise HTTPException(
             status_code=400,
@@ -179,9 +189,18 @@ async def set_weights(payload: RankWeightsRequest, request: Request):
     return {"success": True, "weight_id": weight_id, "data": doc}
 
 
-@router.get("/rank/explain/{candidate_id}", summary="Explain a candidate's ranking across jobs")
-async def explain_candidate(candidate_id: str, request: Request):
-    docs = await request.app.state.store.find_all("ranked_candidates", {"candidate_id": candidate_id})
+@router.get("/rank/explain/{candidate_id}", summary="Explain a candidate's ranking for one job")
+async def explain_candidate(candidate_id: str, request: Request, job_id: str = ""):
+    identity = await require_identity(request)
+    # Candidates may only view their own explanation.
+    if identity.get("role") == "candidate" and str(candidate_id) != str(identity.get("sub")):
+        raise HTTPException(status_code=403, detail="Access denied")
+    # Scoped to a single job: explaining "across jobs" enumerated every job
+    # a candidate was ever ranked for to any caller knowing the candidate_id.
+    if not job_id or not job_id.strip():
+        raise HTTPException(status_code=400, detail="job_id query parameter is required")
+    docs = await request.app.state.store.find_all(
+        "ranked_candidates", {"candidate_id": candidate_id, "job_id": job_id.strip()})
     if not docs:
         raise HTTPException(status_code=404, detail="Candidate not ranked yet")
     service = get_service()
@@ -232,7 +251,11 @@ _PIPELINE_TTL = 30.0
 @router.post("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
 async def rank_pipeline(request: Request, job_id: str):
     """Fetch real applicants from MongoDB, build candidate inputs, and rank them."""
-    cached = _PIPELINE_CACHE.get(job_id)
+    # Auth first: the cache below is keyed by job_id only, so it must never
+    # be served before the caller is verified.
+    identity = await require_identity(request)
+    cache_key = (job_id, identity.get("sub"))
+    cached = _PIPELINE_CACHE.get(cache_key)
     if cached and time.time() - cached[0] < _PIPELINE_TTL:
         return cached[1]
 
@@ -249,11 +272,16 @@ async def rank_pipeline(request: Request, job_id: str):
                     dns.resolver.default_resolver = _res
                 except Exception:
                     pass
+                mongo_uri = os.getenv("MONGODB_URI", "")
+                if not mongo_uri:
+                    raise HTTPException(status_code=500, detail="Database not configured")
                 client = motor.motor_asyncio.AsyncIOMotorClient(
-                    os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
+                    mongo_uri,
                     serverSelectionTimeoutMS=15000
                 )
                 db = client[os.getenv("DB_NAME", "HR")]
+            except HTTPException:
+                raise
             except Exception:
                 pass
         if db is None:
@@ -285,17 +313,13 @@ async def rank_pipeline(request: Request, job_id: str):
         required_skills = job.get("required_skills", ["Python", "SQL", "Git"]) if job else ["Python", "SQL"]
         
         # 2. Fetch candidates for this job (Applications + CV Match + Interviewed + Results) in parallel
+        # Strict job-ID scoping: only documents explicitly linked to THIS job posting.
+        # Title/role-based fallbacks were removed — they matched candidates from other
+        # companies' jobs sharing the same title (e.g. every "Software Engineer" posting),
+        # making brand-new jobs appear to already have applicants.
         query_conditions = [{"job_id": job_id}, {"job_id": str(job_id)}]
         if ObjectId.is_valid(job_id):
             query_conditions.append({"job_id": ObjectId(job_id)})
-
-        if job:
-            j_t = job.get("title")
-            j_r = job.get("job_role")
-            if j_t:
-                query_conditions.extend([{"job_id": j_t}, {"job_title": j_t}, {"job_role": j_t}])
-            if j_r:
-                query_conditions.extend([{"job_id": j_r}, {"job_role": j_r}])
 
         apps_task = db.applications.find({"$or": query_conditions}).to_list(300)
         preds_task = db.predictions.find({"$or": query_conditions}).to_list(300)
@@ -384,19 +408,22 @@ async def rank_pipeline(request: Request, job_id: str):
             if str(r.get("_id", "")) not in resume_map:
                 resume_map[str(r["_id"])] = r
 
+        # Same-job evidence only: a candidate's scores for job A must never
+        # leak into their ranking for job B. Candidates with no same-job
+        # evidence get no score (None path), never another job's numbers.
         for p in p_list:
             cid = str(p.get("candidate_id", ""))
-            if cid and (cid not in pred_map or str(p.get("job_id")) == str(job_id)):
+            if cid and str(p.get("job_id", "")) == str(job_id) and cid not in pred_map:
                 pred_map[cid] = p
 
         for s in s_list:
             cid = str(s.get("candidate_id", ""))
-            if cid and (cid not in scores_map or str(s.get("job_id")) == str(job_id)):
+            if cid and str(s.get("job_id", "")) == str(job_id) and cid not in scores_map:
                 scores_map[cid] = s
 
         for res in res_list:
             cid = str(res.get("candidate_id", ""))
-            if cid and (cid not in scores_map or str(res.get("job_id")) == str(job_id)):
+            if cid and str(res.get("job_id", "")) == str(job_id) and cid not in scores_map:
                 scores_map[cid] = res
 
         # 4. Build candidate inputs
@@ -427,7 +454,7 @@ async def rank_pipeline(request: Request, job_id: str):
                         edu_level = 2
 
             if not resume_skills:
-                resume_skills = ["Python", "SQL", "Git"]
+                resume_skills = []
 
             # Real interview scores from completed interviews
             latest_score = scores_map.get(candidate_id)
@@ -436,11 +463,19 @@ async def rank_pipeline(request: Request, job_id: str):
                 descriptive_score = (float(latest_score.get("descriptive_score", 0) or 0)) / 100
                 coding_score = (float(latest_score.get("coding_score", 0) or 0)) / 100
                 int_score_num = float(latest_score.get("interview_score", 0) or 0)
+                # No coding section administered (non-coding roles) vs scored zero:
+                # only an explicit coding_total == 0 proves the section was absent.
+                # Docs without the field keep legacy behavior (gate applies).
+                _ct = latest_score.get("coding_total", None)
+                has_coding = True if _ct is None else int(_ct or 0) > 0
             else:
                 mcq_score = 0.0
                 descriptive_score = 0.0
                 coding_score = 0.0
                 int_score_num = None
+                # No interview data at all: keep legacy behavior (gates apply),
+                # so uninterviewed candidates cannot outrank interviewed ones.
+                has_coding = True
             
             # Skill matching and CV 3-pillar scores from predictions
             pred_doc = pred_map.get(candidate_id)
@@ -463,7 +498,7 @@ async def rank_pipeline(request: Request, job_id: str):
                 candidate_id=candidate_id,
                 candidate_name=candidate_name,
                 job_role=job_role,
-                years_experience=float(experience_years or 2.0),
+                years_experience=float(experience_years or 0),
                 edu_level=int(edu_level),
                 skill_score_raw=float(s_skill_val),
                 S_edu=s_edu_val,
@@ -472,6 +507,7 @@ async def rank_pipeline(request: Request, job_id: str):
                 P_mcq=float(mcq_score),
                 P_desc=float(descriptive_score),
                 P_code=float(coding_score),
+                has_coding=has_coding,
                 skills=resume_skills,
                 interview_score=int_score_num,
             ))
@@ -596,7 +632,7 @@ async def rank_pipeline(request: Request, job_id: str):
             })
         
         res_data = {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
-        _PIPELINE_CACHE[job_id] = (time.time(), res_data)
+        _PIPELINE_CACHE[cache_key] = (time.time(), res_data)
         return res_data
     except HTTPException:
         raise

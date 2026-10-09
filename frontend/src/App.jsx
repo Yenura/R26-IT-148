@@ -4,7 +4,8 @@ import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
   Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,
   Sun, Moon, Briefcase, BarChart3, Route as RouteIcon, Target, Award,
-  Menu, X, User, LogOut, ChevronDown
+  Menu, X, User, LogOut, ChevronDown, MoreHorizontal, FileText,
+  Network, Map as MapIcon, FolderSearch, BookOpen
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
 import GlobalBackground from './components/GlobalBackground'
@@ -23,13 +24,27 @@ const ApplicantPipeline = lazy(() => import('./pages/ApplicantPipeline'))
 const JobBoard      = lazy(() => import('./pages/JobBoard'))
 const JobDetail     = lazy(() => import('./pages/JobDetail'))
 const InterviewPage = lazy(() => import('./pages/Interview'))
+const InterviewResultPage = lazy(() => import('./pages/InterviewResult'))
+const ProctoringDashboardPage = lazy(() => import('./pages/ProctoringDashboard'))
+const QuestionBankPage = lazy(() => import('./pages/QuestionBank'))
 const CVMatchPage   = lazy(() => import('./pages/CVMatch'))
 const RankingPage   = lazy(() => import('./pages/Ranking'))
+const RankingResultsPage = lazy(() => import('./pages/RankingResults'))
+const RankingWeightsPage = lazy(() => import('./pages/RankingWeights'))
+const AnalyticsDashboardPage = lazy(() => import('./pages/AnalyticsDashboard'))
+const RoleInsightsPage = lazy(() => import('./pages/RoleInsights'))
 const SkillGapPage  = lazy(() => import('./pages/SkillGap'))
+const SkillGapReportsPage = lazy(() => import('./pages/SkillGapReports'))
+const SkillGapReportDetailPage = lazy(() => import('./pages/SkillGapReportDetail'))
+const SkillDependencyGraphPage = lazy(() => import('./pages/SkillDependencyGraph'))
+const CareerResourcesPage = lazy(() => import('./pages/CareerResources'))
+const CareerRoadmapPage = lazy(() => import('./pages/CareerRoadmap'))
 const ProgressPage  = lazy(() => import('./pages/Progress'))
 const LeaderboardPage = lazy(() => import('./pages/Leaderboard'))
 const ProfilePage   = lazy(() => import('./pages/Profile'))
 const CompanyProfilePage = lazy(() => import('./pages/CompanyProfile'))
+const ResumeDetailPage = lazy(() => import('./pages/ResumeDetail'))
+const CVManagementPage = lazy(() => import('./pages/CVManagement'))
 
 const Loading = () => (
   <div style={{ padding: 60, textAlign: 'center' }}>
@@ -94,11 +109,27 @@ export default function App() {
     { to: '/pipeline/progress', icon: TrendingUp, label: 'Progress' },
   ]
 
+  // Secondary pages reachable only by URL otherwise — grouped under More.
+  const candidateMoreLinks = [
+    { to: '/candidate/skill-gap/reports', icon: FileText, label: 'Gap Reports' },
+    { to: '/candidate/skill-gap/graph', icon: Network, label: 'Skill Graph' },
+    { to: '/candidate/career/roadmap', icon: MapIcon, label: 'Career Roadmap' },
+  ]
+
   const companyLinks = [
     { to: '/company/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/pipeline/ranking', icon: ListOrdered, label: 'Candidate Ranking' },
     { to: '/pipeline/leaderboard', icon: Award, label: 'Leaderboard' },
   ]
+
+  const companyMoreLinks = [
+    { to: '/company/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/company/cv-management', icon: FolderSearch, label: 'CV Management' },
+    { to: '/company/ranking/weights', icon: Layers, label: 'Ranking Weights' },
+    { to: '/company/questions', icon: BookOpen, label: 'Question Bank' },
+  ]
+
+  const moreLinks = role === 'candidate' ? candidateMoreLinks : role === 'company' ? companyMoreLinks : []
 
   const navLinks = role === 'candidate' ? candidateLinks : role === 'company' ? companyLinks : []
 
@@ -109,6 +140,10 @@ export default function App() {
     localStorage.removeItem('recruitai.name')
     localStorage.removeItem('recruitai.avatar')
     try { sessionStorage.clear() } catch {}
+    try {
+      // Best-effort: drop cached API responses so the next login starts clean.
+      import('./api').then((m) => m.clearApiCache && m.clearApiCache()).catch(() => {})
+    } catch {}
     setUserMenu(false)
     navigate('/')
   }, [navigate])
@@ -116,16 +151,23 @@ export default function App() {
   const profileLink = role === 'candidate' ? '/profile' : role === 'company' ? '/company/profile' : null
 
   const userMenuRef = useRef(null)
+  const moreMenuRef = useRef(null)
+  const [moreOpen, setMoreOpen] = useState(false)
   useEffect(() => {
-    if (!userMenu) return
+    if (!userMenu && !moreOpen) return
     const handleClick = (e) => {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setUserMenu(false)
       }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target)) {
+        setMoreOpen(false)
+      }
     }
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
-  }, [userMenu])
+  }, [userMenu, moreOpen])
+
+  const moreActive = moreLinks.some((l) => location.pathname === l.to || location.pathname.startsWith(l.to + '/'))
 
   useEffect(() => {
     const path = location.pathname
@@ -137,6 +179,7 @@ export default function App() {
     else if (path.includes('/cv-match')) title = 'CV Match | RecruitAI'
     else if (path.includes('/skill-gap')) title = 'Skill Gap Analysis | RecruitAI'
     else if (path.includes('/ranking')) title = 'Candidate Ranking | RecruitAI'
+    else if (path.includes('/analytics')) title = 'Analytics | RecruitAI'
     else if (path.includes('/leaderboard')) title = 'Leaderboard | RecruitAI'
     else if (path.includes('/progress')) title = 'Progress Tracking | RecruitAI'
     else if (path.includes('/profile')) title = 'Profile | RecruitAI'
@@ -200,6 +243,35 @@ export default function App() {
                     <span>{l.label}</span>
                   </NavLink>
                 ))}
+                {moreLinks.length > 0 && (
+                  <div ref={moreMenuRef} style={{ position: 'relative' }}>
+                    <button
+                      className={`navbar-link ${moreActive || moreOpen ? 'active' : ''}`}
+                      onClick={() => setMoreOpen(!moreOpen)}
+                      onKeyDown={(e) => { if (e.key === 'Escape') setMoreOpen(false) }}
+                      aria-expanded={moreOpen}
+                      aria-haspopup="true"
+                      style={{ border: 'none', background: 'none', cursor: 'pointer', font: 'inherit' }}
+                    >
+                      <MoreHorizontal size={15} />
+                      <span>More</span>
+                      <ChevronDown size={12} style={{ opacity: 0.7 }} />
+                    </button>
+                    {moreOpen && (
+                      <div className="navbar-dropdown" style={{ left: 0, right: 'auto', minWidth: 210 }} onClick={(e) => e.stopPropagation()}>
+                        {moreLinks.map((l) => (
+                          <button
+                            key={l.to}
+                            onClick={() => { navigate(l.to); setMoreOpen(false) }}
+                            style={location.pathname === l.to ? { background: 'var(--sidebar-item-active-bg)', color: 'var(--sidebar-item-active-fg)', fontWeight: 600 } : undefined}
+                          >
+                            <l.icon size={14} /> {l.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 
@@ -297,6 +369,16 @@ export default function App() {
                   <l.icon size={18} /> {l.label}
                 </NavLink>
               ))}
+              {moreLinks.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  className={({ isActive }) => `navbar-mobile-link ${isActive ? 'active' : ''}`}
+                  onClick={() => setMobileMenu(false)}
+                >
+                  <l.icon size={18} /> {l.label}
+                </NavLink>
+              ))}
               {profileLink && (
                 <button className="navbar-mobile-link" onClick={() => { navigate(profileLink); setMobileMenu(false) }}>
                   <User size={18} /> Profile & Settings
@@ -328,41 +410,47 @@ export default function App() {
               <Route path="/candidate/jobs" element={<PrivateRoute role="candidate"><JobBoard /></PrivateRoute>} />
               <Route path="/candidate/jobs/:id" element={<PrivateRoute role="candidate"><JobDetail /></PrivateRoute>} />
               <Route path="/candidate/interview" element={<PrivateRoute role="candidate"><InterviewPage /></PrivateRoute>} />
+              <Route path="/candidate/interview/result/:interviewId" element={<PrivateRoute role="candidate"><InterviewResultPage /></PrivateRoute>} />
+              <Route path="/candidate/interview/proctoring/:interviewId" element={<PrivateRoute role="candidate"><ProctoringDashboardPage /></PrivateRoute>} />
               <Route path="/profile" element={<PrivateRoute role="candidate"><ProfilePage /></PrivateRoute>} />
+              <Route path="/candidate/resume/:resumeId" element={<PrivateRoute role="candidate"><ResumeDetailPage /></PrivateRoute>} />
 
               <Route path="/company/dashboard" element={<PrivateRoute role="company"><CompanyDashboard /></PrivateRoute>} />
               <Route path="/company/jobs/:id" element={<PrivateRoute role="company"><JobDetail /></PrivateRoute>} />
               <Route path="/company/pipeline/:jobId" element={<PrivateRoute role="company"><ApplicantPipeline /></PrivateRoute>} />
               <Route path="/company/profile" element={<PrivateRoute role="company"><CompanyProfilePage /></PrivateRoute>} />
+              <Route path="/company/questions/:role" element={<PrivateRoute role="company"><QuestionBankPage /></PrivateRoute>} />
+              <Route path="/company/questions" element={<PrivateRoute role="company"><QuestionBankPage /></PrivateRoute>} />
+              <Route path="/company/cv-management" element={<PrivateRoute role="company"><CVManagementPage /></PrivateRoute>} />
 
-              {/* Seamless Universal Route Aliases */}
+              {/* Universal Route Aliases */}
               <Route path="/pipeline/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
               <Route path="/candidate/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
-              <Route path="/cv-match" element={<PrivateRoute><CVMatchPage /></PrivateRoute>} />
 
               <Route path="/pipeline/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
               <Route path="/company/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
-              <Route path="/candidate/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
-              <Route path="/ranking" element={<PrivateRoute><RankingPage /></PrivateRoute>} />
+
+              <Route path="/company/ranking/results/:jobId" element={<PrivateRoute role="company"><RankingResultsPage /></PrivateRoute>} />
+              <Route path="/company/ranking/weights" element={<PrivateRoute role="company"><RankingWeightsPage /></PrivateRoute>} />
+
+              <Route path="/company/analytics" element={<PrivateRoute role="company"><AnalyticsDashboardPage /></PrivateRoute>} />
+              <Route path="/company/analytics/role-insights/:role" element={<PrivateRoute role="company"><RoleInsightsPage /></PrivateRoute>} />
+              <Route path="/company/analytics/role-insights" element={<PrivateRoute role="company"><RoleInsightsPage /></PrivateRoute>} />
 
               <Route path="/pipeline/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
               <Route path="/candidate/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
-              <Route path="/skill-gap" element={<PrivateRoute><SkillGapPage /></PrivateRoute>} />
-
-              <Route path="/pipeline/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
-              <Route path="/career-path" element={<Navigate to="/pipeline/cv-match" replace />} />
+              <Route path="/candidate/skill-gap/reports" element={<PrivateRoute><SkillGapReportsPage /></PrivateRoute>} />
+              <Route path="/candidate/skill-gap/reports/:candidateId" element={<PrivateRoute><SkillGapReportDetailPage /></PrivateRoute>} />
+              <Route path="/candidate/skill-gap/graph" element={<PrivateRoute><SkillDependencyGraphPage /></PrivateRoute>} />
+              <Route path="/candidate/career/resources/:role" element={<PrivateRoute><CareerResourcesPage /></PrivateRoute>} />
+              <Route path="/candidate/career/roadmap" element={<PrivateRoute><CareerRoadmapPage /></PrivateRoute>} />
+              <Route path="/candidate/career/roadmap/:candidateId" element={<PrivateRoute><CareerRoadmapPage /></PrivateRoute>} />
 
               <Route path="/pipeline/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
               <Route path="/candidate/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
-              <Route path="/progress" element={<PrivateRoute><ProgressPage /></PrivateRoute>} />
 
               <Route path="/pipeline/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
               <Route path="/company/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
-              <Route path="/candidate/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
-              <Route path="/leaderboard" element={<PrivateRoute><LeaderboardPage /></PrivateRoute>} />
-
-              <Route path="/jobs" element={<PrivateRoute><JobBoard /></PrivateRoute>} />
-              <Route path="/interview" element={<PrivateRoute><InterviewPage /></PrivateRoute>} />
 
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

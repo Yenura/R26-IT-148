@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   ListOrdered, Trophy, Briefcase, Award, Brain,
@@ -53,9 +53,6 @@ export default function Ranking() {
       return []
     }
   })
-  const [allJobs, setAllJobs] = useState([])
-  const [viewScope, setViewScope] = useState('my') // 'my' | 'all'
-
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     const role = localStorage.getItem('recruitai.role')
@@ -68,23 +65,19 @@ export default function Ranking() {
 
   const loadCompanyJobs = async () => {
     try {
-      const [myRes, allRes] = await Promise.all([
-        uJobsMy().catch(() => ({ data: [] })),
-        c0JobsAll().catch(() => ({ data: [] }))
-      ])
+      const myRes = await uJobsMy().catch(() => ({ data: [] }))
       const userCompanyJobs = Array.isArray(myRes.data) ? myRes.data : []
-      const platformAllJobs = Array.isArray(allRes.data) ? allRes.data : []
-      
+
+      // Company scope only: never fall back to platform-wide jobs.
+      // Showing other companies' postings here leaks their applicant pools
+      // into this company's ranking view.
       setMyJobs(userCompanyJobs)
-      setAllJobs(platformAllJobs)
+      setJobs(userCompanyJobs)
 
-      const activeList = userCompanyJobs.length > 0 ? userCompanyJobs : platformAllJobs
-      setJobs(activeList)
-
-      if (activeList.length > 0) {
-        const targetJobId = (paramJobId && activeList.some(j => (j.id || j._id) === paramJobId))
+      if (userCompanyJobs.length > 0) {
+        const targetJobId = (paramJobId && userCompanyJobs.some(j => (j.id || j._id) === paramJobId))
           ? paramJobId
-          : (selectedJob || activeList[0].id || activeList[0]._id)
+          : (selectedJob || userCompanyJobs[0].id || userCompanyJobs[0]._id)
         setSelectedJob(targetJobId)
         computePipeline(targetJobId)
       }
@@ -163,7 +156,7 @@ export default function Ranking() {
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) auto', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 12, alignItems: 'center' }}>
               <select
                 value={selectedJob}
                 onChange={(e) => {
@@ -190,6 +183,14 @@ export default function Ranking() {
                 style={{ padding: '10px 20px', whiteSpace: 'nowrap' }}
               >
                 {busy ? 'Evaluating Applicants...' : 'Rank Applicants'}
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => selectedJob && navigate(`/company/ranking/results/${selectedJob}`)}
+                disabled={!selectedJob}
+                style={{ padding: '10px 20px', whiteSpace: 'nowrap' }}
+              >
+                Full Results
               </button>
             </div>
 

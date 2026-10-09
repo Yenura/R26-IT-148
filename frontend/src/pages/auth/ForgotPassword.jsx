@@ -22,7 +22,7 @@ export default function ForgotPassword({ role = 'candidate' }) {
       const res = await C0.post('/auth/forgot-password', { email: email.trim() })
       if (res.data?.reset_token) {
         setToken(res.data.reset_token)
-        toast.success('Reset token generated (demo) — copy it below')
+        toast.success('Reset token generated — copy it below')
       } else {
         toast.success('If an account exists, a reset link has been generated.')
         setToken('')
@@ -58,7 +58,7 @@ export default function ForgotPassword({ role = 'candidate' }) {
           </form>
           {token && (
             <div style={{ marginTop: 16, padding: 12, background: 'var(--color-primary-muted)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', wordBreak: 'break-all' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-fg)', marginBottom: 4 }}>Demo Reset Token (15 min):</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-fg)', marginBottom: 4 }}>Reset Token (15 min):</div>
               <div style={{ fontSize: 11, fontFamily: 'var(--p-font-mono)', color: 'var(--color-primary)', marginBottom: 8 }}>{token}</div>
               <Link to={`/reset-password?token=${encodeURIComponent(token)}`} className="btn btn-primary btn-sm" style={{ width: '100%', justifyContent: 'center' }}>Go to Reset Password →</Link>
             </div>

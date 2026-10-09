@@ -6,31 +6,23 @@ import {
   Send, ShieldCheck, Sparkles, UserCheck, Briefcase, Plus
 } from 'lucide-react'
 import { c4Leaderboard, uJobsMy, uJobsApplicants, uJobsCompanyApplicants, c3Pipeline } from '../api'
+import { cleanCandidateName } from '../utils'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
-const cleanCandidateName = (rawName, fallbackId) => {
-  if (!rawName) return `Candidate ${(fallbackId || '01').slice(-4)}`
-  let name = String(rawName).trim()
-  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
-  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
-  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
-  const words = name.split(/\s+/).filter(Boolean)
-  if (words.length > 3) {
-    name = words.slice(0, 3).join(' ')
-  }
-  return name || 'Candidate'
-}
-
 export default function Leaderboard() {
   const navigate = useNavigate()
   const userRole = localStorage.getItem('recruitai.role')
+  // Cache keys are namespaced by user so accounts sharing a tab never read
+  // each other's cached standings.
+  const userKey = localStorage.getItem('recruitai.user_id') || 'anon'
+  const cacheKey = `recruitai.leaderboard.${userRole}.${userKey}`
   const [data, setData] = useState(() => {
     try {
-      const cached = sessionStorage.getItem(`recruitai.leaderboard.${userRole}`)
+      const cached = sessionStorage.getItem(cacheKey)
       return cached ? JSON.parse(cached) : []
     } catch {
       return []
@@ -38,7 +30,7 @@ export default function Leaderboard() {
   })
   const [companyJobs, setCompanyJobs] = useState(() => {
     try {
-      const cached = sessionStorage.getItem('recruitai.company.jobs')
+      const cached = sessionStorage.getItem(`recruitai.company.jobs.${userKey}`)
       return cached ? JSON.parse(cached) : []
     } catch {
       return []
@@ -47,7 +39,7 @@ export default function Leaderboard() {
   const [selectedJobFilter, setSelectedJobFilter] = useState('all')
   const [loading, setLoading] = useState(() => {
     try {
-      const cached = sessionStorage.getItem(`recruitai.leaderboard.${userRole}`)
+      const cached = sessionStorage.getItem(cacheKey)
       return !cached
     } catch {
       return true
@@ -76,8 +68,8 @@ export default function Leaderboard() {
           setCompanyJobs(jobs)
           setData(applicants)
           try {
-            sessionStorage.setItem('recruitai.company.jobs', JSON.stringify(jobs))
-            sessionStorage.setItem(`recruitai.leaderboard.${userRole}`, JSON.stringify(applicants))
+            sessionStorage.setItem(`recruitai.company.jobs.${userKey}`, JSON.stringify(jobs))
+            sessionStorage.setItem(cacheKey, JSON.stringify(applicants))
           } catch {}
         } else {
           // Fallback
@@ -97,8 +89,9 @@ export default function Leaderboard() {
                 for (const app of rawApps) {
                   const hasInterview = app.interview_score != null || app.interview_completed
                   const hasCV = app.cv_score != null || app.overall_score != null
-                  const cvScore = app.cv_score ?? app.overall_score ?? (hasInterview ? 75 : 0)
-                  const intScore = app.interview_score ?? (hasCV ? 70 : 0)
+                  // No evidence: leave scores null (never invent 70/75 stand-ins).
+                  const cvScore = app.cv_score ?? app.overall_score ?? null
+                  const intScore = app.interview_score ?? null
                   const hireProb = app.hire_probability ?? app.css_score ?? (hasInterview && hasCV ? (0.4 * cvScore + 0.6 * intScore) : (hasInterview ? intScore : cvScore))
                   jobApps.push({
                     candidate_id: app.candidate_id,
@@ -133,7 +126,7 @@ export default function Leaderboard() {
           companyApplicants.sort((a, b) => (b.hire_probability || 0) - (a.hire_probability || 0))
           setData(companyApplicants)
           try {
-            sessionStorage.setItem(`recruitai.leaderboard.${userRole}`, JSON.stringify(companyApplicants))
+            sessionStorage.setItem(cacheKey, JSON.stringify(companyApplicants))
           } catch {}
         }
       } else {
@@ -142,7 +135,7 @@ export default function Leaderboard() {
         const standings = r.data?.data || []
         setData(standings)
         try {
-          sessionStorage.setItem(`recruitai.leaderboard.${userRole}`, JSON.stringify(standings))
+            sessionStorage.setItem(cacheKey, JSON.stringify(standings))
         } catch {}
       }
     } catch (err) {

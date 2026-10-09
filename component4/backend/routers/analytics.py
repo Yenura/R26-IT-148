@@ -13,6 +13,10 @@ if _BACKEND_DIR not in sys.path:
 from fastapi import APIRouter, Request
 from starlette.concurrency import run_in_threadpool
 from services.ml_engine import run_skill_gap_analysis
+try:
+    from auth_guard import require_identity
+except ImportError:
+    from backend.auth_guard import require_identity
 
 router = APIRouter()
 
@@ -100,6 +104,8 @@ def _round_avg(avg_data: dict, key: str, dec: int = 1) -> float:
 
 @router.get("/summary", summary="Aggregate analytics across all candidates")
 async def analytics_summary(request: Request):
+    # Aggregates over all candidates: authenticated callers only.
+    await require_identity(request)
     db = request.app.state.db
     total = await db.skill_gap_reports.count_documents({})
 
@@ -166,6 +172,9 @@ async def leaderboard(request: Request, limit: int = 50):
     Evaluates real candidates from MongoDB who have uploaded a CV and completed technical interviews.
     Computes true feature vectors [S_edu, S_exp, S_skill, P_mcq, P_desc, P_code] and scores them via LambdaMART.
     """
+    # Named standings of every candidate: authenticated callers only (ends
+    # anonymous enumeration of the candidate pool and their scores).
+    await require_identity(request)
     import time
     now_ts = time.time()
     if _LEADERBOARD_CACHE["data"] is not None and now_ts < _LEADERBOARD_CACHE["expires_at"] and _LEADERBOARD_CACHE["limit"] == limit:
@@ -289,7 +298,8 @@ async def leaderboard(request: Request, limit: int = 50):
             s_edu = 0.50
 
         s_exp = min(exp_years / 8.0, 1.0)
-        s_skill = (cv_match_score or 50.0) / 100.0
+        # No CV evidence: 0, never an invented mid-range score.
+        s_skill = (cv_match_score / 100.0) if cv_match_score is not None else 0.0
 
         p_mcq = (mcq_score / 100.0) if mcq_score is not None else 0.0
         p_desc = (descriptive_score / 100.0) if descriptive_score is not None else 0.0
@@ -316,7 +326,7 @@ async def leaderboard(request: Request, limit: int = 50):
         elif cv_match_score is not None:
             hire_prob = round(cv_match_score * 0.8, 1)
         else:
-            hire_prob = 50.0
+            hire_prob = 0.0
 
         candidates_ranked.append({
             "candidate_id": cid,
@@ -367,6 +377,7 @@ async def leaderboard(request: Request, limit: int = 50):
 
 @router.get("/role-insights/{job_role}", summary="Analytics for a specific job role")
 async def role_insights(job_role: str, request: Request):
+    await require_identity(request)
     db = request.app.state.db
     pipeline = [
         {"$match": {"job_role": job_role}},

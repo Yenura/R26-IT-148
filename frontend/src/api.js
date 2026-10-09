@@ -51,10 +51,14 @@ const mk = (rawUrl) => {
     return originalDelete(reqUrl, ...args)
   }
 
-  // Fast Cached GET with SWR background revalidation
+  // Fast Cached GET with SWR background revalidation.
+  // The cache key is partitioned by auth token so two users sharing one
+  // browser/tab can never read each other's cached responses.
   const originalGet = instance.get.bind(instance)
   instance.get = (requestUrl, config = {}) => {
-    const key = `${url}:${requestUrl}:${JSON.stringify(config.params || {})}`
+    let token = ''
+    try { token = localStorage.getItem('recruitai.token') || '' } catch {}
+    const key = `${url}:${token.slice(-12)}:${requestUrl}:${JSON.stringify(config.params || {})}`
     const now = Date.now()
 
     // 1. Check if cached response is present
@@ -106,6 +110,12 @@ _C0.interceptors.response.use(
     if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
       localStorage.removeItem('recruitai.token')
       localStorage.removeItem('recruitai.role')
+      localStorage.removeItem('recruitai.user_id')
+      localStorage.removeItem('recruitai.name')
+      localStorage.removeItem('recruitai.avatar')
+      try { sessionStorage.clear() } catch {}
+      responseCache.clear()
+      inFlightGetRequests.clear()
       window.location.href = '/'
     }
     return Promise.reject(err)
@@ -151,8 +161,11 @@ export const uJobsCompanyApplicants = ()          => C0.get('/jobs/company-appli
 // ── Unified: Resume ───────────────────────────────────────────
 export const uResumeUpload     = (formData)      => C0.post('/resume/upload', formData)
 export const uResumeList       = ()              => C0.get('/resume/')
+export const uResumeGet        = (id)            => C0.get(`/resume/${id}`)
 export const uResumeUpdate     = (id, payload)   => C0.put(`/resume/${id}`, payload)
 export const uResumeDelete     = (id)            => C0.delete(`/resume/${id}`)
+export const uResumeParse      = (payload)       => C0.post('/resume/parse', payload)
+export const uResumePredictRole= (payload)       => C0.get('/resume/predict-role', { params: payload })
 export const uInterviewDetail  = (candidateId)   => C0.get(`/resume/interview-detail/${candidateId}`)
 export const c0Predictions     = ()              => C0.get('/resume/predictions')
 export const c0Applications    = ()              => C0.get('/jobs/applications')
@@ -172,19 +185,30 @@ export const c1Analyze         = (payload)       => C1.post('/cv/analyze', paylo
 export const c1Roles           = ()              => C1.get('/roles')
 export const c1Classify        = (payload)       => C1.post('/cv/classify', payload)
 export const c1AnalyzeFile     = (formData)      => C1.post('/cv/analyze-file', formData)
+export const c1ListCVs         = (params = {})   => C1.get('/cv', { params })
+export const c1GetCV           = (candidateId)   => C1.get(`/cv/${candidateId}`)
+export const c1DeleteCV        = (candidateId)   => C1.delete(`/cv/${candidateId}`)
+export const c1ScreenResume    = (payload)       => C1.post('/cv/screen-resume', payload)
+export const c1ScreenBatch     = (payload)       => C1.post('/cv/screen-batch', payload)
+export const c1Rank            = (payload)       => C1.post('/cv/rank', payload)
 
 // ── Component 2: AI Interview ─────────────────────────────────
 export const c2Start       = (payload)      => C2.post('/interview/start', payload)
 export const c2Submit      = (payload)      => C2.post('/interview/submit', payload)
 export const c2Jobs        = ()             => C2.get('/interview/jobs')
 export const c2RunCode     = (payload)      => C2.post('/interview/code/run', payload)
+export const c2Result      = (id)           => C2.get(`/interview/result/${id}`)
+export const c2Session     = (id)           => C2.get(`/interview/session/${id}`)
+export const c2Proctoring  = (id)           => C2.get(`/interview/proctoring/${id}`)
+export const c2Questions   = (role)         => C2.get(`/interview/questions/${role}`)
 
 // ── Component 3: Candidate Ranking ────────────────────────────
 export const c3Roles       = ()             => C3.get('/rank/jobs')
 export const c3Rank        = (payload)      => C3.post('/rank/compute', payload)
 export const c3Pipeline    = (jobId)        => C3.get(`/rank/pipeline/${jobId}`)
-export const c3Explain     = (candidateId)  => C3.get(`/rank/explain/${candidateId}`)
+export const c3Explain     = (candidateId, jobId)  => C3.get(`/rank/explain/${candidateId}`, { params: jobId ? { job_id: jobId } : {} })
 export const c3Results     = (jobId)        => C3.get(`/rank/results/${jobId}`)
+export const c3SetWeights  = (payload)      => C3.post('/rank/weights', payload)
 
 // ── Component 4: Skill Gap & Career Development ───────────────
 export const c4Leaderboard     = (limit = 10) => C4.get(`/analytics/leaderboard?limit=${limit}`)
@@ -195,15 +219,19 @@ export const c4SkillGapApplied = (candidateId)=> C4.get(`/skill-gap/applied-jobs
 export const c4SkillGapSimulate= (payload)    => C4.post('/skill-gap/simulate', payload)
 export const c4SkillGapGraph   = ()           => C4.get('/skill-gap/graph')
 export const c4SkillGapReport  = (candidateId)=> C4.get(`/skill-gap/report/${candidateId}`)
-export const c4SkillGapReports = (skip = 0, limit = 50) => C4.get(`/skill-gap/reports?skip=${skip}&limit=${limit}`)
+export const c4SkillGapReports = (candidateId, skip = 0, limit = 50) => C4.get('/skill-gap/reports', { params: { candidate_id: candidateId, skip, limit } })
 export const c4SkillGapDeleteReport = (candidateId) => C4.delete(`/skill-gap/report/${candidateId}`)
 export const c4CareerRec       = (payload)    => C4.post('/career/recommendation', payload)
 export const c4CareerRoles     = ()           => C4.get('/career/roles')
 export const c4CareerPath      = (payload)    => C4.post('/career/path', payload)
 export const c4LearningPath    = (payload)    => C4.post('/career/learning-path', payload)
+export const c4CareerResources = (role)       => C4.get(`/career/resources/${role}`)
+export const c4CareerRoadmap   = (candidateId)=> C4.get(`/career/roadmap/${candidateId}`)
 export const c4Progress        = (candidateId)=> C4.get(`/progress/${candidateId}`)
 export const c4ProgressPopulate= (payload)    => C4.post('/progress/populate', payload)
 export const c4ProgressSync    = (candidateId)=> C4.post(`/progress/sync-from-applied-interviews/${candidateId}`)
 export const c4ProgressUpdate  = (payload)    => C4.post('/progress/update', payload)
 export const c4ProgressDelete  = (candidateId)=> C4.delete(`/progress/${candidateId}`)
 export const c4ProgressDeleteSkill = (candidateId, skill) => C4.delete(`/progress/${candidateId}/${encodeURIComponent(skill)}`)
+export const c4AnalyticsSummary = ()          => C4.get('/analytics/summary')
+export const c4RoleInsights    = (role)       => C4.get(`/analytics/role-insights/${role}`)

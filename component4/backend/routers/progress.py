@@ -9,6 +9,11 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 import re, time
 
+try:
+    from auth_guard import require_identity, require_owner
+except ImportError:
+    from backend.auth_guard import require_identity, require_owner
+
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
@@ -51,6 +56,7 @@ class ProgressUpdateRequest(BaseModel):
 @router.post("/update", summary="Update skill learning progress")
 @limiter.limit("30/minute")
 async def update_progress(payload: ProgressUpdateRequest, request: Request):
+    require_owner(await require_identity(request), payload.candidate_id)
     db = request.app.state.db
     from services.ml_engine import RESOURCES
     
@@ -121,6 +127,7 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
     Scans candidate applied jobs, interview results, CV match history and skill gap reports,
     identifies weak skills & knowledge gaps, and populates the Progress Matrix with structured learning paths.
     """
+    require_owner(await require_identity(request), candidate_id)
     db = request.app.state.db
     from services.ml_engine import RESOURCES, JOB_REQ
 
@@ -184,11 +191,25 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
         if not comp_name:
             comp_name = "Applied Employer"
 
-        # Fetch Interview Results for this role
+        # Fetch Interview Results for this job: prefer documents explicitly linked
+        # to THIS job_id; fall back to same-title match only within this candidate's
+        # own history (role-only docs predate job-linked interviews).
+        id_conds = [{"job_id": job_id}]
+        try:
+            from bson import ObjectId as _O
+            if _O.is_valid(job_id):
+                id_conds.append({"job_id": _O(job_id)})
+        except Exception:
+            pass
         interview_res = await db.results.find_one({
             "candidate_id": candidate_id,
-            "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
+            "$or": id_conds,
         }, sort=[("created_at", -1)])
+        if not interview_res:
+            interview_res = await db.results.find_one({
+                "candidate_id": candidate_id,
+                "$or": [{"job_role": job_title}, {"job_role": job.get("title", "")}]
+            }, sort=[("created_at", -1)])
 
         # Extract weak topics from interview
         if interview_res:
@@ -396,19 +417,27 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
 @limiter.limit("10/minute")
 async def populate_progress(request: Request):
     db = request.app.state.db
-    candidate_id = "web-user"
+    candidate_id = ""
     try:
         body = await request.json()
         if isinstance(body, dict) and body.get("candidate_id"):
             candidate_id = str(body["candidate_id"]).strip()
     except Exception:
         pass
+    # No shared default bucket: every caller names the candidate, and
+    # candidates are confined to their own records.
+    if not candidate_id:
+        raise HTTPException(status_code=400, detail="candidate_id is required")
+    require_owner(await require_identity(request), candidate_id)
 
     return await sync_progress_from_applied_interviews(candidate_id, request)
 
 
 @router.get("/{candidate_id}", summary="Get full progress for a candidate")
 async def get_progress(candidate_id: str, request: Request):
+    # Owner check before the cache: the cache is keyed by candidate_id only,
+    # so it must never be consulted by an unauthorized caller.
+    require_owner(await require_identity(request), candidate_id)
     cached = _get_cached_progress(candidate_id)
     if cached:
         return cached
@@ -422,15 +451,6 @@ async def get_progress(candidate_id: str, request: Request):
         {"$or": query_filters},
         projection={"_id": 0},
     ).sort("updated_at", -1).to_list(length=100)
-
-    if not docs and (candidate_id == "web-user" or not ObjectId.is_valid(candidate_id)):
-        latest = await db.progress_tracking.find_one(sort=[("updated_at", -1)])
-        if latest and latest.get("candidate_id"):
-            fb_cid = str(latest["candidate_id"])
-            docs = await db.progress_tracking.find(
-                {"candidate_id": fb_cid},
-                projection={"_id": 0},
-            ).sort("updated_at", -1).to_list(length=100)
 
     stats = {
         "not_started": sum(1 for d in docs if d.get("status") == "not_started"),
@@ -449,6 +469,7 @@ async def get_progress(candidate_id: str, request: Request):
 @router.delete("/{candidate_id}/{skill}", summary="Delete a specific progress skill goal")
 @limiter.limit("20/minute")
 async def delete_progress_skill(candidate_id: str, skill: str, request: Request):
+    require_owner(await require_identity(request), candidate_id)
     db = request.app.state.db
     res = await db.progress_tracking.delete_one({"candidate_id": candidate_id, "skill": skill})
     _invalidate_progress_cache(candidate_id)
@@ -458,6 +479,7 @@ async def delete_progress_skill(candidate_id: str, skill: str, request: Request)
 @router.delete("/{candidate_id}", summary="Reset all progress for a candidate")
 @limiter.limit("10/minute")
 async def reset_progress(candidate_id: str, request: Request):
+    require_owner(await require_identity(request), candidate_id)
     db = request.app.state.db
     res = await db.progress_tracking.delete_many({"candidate_id": candidate_id})
     _invalidate_progress_cache(candidate_id)
