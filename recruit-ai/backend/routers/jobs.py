@@ -156,9 +156,6 @@ async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
         company_filters.append({"company_id": ObjectId(company_id)})
     doc = await db.jobs.find_one({**query_id, "$or": company_filters})
     if not doc:
-        # Fallback: if job exists
-        doc = await db.jobs.find_one(query_id)
-    if not doc:
         raise HTTPException(status_code=404, detail="Job not found")
     return doc
 
@@ -358,18 +355,21 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
             cid_r = str(r.get("candidate_id", ""))
             if cid_r not in resume_map:
                 resume_map[cid_r] = r
+        # Evidence maps are keyed by (candidate_id, job_id): a candidate
+        # interviewed for job A must not lend that score to job B. Only
+        # same-job evidence is used; other-job documents are ignored.
         for p in pe_list:
-            cid_p = str(p.get("candidate_id", ""))
-            if cid_p not in pred_map:
-                pred_map[cid_p] = p
+            key = (str(p.get("candidate_id", "")), str(p.get("job_id", "")))
+            if key[0] and key not in pred_map:
+                pred_map[key] = p
         for s in se_list:
-            cid_s = str(s.get("candidate_id", ""))
-            if cid_s not in score_map:
-                score_map[cid_s] = s
+            key = (str(s.get("candidate_id", "")), str(s.get("job_id", "")))
+            if key[0] and key not in score_map:
+                score_map[key] = s
         for re_doc in re_list:
-            cid_re = str(re_doc.get("candidate_id", ""))
-            if cid_re not in score_map:
-                score_map[cid_re] = re_doc
+            key = (str(re_doc.get("candidate_id", "")), str(re_doc.get("job_id", "")))
+            if key[0] and key not in score_map:
+                score_map[key] = re_doc
 
     enriched_applicants = []
     applicant_counts = {str(j["_id"]): 0 for j in job_docs}
@@ -391,8 +391,9 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
         u = user_map.get(c_id, {})
         r = resume_map.get(c_id, {})
-        p = pred_map.get(c_id, {})
-        s = score_map.get(c_id, {})
+        # Same-job evidence only (see map construction above).
+        p = pred_map.get((c_id, j_id), {})
+        s = score_map.get((c_id, j_id), {})
 
         c_name = doc.get("candidate_name") or u.get("full_name") or r.get("candidate_name") or u.get("email") or "Applicant"
         c_email = doc.get("candidate_email") or u.get("email") or r.get("email") or ""
@@ -404,8 +405,10 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
         has_interview = int_score is not None
         has_cv = cv_score is not None
-        num_cv = float(cv_score) if has_cv else 75.0
-        num_int = float(int_score) if has_interview else 70.0
+        # No invented defaults: candidates without evidence report None, not
+        # a fabricated 70-75 score.
+        num_cv = float(cv_score) if has_cv else None
+        num_int = float(int_score) if has_interview else None
 
         if has_interview and has_cv:
             hire_prob = round(0.40 * num_cv + 0.60 * num_int, 1)
@@ -414,7 +417,7 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
         elif has_cv:
             hire_prob = round(num_cv, 1)
         else:
-            hire_prob = 70.0
+            hire_prob = None
 
         enriched_applicants.append({
             "id": str(doc.get("_id") or f"app_{c_id}"),
@@ -620,11 +623,16 @@ async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request
         })
         if not interview_done:
             raise HTTPException(status_code=403, detail="AI Technical Interview is required for this job. Complete the interview before applying.")
-    existing = await db.applications.find_one({"job_id": oid, "candidate_id": payload.candidate_id})
+    existing = await db.applications.find_one({
+        "candidate_id": payload.candidate_id,
+        "$or": [{"job_id": oid}, {"job_id": job_id}],
+    })
     if existing:
         raise HTTPException(status_code=409, detail="Already applied")
     doc = {
-        "job_id": oid,
+        # Canonical form: job_id stored as string everywhere (match sync and
+        # interview sync also write strings; readers query both shapes).
+        "job_id": job_id,
         "candidate_id": payload.candidate_id,
         "candidate_name": payload.candidate_name,
         "resume_id": payload.resume_id,
@@ -645,7 +653,8 @@ async def withdraw_application(job_id: str, request: Request, user: dict = Depen
     except Exception:
         raise HTTPException(status_code=404, detail="Job not found")
     result = await db.applications.update_one(
-        {"job_id": oid, "candidate_id": str(user["_id"]), "status": {"$ne": "withdrawn"}},
+        {"candidate_id": str(user["_id"]), "status": {"$ne": "withdrawn"},
+         "$or": [{"job_id": oid}, {"job_id": job_id}]},
         {"$set": {"status": "withdrawn", "withdrawn_at": datetime.now(timezone.utc)}},
     )
     if result.modified_count == 0:
@@ -770,20 +779,18 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             if cid not in resume_map:
                 resume_map[cid] = r
 
-        j_t_str = _normalize_role_match(job_doc.get("title", "")) if job_doc else ""
-        j_r_str = _normalize_role_match(job_doc.get("job_role", "")) if job_doc else ""
-
         def _is_match(rec):
+            # Strict job-ID equality only. Role-name matching was removed: it
+            # let evidence from another company's same-titled job bleed into
+            # this job's applicant scores.
             if not rec:
                 return False
             rec_jid = str(rec.get("job_id", ""))
-            rec_role = _normalize_role_match(str(rec.get("predicted_role", "") or rec.get("job_role", "") or rec.get("job_title", "") or ""))
-            return bool(
-                (rec_jid and rec_jid == str(job_id)) or
-                (job_doc and oid and rec_jid == str(job_doc.get("_id", ""))) or
-                (j_t_str and rec_role == j_t_str) or
-                (j_r_str and rec_role == j_r_str)
-            )
+            if rec_jid and rec_jid == str(job_id):
+                return True
+            if job_doc and oid and rec_jid == str(job_doc.get("_id", "")):
+                return True
+            return False
 
         async for p in db.predictions.find({"$or": r_filters}).sort("created_at", -1):
             cid = str(p.get("candidate_id", ""))

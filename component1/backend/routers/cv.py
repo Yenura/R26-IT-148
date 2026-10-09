@@ -27,8 +27,7 @@ from slowapi.util import get_remote_address
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-from backend.models.schemas import (
-    BatchRankItem,
+from backend.models.schemas import (    BatchRankItem,
     BatchRankRequest,
     BatchRankResponse,
     ClassifyRequest,
@@ -43,6 +42,11 @@ from backend.models.schemas import (
 )
 from backend.services import extractor, parser, scorer
 from backend.services.job_extractor import extract_job_requirements
+from backend.auth_guard import (
+    company_applicant_candidate_ids,
+    require_identity,
+    require_owner_or_service,
+)
 from data.role_requirements import ALL_ROLES, REQUIRED_SKILLS, REQUIRED_YEARS
 
 logger = logging.getLogger("component1.router.cv")
@@ -246,7 +250,11 @@ async def analyze_cv_text(
 ):
     """Analyze a CV supplied as raw text.
     Parses, extracts entities, classifies role, computes 3 independent scores, persists to MongoDB.
+    Requires a valid caller identity; candidates may only analyze as themselves.
     """
+    identity = await require_identity(request)
+    if payload.candidate_id:
+        require_owner_or_service(identity, _make_candidate_id(payload.candidate_id))
     candidate_id   = _make_candidate_id(payload.candidate_id)
     candidate_name = payload.candidate_name or "Unknown"
     text           = parser.extract_text_from_raw(payload.text)
@@ -269,6 +277,7 @@ async def analyze_cv_text(
 @router.post("/analyze-file", response_model=CVAnalysisResponse, status_code=status.HTTP_201_CREATED,
              summary="Analyze a CV uploaded as a file (PDF / DOCX / TXT)")
 async def analyze_cv_file(
+    request: Request,
     file:            UploadFile = File(...),
     candidate_id:    Optional[str] = Form(None),
     candidate_name:  Optional[str] = Form(None),
@@ -278,6 +287,9 @@ async def analyze_cv_file(
     matcher=Depends(_get_matcher),
     db=Depends(_get_db),
 ):
+    identity = await require_identity(request)
+    if candidate_id:
+        require_owner_or_service(identity, _make_candidate_id(candidate_id))
     data = await file.read()
     text = parser.extract_text_from_bytes(data, file.filename or "resume.txt")
     if not text or not text.strip():
@@ -402,6 +414,7 @@ async def screen_resume(
 
 @router.post("/screen-batch", summary="Screen multiple candidate CVs against a job requirement")
 async def screen_batch(
+    request: Request,
     payload: BatchRankRequest,
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
@@ -409,7 +422,11 @@ async def screen_batch(
 ):
     """Batch process multiple candidates applying for a particular job.
     Returns array of candidates with independent Component 1 scores (S_skill, S_exp, S_edu).
+    Recruiter/service flow: candidates may not screen batches of other people.
     """
+    identity = await require_identity(request)
+    if identity.get("role") == "candidate":
+        raise HTTPException(status_code=403, detail="Access denied")
     job_id = payload.job_id or "JOB001"
     job_spec_dict = payload.job_spec.model_dump() if payload.job_spec else None
 
@@ -462,12 +479,16 @@ async def screen_batch(
 
 @router.post("/rank", response_model=BatchRankResponse, summary="Batch process candidates against a JD for Component 3 handoff")
 async def rank_candidates(
+    request:   Request,
     payload:   BatchRankRequest,
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
     db=Depends(_get_db),
 ):
     """Given a job specification/description + a list of CVs, compute 3 independent scores per candidate."""
+    identity = await require_identity(request)
+    if identity.get("role") == "candidate":
+        raise HTTPException(status_code=403, detail="Access denied")
     results: List[CVAnalysisResponse] = []
     job_id = payload.job_id or "JOB001"
     job_spec_dict = payload.job_spec.model_dump() if payload.job_spec else None
@@ -526,12 +547,27 @@ async def rank_candidates(
 
 @router.get("", response_model=PaginatedCVList, summary="Paginated list of stored CV analyses")
 async def list_cvs(
+    request: Request,
     skip:  int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db=Depends(_get_db),
 ):
-    total = await db.cv_analyses.count_documents({})
-    cursor = db.cv_analyses.find({}, {"_id": 0}).skip(skip).limit(limit).sort("analysis_timestamp", -1)
+    # Scoped listing: candidates see only their own analyses; companies see
+    # only analyses of candidates who applied to their own jobs. The previous
+    # unfiltered full-collection dump is removed.
+    identity = await require_identity(request)
+    role = identity.get("role")
+    if role == "candidate":
+        filt = {"candidate_id": str(identity["sub"])}
+    elif role == "company":
+        allowed = await company_applicant_candidate_ids(db, str(identity["sub"]))
+        if not allowed:
+            return PaginatedCVList(total=0, skip=skip, limit=limit, items=[])
+        filt = {"candidate_id": {"$in": list(allowed)}}
+    else:
+        filt = {}
+    total = await db.cv_analyses.count_documents(filt)
+    cursor = db.cv_analyses.find(filt, {"_id": 0}).skip(skip).limit(limit).sort("analysis_timestamp", -1)
     items  = await cursor.to_list(length=limit)
     return PaginatedCVList(total=total, skip=skip, limit=limit, items=items)
 
@@ -539,7 +575,9 @@ async def list_cvs(
 # ── GET /api/v1/cv/{candidate_id} ────────────────────────────────────────────
 
 @router.get("/{candidate_id}", response_model=CVAnalysisResponse, summary="Get stored CV analysis")
-async def get_cv(candidate_id: str, db=Depends(_get_db)):
+async def get_cv(candidate_id: str, request: Request, db=Depends(_get_db)):
+    identity = await require_identity(request)
+    require_owner_or_service(identity, candidate_id)
     doc = await db.cv_analyses.find_one({"candidate_id": candidate_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail=f"Candidate '{candidate_id}' not found")
@@ -549,7 +587,16 @@ async def get_cv(candidate_id: str, db=Depends(_get_db)):
 # ── DELETE /api/v1/cv/{candidate_id} ─────────────────────────────────────────
 
 @router.delete("/{candidate_id}", response_model=DeleteResponse, summary="Delete stored CV analysis")
-async def delete_cv(candidate_id: str, db=Depends(_get_db)):
+async def delete_cv(candidate_id: str, request: Request, db=Depends(_get_db)):
+    identity = await require_identity(request)
+    # Companies may only remove analyses of their own applicants (resolved
+    # through the gateway's jobs/applications); candidates only their own.
+    if identity.get("role") == "company":
+        allowed = await company_applicant_candidate_ids(db, str(identity["sub"]))
+        if candidate_id not in allowed:
+            raise HTTPException(status_code=403, detail="Access denied")
+    else:
+        require_owner_or_service(identity, candidate_id)
     result = await db.cv_analyses.delete_one({"candidate_id": candidate_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail=f"Candidate '{candidate_id}' not found")

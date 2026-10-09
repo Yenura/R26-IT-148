@@ -37,6 +37,7 @@ const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","U
 
 export default function Interview() {
   const navigate = useNavigate()
+  useAuth('candidate')
   const [searchParams] = useSearchParams()
   const jobRole = searchParams.get('role') || ''
   const jobSkills = searchParams.get('skills') || ''

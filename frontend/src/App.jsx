@@ -140,6 +140,10 @@ export default function App() {
     localStorage.removeItem('recruitai.name')
     localStorage.removeItem('recruitai.avatar')
     try { sessionStorage.clear() } catch {}
+    try {
+      // Best-effort: drop cached API responses so the next login starts clean.
+      import('./api').then((m) => m.clearApiCache && m.clearApiCache()).catch(() => {})
+    } catch {}
     setUserMenu(false)
     navigate('/')
   }, [navigate])

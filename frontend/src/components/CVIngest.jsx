@@ -90,7 +90,7 @@ export default function CVIngest({ onIngested, onDone, uploadToast }) {
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={'Paste your resume text here...\n\nExample:\nJohn Doe\nSoftware Engineer\n\nSkills:\nPython, JavaScript, React, Docker, SQL, Git'}
+            placeholder="Paste your resume text here..."
             rows={8}
             style={{ fontSize: 'var(--p-text-sm)', width: '100%', resize: 'vertical' }}
           />

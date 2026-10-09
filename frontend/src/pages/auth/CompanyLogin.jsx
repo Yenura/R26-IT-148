@@ -15,13 +15,6 @@ export default function CompanyLogin() {
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
 
-  const fillDemo = (demoEmail = 'company@techcorp.com', demoPass = 'demo123') => {
-    setEmail(demoEmail)
-    setPassword(demoPass)
-    setErrors({})
-    toast.success(`Demo recruiter credentials loaded (${demoEmail})`)
-  }
-
   const validate = () => {
     const e = {}
     if (!email.trim()) e.email = 'Email is required'
@@ -37,6 +30,9 @@ export default function CompanyLogin() {
     if (!validate()) return
     setBusy(true)
     try {
+      // Drop any previous session's cached data (candidate caches survive
+      // tab reuse otherwise).
+      try { sessionStorage.clear() } catch {}
       const r = await C0.post('/auth/login/company', { email: email.trim(), password })
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'company')
@@ -49,25 +45,6 @@ export default function CompanyLogin() {
       toast.success('Welcome back, Recruiter!')
       navigate('/company/dashboard')
     } catch (err) {
-      const lower = email.trim().toLowerCase()
-      if (lower === 'company@techcorp.com' || lower === 'company@example.com') {
-        try {
-          const reg = await C0.post('/auth/register/company', {
-            company_name: 'Tech Corp Global',
-            email: lower,
-            password: 'demo123',
-            industry: 'Technology',
-            website: 'https://techcorp.example.com'
-          })
-          localStorage.setItem('recruitai.token', reg.data.access_token)
-          localStorage.setItem('recruitai.role', 'company')
-          localStorage.setItem('recruitai.user_id', reg.data.user_id || '')
-          localStorage.setItem('recruitai.name', 'Tech Corp Global')
-          toast.success('Welcome to RecruitAI Recruiter Suite!')
-          navigate('/company/dashboard')
-          return
-        } catch {}
-      }
       toast.error(getErrorMessage(err))
     } finally {
       setBusy(false)

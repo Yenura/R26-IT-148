@@ -631,23 +631,14 @@ export default function CVMatch() {
       const rolesList = Array.isArray(rawRoles)
         ? rawRoles.map((item) => (typeof item === 'string' ? item : (item?.role || ''))).filter(Boolean)
         : []
-      setCanonicalRoles(rolesList.length > 0 ? rolesList : CANONICAL_ROLES)
+      setCanonicalRoles(rolesList)
       if (resumeList.length > 0) {
         setResumes(resumeList)
         const resumeIdToUse = selectedResume || resumeList[0].id
         setSelectedResume(resumeIdToUse)
       } else {
-        const demoResume = {
-          id: 'demo_resume_01',
-          candidate_name: 'Alex Rivera (Sample Profile)',
-          filename: 'Alex_Rivera_Senior_FullStack.pdf',
-          skills: ['Python', 'React', 'TypeScript', 'Node.js', 'SQL', 'Docker', 'FastAPI', 'Git', 'REST APIs'],
-          experience_years: 3.5,
-          education: 'BSc Computer Science',
-          raw_text: 'Senior Full Stack Developer with 3.5+ years experience specializing in Python, React, TypeScript, FastAPI, Docker, and scalable REST APIs.'
-        }
-        setResumes([demoResume])
-        setSelectedResume(demoResume.id)
+        setResumes([])
+        setSelectedResume('')
       }
     } catch (err) {
       toast.error('Failed to load resumes and jobs')
@@ -714,50 +705,14 @@ export default function CVMatch() {
         const matchRes = await c0ResumeMatch(resumeToUse, matchParams)
         if (matchRes?.data) matchData = matchRes.data
       } catch (c0Err) {
-        console.warn('C0 match API fallback triggered:', c0Err)
+        console.warn('C0 match API request failed:', c0Err)
       }
 
-      // If backend match returned null or error, compute local high-precision matching
+      // Only use real backend match data — never fabricate scores locally.
       if (!matchData) {
-        const reqSkills = (matchedJobDoc?.required_skills && Array.isArray(matchedJobDoc.required_skills) && matchedJobDoc.required_skills.length > 0)
-          ? matchedJobDoc.required_skills
-          : (CANONICAL_ROLE_SKILLS[targetRoleName] || ['Python', 'React', 'FastAPI', 'Docker', 'SQL', 'Git'])
-        
-        const candSkillsLower = candidateSkills.map((s) => String(s).toLowerCase().trim())
-        const matched = []
-        const missing = []
-
-        reqSkills.forEach((rs) => {
-          const rsl = String(rs).toLowerCase().trim()
-          const isMatched = candSkillsLower.some((cs) => cs === rsl || cs.includes(rsl) || rsl.includes(cs))
-          if (isMatched) matched.push(rs)
-          else missing.push(rs)
-        })
-
-        const sScore = reqSkills.length > 0 ? (matched.length / reqSkills.length) * 100 : 85
-        const cExp = parseFloat(targetResumeDoc.experience_years || 2.5)
-        const rExp = parseFloat(matchedJobDoc?.experience_required || 3.0)
-        const eScore = Math.min((cExp / (rExp || 1)) * 100, 100)
-        const eduScoreVal = 80.0
-        const ovScore = sScore * 0.50 + eScore * 0.30 + eduScoreVal * 0.20
-
-        matchData = {
-          resume_id: resumeToUse,
-          candidate_id: targetResumeDoc.candidate_id || resumeToUse,
-          job_id: jobIdToUse || '',
-          predicted_role: targetRoleName,
-          role_confidence: 0.92,
-          skill_score: Math.round(sScore * 10) / 10,
-          experience_score: Math.round(eScore * 10) / 10,
-          education_score: eduScoreVal,
-          overall_score: Math.round(ovScore * 10) / 10,
-          cv_matching_score: Math.round(ovScore * 10) / 10,
-          matched_skills: matched,
-          missing_skills: missing,
-          extra_skills: candidateSkills.filter((s) => !matched.includes(s)),
-          career_suggestions: missing.length > 0 ? [`Learn ${missing.slice(0, 3).join(', ')} to maximize job match`] : ['Profile strongly aligned with role expectations'],
-          created_at: new Date().toISOString()
-        }
+        toast.error('Match evaluation failed. The backend did not return a result.')
+        setBusy(false)
+        return
       }
 
       setMatchResult(matchData)
@@ -765,7 +720,7 @@ export default function CVMatch() {
 
       // 2. Fetch specialized microservices in parallel
       const cvTextToSend = targetResumeDoc.raw_text || targetResumeDoc.text || targetResumeDoc.resume_text || ''
-      const safeCandId = String(targetResumeDoc.candidate_id || resumeToUse || 'cand_01').replace(/[^a-zA-Z0-9_-]/g, '_')
+      const safeCandId = String(targetResumeDoc.candidate_id || resumeToUse || 'candidate').replace(/[^a-zA-Z0-9_-]/g, '_')
       const safeCandName = String(targetResumeDoc.candidate_name || 'Candidate').replace(/[$.]/g, '')
 
       const c1Payload = {
@@ -817,7 +772,7 @@ export default function CVMatch() {
       toast.success(`Evaluation complete for ${finalRole}!`)
     } catch (err) {
       console.error('Unified analysis error:', err)
-      toast.error(err?.response?.data?.detail || 'Evaluation generated with resilient fallbacks')
+      toast.error(err?.response?.data?.detail || 'Evaluation failed. Please try again.')
     } finally {
       setBusy(false)
     }
@@ -899,23 +854,23 @@ export default function CVMatch() {
     ? matchedJobDoc.title
     : (selectedCanonicalRole || (matchResult ? matchResult.predicted_role : (c1Result ? c1Result.job_role : (currentResumeDoc?.predicted_role || 'AI Auto-Detect Fit'))))
 
-  // Experience calculations with sensible defaults
+  // Experience calculations (backend data only — no assumed defaults)
   const candExp = c1Result?.experience_years !== undefined && c1Result?.experience_years !== null
     ? c1Result.experience_years
-    : (currentResumeDoc?.experience_years || (currentResumeDoc?.project_experience_years ? currentResumeDoc.project_experience_years : 2.0))
+    : (currentResumeDoc?.experience_years || currentResumeDoc?.project_experience_years || 0)
   const roleRelevantExp = c1Result?.role_relevant_experience_years !== undefined && c1Result?.role_relevant_experience_years !== null
     ? c1Result.role_relevant_experience_years
     : (c1Result?.experience_analysis?.relevant_years ?? candExp)
   const totalMonths = c1Result?.experience_analysis?.total_professional_experience_months ?? Math.round(candExp * 12)
   const relevantMonths = c1Result?.experience_analysis?.target_role_relevant_experience_months ?? Math.round(roleRelevantExp * 12)
-  const candidateSeniority = c1Result?.detected_seniority || c1Result?.experience_analysis?.candidate_seniority || 'Junior'
+  const candidateSeniority = c1Result?.detected_seniority || c1Result?.experience_analysis?.candidate_seniority || ''
   const employmentRecords = (c1Result?.employment_records && c1Result.employment_records.length > 0)
     ? c1Result.employment_records
     : (c1Result?.experience_analysis?.employment_records || [])
   const educationAnalysis = c1Result?.education_analysis || {}
-  const candidateDegreeField = c1Result?.degree_field || educationAnalysis?.degree_field || 'Information Technology'
-  const reqExp = matchedJobDoc?.experience_required ?? (c1Result?.required_experience_years || 2.0)
-  const computedExpScore = reqExp > 0 ? Math.min(Math.round((candExp / reqExp) * 100), 100) : 100.0
+  const candidateDegreeField = c1Result?.degree_field || educationAnalysis?.degree_field || ''
+  const reqExp = matchedJobDoc?.experience_required ?? c1Result?.required_experience_years ?? 0
+  const computedExpScore = reqExp > 0 ? Math.min(Math.round((candExp / reqExp) * 100), 100) : 0
 
   // Resilient skill matching: if server returned empty, match candidate skills against job required skills
   const jobReqSkills = matchedJobDoc?.required_skills || []
@@ -930,7 +885,7 @@ export default function CVMatch() {
     ? c1Result.skill_analysis.matched_skills
     : (matchResult?.matched_skills && matchResult.matched_skills.length > 0)
       ? matchResult.matched_skills
-      : (localMatched.length > 0 ? localMatched : (candSkillsList.length > 0 ? candSkillsList.slice(0, 5) : []))
+      : localMatched
 
   const activeMissingSkills = (c1Result?.skill_analysis?.missing_skills && c1Result.skill_analysis.missing_skills.length > 0)
     ? c1Result.skill_analysis.missing_skills
@@ -938,22 +893,20 @@ export default function CVMatch() {
       ? matchResult.missing_skills
       : localMissing
 
-  // Score aggregations (supporting C1 S_skill/S_exp/S_edu, component_1_scores, and fallbacks)
+  // Score aggregations (backend data only — 0 when no real scores exist)
   const computedSkillScore = (activeMatchedSkills.length + activeMissingSkills.length) > 0
     ? Math.round((activeMatchedSkills.length / (activeMatchedSkills.length + activeMissingSkills.length)) * 100)
-    : 80.0
+    : 0
 
   const skillScore = c1Result?.S_skill ?? c1Result?.s_skill ?? c1Result?.component_1_scores?.S_skill ?? (matchResult?.skill_score && matchResult.skill_score > 0 ? matchResult.skill_score : computedSkillScore)
   
-  // Clean Experience Score: candExp meets or exceeds reqExp -> 100%
+  // Clean Experience Score: backend value only, 0 when absent
   const rawExpVal = c1Result?.S_exp ?? c1Result?.s_exp ?? c1Result?.component_1_scores?.S_exp ?? matchResult?.experience_score
-  const expScore = candExp >= reqExp
-    ? 100.0
-    : (rawExpVal !== undefined && rawExpVal !== null
-        ? (rawExpVal <= 1.0 ? Math.round(rawExpVal * 100) : (rawExpVal < 30 && candExp >= 1.5 ? computedExpScore : rawExpVal))
-        : computedExpScore)
+  const expScore = (rawExpVal !== undefined && rawExpVal !== null)
+    ? (rawExpVal <= 1.0 ? Math.round(rawExpVal * 100) : rawExpVal)
+    : computedExpScore
 
-  const eduScore = c1Result?.S_edu ?? c1Result?.s_edu ?? c1Result?.component_1_scores?.S_edu ?? matchResult?.education_score ?? (currentResumeDoc?.education ? 100.0 : 80.0)
+  const eduScore = c1Result?.S_edu ?? c1Result?.s_edu ?? c1Result?.component_1_scores?.S_edu ?? matchResult?.education_score ?? 0
   const overallFitScore = Math.min(100, Math.max(0, Math.round(skillScore * 0.50 + expScore * 0.30 + eduScore * 0.20)))
 
   // Fit Tier Determination
@@ -968,44 +921,23 @@ export default function CVMatch() {
   const reportDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
   const reportId = `DOS-${(selectedResume || '001').slice(-6).toUpperCase()}-${Date.now().toString().slice(-4)}`
 
-  // ── Dynamic & Resilient Career Transition Pathways ────────────────
+  // ── Career Transition Pathways (backend data only — no sample content) ──
   const rawRecs = careerResult?.recommendations || []
-  const activeRoleName = displayJobTitle || selectedCanonicalRole || 'Data Scientist'
+  const activeRoleName = displayJobTitle || selectedCanonicalRole || ''
 
   const effectiveRecommendations = useMemo(() => {
-    if (rawRecs.length > 0) {
-      return rawRecs.map((r) => ({
+    if (rawRecs.length === 0) return []
+    return rawRecs
+      .map((r) => ({
         target_role: r.target_role || r.role,
-        feasibility: r.match_percentage || r.transition_feasibility || r.match_score || 82,
-        rationale: r.rationale || `Direct architectural progression and high technical synergy from candidate's verified ${activeRoleName} competencies.`,
-        bridge_skills: (r.bridge_skills || r.missing_skills || []).length > 0 ? (r.bridge_skills || r.missing_skills) : ['Cloud Infrastructure', 'System Design', 'Enterprise Testing']
+        feasibility: r.match_percentage ?? r.transition_feasibility ?? r.match_score ?? null,
+        rationale: r.rationale || '',
+        bridge_skills: r.bridge_skills || r.missing_skills || []
       }))
-    }
+      .filter((r) => r.target_role)
+  }, [rawRecs])
 
-    // Match exact or partial role in canonical pathways
-    const roleKey = Object.keys(CANONICAL_CAREER_PATHWAYS).find(
-      (k) => activeRoleName.toLowerCase().includes(k.toLowerCase()) || k.toLowerCase().includes(activeRoleName.toLowerCase())
-    )
-    if (roleKey && CANONICAL_CAREER_PATHWAYS[roleKey]) {
-      return CANONICAL_CAREER_PATHWAYS[roleKey].map((p) => ({
-        target_role: p.role,
-        feasibility: p.match_percentage,
-        rationale: p.rationale,
-        bridge_skills: p.missing_skills
-      }))
-    }
-
-    // High quality dynamic fallback for any other role
-    const otherRoles = CANONICAL_ROLES.filter((r) => r.toLowerCase() !== activeRoleName.toLowerCase()).slice(0, 3)
-    return otherRoles.map((r, idx) => ({
-      target_role: r,
-      feasibility: [88, 82, 76][idx],
-      rationale: `Strategic career progression transferring core ${activeRoleName} background into ${r} engineering.`,
-      bridge_skills: ['System Design', 'Cloud Integration', 'Advanced Toolchain']
-    }))
-  }, [rawRecs, activeRoleName])
-
-  // ── Dynamic & Resilient Learning Curriculum Roadmap ───────────────
+  // ── Learning Curriculum Roadmap (backend data only — no sample content) ──
   const effectiveLearningPath = useMemo(() => {
     if (c1Result?.technical_roadmap && Array.isArray(c1Result.technical_roadmap) && c1Result.technical_roadmap.length > 0) {
       return c1Result.technical_roadmap
@@ -1015,42 +947,32 @@ export default function CVMatch() {
     if (learningPathResult?.learning_path && learningPathResult.learning_path.length > 0) {
       rawItems = learningPathResult.learning_path
     } else {
-      const skillsToCover = (activeMissingSkills.length > 0 ? activeMissingSkills : ['TypeScript', 'Web Performance', 'Accessibility', 'Testing Frameworks', 'CI/CD Pipelines'])
-      rawItems = skillsToCover.map((s, i) => ({
-        skill: s,
-        priority: i === 0 ? 'Critical' : (i < 3 ? 'High' : 'Medium')
-      }))
+      return []
     }
 
-    return rawItems.map((item, idx) => {
-      const rawSkill = item.skill || item.title || `Competency ${idx + 1}`
-      const details = getSkillRoadmapDetails(rawSkill, activeRoleName)
-      const isCritical = (item.priority && String(item.priority).toLowerCase().includes('critical')) || idx === 0
-      const isHigh = (item.priority && String(item.priority).toLowerCase().includes('high')) || (idx > 0 && idx <= 2)
-
-      const displayTitle = item.title && !item.title.toLowerCase().includes('technical competency') && !item.title.toLowerCase().includes('phase ')
-        ? item.title
-        : details.title
-
-      const displayDesc = item.description && !item.description.toLowerCase().includes('master critical enterprise competencies') && !item.description.toLowerCase().includes('production standards for')
-        ? item.description
-        : details.description
-
-      return {
-        step: idx + 1,
-        skill: rawSkill,
-        title: displayTitle,
-        description: displayDesc,
-        key_topics: details.key_topics || ['Core Principles', 'Production Patterns', 'Optimization & Testing'],
-        project: details.project || `Build an applied ${formatSkillName(rawSkill)} module with automated test coverage.`,
-        est_hours: details.est_hours || '10-14 Hours',
-        level: details.level || (isCritical ? 'Foundational Core' : 'Architecture & Tooling'),
-        priority: isCritical ? 'Critical' : (isHigh ? 'High' : 'Medium'),
-        priorityBadgeClass: isCritical ? 'badge-danger' : (isHigh ? 'badge-warning' : 'badge-primary'),
-        docs_url: item.resource_url || details.docs_url || `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(rawSkill)}`
-      }
-    })
-  }, [c1Result, learningPathResult, activeMissingSkills, activeRoleName])
+    return rawItems
+      .map((item, idx) => {
+        const rawSkill = item.skill || item.title
+        if (!rawSkill) return null
+        const priority = item.priority || (idx === 0 ? 'Critical' : (idx < 3 ? 'High' : 'Medium'))
+        const isCritical = String(priority).toLowerCase().includes('critical')
+        const isHigh = String(priority).toLowerCase().includes('high')
+        return {
+          step: idx + 1,
+          skill: rawSkill,
+          title: item.title || `${formatSkillName(rawSkill)} Learning Path`,
+          description: item.description || '',
+          key_topics: item.key_topics || [],
+          project: item.project || '',
+          est_hours: item.est_hours || '',
+          level: item.level || '',
+          priority,
+          priorityBadgeClass: isCritical ? 'badge-danger' : (isHigh ? 'badge-warning' : 'badge-primary'),
+          docs_url: item.resource_url || item.docs_url || ''
+        }
+      })
+      .filter(Boolean)
+  }, [c1Result, learningPathResult])
 
   return (
     <div className="fade-in" style={{ maxWidth: 1180, margin: '0 auto', paddingBottom: 'var(--p-space-10)' }}>

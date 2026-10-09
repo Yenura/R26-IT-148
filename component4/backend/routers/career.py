@@ -8,6 +8,10 @@ from pydantic import BaseModel, Field
 
 COMPONENT_ROOT = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(COMPONENT_ROOT))
+try:
+    from auth_guard import require_identity, require_owner
+except ImportError:
+    from backend.auth_guard import require_identity, require_owner
 
 from models.schemas import CareerPathRequest, VALID_JOB_ROLES
 from services.ml_engine import JOB_REQ, RESOURCES, CAREER_PATHS, ROLE_TRANSITIONS, compute_gap
@@ -98,6 +102,9 @@ async def learning_path_endpoint(payload: LearningPathRequest):
 
 @router.post("/path", summary="Generate detailed career path for a candidate")
 async def generate_career_path(payload: CareerPathRequest, request: Request):
+    # Upserts stored guidance keyed by candidate_id: callers may only write
+    # their own record.
+    require_owner(await require_identity(request), payload.candidate_id)
     db   = request.app.state.db
     role = payload.current_role
     path = CAREER_PATHS.get(role, ["Junior", "Mid-Level", "Senior", "Lead", "Principal"])
@@ -197,6 +204,7 @@ async def list_career_roles():
 
 @router.get("/roadmap/{candidate_id}", summary="Get saved roadmap for a candidate")
 async def get_roadmap(candidate_id: str, request: Request):
+    require_owner(await require_identity(request), candidate_id)
     db  = request.app.state.db
     doc = await db.skill_gap_reports.find_one(
         {"candidate_id": candidate_id},

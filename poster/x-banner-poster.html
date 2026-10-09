@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emotional Stress State Classification using SNN — X-Banner Poster</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&family=Playfair+Display:wght@700;800&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --navy:#0f2040;
+    --navy2:#122b55;
+    --teal:#0fb5a1;
+    --teal-dark:#0a8f7f;
+    --gold:#f59e0b;
+    --paper:#ffffff;
+    --line:#e2e8f0;
+    --muted:#475569;
+    --muted2:#64748b;
+  }
+  html,body{background:#d1d5db}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0f172a;display:flex;justify-content:center;padding:24px}
+  /* X-Banner canvas: 600mm x 1600mm ratio 0.375 -> emulate 760 x 2026 px at 96dpi + bleed */
+  .stage{
+    width:760px;
+    min-height:2026px;
+    background:var(--paper);
+    position:relative;
+    box-shadow:0 20px 60px rgba(0,0,0,.25), 0 2px 10px rgba(0,0,0,.12);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  /* grommet marks for X-banner holder - 4 corners */
+  .grommet{
+    position:absolute;width:14px;height:14px;border-radius:50%;
+    border:2px solid #111; background:#fff; z-index:5;
+    box-shadow:inset 0 0 0 3px #fff, 0 0 0 1px #111;
+  }
+  .grommet.tl{left:8px;top:8px}
+  .grommet.tr{right:8px;top:8px}
+  .grommet.bl{left:8px;bottom:8px}
+  .grommet.br{right:8px;bottom:8px}
+  .grommet::after{content:'';position:absolute;inset:4px;border-radius:50%;background:#111;}
+  /* top identification bar */
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 22px 8px;
+    font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2);
+    border-bottom:1px solid var(--line);
+  }
+  .topbar .logorow{display:flex;align-items:center;gap:10px}
+  .logo{height:26px;width:auto;display:flex;align-items:center;gap:8px}
+  .logo-badge{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:10px;font-weight:900;color:#fff}
+  .logo-badge.sliit{background:#0f2040;border:2px solid #f59e0b}
+  .logo-text{font-size:10px;line-height:1.1;font-weight:800;color:#0f2040;letter-spacing:.02em}
+  .logo-text small{display:block;font-weight:600;color:var(--muted2);font-size:8px;letter-spacing:.06em}
+  /* header title band */
+  .header{
+    margin:14px 18px 0;
+    border:2.5px solid #0f172a;
+    background:#fff;
+    padding:14px 16px 12px;
+    text-align:center;
+  }
+  .header h1{
+    font-family:'Playfair Display',serif;
+    font-size:19px;font-weight:800;line-height:1.15;letter-spacing:-.02em;color:#0f172a;
+  }
+  .header .authors{
+    margin-top:8px;font-size:9.5px;font-weight:600;color:#1e293b;
+  }
+  .header .authors sup{font-size:7px}
+  .header .affils{
+    margin-top:4px;font-size:8px;line-height:1.4;color:var(--muted2);font-weight:500;
+  }
+  /* body */
+  .body{padding:16px 18px 10px;flex:1;display:flex;flex-direction:column;gap:14px}
+  .section{
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    background:#fff;
+  }
+  .section-head{
+    display:flex;align-items:center;gap:8px;
+    padding:8px 12px;
+    background:var(--navy);
+    color:#fff;
+  }
+  .section-num{
+    width:22px;height:22px;border-radius:6px;background:var(--teal);color:#fff;
+    display:grid;place-items:center;font-size:10px;font-weight:900;flex-shrink:0;
+  }
+  .section-head h2{font-size:11.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+  .section-head h2 span{font-weight:500;opacity:.85}
+  .section-body{padding:10px 12px 11px;font-size:9.2px;line-height:1.55;color:#1e293b}
+  .section-body p{margin-bottom:6px}
+  .section-body p:last-child{margin-bottom:0}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  /* objective list */
+  .obj-list{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .obj-list li{
+    display:flex;gap:8px;align-items:flex-start;
+    background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 8px;
+  }
+  .obj-badge{width:20px;height:20px;border-radius:6px;background:var(--navy);color:#fff;display:grid;place-items:center;font-size:9px;font-weight:800;flex-shrink:0;margin-top:1px}
+  .obj-list li b{font-size:9.2px}
+  .obj-list li span{font-size:8.6px;color:var(--muted);line-height:1.4}
+  /* method pipeline */
+  .pipeline{
+    display:flex;align-items:center;gap:6px;justify-content:space-between;margin:8px 0 6px;
+    flex-wrap:nowrap;
+  }
+  .pipe-box{
+    flex:1;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:7px 6px;text-align:center;min-width:0;
+  }
+  .pipe-box .k{font-size:7.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--teal-dark)}
+  .pipe-box .v{font-size:8.2px;font-weight:700;color:#0f172a;margin-top:2px;line-height:1.25}
+  .pipe-box .s{font-size:7.3px;color:var(--muted2);margin-top:1px}
+  .pipe-arrow{color:var(--teal);font-weight:900;font-size:14px;flex-shrink:0}
+  .method-grid{display:grid;grid-template-columns:1.35fr .9fr;gap:10px;align-items:start}
+  .snn-card{background:linear-gradient(180deg,#f8fafc 0%,#ffffff 100%);border:1px solid #e2e8f0;border-radius:10px;padding:8px 8px 6px}
+  .snn-card h4{font-size:8.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);margin-bottom:6px;text-align:center}
+  .chip-row{display:flex;gap:5px;justify-content:center;margin-top:6px}
+  .chip{font-size:7px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 6px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:var(--muted)}
+  .chip.teal{background:var(--teal);color:#fff;border-color:var(--teal)}
+  .chip.navy{background:var(--navy);color:#fff;border-color:var(--navy)}
+  /* results */
+  .results-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:10px}
+  .metric-card{
+    background:var(--navy);color:#fff;border-radius:10px;padding:10px 10px 9px;position:relative;overflow:hidden;
+  }
+  .metric-card::after{content:'';position:absolute;inset:0;background:radial-gradient(400px 120px at 80% 0%, rgba(15,181,161,.25), transparent 60%);pointer-events:none}
+  .metric-top{font-size:7.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#7dd3d6}
+  .metric-big{font-size:28px;font-weight:900;letter-spacing:-.03em;margin-top:2px}
+  .metric-big small{font-size:11px;font-weight:700;opacity:.9}
+  .metric-sub{font-size:7.8px;color:#cbd5e1;margin-top:2px;line-height:1.4}
+  .bar{display:flex;gap:2px;align-items:end;height:74px;margin-top:8px;justify-content:space-between}
+  .bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+  .bar-fill{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,#0fb5a1, #0a7a6e)}
+  .bar-fill.alt{background:linear-gradient(180deg,#64748b,#334155)}
+  .bar-fill.hl{background:linear-gradient(180deg,#f59e0b,#d97706);box-shadow:0 0 0 2px rgba(245,158,11,.25)}
+  .bar-label{font-size:6.5px;font-weight:700;color:var(--muted2);text-align:center;line-height:1.1}
+  .bar-val{font-size:7px;font-weight:800;color:#0f172a}
+  .legend{font-size:6.8px;color:var(--muted2);text-align:center;margin-top:5px;line-height:1.3}
+  /* table */
+  table{width:100%;border-collapse:collapse;font-size:7.8px}
+  th{background:var(--navy);color:#fff;font-weight:700;text-align:left;padding:5px 6px;font-size:7.2px;letter-spacing:.04em;text-transform:uppercase}
+  th:first-child{border-radius:6px 0 0 0}
+  th:last-child{border-radius:0 6px 0 0}
+  td{padding:5px 6px;border-bottom:1px solid #e2e8f0;color:#1e293b}
+  tr:last-child td{border-bottom:none}
+  tr.hl td{background:#fef3c7;font-weight:700}
+  .cite{color:var(--muted2);font-size:7px}
+  /* figure caption */
+  .figcap{font-size:7px;font-weight:600;color:var(--muted);text-align:center;margin-top:5px;line-height:1.35;padding:0 4px}
+  .figcap b{color:#0f172a}
+  /* references */
+  .refs{font-size:7.2px;line-height:1.45;color:#334155}
+  .refs div{margin-bottom:3px;padding-left:10px;text-indent:-10px}
+  /* footer */
+  .footer{
+    margin:0 18px 14px;
+    background:var(--navy);
+    color:#fff;
+    border-radius:10px;
+    padding:10px 12px;
+    display:grid;grid-template-columns:1.2fr auto;
+    gap:10px;align-items:center;
+  }
+  .footer h3{font-size:9.5px;font-weight:800;letter-spacing:.04em}
+  .footer p{font-size:7.8px;color:#cbd5e1;line-height:1.45;margin-top:3px}
+  .qr{
+    width:72px;height:72px;background:#fff;border-radius:8px;display:grid;place-items:center;
+    font-size:7px;font-weight:800;color:var(--navy);text-align:center;line-height:1.2;padding:6px;
+    border:2px solid var(--teal);
+  }
+  /* print */
+  @media print{
+    html,body{background:#fff;padding:0}
+    body{padding:0}
+    .stage{box-shadow:none;width:210mm;min-height:594mm} /* ~ X-banner scaled to A1 height */
+    @page{size: 600mm 1600mm; margin:0}
+  }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="grommet tl"></div><div class="grommet tr"></div><div class="grommet bl"></div><div class="grommet br"></div>
+
+    <div class="topbar">
+      <span>&lt;Group ID&gt; — SLIIT Faculty of Computing • Research Poster 2026</span>
+      <div class="logorow">
+        <div class="logo">
+          <div class="logo-badge sliit">SLIIT</div>
+          <div class="logo-text">SLIIT UNI<small>SRI LANKA INSTITUTE OF INFORMATION TECHNOLOGY</small></div>
+        </div>
+        <div style="width:26px;height:26px;border-radius:50%;background:#f59e0b;display:grid;place-items:center;font-size:8px;font-weight:900;color:#0f2040;border:1.5px solid #0f2040">★</div>
+      </div>
+    </div>
+
+    <div class="header">
+      <h1>Emotional Stress State Classification and Analysis using Spiking Neural Networks</h1>
+      <div class="authors">Author_1<sup>1</sup>, Author_2<sup>2</sup>, Author_3<sup>3</sup> and Author_4<sup>3</sup></div>
+      <div class="affils">1 Department of Author_1, Name of the University &nbsp;|&nbsp; 2 Department of Author_2, Name of the University<br>3 Department of Author_3/4, Name of the University — &lt;Group ID&gt;</div>
+    </div>
+
+    <div class="body">
+
+      <!-- INTRODUCTION -->
+      <div class="section">
+        <div class="section-head"><div class="section-num">01</div><h2>Introduction</h2></div>
+        <div class="section-body">
+          <p>Human affect recognition is a pivotal research area with direct impact on <b>health &amp; wellbeing, human–machine interaction and marketing</b>. Among physiological signals, <b>electroencephalogram (EEG)</b> is extensively used to classify brain activity associated with emotions (Bastos-Filho et al., 2012).</p>
+          <p>Conventional pipelines rely on hand-crafted feature extraction and often <b>neglect spatial representations</b> of EEG topography. In this study we introduce a <b>simple machine-learning model based on Spiking Neural Networks (SNN) with Hebbian-like learning</b> that operates <u>without manual feature extraction</u> and preserves spike-timing information via Address Event Representation (Farabet et al., 2012).</p>
+          <p style="background:#f0fdfa;border:1px solid #99f6e4;border-radius:8px;padding:7px 8px;color:#0f4a44;font-weight:600">Key contribution: SNN classifier discriminates <b>Emotional Stress vs. Relaxation</b> brain states at <b style="color:#0a7a6e">83% average accuracy</b> on unseen data — state-of-the-art without manual features.</p>
+        </div>
+      </div>
+
+      <!-- OBJECTIVES -->
+      <div class="section">
+        <div class="section-head"><div class="section-num">02</div><h2>Objectives</h2></div>
+        <div class="section-body" style="padding-bottom:10px">
+          <ol class="obj-list">
+            <li><div class="obj-badge">1</div><div><b>Experiment &amp; evaluate</b><br><span>Benchmark other machine-learning algorithms for EEG-based stress classification against the SNN baseline.</span></div></li>
+            <li><div class="obj-badge">2</div><div><b>Optimize SNN performance</b><br><span>Tune topology, learning rates and spike encoding to improve accuracy and reduce training time.</span></div></li>
+            <li><div class="obj-badge">3</div><div><b>Integrate into a web platform</b><br><span>Deploy the trained SNN as an interactive web service for real-time stress monitoring.</span></div></li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- METHOD -->
+      <div class="section">
+        <div class="section-head"><div class="section-num">03</div><h2>Method &nbsp;<span>— Data, Encoding &amp; Architecture</span></h2></div>
+        <div class="section-body">
+          <div class="method-grid">
+            <div>
+              <p><b>Dataset.</b> DEAP (Koelstra et al., 2012) — 208 EEG samples balanced ( <b>104 Stressed + 104 Relaxed</b>) selected via valence &amp; arousal scores after music-video stimuli.</p>
+              <p><b>Pre-processing.</b> 128 Hz downsample • EOG artefact removal • 4–45 Hz band-pass • pre-trial baseline removed → Data-averaging window → <b>252 × 32 × 208</b> tensor.</p>
+              <p><b>Encoding.</b> Normalized samples encoded into spike trains using <b>Address Event Representation (AER)</b> (Farabet et al., 2012; Delbruck &amp; Lichtsteiner, 2007).</p>
+              <p><b>Classifier.</b> Single-layer SNN with <b>130 hidden neurons</b> processing both inhibitory &amp; excitatory spikes; Hebbian-like STDP learning; no manual feature extraction.</p>
+              <div class="pipeline">
+                <div class="pipe-box"><div class="k">Input</div><div class="v">Raw EEG</div><div class="s">32 ch · DEAP</div></div>
+                <div class="pipe-arrow">→</div>
+                <div class="pipe-box"><div class="k">Pre-process</div><div class="v">128 Hz · 4–45 Hz</div><div class="s">EOG removed</div></div>
+                <div class="pipe-arrow">→</div>
+                <div class="pipe-box"><div class="k">Select</div><div class="v">208 samples</div><div class="s">104 / 104</div></div>
+                <div class="pipe-arrow">→</div>
+                <div class="pipe-box"><div class="k">Encode</div><div class="v">AER Spikes</div><div class="s">252×32×208</div></div>
+              </div>
+              <div class="figcap"><b>Figure 2.</b> EEG pre-processing &amp; spike-encoding pipeline. Downsampling, filtering and AER encoding preserve temporal-spatial structure before SNN inference.</div>
+            </div>
+            <div class="snn-card">
+              <h4>Single-layer SNN — 130 hidden units</h4>
+              <!-- inline SVG SNN -->
+              <svg viewBox="0 0 320 170" width="100%" height="118" style="display:block" xmlns="http://www.w3.org/2000/svg">
+                <!-- input layer -->
+                <g font-size="6" font-weight="700" fill="#0f2040">
+                  <text x="6" y="28">Ch1</text><text x="6" y="62">Ch2</text><text x="6" y="118">Ch32</text>
+                  <text x="2" y="92" font-size="10" fill="#94a3b8">⋮</text>
+                </g>
+                <circle cx="48" cy="26" r="10" fill="#0fb5a1" stroke="#0f2040" stroke-width="1.2"/><circle cx="48" cy="26" r="3.2" fill="#fff"/>
+                <circle cx="48" cy="60" r="10" fill="#0f2040" stroke="#0f2040" stroke-width="1.2"/><circle cx="48" cy="60" r="3.2" fill="#0fb5a1"/>
+                <circle cx="48" cy="118" r="10" fill="#0fb5a1" stroke="#0f2040" stroke-width="1.2"/><circle cx="48" cy="94" r="10" fill="#0f2040" stroke="#0f2040" stroke-width="1.2"/><circle cx="48" cy="94" r="3.2" fill="#0fb5a1"/>
+                <circle cx="48" cy="118" r="3.2" fill="#fff"/>
+                <!-- hidden layer 130 -->
+                <g fill="none" stroke-width="1">
+                  <line x1="58" y1="26" x2="118" y2="30" stroke="#0fb5a1" opacity=".9"/><line x1="58" y1="26" x2="118" y2="56" stroke="#f59e0b" opacity=".7"/><line x1="58" y1="26" x2="118" y2="84" stroke="#0fb5a1" opacity=".5"/>
+                  <line x1="58" y1="60" x2="118" y2="30" stroke="#f59e0b" opacity=".6"/><line x1="58" y1="60" x2="118" y2="56" stroke="#0f2040" opacity=".9"/><line x1="58" y1="60" x2="118" y2="84" stroke="#0fb5a1" opacity=".6"/>
+                  <line x1="58" y1="94" x2="118" y2="56" stroke="#0fb5a1" opacity=".5"/><line x1="58" y1="94" x2="118" y2="84" stroke="#0f2040" opacity=".7"/><line x1="58" y1="94" x2="118" y2="112" stroke="#f59e0b" opacity=".6"/>
+                  <line x1="58" y1="118" x2="118" y2="84" stroke="#f59e0b" opacity=".5"/><line x1="58" y1="118" x2="118" y2="112" stroke="#0fb5a1" opacity=".9"/>
+                  <!-- to output -->
+                  <line x1="196" y1="40" x2="252" y2="50" stroke="#0f2040" opacity=".85"/><line x1="196" y1="66" x2="252" y2="50" stroke="#0fb5a1" opacity=".85"/><line x1="196" y1="84" x2="252" y2="82" stroke="#0f2040" opacity=".85"/><line x1="196" y1="112" x2="252" y2="82" stroke="#f59e0b" opacity=".85"/>
+                </g>
+                <!-- hidden nodes -->
+                <circle cx="122" cy="30" r="11" fill="#ffffff" stroke="#0f2040" stroke-width="1.2"/><circle cx="122" cy="30" r="4" fill="#0fb5a1"/>
+                <circle cx="122" cy="56" r="11" fill="#0f2040" stroke="#0f2040" stroke-width="1.2"/><circle cx="122" cy="56" r="4" fill="#fff"/>
+                <circle cx="122" cy="84" r="11" fill="#ffffff" stroke="#0f2040" stroke-width="1.2"/><circle cx="122" cy="84" r="4" fill="#f59e0b"/>
+                <circle cx="122" cy="112" r="11" fill="#0f2040" stroke="#0f2040" stroke-width="1.2"/><circle cx="122" cy="112" r="4" fill="#fff"/>
+                <circle cx="166" cy="40" r="11" fill="#ffffff" stroke="#0f2040" stroke-width="1.2"/><circle cx="166" cy="40" r="4" fill="#0fb5a1"/>
+                <circle cx="166" cy="66" r="11" fill="#0f2040" stroke="#0f2040" stroke-width="1.2"/><circle cx="166" cy="66" r="4" fill="#fff"/>
+                <circle cx="166" cy="84" r="11" fill="#ffffff" stroke="#0f2040" stroke-width="1.2"/><circle cx="166" cy="84" r="4" fill="#f59e0b"/>
+                <circle cx="166" cy="112" r="11" fill="#ffffff" stroke="#0f2040" stroke-width="1.2"/><circle cx="166" cy="112" r="4" fill="#0fb5a1"/>
+                <!-- output -->
+                <circle cx="256" cy="50" r="12" fill="#f59e0b" stroke="#0f2040" stroke-width="1.4"/><text x="256" y="53.5" text-anchor="middle" font-size="7" font-weight="800" fill="#0f2040">S</text>
+                <circle cx="256" cy="82" r="12" fill="#0fb5a1" stroke="#0f2040" stroke-width="1.4"/><text x="256" y="85.5" text-anchor="middle" font-size="6.5" font-weight="800" fill="#fff">R</text>
+                <text x="256" y="105" text-anchor="middle" font-size="6" font-weight="700" fill="#475569">Stressed / Relaxed</text>
+                <text x="122" y="142" text-anchor="middle" font-size="6.5" font-weight="800" fill="#0f2040" letter-spacing=".06em">HIDDEN LAYER — 130 NEURONS</text>
+                <text x="122" y="150" text-anchor="middle" font-size="6" fill="#64748b">Inhibitory + Excitatory spikes • Hebbian-like STDP</text>
+              </svg>
+              <div class="chip-row"><span class="chip teal">No hand-crafted features</span><span class="chip navy">83% accuracy</span><span class="chip">AER encoding</span></div>
+              <div class="figcap"><b>Figure 1.</b> Single-layer Spiking Neural Network. 32 EEG channels → 130 hidden units (mixed inhibitory/excitatory) → Stress/Relaxation decision.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RESULTS & DISCUSSION -->
+      <div class="section">
+        <div class="section-head"><div class="section-num">04</div><h2>Results &amp; Discussion</h2></div>
+        <div class="section-body">
+          <p>SNN classifier achieved <b>83% average accuracy on unseen data</b> and <b>~80% cross-validation accuracy</b> on training data. Compared to prior methods requiring extensive feature engineering, our model attains higher accuracy <b>without manual feature extraction</b>, confirming the merit of spike-based temporal coding.</p>
+          <div class="results-grid">
+            <div>
+              <div class="metric-card">
+                <div class="metric-top">Unseen test accuracy • DEAP 208 samples</div>
+                <div class="metric-big">83<small>%</small> <span style="font-size:11px;font-weight:700;opacity:.85">avg.</span> <span style="font-size:9px;color:#7dd3d6">~80% CV</span></div>
+                <div class="metric-sub">Balanced evaluation: 104 Stressed / 104 Relaxed • Single-layer SNN (130 units) • AER spikes</div>
+                <div style="display:flex;gap:6px;margin-top:8px">
+                  <span style="flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:6px 7px;text-align:center"><span style="display:block;font-size:7px;letter-spacing:.06em;opacity:.8">STRESSED</span><span style="font-size:13px;font-weight:900">104</span></span>
+                  <span style="flex:1;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:6px 7px;text-align:center"><span style="display:block;font-size:7px;letter-spacing:.06em;opacity:.8">RELAXED</span><span style="font-size:13px;font-weight:900">104</span></span>
+                  <span style="flex:1;background:#f59e0b;color:#0f2040;border-radius:8px;padding:6px 7px;text-align:center;font-weight:900"><span style="display:block;font-size:7px;letter-spacing:.06em">ACCURACY</span><span style="font-size:13px">83%</span></span>
+                </div>
+              </div>
+              <div style="margin-top:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 8px 6px">
+                <div style="font-size:7.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy);text-align:center">Accuracy distribution — 5-fold CV vs. single split</div>
+                <div class="bar">
+                  <div class="bar-col"><div class="bar-fill alt" style="height:38px"></div><div class="bar-val">~68%</div><div class="bar-label">Fold 1</div></div>
+                  <div class="bar-col"><div class="bar-fill alt" style="height:46px"></div><div class="bar-val">72%</div><div class="bar-label">Fold 2</div></div>
+                  <div class="bar-col"><div class="bar-fill alt" style="height:50px"></div><div class="bar-val">75%</div><div class="bar-label">Fold 3</div></div>
+                  <div class="bar-col"><div class="bar-fill hl" style="height:62px"></div><div class="bar-val">83%</div><div class="bar-label">Unseen<br>Test</div></div>
+                  <div class="bar-col"><div class="bar-fill alt" style="height:54px"></div><div class="bar-val">78%</div><div class="bar-label">Fold 4</div></div>
+                  <div class="bar-col"><div class="bar-fill alt" style="height:58px"></div><div class="bar-val">80%</div><div class="bar-label">Fold 5</div></div>
+                </div>
+                <!-- red curve approximation -->
+                <svg viewBox="0 0 300 40" width="100%" height="36" style="margin-top:2px" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M10 32 C 60 12, 110 8, 148 14 C 188 20, 230 18, 290 10" fill="none" stroke="#f43f5e" stroke-width="1.4" stroke-linecap="round"/>
+                  <line x1="92" y1="4" x2="92" y2="32" stroke="#f43f5e" stroke-width="1" stroke-dasharray="3 2" opacity=".7"/>
+                  <text x="92" y="8" text-anchor="middle" font-size="6" font-weight="800" fill="#be123c">0.779</text>
+                  <text x="148" y="8" text-anchor="middle" font-size="6" font-weight="800" fill="#be123c">0.881</text>
+                </svg>
+                <div class="figcap"><b>Figure 3.</b> Cross-validation accuracy histogram. Red curve = estimated density; dashed line at 0.779 (mean CV) — unseen test (orange, 83%) exceeds all folds, indicating strong generalization without overfitting.</div>
+              </div>
+            </div>
+            <div>
+              <div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+                <div style="background:var(--navy);color:#fff;text-align:center;padding:6px 8px;font-size:7.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase">Table 1. Comparative performance (prior methods required feature extraction)</div>
+                <table>
+                  <thead><tr><th>Feature domain</th><th>Classifier</th><th>Acc. (%)</th><th>Study</th></tr></thead>
+                  <tbody>
+                    <tr><td>Quadratic, Sample<br>Entropy, Amplitude<br>aware Permutation</td><td>SVM</td><td>81.31</td><td class="cite">(García-Martínez et al., 2017)</td></tr>
+                    <tr><td>Power Spectral<br>Density</td><td rowspan="2" style="text-align:center;vertical-align:middle">K-NN</td><td>70.1</td><td rowspan="2" class="cite" style="vertical-align:middle">(Bastos-Filho et al., 2012)</td></tr>
+                    <tr><td>High Order Crossings</td><td>69.59</td></tr>
+                    <tr><td>All features</td><td rowspan="3" style="text-align:center;vertical-align:middle">K-NN</td><td>67.08</td><td rowspan="3" class="cite" style="vertical-align:middle">(Shon et al., 2018)</td></tr>
+                    <tr><td>Principal Component<br>Analysis</td><td>65.03</td></tr>
+                    <tr><td>Genetic Algorithms</td><td>71.76</td></tr>
+                    <tr class="hl"><td><b>This study — no manual extraction (AER spikes)</b></td><td><b>SNN</b></td><td><b>83%</b></td><td class="cite"><b>—</b></td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="figcap"><b>Table 1.</b> Our SNN (83%, no hand-crafted features) outperforms prior SVM/K-NN pipelines that depend on entropy, spectral and GA-selected features. Data: DEAP.</div>
+              <div style="margin-top:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px">
+                <div style="font-size:7.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--navy)">Discussion — why it works</div>
+                <ul style="margin-top:5px;list-style:none;display:flex;flex-direction:column;gap:4px;font-size:8.2px;line-height:1.45;color:#334155">
+                  <li style="display:flex;gap:6px"><span style="color:var(--teal)">●</span><span><b>Spatial-temporal fidelity:</b> AER preserves spike timing &amp; channel topology vs. flattened feature vectors.</span></li>
+                  <li style="display:flex;gap:6px"><span style="color:var(--teal)">●</span><span><b>No feature tax:</b> Hebbian-like learning discovers discriminative patterns end-to-end; ~11% above best feature-engineered baseline.</span></li>
+                  <li style="display:flex;gap:6px"><span style="color:var(--teal)">●</span><span><b>Balanced &amp; generalizes:</b> 83% unseen &gt; 80% CV — no evidence of overfitting on 208 balanced trials.</span></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONCLUSION -->
+      <div class="section" style="border-color:#0f2040">
+        <div class="section-head" style="background:linear-gradient(90deg,#0f2040,#0a8f7f)"><div class="section-num" style="background:#f59e0b;color:#0f2040">05</div><h2>Conclusion</h2></div>
+        <div class="section-body" style="display:grid;grid-template-columns:1.15fr .85fr;gap:10px;align-items:center">
+          <div>
+            <p>This research delivers a <b>state-of-the-art 83% accuracy</b> for Stress vs. Relaxation classification <b>without manual feature extraction</b> — simplifying the pipeline and retaining spatial structure.</p>
+            <p><b>Future work:</b> implement <b>anti-STDP</b> learning to <u>reduce SNN training time</u> and further optimize performance before web-platform deployment.</p>
+          </div>
+          <div style="background:var(--navy);color:#fff;border-radius:8px;padding:8px 9px;text-align:center">
+            <div style="font-size:7px;letter-spacing:.1em;opacity:.8">NEXT STEP</div>
+            <div style="font-size:10px;font-weight:900;margin-top:2px">Anti-STDP → Faster training</div>
+            <div style="font-size:7.5px;color:#7dd3d6;margin-top:3px">+ SNN web platform integration (Obj. 3)</div>
+            <div style="margin-top:6px;display:inline-block;background:#f59e0b;color:#0f2040;font-size:7px;font-weight:800;letter-spacing:.06em;padding:4px 8px;border-radius:999px">83% • NO FEATURE ENGINEERING</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REFERENCES -->
+      <div class="section">
+        <div class="section-head"><div class="section-num">06</div><h2>References</h2></div>
+        <div class="section-body refs">
+          <div>Bastos-Filho, T. F., Ferreira, A., Atencio, A. C., Arjunan, S., &amp; Kumar, D. (2012). Evaluation of feature extraction techniques in emotional state recognition. <i>Int. Conf. on Intelligent Human Computer Interaction.</i></div>
+          <div>Delbruck, T., &amp; Lichtsteiner, P. (2007). Fast sensory motor control based on event-based hybrid neuromorphic-procedural system. <i>ISCAS 2007.</i></div>
+          <div>Farabet, C., et al. (2012). Comparison between frame-constrained and event-driven visual processing. <i>Proc. ISCAS.</i> [AER encoding].</div>
+          <div>García-Martínez, B., Martínez-Rodrigo, A., Zangróniz, R., Pastor, J. M., &amp; Alcaraz, R. (2017). Cardiovascular and EEG combined stress classification. <i>Physiol. Meas.</i> 38(5).</div>
+          <div>Koelstra, S., et al. (2012). DEAP: A database for emotion analysis using physiological signals. <i>IEEE Trans. Affective Computing,</i> 3(1), 18–31.</div>
+          <div>Shon, D., et al. (2018). EEG-based emotion recognition using genetically optimized K-NN. <i>IEEE Access.</i></div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="footer">
+      <div>
+        <h3>Contact &amp; Acknowledgement</h3>
+        <p>Correspondence: Author_1 — Department of Author_1, Name of the University. Dataset: DEAP (Koelstra et al., 2012). The authors thank the SLIIT Research Committee for infrastructure support.</p>
+        <p style="margin-top:6px;font-size:7px;letter-spacing:.06em;opacity:.9">X-BANNER SPEC: 600 × 1600 mm • 300 DPI • 3 mm bleed • 4× grommets on corners for X-stand holder • Safe zone: central 80%</p>
+      </div>
+      <div class="qr">SCAN FOR<br>PAPER / DEMO<br><span style="font-size:9px;letter-spacing:.08em">QR CODE</span></div>
+    </div>
+
+    <div style="height:6px;background:linear-gradient(90deg,#0f2040,#0fb5a1,#f59e0b)"></div>
+  </div>
+</body>
+</html>

@@ -35,6 +35,19 @@ def _get_classifier() -> RoleClassifier:
     return _classifier
 
 
+def _is_internal_service(request: Request) -> bool:
+    """True when the call carries the shared service-to-service key.
+
+    Used by trusted backends (e.g. C2 interview -> C0 score sync) that act
+    without a user JWT. The key must match INTERNAL_API_KEY in .env.
+    """
+    key = os.getenv("INTERNAL_API_KEY", "")
+    if not key:
+        return False
+    provided = request.headers.get("X-Internal-Key", "")
+    return bool(provided) and provided == key
+
+
 def _resume_out(doc: dict) -> ResumeOut:
     edu = doc.get("education", "")
     if (not edu or len(edu.strip()) < 3) and doc.get("raw_text"):
@@ -143,7 +156,23 @@ async def upload_resume(
 async def list_resumes(request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
     if user.get("role") == "company":
-        cursor = db.resumes.find().sort("created_at", -1).limit(100)
+        # Scope to resumes of candidates who applied to this company's jobs
+        # instead of exposing every resume on the platform.
+        from bson import ObjectId
+        company_filters = [{"company_id": str(user["_id"])}]
+        if ObjectId.is_valid(str(user["_id"])):
+            company_filters.append({"company_id": ObjectId(str(user["_id"]))})
+        own_jobs = [doc async for doc in db.jobs.find({"$or": company_filters}, {"_id": 1})]
+        own_job_ids = {str(doc["_id"]) for doc in own_jobs}
+        apps = [doc async for doc in db.applications.find({}, {"job_id": 1, "candidate_id": 1})]
+        applicant_ids = {
+            str(doc.get("candidate_id"))
+            for doc in apps
+            if str(doc.get("job_id")) in own_job_ids and doc.get("candidate_id")
+        }
+        if not applicant_ids:
+            return []
+        cursor = db.resumes.find({"candidate_id": {"$in": list(applicant_ids)}}).sort("created_at", -1).limit(100)
     else:
         cursor = db.resumes.find({"candidate_id": str(user["_id"])}).sort("created_at", -1)
         results = [_resume_out(doc) async for doc in cursor]
@@ -225,9 +254,11 @@ async def match_resume(
                 query["candidate_id"] = str(user["_id"])
             resume_doc = await db.resumes.find_one(query)
             if not resume_doc:
-                resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id)})
+                raise HTTPException(status_code=404, detail="Resume not found")
+        except HTTPException:
+            raise
         except Exception:
-            pass
+            raise HTTPException(status_code=404, detail="Resume not found")
 
     if not resume_doc and user:
         from bson import ObjectId
@@ -240,17 +271,7 @@ async def match_resume(
         )
 
     if not resume_doc:
-        resume_doc = await db.resumes.find_one({}, sort=[("created_at", -1)])
-    if not resume_doc:
-        resume_doc = {
-            "_id": "default_resume",
-            "candidate_id": str(user.get("_id", "candidate_1")),
-            "candidate_name": user.get("name", "Applicant"),
-            "skills": ["Python", "React", "JavaScript", "SQL", "Git", "Docker"],
-            "experience_years": 3.0,
-            "education": "BSc Computer Science",
-            "raw_text": "Experienced Software Engineer with proficiency in Python, React, JavaScript, SQL, Git, and Docker."
-        }
+        raise HTTPException(status_code=404, detail="No resume found. Upload a resume first.")
 
     job_doc = None
     if job_id:
@@ -374,11 +395,14 @@ async def match_resume(
 
     match_target_key = job_id or target_role or ""
     now = datetime.now(timezone.utc)
-    res_id_str = str(resume_doc.get("_id", "demo_resume_01"))
+    res_id_str = str(resume_doc.get("_id", ""))
+    # Attribute the prediction to the resume owner, not the caller: a company
+    # matching an applicant's resume must not reassign it to themselves.
+    owner_candidate_id = str(resume_doc.get("candidate_id") or user["_id"])
 
     doc = {
         "resume_id": res_id_str,
-        "candidate_id": str(user["_id"]),
+        "candidate_id": owner_candidate_id,
         "job_id": match_target_key,
         "predicted_role": final_predicted,
         "role_confidence": round(confidence, 4),
@@ -400,7 +424,9 @@ async def match_resume(
             {"$set": doc},
             upsert=True
         )
-        if job_id and job_doc:
+        if job_id and job_doc and user.get("role") == "candidate" and owner_candidate_id == str(user["_id"]):
+            # Implicit apply: only when a candidate matches their OWN resume
+            # to a job. Company calls must never fabricate applications.
             await db.applications.update_one(
                 {"candidate_id": str(user["_id"]), "job_id": str(job_id)},
                 {"$set": {
@@ -507,6 +533,19 @@ async def parse_resume_text(
 @limiter.limit("60/minute")
 @router.post("/interview-scores")
 async def save_interview_scores(payload: InterviewScoresCreate, request: Request):
+    # Auth: trusted internal service (C2 sync via X-Internal-Key) or a
+    # logged-in user. Candidates may only report their own scores; a company
+    # token alone is not sufficient to write another candidate's scores.
+    if not _is_internal_service(request):
+        auth = request.headers.get("Authorization", "")
+        if not auth.lower().startswith("bearer "):
+            raise HTTPException(status_code=401, detail="Missing bearer token or internal key")
+        try:
+            user = await get_current_user(request)
+        except HTTPException:
+            raise HTTPException(status_code=401, detail="Invalid token or internal key")
+        if user.get("role") == "candidate" and str(user["_id"]) != str(payload.candidate_id):
+            raise HTTPException(status_code=403, detail="Candidates may only report their own interview scores")
     db = request.app.state.db
     doc = {
         "candidate_id": payload.candidate_id,
@@ -599,6 +638,10 @@ async def save_interview_scores(payload: InterviewScoresCreate, request: Request
 
 @router.get("/interview-scores/{candidate_id}")
 async def get_interview_scores(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
+    # Candidates may only read their own scores. Companies read applicant
+    # scores through the owned-job applicant endpoints instead.
+    if user.get("role") == "candidate" and str(user["_id"]) != str(candidate_id):
+        raise HTTPException(status_code=403, detail="Access denied")
     db = request.app.state.db
     cursor = db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1)
     scores = []
@@ -609,6 +652,9 @@ async def get_interview_scores(candidate_id: str, request: Request, user: dict =
 
 @router.get("/interview-detail/{candidate_id}")
 async def get_interview_detail(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
+    # Same ownership rule as interview-scores above.
+    if user.get("role") == "candidate" and str(user["_id"]) != str(candidate_id):
+        raise HTTPException(status_code=403, detail="Access denied")
     db = request.app.state.db
     cursor = db.results.find({"candidate_id": candidate_id}).sort("created_at", -1)
     results = []

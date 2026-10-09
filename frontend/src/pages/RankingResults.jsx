@@ -64,7 +64,7 @@ export default function RankingResults() {
     setSelectedCandidate(candidateId)
     setExplainBusy(true)
     try {
-      const res = await c3Explain(candidateId)
+      const res = await c3Explain(candidateId, jobId)
       const explanations = res?.data?.explanations
       setExplanation(explanations?.[0] || null)
     } catch {

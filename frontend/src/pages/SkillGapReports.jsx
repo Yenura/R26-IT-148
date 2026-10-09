@@ -28,9 +28,13 @@ export default function SkillGapReports() {
   const loadReports = async () => {
     setLoading(true)
     try {
-      const r = await c4SkillGapReports()
+      // Own reports only: the endpoint requires candidate_id and enforces
+      // ownership server-side; filter client-side as well for safety.
+      const myId = localStorage.getItem('recruitai.user_id') || ''
+      const r = await c4SkillGapReports(myId)
       const data = r?.data?.data || r?.data || {}
-      setReports(data.reports || data || [])
+      const list = data.reports || data || []
+      setReports(Array.isArray(list) ? list.filter((x) => !myId || String(x.candidate_id || '') === String(myId)) : [])
     } catch {
       toast.error('Failed to load skill gap reports')
     } finally {

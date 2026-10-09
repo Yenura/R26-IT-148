@@ -6,7 +6,7 @@ import {
   Building2, MapPin, Sparkles, Eye, AlertCircle, Clock, Shield,
   UserCheck, Volume2, Activity
 } from 'lucide-react'
-import { c0JobsAll, uJobsApplicants, c3Pipeline, uInterviewDetail, c3Explain } from '../api'
+import { uJobsMy, uJobsApplicants, c3Pipeline, uInterviewDetail, c3Explain } from '../api'
 import PageHeader from '../components/PageHeader'
 import Modal from '../components/Modal'
 import ScoreMeter from '../components/ScoreMeter'
@@ -51,8 +51,10 @@ export default function ApplicantPipeline() {
   const loadData = async () => {
     setBusy(true)
     try {
+      // Company-owned jobs only: the platform-wide catalog must never feed
+      // this per-job pipeline view.
       const [jobRes, appsRes] = await Promise.all([
-        c0JobsAll().catch(() => ({ data: [] })),
+        uJobsMy().catch(() => ({ data: [] })),
         uJobsApplicants(jobId).catch(() => ({ data: [] })),
       ])
       const jobList = Array.isArray(jobRes.data) ? jobRes.data : []
@@ -86,7 +88,7 @@ export default function ApplicantPipeline() {
     try {
       const [detailRes, explainRes] = await Promise.all([
         uInterviewDetail(candidateId).catch(() => ({ data: [] })),
-        c3Explain(candidateId).catch(() => ({ data: null })),
+        c3Explain(candidateId, jobId).catch(() => ({ data: null })),
       ])
       setDetail(detailRes.data?.[0] || null)
       const explanations = explainRes.data?.explanations

@@ -51,10 +51,14 @@ const mk = (rawUrl) => {
     return originalDelete(reqUrl, ...args)
   }
 
-  // Fast Cached GET with SWR background revalidation
+  // Fast Cached GET with SWR background revalidation.
+  // The cache key is partitioned by auth token so two users sharing one
+  // browser/tab can never read each other's cached responses.
   const originalGet = instance.get.bind(instance)
   instance.get = (requestUrl, config = {}) => {
-    const key = `${url}:${requestUrl}:${JSON.stringify(config.params || {})}`
+    let token = ''
+    try { token = localStorage.getItem('recruitai.token') || '' } catch {}
+    const key = `${url}:${token.slice(-12)}:${requestUrl}:${JSON.stringify(config.params || {})}`
     const now = Date.now()
 
     // 1. Check if cached response is present
@@ -106,6 +110,12 @@ _C0.interceptors.response.use(
     if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
       localStorage.removeItem('recruitai.token')
       localStorage.removeItem('recruitai.role')
+      localStorage.removeItem('recruitai.user_id')
+      localStorage.removeItem('recruitai.name')
+      localStorage.removeItem('recruitai.avatar')
+      try { sessionStorage.clear() } catch {}
+      responseCache.clear()
+      inFlightGetRequests.clear()
       window.location.href = '/'
     }
     return Promise.reject(err)
@@ -196,7 +206,7 @@ export const c2Questions   = (role)         => C2.get(`/interview/questions/${ro
 export const c3Roles       = ()             => C3.get('/rank/jobs')
 export const c3Rank        = (payload)      => C3.post('/rank/compute', payload)
 export const c3Pipeline    = (jobId)        => C3.get(`/rank/pipeline/${jobId}`)
-export const c3Explain     = (candidateId)  => C3.get(`/rank/explain/${candidateId}`)
+export const c3Explain     = (candidateId, jobId)  => C3.get(`/rank/explain/${candidateId}`, { params: jobId ? { job_id: jobId } : {} })
 export const c3Results     = (jobId)        => C3.get(`/rank/results/${jobId}`)
 export const c3SetWeights  = (payload)      => C3.post('/rank/weights', payload)
 
@@ -209,7 +219,7 @@ export const c4SkillGapApplied = (candidateId)=> C4.get(`/skill-gap/applied-jobs
 export const c4SkillGapSimulate= (payload)    => C4.post('/skill-gap/simulate', payload)
 export const c4SkillGapGraph   = ()           => C4.get('/skill-gap/graph')
 export const c4SkillGapReport  = (candidateId)=> C4.get(`/skill-gap/report/${candidateId}`)
-export const c4SkillGapReports = (skip = 0, limit = 50) => C4.get(`/skill-gap/reports?skip=${skip}&limit=${limit}`)
+export const c4SkillGapReports = (candidateId, skip = 0, limit = 50) => C4.get('/skill-gap/reports', { params: { candidate_id: candidateId, skip, limit } })
 export const c4SkillGapDeleteReport = (candidateId) => C4.delete(`/skill-gap/report/${candidateId}`)
 export const c4CareerRec       = (payload)    => C4.post('/career/recommendation', payload)
 export const c4CareerRoles     = ()           => C4.get('/career/roles')
