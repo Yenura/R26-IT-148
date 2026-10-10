@@ -1,0 +1,141 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Fair and Explainable Candidate Ranking with Skill-Gap Guided Career Development}
+
+\author{
+    \IEEEauthorblockN{Y.S. Karunanayaka}
+    \IEEEauthorblockA{\textit{Faculty of Computing} \\
+    \textit{Sri Lanka Institute of Information Technology}\\
+    Malabe, Sri Lanka \\
+    it22306272@my.sliit.lk}
+    \and
+    \IEEEauthorblockN{Perera K.G.S.N.}
+    \IEEEauthorblockA{\textit{Faculty of Computing} \\
+    \textit{Sri Lanka Institute of Information Technology}\\
+    Malabe, Sri Lanka \\
+    it22027610@my.sliit.lk}
+    \and
+    \IEEEauthorblockN{Perera D.T.D.}
+    \IEEEauthorblockA{\textit{Faculty of Computing} \\
+    \textit{Sri Lanka Institute of Information Technology}\\
+    Malabe, Sri Lanka \\
+    it22089236@my.sliit.lk}
+}
+
+\maketitle
+
+\begin{abstract}
+Ranking candidates and advising them on what to learn next are usually treated as separate problems. We present a combined system where a weighted Candidate Suitability Score and a learning-to-rank model produce the shortlist, while a skill-gap model explains what is missing and how to close it. The ranking blends CV and interview evidence as $CSS = 0.40\,S_{cv} + 0.60\,S_{int}$ with per-role weights, a hard filter with a soft near-miss penalty, and exact SHAP for the linear case; a LightGBM LambdaMART (800 trees) serves as a strong comparator. The skill-gap model is a Gradient Boosting classifier trained on 20,000 records with 67 features, achieving ROC-AUC 0.9763, and it maps gaps to a 2-skills-per-month learning timeline and a DAG career path. On 6,000 ranking candidates the CSS reaches NDCG@5 0.9437 and MAP 0.9776 with demographic parity and equal opportunity within 0.05, matching the LambdaMART baseline without needing training data at deployment.
+\end{abstract}
+
+\begin{IEEEkeywords}
+candidate ranking, learning-to-rank, fairness, SHAP, skill gap, career path
+\end{IEEEkeywords}
+
+\section{Introduction}
+A recruiter's shortlist has to be defensible. At the same time, a candidate who is not shortlisted wants to know why and what to do next. Most pipelines optimize one side and hand-wave the other.
+
+We linked the two. The same scores that decide the order are reused to explain gaps, suggest courses, and sketch a next-role path. Ranking stays fair and auditable, and guidance is specific rather than generic.
+
+This paper covers that link: how the ranking score is built, how it is compared to a learning-to-rank model, and how the gap model turns the same signals into advice.
+
+\section{Related Work}
+Multi-criteria methods like AHP and TOPSIS build rankings from pairwise comparisons but are sensitive to new alternatives. LambdaMART with LightGBM directly optimizes NDCG and is a standard baseline. On the fairness side, demographic parity and equal opportunity with FA*IR re-ranking are common, while SHAP has become the default for additive feature explanations. Skill-gap work often predicts hireability from tabular features but rarely connects to live CV and interview scores. Our contribution is to tie a light, deployable weighted score to both strong ranking quality and actionable guidance.
+
+\section{Methodology}
+
+\subsection{Candidate Suitability Score}
+We start from six raw signals: $S_{edu}$, $S_{exp}$, $S_{skill}$ from the resume side and $P_{mcq}$, $P_{desc}$, $P_{code}$ from the interview side. Per-role weights turn them into two composites and then one number:
+\begin{equation}
+S_{cv} = w_{edu}S_{edu} + w_{exp}S_{exp} + w_{skill}S_{skill}
+\end{equation}
+\begin{equation}
+S_{int} = w_{mcq}P_{mcq} + w_{desc}P_{desc} + w_{code}P_{code}, \quad CSS = 0.40S_{cv} + 0.60S_{int}
+\end{equation}
+All weight triples sum to 1. The 0.40/0.60 split between CV and interview follows the well-known validity evidence where structured interviews carry the higher weight. Ten role-specific profiles are used, for example Software Engineer and Frontend Developer emphasize coding, while Data Scientist and Cybersecurity emphasize descriptive reasoning. If an interview had no coding section, the coding share is spread over MCQ and descriptive pro-rata instead of scoring zero.
+
+A hard filter checks minimum education, experience, skill and coding thresholds before ranking. Candidates within 80\% of a threshold are treated as near-miss with a soft penalty between 0.70 and 0.95 rather than a hard zero, so a strong but slightly junior profile is not erased.
+
+\subsection{LambdaMART Comparator}
+The comparator is a LightGBM LambdaMART ranker. It uses lambdarank objective, NDCG at 5 and 10, label gains $[0,1,3,7]$, 800 estimators, learning rate 0.05, 31 leaves, bagging and feature fractions 0.85, regularization 0.1, and a StandardScaler fitted on training folds. Extra interactions like $S_{cv}$, $S_{int}$, $CSS$ and $\text{skill}\times\text{code}$ are added. Groups are defined by job role so candidates are only ranked within the same role. The model is used for ablation and for weight sensitivity, not as a deployment requirement.
+
+\subsection{Fairness and Explainability}
+After scoring we audit demographic parity and equal opportunity. If $|DP| > 0.05$ on the top slice, a FA*IR style re-ranking enforces a minimum 40\% representation for the underrepresented group in the top-20. Because CSS is linear, SHAP values are exact: 
+\begin{equation}
+CSS = \phi_0 + \sum \phi_i
+\end{equation}
+where each $\phi_i$ is the weight times the centered feature. The dashboard shows per-candidate waterfalls and a summary importance chart.
+
+\subsection{Skill-Gap and Career Model}
+Training uses a table of 20,000 records with 22 columns including job role, required skills, candidate skills, experience, education, level, work mode, certification and project counts, and salary. Features are ordinal encodings for education, level and work mode, binary flags for 40 canonical skills, plus role one-hots, totaling 67. The target is rule-based hireability: skill coverage at least half, level-appropriate experience, and a baseline education level, with a small bonus for certifications or projects. Three models are compared; Gradient Boosting with 150 trees is best with ROC-AUC 0.9763, accuracy 0.915 and F1 0.867.
+
+At inference, the gap is computed in two stages. First, fuzzy substring matching finds missing required and optional skills and a skill match percent. A skill score blends 0.7 required and 0.3 optional, then blends 0.8 skill with 0.2 experience to give a gap score in $[0, 1]$. Severity is Low $\ge 0.80$, Medium $\ge 0.55$, else High. Hire probability is 0.6 times the ML probability plus 0.4 times the average of any available CV or interview scores, with a fallback to skill match if the model is absent. Missing skills are grouped into categories (Programming, Web, Data/DB, ML/AI, Cloud/DevOps, Security) and mapped to curated courses; the learning plan groups them two per month. The career path for each role is a DAG from Junior to Principal with lateral moves, for example a Data Scientist can move to ML Engineer or Data Engineer.
+
+\section{Evaluation}
+
+\subsection{Datasets}
+C1 supplies 4,000 CVs, C2 supplies interviews for the same roles, and for this paper we use 6,000 ranking candidates (600 per role, split 60/15/25 for train/val/test) plus 5,000 fairness-balanced records. The skill-gap table is the 20,000-record set noted above.
+
+\subsection{Ranking Quality}
+Table~\ref{tab:ablation} reproduces the verified ablation: CSS at 0.9437 clearly beats single-source configs and sits between the classic MCDM baseline and the trained LambdaMART, while needing no training data to deploy. Weight sensitivity across four mixes (default 0.40/0.60, balanced 0.50/0.50, CV-heavy 0.60/0.40, INT-heavy 0.25/0.75) keeps Top-3 overlap high, which we report as stability.
+
+Fairness passes on all roles with DP around 0.008 and EOD around 0.006 overall, well inside the 0.05 limit, so no re-ranking was triggered in the test slice.
+
+\begin{table}[htbp]
+\caption{Ablation (All 20 Roles).}
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Config} & \textbf{NDCG@5} & \textbf{NDCG@10} & \textbf{MAP} & \textbf{Spearman} \\
+\midrule
+A CV Only        & 0.8844 & 0.8892 & 0.9838 & 0.6107 \\
+B Interview Only & 0.8919 & 0.8687 & 0.9569 & 0.4812 \\
+C AHP/TOPSIS     & 0.9505 & 0.9441 & 0.9814 & 0.6333 \\
+D CSS Proposed   & 0.9437 & 0.9428 & 0.9776 & 0.6232 \\
+E LambdaMART     & 0.9473 & 0.9340 & 0.9798 & 0.7030 \\
+\bottomrule
+\end{tabular}
+\label{tab:ablation}
+\end{center}
+\end{table}
+
+\subsection{Skill-Gap Quality}
+The best model details from \texttt{training\_stats.json} are accuracy 0.915, F1 0.867 and ROC-AUC 0.9763 on 20\,k rows and 67 features across 20 roles. The knowledge files contain per-role required/optional skills, 47 course resources and the DAG definitions, and the inference blend 0.6 ML + 0.4 external scores was verified in code.
+
+A typical case: a candidate for Data Scientist with some Python and SQL but missing ML basics gets a Medium severity, a hire probability around the mid-60s, and a plan that starts with Statistics and Feature Engineering before moving to MLOps.
+
+\subsection{System View}
+The same CSS that orders the shortlist feeds the gap categorization and the timeline. That reuse is intentional: when a recruiter asks why a rank is what it is, the answer points to the same features the candidate sees as next steps.
+
+\section{Discussion}
+The weighted score is deliberately light. Because it is linear, its SHAP explanation is exact and easy to show. The LambdaMART is stronger on Spearman but needs data and tuning; keeping it as a comparator rather than a gate keeps deployment simple.
+
+For the gap model, the rule-based target is a practical compromise when no hiring outcome is logged, and the fuzzy match avoids missing ``AWS'' inside ``AWS/GCP''. The main limits are the usual: the skill lexicon is finite, and career edges are curated rather than learned.
+
+\section{Conclusion}
+A single set of weights can deliver a fair, explainable ranking and, with the same features, concrete career advice. The CSS at NDCG@5 0.9437 matches strong baselines without training at deployment, and the 0.9763 AUC gap model turns gaps into a month-by-month plan. Together they close the loop between who to interview and what to learn.
+
+\begin{thebibliography}{00}
+\bibitem{b1} P. Sackett et al., ``Revisiting meta-analytic estimates of validity,'' \textit{J. Appl. Psychol.}, 2022.
+\bibitem{b2} A. Singh and T. Joachims, ``Fairness of exposure in rankings,'' in \textit{Proc. ACM SIGKDD Int. Conf. Knowl. Discov. Data Min. (KDD)}, 2018.
+\bibitem{b3} S. Lundberg and S.-I. Lee, ``A unified approach to interpreting model predictions,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, 2017.
+\bibitem{b4} C. Burges, ``From RankNet to LambdaRank to LambdaMART,'' Microsoft Research, Tech. Rep., 2010.
+\bibitem{b5} G. Ke et al., ``LightGBM: A highly efficient gradient boosting decision tree,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, 2017.
+\end{thebibliography}
+
+\end{document}

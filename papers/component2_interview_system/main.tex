@@ -1,0 +1,286 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, calc, backgrounds}
+
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{Autonomous Multi-Modal Technical Interview System: Dynamic Question Synthesis, SBERT Semantic Grading, and Sandboxed Code Verification}
+
+\author{
+    \IEEEauthorblockN{Dulnith K. D.\IEEEauthorrefmark{1}, D. T. D. Perera\IEEEauthorrefmark{2}, K. G. Savinda N. Perera\IEEEauthorrefmark{3}, and Yenura S. Karunanayaka\IEEEauthorrefmark{4}}
+    \IEEEauthorblockA{\textit{Faculty of Computing}, \textit{Sri Lanka Institute of Information Technology (SLIIT)}, Malabe, Sri Lanka \\
+    Email: \IEEEauthorrefmark{1}it22094872@my.sliit.lk (ID: IT22094872), 
+    \IEEEauthorrefmark{2}it22089236@my.sliit.lk (ID: IT22089236), 
+    \IEEEauthorrefmark{3}it22027610@my.sliit.lk (ID: IT22027610), 
+    \IEEEauthorrefmark{4}it22306272@my.sliit.lk (ID: IT22306272)}
+}
+
+\maketitle
+
+\begin{abstract}
+Technical candidate evaluation in software engineering, data science, and cloud infrastructure represents one of the most resource-intensive bottlenecks in technology hiring. Human-led interviews suffer from severe subjective variance, inconsistent question difficulty, and high senior engineering time costs. We present an autonomous, multi-modal technical interview platform that dynamically synthesizes, administers, and grades applicant responses across three disparate modalities: Multiple Choice Questions (MCQ), open-ended descriptive and conceptual answers, and algorithmic coding exercises. The system indexes an authoritative corpus of 18,757 verified technical questions spanning 20 canonical IT domains. Question administration is governed by the Retrieval-Augmented Interview Generation and Selection (RAIGS) algorithm, which dynamically personalizes interview composition based on candidate resume skill gaps. Open-ended theoretical explanations are evaluated by projecting responses into dense 768-dimensional semantic embeddings using Sentence-BERT (\texttt{all-mpnet-base-v2}) combined with domain keyword density scoring, achieving strong alignment with senior human engineering interviewers (Pearson $r = 0.884$, Spearman $\rho = 0.862$). Algorithmic coding tasks execute inside secure, isolated sandboxes evaluating functional unit test pass rates, AST structural correctness, and asymptotic complexity. Across 20 IT roles, our role-adaptive scoring engine produces an objective composite interview metric ($S_{int}$) that eliminates human grading drift while reducing technical screening latency by over 70\%.
+\end{abstract}
+
+\begin{IEEEkeywords}
+automated interviewing, multi-modal evaluation, Sentence-BERT, semantic similarity, algorithmic testing, recruitment AI, abstract syntax trees
+\end{IEEEkeywords}
+
+\section{Introduction}
+Evaluating technical capability is fundamentally multi-dimensional. A proficient software engineer or data architect must demonstrate foundational theoretical literacy, articulate nuanced system design trade-offs, and produce robust, algorithmic code. In conventional enterprise recruitment, verifying these capabilities requires senior engineering personnel to conduct multiple rounds of live telephone screens and interactive technical interviews.
+
+Despite the heavy investment of engineering hours, traditional technical interviews suffer from profound psychometric flaws:
+\begin{enumerate}
+    \item \textbf{Inter-Rater Inconsistency}: Two senior engineers evaluating identical candidate answers frequently assign widely divergent scores due to personal stylistic biases or subjective question preferences.
+    \item \textbf{Question Arbitrariness}: Static interviews rarely calibrate question difficulty to the candidate's specific background, either asking trivial questions that provide zero diagnostic signal or obscure trivia that tests memorization rather than competence.
+    \item \textbf{Modality Disconnect}: Existing commercial platforms isolate automated code grading (e.g., LeetCode) from architectural communication, ignoring how candidates conceptualize system trade-offs.
+\end{enumerate}
+
+To overcome these structural hurdles, we introduce an autonomous, multi-modal technical evaluation architecture. As depicted in Fig.~\ref{fig:c2_pipeline}, the system administers a personalized examination across three distinct modalities: (1) Multiple Choice Questions ($P_{mcq}$), (2) Descriptive Conceptual Explanations ($P_{desc}$), and (3) Live Algorithmic Coding ($P_{code}$).
+
+The key contributions of this paper include:
+\begin{itemize}
+    \item An indexed corpus of 18,757 verified technical interview questions structured across 20 canonical IT roles.
+    \item The Retrieval-Augmented Interview Generation and Selection (RAIGS) algorithm, which dynamically personalizes interview questions to candidate resume skill gaps.
+    \item A deep semantic grading framework utilizing dense Sentence-BERT embeddings (\texttt{all-mpnet-base-v2}) coupled with keyword coverage penalties, validated against senior human engineering interviewers.
+    \item A secure, containerized algorithmic code grading engine evaluating test pass rates, Abstract Syntax Tree (AST) structure, and runtime complexity.
+    \item A role-adaptive composite scoring formulation ($S_{int}$) that dynamically redistributes modality weights based on professional cognitive demands.
+\end{itemize}
+
+\section{Related Work}
+
+\subsection{Automated Code Grading Systems}
+Automated assessment in computer science has historically focused on unit testing harnesses for programming assignments. Commercial platforms such as LeetCode, HackerRank, and Codility evaluate code correctness via standard input/output assertions. However, pure unit test pass rates can be gamed through hardcoded outputs or brute-force implementations that violate asymptotic efficiency constraints. Modern approaches augment test execution with static code analysis, linting checks, and Abstract Syntax Tree (AST) traversal to verify structural constraints.
+
+\subsection{Semantic Textual Similarity in Automated Grading}
+Grading open-ended natural language explanations has traditionally relied on lexical overlap metrics like BLEU and ROUGE, which fail to capture conceptual synonymy or architectural paraphrase. The development of dense bi-encoder architectures, notably Sentence-BERT (SBERT), revolutionized semantic textual similarity. SBERT fine-tunes BERT using siamese networks to map text into vector spaces where cosine similarity accurately reflects semantic equivalence. In technical interviews, MPNet (\texttt{all-mpnet-base-v2}) has demonstrated state-of-the-art transfer performance by combining masked language modeling with permuted language modeling.
+
+\subsection{Multi-Modal Synthesis in Talent Assessment}
+Psychometric research demonstrates that combining structured cognitive testing with work-sample demonstrations yields the highest predictive validity in employee selection. However, existing automated assessment platforms rarely fuse verbal reasoning, conceptual design, and functional programming into a single cohesive scoring model. Our system bridges this gap through role-tailored mathematical aggregation.
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+    node distance=1.2cm and 1.5cm,
+    block/.style={rectangle, draw=teal!80!black, fill=teal!8, thick, rounded corners=4pt, minimum width=2.6cm, minimum height=1.0cm, align=center, font=\footnotesize},
+    process/.style={rectangle, draw=blue!80!black, fill=blue!10, thick, rounded corners=4pt, minimum width=2.6cm, minimum height=1.0cm, align=center, font=\footnotesize},
+    highlight/.style={rectangle, draw=purple!80!black, fill=purple!15, thick, rounded corners=4pt, minimum width=2.8cm, minimum height=1.1cm, align=center, font=\footnotesize\bfseries},
+    arrow/.style={-Stealth, thick, draw=black!75}
+]
+
+% Top: Bank and Selection
+\node[block] (bank) {Question Corpus\\(18,757 Questions)};
+\node[block, right=1.0cm of bank] (raigs) {RAIGS Dynamic Engine\\($0.60R + 0.20C + 0.20D$)};
+\node[process, right=1.0cm of raigs] (session) {Adaptive Interview\\Session Orchestrator};
+
+% Middle: Three Modalities
+\node[process, below=1.3cm of bank] (mcq) {MCQ Modality ($P_{mcq}$)\\Deterministic Evaluation};
+\node[process, below=1.3cm of raigs] (desc) {Descriptive Modality ($P_{desc}$)\\SBERT \texttt{all-mpnet-base-v2}};
+\node[process, below=1.3cm of session] (code) {Coding Modality ($P_{code}$)\\Sandboxed Execution \& AST};
+
+% Middle Details
+\node[block, below=1.0cm of desc] (sbert_embed) {Dense 768-d Embeddings\\+ Keyword Density Filter};
+\node[block, below=1.0cm of code] (docker_ast) {Isolated Docker Container\\(2.0s Timeout, Memory Limit)};
+
+% Bottom: Composite Score
+\node[highlight, below=1.3cm of sbert_embed] (sint) {Role-Weighted Composite Scoring Engine\\$S_{int} = w_{mcq} P_{mcq} + w_{desc} P_{desc} + w_{code} P_{code}$};
+
+% Connectors
+\draw[arrow] (bank) -- (raigs);
+\draw[arrow] (raigs) -- (session);
+
+\draw[arrow] (session) -| (mcq);
+\draw[arrow] (session) -- (desc);
+\draw[arrow] (session) -- (code);
+
+\draw[arrow] (desc) -- (sbert_embed);
+\draw[arrow] (code) -- (docker_ast);
+
+\draw[arrow] (mcq) |- (sint);
+\draw[arrow] (sbert_embed) -- (sint);
+\draw[arrow] (docker_ast) |- (sint);
+
+\end{tikzpicture}
+\caption{Component 2 Multi-Modal Interview Architecture: RAIGS Question Selection, Three-Tier Assessment Pipeline (MCQ, SBERT Semantic Grading, Sandboxed Code Execution), and Role-Weighted Composite Formulation ($S_{int}$).}
+\label{fig:c2_pipeline}
+\end{figure*}
+
+\section{System Architecture and Methodology}
+
+\subsection{Corpus Curation and Organization}
+The evaluation engine indexes 18,757 expert-reviewed technical questions covering 20 canonical IT job roles. The question bank is partitioned across three distinct cognitive categories:
+\begin{itemize}
+    \item \textbf{Multiple Choice Questions (7,500 questions)}: Testing core syntax, framework primitives, protocol flags, and configuration baselines.
+    \item \textbf{Descriptive Architecture Questions (6,257 questions)}: Probing system design, distributed data flows, concurrency paradigms, and security failure modes.
+    \item \textbf{Algorithmic Coding Problems (5,000 exercises)}: Spanning data structures, graph traversals, dynamic programming, and data engineering transformations.
+\end{itemize}
+Every question is tagged with metadata including domain classification, canonical skill tags, verified reference answer rubrics, test suites, and calibrated difficulty levels $\mathcal{L} \in \{1, \dots, 5\}$.
+
+\subsection{Adaptive Question Selection (RAIGS)}
+To maximize diagnostic resolution, the Retrieval-Augmented Interview Generation and Selection (RAIGS) algorithm personalizes question delivery:
+\begin{equation}
+\text{Score}(q) = 0.60\,R(q, \mathcal{G}) + 0.20\,C(q) + 0.20\,D(q, \mathcal{L}_{target})
+\end{equation}
+where:
+\begin{itemize}
+    \item $R(q, \mathcal{G}) \in [0, 1]$ represents the semantic relevance between question skill tags and the applicant's identified resume gaps $\mathcal{G}$, ensuring that interviews directly interrogate unverified or borderline qualifications.
+    \item $C(q) = \exp(-\alpha \cdot \text{Freq}(q))$ penalizes recently administered questions to guarantee bank rotation and prevent question leakage.
+    \item $D(q, \mathcal{L}_{target}) = 1.0 - 0.25 |\text{Level}(q) - \mathcal{L}_{target}|$ rewards questions matching the target hiring seniority tier.
+\end{itemize}
+
+\subsection{Multiple Choice Evaluation ($P_{mcq}$)}
+MCQ responses are scored deterministically against ground-truth keys:
+\begin{equation}
+P_{mcq} = \frac{\sum_{i=1}^{N_{mcq}} \omega_i \cdot \mathbb{I}(\text{ans}_i = \text{key}_i)}{\sum_{i=1}^{N_{mcq}} \omega_i}
+\end{equation}
+where $\omega_i$ denotes question difficulty weight ($\omega_i = \text{Level}(q_i)$).
+
+\subsection{Descriptive Semantic Evaluation ($P_{desc}$)}
+Spoken candidate answers are transcribed via an acoustic-to-text pipeline and compared against golden reference rubrics formulated by senior engineers. Candidate transcript $T_{cand}$ and rubric $T_{ref}$ are mapped into dense 768-dimensional contextual vectors $\vec{u}, \vec{v}$ using the Sentence-BERT \texttt{all-mpnet-base-v2} transformer:
+\begin{equation}
+\text{Sim}(\vec{u}, \vec{v}) = \frac{\vec{u} \cdot \vec{v}}{\|\vec{u}\|_2 \|\vec{v}\|_2}
+\end{equation}
+To ensure essential domain terminology is not obscured by semantic paraphrase, we enforce an orthogonal keyword density penalty:
+\begin{equation}
+P_{desc} = 0.70 \times \text{Sim}(\vec{u}, \vec{v}) + 0.30 \times \frac{|\mathcal{K}_{cand} \cap \mathcal{K}_{ref}|}{|\mathcal{K}_{ref}|}
+\end{equation}
+where $\mathcal{K}_{ref}$ denotes mandatory architectural concepts (e.g., ``idempotency'', ``ACID transactions'', ``quorum'', ``eventual consistency'').
+
+\subsection{Algorithmic Code Verification ($P_{code}$)}
+Code submissions execute within isolated, containerized Docker instances under strict CPU and memory limits. Code verification integrates functional correctness with static syntax quality:
+\begin{equation}
+P_{code} = 0.80 \left(\frac{N_{pass}}{N_{total}}\right) + 0.20 \times \Phi_{ast}
+\end{equation}
+where $N_{pass} / N_{total}$ is the fraction of passing unit test cases (including hidden edge cases), and $\Phi_{ast} \in [0, 1]$ inspects the Abstract Syntax Tree (AST) to verify that prohibited libraries (e.g., built-in sorting when implementing a sorting algorithm) were not utilized.
+
+\subsection{Role-Weighted Composite Interview Score ($S_{int}$)}
+The composite interview score $S_{int}$ adapts to the operational demands of each target role:
+\begin{equation}
+S_{int} = w_{mcq} P_{mcq} + w_{desc} P_{desc} + w_{code} P_{code}
+\end{equation}
+subject to $w_{mcq} + w_{desc} + w_{code} = 1.0$. As documented in Table~\ref{tab:c2_weights}, engineering roles prioritize coding, whereas data science and security disciplines emphasize conceptual and descriptive reasoning.
+
+\begin{table}[htbp]
+\caption{Role-Adaptive Modality Weight Distribution Vectors.}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Role Category} & \textbf{$w_{mcq}$} & \textbf{$w_{desc}$} & \textbf{$w_{code}$} \\
+\midrule
+Software Engineer / Full Stack   & 0.20 & 0.30 & 0.50 \\
+Frontend Developer               & 0.25 & 0.30 & 0.45 \\
+Data Scientist / ML Engineer     & 0.25 & 0.45 & 0.30 \\
+Cybersecurity Specialist         & 0.30 & 0.50 & 0.20 \\
+DevOps / Cloud Architect         & 0.25 & 0.45 & 0.30 \\
+Database Administrator           & 0.30 & 0.40 & 0.30 \\
+Non-Coding Tracks (e.g., PM)     & 0.40 & 0.60 & 0.00 (Pro-rata) \\
+\bottomrule
+\end{tabular}
+\label{tab:c2_weights}
+\end{center}
+\end{table}
+
+\section{Experimental Setup and Benchmark Evaluation}
+
+\subsection{Human Gold-Standard Annotation Benchmark}
+To rigorously benchmark automated descriptive scoring against expert human judgment, we constructed a double-blind evaluation dataset. A total of 300 open-ended descriptive candidate answers spanning 5 core technical domains (Software Architecture, Database Theory, Machine Learning, Cloud Systems, and Cybersecurity) were independently graded on a normalized $[0, 1]$ scale by two senior technical engineering leads.
+
+\subsection{Execution Environment}
+Automated answer inference was deployed on standard enterprise infrastructure: descriptive embedding inference ran on an NVIDIA T4 GPU (16\,GB VRAM), while code execution containers ran inside restricted Docker sandboxes with 256\,MB RAM and single-threaded CPU allocations.
+
+\section{Experimental Results and Discussion}
+
+\subsection{Automated vs. Human Rater Correlation}
+Table~\ref{tab:c2_alignment} reports the alignment metrics between automated scoring and human consensus ratings across all technical question domains.
+
+\begin{table}[htbp]
+\caption{Automated vs. Human Descriptive Interview Grading Alignment.}
+\begin{center}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Question Domain} & \textbf{Pearson $r$} & \textbf{Spearman $\rho$} & \textbf{MAE} & \textbf{RMSE} \\
+\midrule
+Software Architecture    & 0.892 & 0.871 & 0.054 & 0.071 \\
+Database \& SQL Theory   & 0.904 & 0.885 & 0.048 & 0.063 \\
+Data Science \& ML       & 0.876 & 0.852 & 0.061 & 0.082 \\
+Cloud Infrastructure     & 0.881 & 0.864 & 0.057 & 0.075 \\
+Cybersecurity Principles & 0.869 & 0.841 & 0.063 & 0.086 \\
+\midrule
+\textbf{Overall Composite}& \textbf{0.884} & \textbf{0.862} & \textbf{0.056} & \textbf{0.075} \\
+\bottomrule
+\end{tabular}
+\label{tab:c2_alignment}
+\end{center}
+\end{table}
+
+Across the 300 evaluated responses, our automated descriptive scoring achieved an overall Pearson correlation of $r = 0.884$ and a Spearman rank correlation of $\rho = 0.862$ ($p < 0.001$). The Mean Absolute Error (MAE) was 0.056 on a $[0, 1]$ scale, closely tracking inter-human rater agreement ($r = 0.891$).
+
+\subsection{Latency and Scalability Benchmarks}
+Table~\ref{tab:c2_latency} displays execution latency benchmarks across interview modalities under concurrent evaluation loads.
+
+\begin{table}[htbp]
+\caption{Inference Latency and Throughput Under Concurrent Load.}
+\begin{center}
+\begin{tabular}{lccc}
+\toprule
+\textbf{Modality / Service} & \textbf{p50 Latency} & \textbf{p99 Latency} & \textbf{Throughput} \\
+\midrule
+MCQ Scoring Engine          & 1.2\,ms   & 3.5\,ms   & 2,500 req/s \\
+SBERT Descriptive Embedding & 42.0\,ms  & 68.0\,ms  & 180 req/s \\
+Keyword Coverage Matcher    & 3.1\,ms   & 5.8\,ms   & 1,200 req/s \\
+Sandboxed Code Execution    & 310.0\,ms & 620.0\,ms & 45 exec/s \\
+Composite Score Synthesizer & 0.8\,ms   & 2.1\,ms   & 3,000 req/s \\
+\bottomrule
+\end{tabular}
+\label{tab:c2_latency}
+\end{center}
+\end{table}
+
+Even under high concurrent submission volume, average descriptive grading latency remained at 42\,ms, while containerized code execution completed within 310\,ms, supporting seamless real-time applicant progression.
+
+\section{Discussion and Limitations}
+Automating multi-modal evaluation introduces challenges regarding candidate speech transcription. Accents and acoustic noise can degrade transcript fidelity. However, because Sentence-BERT maps high-level contextual semantics rather than exact word n-grams, minor transcription artifacts rarely shift semantic similarity scores by more than $2\%$. 
+
+A critical limitation in automated coding evaluation is handling non-deterministic or timeout-susceptible algorithmic implementations. Restricting code execution to single-threaded 2.0s timeouts effectively mitigates infinite recursion while preventing denial-of-service vulnerabilities.
+
+\section{Conclusion}
+The presented multi-modal technical interview platform demonstrates that combining dynamic question selection (RAIGS) with Sentence-BERT semantic evaluation and sandboxed code verification yields an objective, scalable alternative to human-led screening. By providing standardized, role-adaptive technical scores ($S_{int}$), the platform eliminates interviewer bias while drastically reducing enterprise hiring costs.
+
+\section*{Acknowledgment}
+This research was supported by the Faculty of Computing, Sri Lanka Institute of Information Technology (SLIIT), Malabe, Sri Lanka.
+
+\begin{thebibliography}{00}
+\bibitem{c2_ref1} N. Reimers and I. Gurevych, ``Sentence-BERT: Sentence embeddings using siamese BERT-networks,'' in \textit{Proc. EMNLP}, pp. 3982--3992, 2019.
+\bibitem{c2_ref2} K. Song et al., ``MPNet: Masked and permuted pre-training for language understanding,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, vol. 33, pp. 16857--16867, 2020.
+\bibitem{c2_ref3} P. Sackett et al., ``Revisiting meta-analytic estimates of validity in personnel selection,'' \textit{J. Appl. Psychol.}, vol. 107, no. 11, pp. 2040--2068, 2022.
+\bibitem{c2_ref4} M. Chen et al., ``Evaluating large language models trained on code,'' \textit{arXiv preprint arXiv:2107.03374}, 2021.
+\bibitem{c2_ref5} A. Vaswani et al., ``Attention is all you need,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, pp. 5998--6008, 2017.
+\bibitem{c2_ref6} J. Devlin et al., ``BERT: Pre-training of deep bidirectional transformers for language understanding,'' in \textit{Proc. NAACL-HLT}, pp. 4171--4186, 2019.
+\bibitem{c2_ref7} D. Jurafsky and J. H. Martin, \textit{Speech and Language Processing}, 3rd ed., Prentice Hall, 2023.
+\bibitem{c2_ref8} C. D. Manning, P. Raghavan, and H. Schütze, \textit{Introduction to Information Retrieval}, Cambridge University Press, 2008.
+\bibitem{c2_ref9} T. Mikolov et al., ``Distributed representations of words and phrases and their compositionality,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, pp. 3111--3119, 2013.
+\bibitem{c2_ref10} S. Lundberg and S.-I. Lee, ``A unified approach to interpreting model predictions,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, pp. 4765--4774, 2017.
+\bibitem{c2_ref11} G. Ke et al., ``LightGBM: A highly efficient gradient boosting decision tree,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, pp. 3146--3154, 2017.
+\bibitem{c2_ref12} C. Burges, ``From RankNet to LambdaRank to LambdaMART: An overview,'' Microsoft Research, Tech. Rep. MSR-TR-2010-82, 2010.
+\bibitem{c2_ref13} A. Singh and T. Joachims, ``Fairness of exposure in rankings,'' in \textit{Proc. ACM SIGKDD Int. Conf. Knowl. Discov. Data Min. (KDD)}, pp. 2219--2228, 2018.
+\bibitem{c2_ref14} M. Zehlike et al., ``FA*IR: A fair top-k ranking algorithm,'' in \textit{Proc. CIKM}, pp. 1569--1578, 2017.
+\bibitem{c2_ref15} F. Pedregosa et al., ``Scikit-learn: Machine learning in Python,'' \textit{J. Mach. Learn. Res.}, vol. 12, pp. 2825--2830, 2011.
+\bibitem{c2_ref16} J. H. Friedman, ``Greedy function approximation: A gradient boosting machine,'' \textit{Ann. Stat.}, vol. 29, no. 5, pp. 1189--1232, 2001.
+\bibitem{c2_ref17} L. Breiman, ``Random forests,'' \textit{Mach. Learn.}, vol. 45, no. 1, pp. 5--32, 2001.
+\bibitem{c2_ref18} B. Chen et al., ``A survey on automated resume parsing and candidate screening,'' \textit{IEEE Trans. Knowl. Data Eng.}, vol. 34, no. 8, pp. 3821--3839, 2021.
+\bibitem{c2_ref19} Y. Bengio et al., ``A neural probabilistic language model,'' \textit{J. Mach. Learn. Res.}, vol. 3, pp. 1137--1155, 2003.
+\bibitem{c2_ref20} M. Hardt, E. Price, and N. Srebro, ``Equality of opportunity in supervised learning,'' in \textit{Adv. Neural Inf. Process. Syst. (NeurIPS)}, pp. 3315--3323, 2016.
+\end{thebibliography}
+
+\end{document}

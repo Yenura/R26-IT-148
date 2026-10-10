@@ -244,7 +244,7 @@ export default function SkillGap() {
                       key={rep.job_id}
                       onClick={() => setSelectedJobId(rep.job_id)}
                       style={{
-                        padding: '12px 16px', borderRadius: 'var(--radius-lg)', minWidth: 220, textAlign: 'left', cursor: 'pointer',
+                        padding: '12px 16px', borderRadius: 'var(--radius-lg)', minWidth: 260, textAlign: 'left', cursor: 'pointer',
                         border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
                         background: isSelected ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)',
                         boxShadow: isSelected ? 'var(--shadow-md)' : 'var(--shadow-xs)',
@@ -261,6 +261,18 @@ export default function SkillGap() {
                           border: `1px solid ${rep.interview_completed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
                         }}>
                           {rep.interview_completed ? '✓ Interviewed' : 'Applied'}
+                        </span>
+                      </div>
+                      {/* 3 Marks Quick Pill Strip */}
+                      <div style={{ display: 'flex', gap: 6, marginTop: 8, fontSize: '10px', fontFamily: 'var(--p-font-mono)' }}>
+                        <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg)', color: rep.cv_score != null ? 'var(--color-primary)' : 'var(--color-fg-muted)', border: '1px solid var(--color-border-subtle)' }}>
+                          CV: {rep.cv_score != null ? `${Number(rep.cv_score).toFixed(0)}%` : 'Pending'}
+                        </span>
+                        <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg)', color: (rep.interview_completed && rep.interview_score != null) ? 'var(--color-purple)' : 'var(--color-fg-muted)', border: '1px solid var(--color-border-subtle)' }}>
+                          Int: {(rep.interview_completed && rep.interview_score != null) ? `${Number(rep.interview_score).toFixed(0)}%` : 'Pending'}
+                        </span>
+                        <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg)', fontWeight: 700, color: (rep.composite_score != null || rep.total_mark != null) ? 'var(--color-fg)' : 'var(--color-fg-muted)', border: '1px solid var(--color-border-subtle)' }}>
+                          CSS: {rep.composite_score != null ? `${Number(rep.composite_score).toFixed(0)}%` : (rep.total_mark != null ? `${Number(rep.total_mark).toFixed(0)}%` : '—')}
                         </span>
                       </div>
                     </button>
@@ -286,31 +298,56 @@ export default function SkillGap() {
                       </h2>
                     </div>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Overall Mark</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.cv_score != null ? `${selectedReport.cv_score}%` : 'N/A'}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark</div>
-                        <div style={{ fontSize: '1.15rem', fontWeight: 800, color: selectedReport.interview_completed ? 'var(--color-purple)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.interview_score != null ? `${selectedReport.interview_score}%` : 'Pending'}
-                        </div>
-                      </div>
-                      <div style={{ textAlign: 'center', padding: '8px 14px', background: selectedReport.interview_completed ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${selectedReport.interview_completed ? 'rgba(99, 102, 241, 0.4)' : 'var(--color-border)'}` }}>
-                        <div style={{ fontSize: '10px', fontWeight: 700, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg-muted)', textTransform: 'uppercase' }}>
-                          {selectedReport.interview_completed ? 'Final Total Mark (CSS)' : 'Current Total (CV Mark)'}
-                        </div>
-                        <div style={{ fontSize: '1.3rem', fontWeight: 900, color: selectedReport.interview_completed ? 'var(--color-primary)' : 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                          {selectedReport.composite_score != null ? `${Number(selectedReport.composite_score).toFixed(1)}%` : (selectedReport.cv_score != null ? `${Number(selectedReport.cv_score).toFixed(1)}%` : 'N/A')}
-                        </div>
-                      </div>
+                      {(() => {
+                        const hasCV = selectedReport.cv_score != null
+                        const hasInt = Boolean(selectedReport.interview_completed && selectedReport.interview_score != null)
+
+                        let totalScore = selectedReport.composite_score
+                        let totalLabel = 'Final Total Mark (CSS)'
+                        if (hasCV && hasInt) {
+                          totalLabel = 'Final Total Mark (CSS)'
+                          totalScore = selectedReport.composite_score != null ? Number(selectedReport.composite_score).toFixed(1) : ((0.40 * selectedReport.cv_score + 0.60 * selectedReport.interview_score).toFixed(1))
+                        } else if (hasCV) {
+                          totalLabel = 'Current Total (CV Mark)'
+                          totalScore = Number(selectedReport.cv_score).toFixed(1)
+                        } else if (hasInt) {
+                          totalLabel = 'Current Total (Interview Mark)'
+                          totalScore = Number(selectedReport.interview_score).toFixed(1)
+                        } else {
+                          totalLabel = 'Overall Fit Score'
+                          totalScore = '0.0'
+                        }
+
+                        return (
+                          <>
+                            <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Overall Mark (S_cv)</div>
+                              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasCV ? 'var(--color-primary)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
+                                {hasCV ? `${Number(selectedReport.cv_score).toFixed(0)}%` : 'Pending'}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark (S_int)</div>
+                              <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasInt ? 'var(--color-purple)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
+                                {hasInt ? `${Number(selectedReport.interview_score).toFixed(0)}%` : 'Pending'}
+                              </div>
+                            </div>
+                            <div style={{ textAlign: 'center', padding: '8px 14px', background: (hasCV && hasInt) ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${(hasCV && hasInt) ? 'rgba(99, 102, 241, 0.4)' : 'var(--color-border)'}` }}>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: (hasCV && hasInt) ? 'var(--color-primary)' : 'var(--color-fg-muted)', textTransform: 'uppercase' }}>
+                                {totalLabel}
+                              </div>
+                              <div style={{ fontSize: '1.3rem', fontWeight: 900, color: (hasCV && hasInt) ? 'var(--color-primary)' : 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                                {totalScore}%
+                              </div>
+                            </div>
+                          </>
+                        )
+                      })()}
                     </div>
                   </div>
 
-                  {/* Interview alert with animated subtle glow */}
-                  {!selectedReport.interview_completed && (
+                  {/* Interview / CV Completion Prompt Banners */}
+                  {selectedReport.cv_score != null && !selectedReport.interview_completed && (
                     <div style={{
                       padding: '16px 20px',
                       borderRadius: 'var(--radius-lg)',
@@ -332,6 +369,32 @@ export default function SkillGap() {
                       </div>
                       <Link to={`/candidate/interview?role=${selectedReport.job_title}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         Start Technical Assessment
+                      </Link>
+                    </div>
+                  )}
+
+                  {selectedReport.cv_score == null && selectedReport.interview_completed && (
+                    <div style={{
+                      padding: '16px 20px',
+                      borderRadius: 'var(--radius-lg)',
+                      background: 'var(--color-primary-muted)',
+                      border: '1px solid rgba(99, 102, 241, 0.4)',
+                      boxShadow: '0 0 20px -4px rgba(99, 102, 241, 0.25)',
+                      marginBottom: 20,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <Sparkles size={20} style={{ color: 'var(--color-primary)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg)' }}>
+                          Your AI Interview evaluation is recorded! Complete your CV Match to unlock your final total score and top ranking.
+                        </span>
+                      </div>
+                      <Link to="/candidate/cv-matching" className="btn btn-sm btn-primary" style={{ fontWeight: 700, whiteSpace: 'nowrap' }}>
+                        Complete CV Match
                       </Link>
                     </div>
                   )}

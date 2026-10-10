@@ -394,6 +394,10 @@ async def match_resume(
         "created_at": now,
     }
 
+    cand_display_name = user.get("full_name") or user.get("name") or resume_doc.get("candidate_name") or "Candidate"
+    doc["candidate_name"] = cand_display_name
+    doc["job_role"] = final_predicted
+
     try:
         await db.predictions.update_one(
             {"resume_id": res_id_str, "job_id": match_target_key},
@@ -406,14 +410,19 @@ async def match_resume(
                 {"$set": {
                     "job_id": str(job_id),
                     "candidate_id": str(user["_id"]),
-                    "candidate_name": user.get("full_name") or user.get("name") or "Candidate",
+                    "candidate_name": cand_display_name,
                     "candidate_email": user.get("email", ""),
                     "resume_id": res_id_str,
                     "job_title": job_doc.get("title", ""),
+                    "job_role": job_doc.get("job_role") or job_doc.get("title", ""),
                     "company_id": str(job_doc.get("company_id", "")),
                     "company_name": job_doc.get("company_name", ""),
                     "cv_score": round(overall_score, 2),
                     "overall_score": round(overall_score, 2),
+                    "skill_score": round(skill_score, 2),
+                    "experience_score": round(experience_score, 2),
+                    "education_score": round(education_score, 2),
+                    "status": "cv_matched",
                     "applied_at": now,
                 }},
                 upsert=True

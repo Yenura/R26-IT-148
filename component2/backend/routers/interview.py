@@ -354,13 +354,18 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 reference_text = question.get("answer_text") or question.get("expected_answer") or ""
                 processed_answer["answer_text"] = answer_text
                 processed_answer["_reference_text"] = reference_text
-                descriptive_tasks.append(
-                    run_in_threadpool(
-                        services["evaluation_service"].evaluate_descriptive,
-                        reference=reference_text,
-                        candidate=answer_text,
+                if answer_text.strip():
+                    descriptive_tasks.append(
+                        run_in_threadpool(
+                            services["evaluation_service"].evaluate_descriptive,
+                            reference=reference_text,
+                            candidate=answer_text,
+                        )
                     )
-                )
+                else:
+                    async def _zero_eval():
+                        return {"final_score": 0.0, "cosine_similarity": 0.0, "keyword_bonus": 0.0, "keyword_coverage": "0%"}
+                    descriptive_tasks.append(_zero_eval())
                 descriptive_indices.append(len(processed_answers))
 
             elif question_type == "Coding":
@@ -431,6 +436,22 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 })
 
             processed_answers.append(processed_answer)
+
+        # Await and merge descriptive evaluations into processed answers
+        if descriptive_tasks:
+            desc_results = await asyncio.gather(*descriptive_tasks)
+            for idx, res in zip(descriptive_indices, desc_results):
+                res_dict = res if isinstance(res, dict) else {}
+                f_score = float(res_dict.get("final_score", 0.0))
+                processed_answers[idx].update({
+                    "final_score": f_score,
+                    "score": f_score,
+                    "descriptive_score": f_score,
+                    "cosine_similarity": float(res_dict.get("cosine_similarity", 0.0)),
+                    "keyword_bonus": float(res_dict.get("keyword_bonus", 0.0)),
+                    "keyword_coverage": str(res_dict.get("keyword_coverage", "0%")),
+                    "contradiction_penalty_applied": bool(res_dict.get("contradiction_penalty_applied", False))
+                })
 
         cand_id = submission.candidate_id or session.get("candidate_id", "")
         j_role = submission.job_role or session.get("job_role", "")

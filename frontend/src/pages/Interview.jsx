@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Play, CheckCircle2, Code, FileText, Settings, Sparkles,
-  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy
+  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase
 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 import { getChartTheme } from '../chartTheme'
@@ -824,18 +824,36 @@ export default function Interview() {
           <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--color-primary)', lineHeight: 1, fontFamily: 'var(--p-font-mono)', marginBottom: 8 }}>
             {overallScore.toFixed(1)}%
           </div>
-          <div style={{ display: 'inline-flex', marginBottom: 20 }}>
+          <div style={{ display: 'inline-flex', marginBottom: 16 }}>
             <ScoreBadge score={overallScore} />
           </div>
 
+          {result?.weights_used && (
+            <div style={{ fontSize: '12px', color: 'var(--color-fg-muted)', marginBottom: 18, fontFamily: 'var(--p-font-mono)' }}>
+              Weighting Formula: {((result.weights_used.mcq || 0) * 100).toFixed(0)}% MCQ + {((result.weights_used.descriptive || 0) * 100).toFixed(0)}% Theory + {((result.weights_used.coding || 0) * 100).toFixed(0)}% Coding
+            </div>
+          )}
+
           <div className="grid grid-3" style={{ gap: 'var(--p-space-4)', textAlign: 'left' }}>
             <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>Weight: {((result?.weights_used?.mcq ?? 0.25) * 100).toFixed(0)}%</span>
+                <span className="badge badge-subtle" style={{ fontSize: '10px' }}>MCQ</span>
+              </div>
               <ScoreMeter score={mcqScore} label="MCQ Accuracy (P_mcq)" size="sm" />
             </div>
             <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>Weight: {((result?.weights_used?.descriptive ?? 0.35) * 100).toFixed(0)}%</span>
+                <span className="badge badge-subtle" style={{ fontSize: '10px' }}>Theory</span>
+              </div>
               <ScoreMeter score={descScore} label="Theory Cosine (P_desc)" size="sm" />
             </div>
             <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>Weight: {((result?.weights_used?.coding ?? 0.40) * 100).toFixed(0)}%</span>
+                <span className="badge badge-subtle" style={{ fontSize: '10px' }}>Code</span>
+              </div>
               <ScoreMeter score={codeScore} label="Coding Sandbox (P_code)" size="sm" />
             </div>
           </div>
@@ -846,13 +864,13 @@ export default function Interview() {
           <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
             Section Score Breakdown
           </h3>
-          <div style={{ height: 220, width: '100%' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 0 }}>
-                <XAxis dataKey="name" stroke={ct.axis} tick={{ fill: ct.text, fontSize: 12 }} />
-                <YAxis domain={[0, 100]} stroke={ct.axis} tick={{ fill: ct.text, fontSize: 12 }} />
+          <div style={{ height: 240, width: '100%', minHeight: 240, position: 'relative' }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                <XAxis dataKey="name" stroke={ct.axis || '#64748b'} tick={{ fill: ct.text || '#94a3b8', fontSize: 12 }} dy={6} />
+                <YAxis domain={[0, 100]} stroke={ct.axis || '#64748b'} tick={{ fill: ct.text || '#94a3b8', fontSize: 12 }} />
                 <Tooltip
-                  contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 8 }}
+                  contentStyle={{ background: ct.tooltipBg || '#1e1b4b', border: `1px solid ${ct.tooltipBorder || '#4338ca'}`, borderRadius: 8, color: '#fff' }}
                   formatter={(val) => [`${Number(val).toFixed(1)}%`, 'Score']}
                 />
                 <Bar dataKey="score" radius={[6, 6, 0, 0]}>

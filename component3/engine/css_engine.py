@@ -145,17 +145,18 @@ class CSSEngine:
         res = CandidateScore(candidate_id=f.candidate_id,
                               job_role=f.job_role,
                               P_mcq=f.P_mcq, P_desc=f.P_desc, P_code=f.P_code)
-        passed, reason = self.hard_filter(f)
-        res.passed_hard_filter = passed
-        res.filter_fail_reason = reason
-        if not passed:
-            return res
+        # Compute true sub-scores and master CSS
         res.S_edu   = self.s_edu(f.edu_level, f.edu_relevance)
         res.S_exp   = self.s_exp(f.years_experience)
         res.S_skill = round(float(np.clip(f.skill_score_raw, 0, 1)), 4)
         res.S_cv    = self.s_cv(res.S_edu, res.S_exp, res.S_skill)
         res.S_int   = self.s_int(f.P_mcq, f.P_desc, f.P_code)
         res.CSS     = self.css(res.S_cv, res.S_int)
+
+        # Evaluate hard filter criteria
+        passed, reason = self.hard_filter(f)
+        res.passed_hard_filter = passed
+        res.filter_fail_reason = reason
         return res
 
     def rank_pool(self, candidates: List[CandidateFeatures]) -> List[CandidateScore]:

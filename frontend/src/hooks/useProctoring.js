@@ -115,7 +115,7 @@ export default function useProctoring(active, options = {}) {
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
         )
         mediaPipeDetectorRef.current = await FaceDetector.createFromOptions(filesetResolver, {
-          baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short/float16/1/blaze_face_short.tflite', delegate: 'GPU' },
+          baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite', delegate: 'GPU' },
           runningMode: 'VIDEO',
           minDetectionConfidence: 0.5,
         })

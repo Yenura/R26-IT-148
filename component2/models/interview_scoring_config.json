@@ -1,79 +1,79 @@
 {
   "interview_weights": {
-    "AI/NLP Engineer": {
-      "mcq": 0.4,
-      "descriptive": 0.4,
-      "coding": 0.2
+    "Software Engineer": {
+      "mcq": 0.2,
+      "descriptive": 0.3,
+      "coding": 0.5
     },
     "Backend Developer": {
-      "mcq": 0.5,
+      "mcq": 0.2,
       "descriptive": 0.3,
-      "coding": 0.2
+      "coding": 0.5
     },
-    "Blockchain Developer": {
-      "mcq": 0.6,
+    "Frontend Developer": {
+      "mcq": 0.25,
+      "descriptive": 0.35,
+      "coding": 0.4
+    },
+    "Full Stack Developer": {
+      "mcq": 0.2,
+      "descriptive": 0.35,
+      "coding": 0.45
+    },
+    "Mobile App Developer": {
+      "mcq": 0.25,
+      "descriptive": 0.35,
+      "coding": 0.4
+    },
+    "Embedded Systems Engineer": {
+      "mcq": 0.25,
+      "descriptive": 0.35,
+      "coding": 0.4
+    },
+    "Data Scientist": {
+      "mcq": 0.3,
       "descriptive": 0.3,
-      "coding": 0.1
+      "coding": 0.4
     },
-    "Business/Systems Analyst": {
+    "Machine Learning Engineer": {
+      "mcq": 0.25,
+      "descriptive": 0.3,
+      "coding": 0.45
+    },
+    "AI/NLP Engineer": {
+      "mcq": 0.25,
+      "descriptive": 0.35,
+      "coding": 0.4
+    },
+    "Data Engineer": {
+      "mcq": 0.25,
+      "descriptive": 0.3,
+      "coding": 0.45
+    },
+    "Database Administrator": {
+      "mcq": 0.3,
+      "descriptive": 0.4,
+      "coding": 0.3
+    },
+    "Cloud Solutions Architect": {
       "mcq": 0.45,
       "descriptive": 0.55,
       "coding": 0.0
     },
-    "Cloud Solutions Architect": {
-      "mcq": 0.78,
-      "descriptive": 0.22,
-      "coding": 0.0
-    },
     "Cybersecurity Analyst": {
-      "mcq": 0.86,
-      "descriptive": 0.14,
+      "mcq": 0.45,
+      "descriptive": 0.55,
       "coding": 0.0
     },
-    "Data Engineer": {
-      "mcq": 0.6,
-      "descriptive": 0.2,
-      "coding": 0.2
-    },
-    "Data Scientist": {
-      "mcq": 0.6,
-      "descriptive": 0.1,
-      "coding": 0.3
-    },
-    "Database Administrator": {
+    "DevOps Engineer": {
       "mcq": 0.4,
       "descriptive": 0.4,
       "coding": 0.2
     },
-    "DevOps Engineer": {
-      "mcq": 0.4,
-      "descriptive": 0.3,
-      "coding": 0.3
-    },
-    "Embedded Systems Engineer": {
-      "mcq": 0.5,
-      "descriptive": 0.3,
-      "coding": 0.2
-    },
-    "Frontend Developer": {
-      "mcq": 0.3,
-      "descriptive": 0.2,
-      "coding": 0.5
-    },
-    "Full Stack Developer": {
-      "mcq": 0.5,
-      "descriptive": 0.2,
-      "coding": 0.3
-    },
-    "Machine Learning Engineer": {
-      "mcq": 0.6,
-      "descriptive": 0.3,
-      "coding": 0.1
-    },
-    "Mobile App Developer": {
-      "mcq": 0.6,
-      "descriptive": 0.3,
-      "coding": 0.1
+    "Site Reliability Engineer": {
+      "mcq": 0.35,
+      "descriptive": 0.4,
+      "coding": 0.25
     },
     "Network Engineer": {
       "mcq": 0.45,
@@ -81,24 +81,24 @@
       "coding": 0.0
     },
     "QA/Test Automation Engineer": {
-      "mcq": 0.4,
-      "descriptive": 0.4,
-      "coding": 0.2
-    },
-    "Site Reliability Engineer": {
-      "mcq": 0.5,
-      "descriptive": 0.2,
-      "coding": 0.3
-    },
-    "Software Engineer": {
-      "mcq": 0.7,
-      "descriptive": 0.2,
-      "coding": 0.1
+      "mcq": 0.25,
+      "descriptive": 0.35,
+      "coding": 0.4
     },
     "UI/UX Designer": {
-      "mcq": 0.45,
-      "descriptive": 0.55,
+      "mcq": 0.3,
+      "descriptive": 0.7,
       "coding": 0.0
+    },
+    "Business/Systems Analyst": {
+      "mcq": 0.35,
+      "descriptive": 0.65,
+      "coding": 0.0
+    },
+    "Blockchain Developer": {
+      "mcq": 0.25,
+      "descriptive": 0.3,
+      "coding": 0.45
     }
   },
   "grade_bands": {

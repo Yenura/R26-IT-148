@@ -388,8 +388,8 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
         has_interview = int_score is not None
         has_cv = cv_score is not None
-        num_cv = float(cv_score) if has_cv else 75.0
-        num_int = float(int_score) if has_interview else 70.0
+        num_cv = float(cv_score) if has_cv else None
+        num_int = float(int_score) if has_interview else None
 
         if has_interview and has_cv:
             hire_prob = round(0.40 * num_cv + 0.60 * num_int, 1)
@@ -398,7 +398,7 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
         elif has_cv:
             hire_prob = round(num_cv, 1)
         else:
-            hire_prob = 70.0
+            hire_prob = None
 
         enriched_applicants.append({
             "id": str(doc.get("_id") or f"app_{c_id}"),
@@ -416,6 +416,12 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
             "hire_probability": hire_prob,
             "interview_completed": has_interview,
             "has_cv": has_cv,
+            "skill_score": p.get("skill_score") if p else None,
+            "experience_score": p.get("experience_score") if p else None,
+            "education_score": p.get("education_score") if p else None,
+            "mcq_score": s.get("mcq_score") if s else None,
+            "descriptive_score": s.get("descriptive_score") if s else None,
+            "coding_score": s.get("coding_score") if s else None,
             "skills": skills,
             "company_name": company.get("name") or company.get("company_name", "Your Company"),
             "passed_filter": doc.get("passed_filter", True),
@@ -785,7 +791,7 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
 
         hire_prob = None
         if int_score is not None and cv_score is not None:
-            hire_prob = round(0.55 * float(int_score) + 0.45 * float(cv_score), 1)
+            hire_prob = round(0.40 * float(cv_score) + 0.60 * float(int_score), 1)
         elif int_score is not None:
             hire_prob = round(float(int_score), 1)
         elif cv_score is not None:

@@ -366,7 +366,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
     db = request.app.state.db
     from bson import ObjectId
-    from services.ml_engine import RESOURCES, JOB_REQ, compute_gap, _resolve_role_weights, _LAMBDAMART_MODEL
+    from services.ml_engine import RESOURCES, JOB_REQ, compute_gap
 
     cand_id_filters = [{"candidate_id": candidate_id}]
     if ObjectId.is_valid(candidate_id):
@@ -548,33 +548,34 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         session = next((s for s in sessions_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
         score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
 
-        # Resolve role weights for CSS engine
-        cv_w, int_w = _resolve_role_weights(job_title)
+        # Resolve CV Match scores without artificial defaults
+        has_cv = bool(pred is not None or app.get("cv_score") is not None or (cand_skills and len(cand_skills) > 0))
+        skill_score = None
+        experience_score = None
+        education_score = None
+        cv_matching_score = None
 
-        skill_score = pred.get("skill_score") if pred else None
-        experience_score = pred.get("experience_score") if pred else None
-        education_score = pred.get("education_score") if pred else None
-        cv_matching_score = pred.get("overall_score") if pred else None
-
-        if skill_score is None and cand_skills and job_skills:
+        if pred:
+            skill_score = round(float(pred["skill_score"]), 1) if pred.get("skill_score") is not None else None
+            experience_score = round(float(pred["experience_score"]), 1) if pred.get("experience_score") is not None else None
+            education_score = round(float(pred["education_score"]), 1) if pred.get("education_score") is not None else None
+            cv_matching_score = round(float(pred["overall_score"]), 1) if pred.get("overall_score") is not None else None
+            if cv_matching_score is None and skill_score is not None:
+                cv_matching_score = round(0.50 * (skill_score or 70) + 0.30 * (experience_score or 70) + 0.20 * (education_score or 75), 1)
+        elif app.get("cv_score") is not None or app.get("skill_score") is not None:
+            skill_score = round(float(app["skill_score"]), 1) if app.get("skill_score") is not None else None
+            experience_score = round(float(app["experience_score"]), 1) if app.get("experience_score") is not None else None
+            education_score = round(float(app["education_score"]), 1) if app.get("education_score") is not None else None
+            cv_matching_score = round(float(app.get("cv_score") or app.get("overall_score") or 0), 1)
+        elif cand_skills and job_skills:
             matched_cv_count = len([s for s in job_skills if any(s.lower() in cs.lower() or cs.lower() in s.lower() for cs in cand_skills)])
             skill_score = round((matched_cv_count / max(len(job_skills), 1)) * 100, 1)
-        elif skill_score is None:
-            skill_score = 75.0
-
-        if experience_score is None:
             req_exp = float(job.get("experience_required", 2) or 2)
             experience_score = round(min((float(cand_exp or 2) / max(req_exp, 1)) * 100, 100), 1)
-
-        if education_score is None:
             education_score = 80.0
+            cv_matching_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
 
-        if cv_matching_score is None:
-            cv_matching_score = round(cv_w["w_skill"] * skill_score + cv_w["w_exp"] * experience_score + cv_w["w_edu"] * education_score, 1)
-        else:
-            cv_matching_score = round(float(cv_matching_score), 1)
-
-        interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None
+        interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None or app.get("interview_score") is not None or app.get("interview_completed") is True
         interview_score = None
         mcq_score = None
         descriptive_score = None
@@ -588,7 +589,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             mcq_score = float(interview_res.get("mcq_score", 0))
             descriptive_score = float(interview_res.get("descriptive_score", 0))
             coding_score = float(interview_res.get("coding_score", 0))
-            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
+            if interview_res.get("interview_score") is not None:
+                interview_score = round(float(interview_res["interview_score"]), 1)
+            else:
+                interview_score = round(0.20 * mcq_score + 0.30 * descriptive_score + 0.50 * coding_score, 1)
             grade = interview_res.get("grade", "Average")
             weak_topics = interview_res.get("weak_topics", [])
             failed_mcq_topics = interview_res.get("failed_mcq_topics", [])
@@ -612,8 +616,18 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             mcq_score = float(score_doc.get("mcq_score", 0))
             descriptive_score = float(score_doc.get("descriptive_score", 0))
             coding_score = float(score_doc.get("coding_score", 0))
-            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
+            if score_doc.get("interview_score") is not None:
+                interview_score = round(float(score_doc["interview_score"]), 1)
+            else:
+                interview_score = round(0.20 * mcq_score + 0.30 * descriptive_score + 0.50 * coding_score, 1)
             grade = score_doc.get("grade", "Average")
+
+        elif app.get("interview_score") is not None:
+            interview_score = round(float(app["interview_score"]), 1)
+            mcq_score = round(float(app.get("mcq_score", 0)), 1) if app.get("mcq_score") is not None else None
+            descriptive_score = round(float(app.get("descriptive_score", 0)), 1) if app.get("descriptive_score") is not None else None
+            coding_score = round(float(app.get("coding_score", 0)), 1) if app.get("coding_score") is not None else None
+            grade = app.get("grade", "Good" if interview_score >= 70 else "Average")
 
         topic_performance = []
         interview_strengths = []
@@ -672,8 +686,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
         cv_strengths = []
         cv_weaknesses = []
-        # The run_skill_gap_analysis returns "present_skills" (candidate's skills),
-        # not "matched_skills". Use "missing_required" and "missing_optional" instead.
         present_skills = analysis.get("present_skills", [])
         missing_required = analysis.get("missing_required", [])
         missing_optional = analysis.get("missing_optional", [])
@@ -711,18 +723,16 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         all_strengths = interview_strengths + cv_strengths
         all_weaknesses = interview_weaknesses + cv_weaknesses
 
-        # Master CSS calculation (40% CV + 60% Interview) and LambdaMART score
+        # Master CSS calculation (40% CV + 60% Interview)
         ltr_score = None
-        if interview_completed and interview_score is not None:
+        has_cv_val = cv_matching_score is not None
+        has_int_val = interview_completed and interview_score is not None
+
+        if has_cv_val and has_int_val:
             composite_fit = round(0.40 * cv_matching_score + 0.60 * interview_score, 1)
-            if _LAMBDAMART_MODEL is not None:
-                try:
-                    X_cand = np.array([[education_score / 100.0, experience_score / 100.0, skill_score / 100.0,
-                                       (mcq_score or 0.0) / 100.0, (descriptive_score or 0.0) / 100.0, (coding_score or 0.0) / 100.0]])
-                    ltr_score = round(float(_LAMBDAMART_MODEL.predict(X_cand)[0]), 4)
-                except Exception:
-                    pass
-        elif cv_matching_score is not None:
+        elif has_int_val:
+            composite_fit = round(interview_score, 1)
+        elif has_cv_val:
             composite_fit = round(cv_matching_score, 1)
         else:
             composite_fit = round((analysis.get("skill_match_pct", 50)), 1)
