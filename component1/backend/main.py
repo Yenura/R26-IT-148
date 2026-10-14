@@ -131,6 +131,7 @@ from backend.routers.cv import router as cv_router  # noqa: E402
 
 app.include_router(cv_router, prefix="/api/v1/cv", tags=["CV Analysis"])
 app.include_router(cv_router, prefix="/api/v1", tags=["Screen Resume"])
+app.include_router(cv_router, prefix="/cv", tags=["CV Analysis (Root)"])
 
 
 

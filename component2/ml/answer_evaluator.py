@@ -32,7 +32,13 @@ class DescriptiveAnswerEvaluator:
         Args:
             model_name: Pre-trained SBERT model name
         """
-        self.model = SentenceTransformer(model_name)
+        try:
+            self.model = SentenceTransformer(model_name, local_files_only=True)
+        except Exception:
+            try:
+                self.model = SentenceTransformer("all-MiniLM-L6-v2", local_files_only=True)
+            except Exception:
+                self.model = SentenceTransformer(model_name)
         self.alpha = 0.85  # Weight for semantic similarity
         self.beta = 0.15   # Weight for keyword coverage
         print(f"[OK] Loaded SBERT model: {model_name}")

@@ -135,6 +135,14 @@ app.add_middleware(
 )
 
 
+# Compatibility middleware: support /interview without /api/v1 prefix
+@app.middleware("http")
+async def compatibility_middleware(request: Request, call_next):
+    if request.url.path.startswith("/interview"):
+        request.scope["path"] = "/api/v1" + request.url.path
+    return await call_next(request)
+
+
 # Request/Response logging middleware
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

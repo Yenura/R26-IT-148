@@ -105,6 +105,11 @@ app.include_router(jobs.router, prefix="/api/v1/jobs", tags=["Jobs"])
 app.include_router(resume.router, prefix="/api/v1/resume", tags=["Resume"])
 app.include_router(export.router, prefix="/api/v1/export", tags=["Export"])
 
+app.include_router(auth.router, prefix="/auth", tags=["Auth (Root)"])
+app.include_router(jobs.router, prefix="/jobs", tags=["Jobs (Root)"])
+app.include_router(resume.router, prefix="/resume", tags=["Resume (Root)"])
+app.include_router(export.router, prefix="/export", tags=["Export (Root)"])
+
 
 @app.get("/health", tags=["Health"])
 async def health():

@@ -9,8 +9,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 ROOT_DIR = Path(__file__).parent.parent
-sys.path.insert(0, str(ROOT_DIR))
 sys.path.insert(0, str(ROOT_DIR / "backend"))
+sys.path.insert(0, str(ROOT_DIR))
+
+# Isolate Component 4 modules to prevent namespace collisions during multi-suite pytest runs
+for _mod in list(sys.modules.keys()):
+    if _mod == "backend" or _mod.startswith("backend.") or _mod.startswith("routers.") or _mod.startswith("services."):
+        del sys.modules[_mod]
 
 from src.preprocessing.skill_normalizer import normalize_skill, normalize_skills
 from src.gap_analysis.similarity import jaccard_similarity, weighted_skill_similarity
@@ -18,7 +23,12 @@ from src.gap_analysis.priority import compute_priority_score
 from src.gap_analysis.skill_gap import analyze_skill_gap
 from src.recommendation.career_recommender import recommend_career_paths
 from src.recommendation.learning_path import generate_learning_path
-from backend.main import app
+
+import importlib.util
+_spec = importlib.util.spec_from_file_location("c4_main", str(ROOT_DIR / "backend" / "main.py"))
+_c4_mod = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_c4_mod)
+app = _c4_mod.app
 
 
 @pytest.fixture
