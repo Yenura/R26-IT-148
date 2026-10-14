@@ -5,11 +5,69 @@ import {
   ListOrdered, Trophy, Briefcase, Award, Brain,
   CheckCircle2, Users, ArrowRight, Eye, ChevronRight, Plus
 } from 'lucide-react'
-import { uJobsMy, c3Pipeline } from '../api'
+import { uJobsMy, c3Pipeline, c0JobsAll } from '../api'
 import PageHeader from '../components/PageHeader'
 import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
+
+const cleanCandidateName = (rawName, fallbackId) => {
+  if (!rawName) return `Candidate ${(fallbackId || '01').slice(-4)}`
+  let name = String(rawName).trim()
+  name = name.replace(/\s*[\(\[]\s*CV\s*[\)\]]/gi, '')
+  name = name.replace(/^(?:phone|email|name|profile|student)\s*:\s*/i, '')
+  name = name.split(/\s*[\n\r·|:;•]\s*/)[0].trim()
+  const words = name.split(/\s+/).filter(Boolean)
+  if (words.length > 3) {
+    name = words.slice(0, 3).join(' ')
+  }
+  return name || 'Candidate'
+}
+
+function getRecommendationInfo(cand) {
+  if (cand.passed_hard_filter === false) {
+    return {
+      label: 'Disqualified',
+      color: '#ef4444',
+      bg: 'rgba(239, 68, 68, 0.15)',
+      border: 'rgba(239, 68, 68, 0.4)'
+    }
+  }
+
+  const rawCss = cand.CSS != null ? (cand.CSS <= 1 ? cand.CSS * 100 : cand.CSS) : (cand.final_score ?? cand.blended_score ?? cand.composite_fit_score ?? cand.overall_score ?? cand.hire_probability ?? 0)
+  const css = Number(rawCss) || 0
+
+  if (css >= 80) {
+    return {
+      label: 'Highly Qualified',
+      color: '#10b981',
+      bg: 'rgba(16, 185, 129, 0.15)',
+      border: 'rgba(16, 185, 129, 0.4)'
+    }
+  }
+  if (css >= 65) {
+    return {
+      label: 'Recommended',
+      color: '#3b82f6',
+      bg: 'rgba(59, 130, 246, 0.15)',
+      border: 'rgba(59, 130, 246, 0.4)'
+    }
+  }
+  if (css >= 50) {
+    return {
+      label: 'Qualified',
+      color: '#f59e0b',
+      bg: 'rgba(245, 158, 11, 0.15)',
+      border: 'rgba(245, 158, 11, 0.4)'
+    }
+  }
+  return {
+    label: 'Disqualified',
+    color: '#ef4444',
+    bg: 'rgba(239, 68, 68, 0.15)',
+    border: 'rgba(239, 68, 68, 0.4)'
+  }
+}
 
 export default function Ranking() {
   const navigate = useNavigate()
@@ -53,6 +111,9 @@ export default function Ranking() {
       return []
     }
   })
+  const [allJobs, setAllJobs] = useState([])
+  const [viewScope, setViewScope] = useState('my') // 'my' | 'all'
+
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
     const role = localStorage.getItem('recruitai.role')
@@ -65,26 +126,41 @@ export default function Ranking() {
 
   const loadCompanyJobs = async () => {
     try {
-      const myRes = await uJobsMy().catch(() => ({ data: [] }))
+      const [myRes, allRes] = await Promise.all([
+        uJobsMy().catch(() => ({ data: [] })),
+        c0JobsAll().catch(() => ({ data: [] }))
+      ])
       const userCompanyJobs = Array.isArray(myRes.data) ? myRes.data : []
-
-      // Company scope only: never fall back to platform-wide jobs.
-      // Showing other companies' postings here leaks their applicant pools
-      // into this company's ranking view.
+      const platformAllJobs = Array.isArray(allRes.data) ? allRes.data : []
+      
       setMyJobs(userCompanyJobs)
-      setJobs(userCompanyJobs)
+      setAllJobs(platformAllJobs)
 
-      if (userCompanyJobs.length > 0) {
-        const targetJobId = (paramJobId && userCompanyJobs.some(j => (j.id || j._id) === paramJobId))
+      const activeList = userCompanyJobs.length > 0 ? userCompanyJobs : platformAllJobs
+      setJobs(activeList)
+
+      if (activeList.length > 0) {
+        const targetJobId = (paramJobId && activeList.some(j => (j.id || j._id) === paramJobId))
           ? paramJobId
-          : (selectedJob || userCompanyJobs[0].id || userCompanyJobs[0]._id)
+          : (selectedJob || activeList[0].id || activeList[0]._id)
         setSelectedJob(targetJobId)
         computePipeline(targetJobId)
       }
     } catch {
-      toast.error('Failed to load company jobs')
+      toast.error('Failed to load job openings')
     } finally {
       setLoadingJobs(false)
+    }
+  }
+
+  const handleScopeChange = (newScope) => {
+    setViewScope(newScope)
+    const activeList = newScope === 'my' && myJobs.length > 0 ? myJobs : allJobs
+    setJobs(activeList)
+    if (activeList.length > 0) {
+      const firstJobId = activeList[0].id || activeList[0]._id
+      setSelectedJob(firstJobId)
+      computePipeline(firstJobId)
     }
   }
 
@@ -147,16 +223,36 @@ export default function Ranking() {
         <>
           {/* Job Selection Card */}
           <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Your Company Job Opening
-              </h3>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
+                </h3>
+                {myJobs.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, background: 'var(--color-bg)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                    <button
+                      className={`btn btn-xs ${viewScope === 'my' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => handleScopeChange('my')}
+                      style={{ fontSize: '11px', padding: '2px 8px' }}
+                    >
+                      🏢 My Openings ({myJobs.length})
+                    </button>
+                    <button
+                      className={`btn btn-xs ${viewScope === 'all' ? 'btn-primary' : 'btn-ghost'}`}
+                      onClick={() => handleScopeChange('all')}
+                      style={{ fontSize: '11px', padding: '2px 8px' }}
+                    >
+                      🌐 All 20 IT Roles ({allJobs.length})
+                    </button>
+                  </div>
+                )}
+              </div>
               <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                {jobs.length} Active Company Opening{jobs.length > 1 ? 's' : ''}
+                {jobs.length} Active Role{jobs.length > 1 ? 's' : ''} Available
               </span>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) auto auto', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 2fr) auto', gap: 12, alignItems: 'center' }}>
               <select
                 value={selectedJob}
                 onChange={(e) => {
@@ -168,9 +264,10 @@ export default function Ranking() {
               >
                 {jobs.map((j) => {
                   const id = j.id || j._id
+                  const compName = j.company_name ? ` [${j.company_name}]` : ''
                   return (
                     <option key={id} value={id}>
-                      {j.title} · {j.department || 'Engineering'} ({j.location || 'Remote'})
+                      {j.title}{compName} · {j.experience_required ? `${j.experience_required}+ yrs` : (j.department || 'Engineering')} ({j.location || 'Remote'})
                     </option>
                   )
                 })}
@@ -184,21 +281,13 @@ export default function Ranking() {
               >
                 {busy ? 'Evaluating Applicants...' : 'Rank Applicants'}
               </button>
-              <button
-                className="btn btn-ghost"
-                onClick={() => selectedJob && navigate(`/company/ranking/results/${selectedJob}`)}
-                disabled={!selectedJob}
-                style={{ padding: '10px 20px', whiteSpace: 'nowrap' }}
-              >
-                Full Results
-              </button>
             </div>
 
             {selectedJobObj && (
               <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
                 <span style={{ fontWeight: 600, color: 'var(--color-fg)' }}>Required Skills:</span>
-                {[...new Set(selectedJobObj.required_skills || [])].map((s, i) => (
-                  <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
+                {(selectedJobObj.required_skills || []).map((s, idx) => (
+                  <span key={`${s}-${idx}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '1px 6px' }}>
                     {s}
                   </span>
                 ))}
@@ -230,19 +319,35 @@ export default function Ranking() {
                 <table className="table">
                   <thead>
                     <tr>
-                      <th style={{ width: 60 }}>Rank</th>
+                      <th style={{ width: 50 }}>Rank</th>
                       <th>Candidate</th>
-                      <th>Overall Fit Score</th>
-                      <th>Skills Match</th>
-                      <th>Experience Match</th>
-                      <th>Education Match</th>
-                      <th>Interview Score</th>
-                      <th>Qualification</th>
+                      <th>Overall Fit Score (CSS)</th>
+                      <th>CV Match (S_cv)</th>
+                      <th>Skills / Exp / Edu</th>
+                      <th>Interview (S_int)</th>
+                      <th>MCQ / Theory / Code</th>
+                      <th>Recommendation</th>
                     </tr>
                   </thead>
                   <tbody>
                     {candidatesList.map((cand, idx) => {
-                      const isTop3 = cand.rank <= 3 && cand.passed_hard_filter
+                      const isTop3 = (cand.rank <= 3 || idx < 3) && cand.passed_hard_filter
+                      const hasCV = cand.has_cv !== false && (cand.cv_score != null || cand.S_cv != null)
+                      const hasInt = Boolean(cand.interview_completed || cand.interview_score != null || cand.S_int != null)
+
+                      const cssVal = cand.final_score ?? (cand.CSS != null ? cand.CSS * 100 : (cand.blended_score ?? cand.hire_probability))
+                      const cssLabel = (hasCV && hasInt) ? 'Combined CSS' : (hasCV ? 'CV Fit Score' : (hasInt ? 'Interview Score' : 'Fit Score'))
+
+                      const sCvVal = hasCV ? (cand.cv_score ?? (cand.S_cv != null ? cand.S_cv * 100 : null)) : null
+                      const sSkillVal = hasCV ? (cand.skill_score ?? (cand.S_skill != null ? cand.S_skill * 100 : null)) : null
+                      const sExpVal = hasCV ? (cand.experience_score ?? (cand.S_exp != null ? cand.S_exp * 100 : null)) : null
+                      const sEduVal = hasCV ? (cand.education_score ?? (cand.S_edu != null ? cand.S_edu * 100 : null)) : null
+
+                      const sIntVal = hasInt ? (cand.interview_score ?? (cand.S_int != null ? cand.S_int * 100 : null)) : null
+                      const pMcqVal = hasInt ? (cand.mcq_score ?? (cand.P_mcq != null ? cand.P_mcq * 100 : null)) : null
+                      const pDescVal = hasInt ? (cand.descriptive_score ?? (cand.P_desc != null ? cand.P_desc * 100 : null)) : null
+                      const pCodeVal = hasInt ? (cand.coding_score ?? (cand.P_code != null ? cand.P_code * 100 : null)) : null
+
                       return (
                         <tr
                           key={cand.candidate_id || idx}
@@ -269,64 +374,87 @@ export default function Ranking() {
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
-                              {cand.candidate_name || 'Candidate'}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
+                                {cleanCandidateName(cand.candidate_name, cand.candidate_id)}
+                              </span>
+                              {hasInt && (
+                                <span style={{ fontSize: '9.5px', color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '1px 5px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
+                                  ✓ Assessed
+                                </span>
+                              )}
                             </div>
                             <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
                               ID: {cand.candidate_id?.slice(0, 10) || 'Verified'}
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                              {(cand.final_score || cand.blended_score || 0).toFixed(1)}%
+                            <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
+                              {cssVal != null ? `${Number(cssVal).toFixed(1)}%` : '—'}
+                            </div>
+                            <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>
+                              {cssLabel}
                             </div>
                           </td>
                           <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {(cand.skill_score || cand.s_skill || 0).toFixed(0)}%
-                            </div>
-                          </td>
-                          <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {(cand.experience_score || cand.s_exp || 0).toFixed(0)}%
-                            </div>
-                          </td>
-                          <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-secondary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {(cand.education_score || cand.s_edu || 100).toFixed(0)}%
-                            </div>
-                          </td>
-                          <td>
-                            <div style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 600 }}>
-                              {(cand.interview_score || cand.p_int || 0).toFixed(0)}%
-                            </div>
-                          </td>
-                          <td>
-                            {cand.passed_hard_filter ? (
-                              <span style={{
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                color: 'var(--color-success)',
-                                background: 'var(--color-success-muted)',
-                                padding: '2px 8px',
-                                borderRadius: 'var(--radius-full)',
-                                border: '1px solid rgba(16, 185, 129, 0.3)'
-                              }}>
-                                Qualified
-                              </span>
+                            {hasCV && sCvVal != null ? (
+                              <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                                {Number(sCvVal).toFixed(0)}%
+                              </div>
                             ) : (
-                              <span style={{
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                color: 'var(--color-danger)',
-                                background: 'var(--color-danger-muted)',
-                                padding: '2px 8px',
-                                borderRadius: 'var(--radius-full)',
-                                border: '1px solid rgba(244, 63, 94, 0.3)'
-                              }}>
-                                {cand.filter_fail_reason || 'Disqualified'}
+                              <span style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--color-warning)', background: 'var(--color-warning-muted)', padding: '2px 6px', borderRadius: 'var(--radius-sm)' }}>
+                                Pending
                               </span>
                             )}
+                          </td>
+                          <td>
+                            {hasCV && sSkillVal != null ? (
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
+                                <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
+                              </div>
+                            ) : (
+                              <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
+                            )}
+                          </td>
+                          <td>
+                            {hasInt && sIntVal != null ? (
+                              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 800 }}>
+                                {Number(sIntVal).toFixed(0)}%
+                              </div>
+                            ) : (
+                              <span style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--color-warning)', background: 'var(--color-warning-muted)', padding: '2px 6px', borderRadius: 'var(--radius-sm)' }}>
+                                Pending
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {hasInt && pMcqVal != null ? (
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
+                                <span title="MCQ Score" style={{ color: 'var(--color-primary)' }}>{Number(pMcqVal).toFixed(0)}%</span> / <span title="Theory Score" style={{ color: 'var(--color-info)' }}>{Number(pDescVal || 0).toFixed(0)}%</span> / <span title="Coding Score" style={{ color: 'var(--color-purple)' }}>{Number(pCodeVal || 0).toFixed(0)}%</span>
+                              </div>
+                            ) : (
+                              <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
+                            )}
+                          </td>
+                          <td>
+                            {(() => {
+                              const rec = getRecommendationInfo(cand)
+                              return (
+                                <span style={{
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                  color: rec.color,
+                                  background: rec.bg,
+                                  padding: '3px 8px',
+                                  borderRadius: 'var(--radius-full)',
+                                  border: `1px solid ${rec.border}`,
+                                  display: 'inline-block',
+                                  whiteSpace: 'nowrap'
+                                }}>
+                                  {rec.label}
+                                </span>
+                              )
+                            })()}
                           </td>
                         </tr>
                       )

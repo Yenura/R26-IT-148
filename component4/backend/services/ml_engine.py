@@ -177,9 +177,9 @@ def compute_gap(
     return gap_score, miss_req, miss_opt, match_pct
 
 
-def gap_severity(score: float, missing_required_count: int = 0) -> str:
+def gap_severity(score: float, missing_required_count: Optional[int] = None) -> str:
     """Map a 0-1 gap score to a human-readable severity label."""
-    if missing_required_count == 0 and score >= 0.65:
+    if missing_required_count is not None and missing_required_count == 0 and score >= 0.65:
         return "Low"
     if score >= GAP_LOW_THRESHOLD:    return "Low"
     if score >= GAP_MEDIUM_THRESHOLD: return "Medium"

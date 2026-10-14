@@ -13,6 +13,7 @@ Usage:
 import os
 import sys
 import time
+import shutil
 import subprocess
 import webbrowser
 import urllib.request
@@ -35,14 +36,38 @@ except Exception:
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
 
-# Resolve Python executable (prefer workspace .venv312 if available - has all deps)
-VENV_PYTHON = os.path.join(ROOT, ".venv312", "Scripts", "python.exe")
-if not os.path.exists(VENV_PYTHON):
-    VENV_PYTHON = os.path.join(ROOT, ".venv", "Scripts", "python.exe")
-if not os.path.exists(VENV_PYTHON):
-    VENV_PYTHON = sys.executable
+def resolve_python_executable():
+    """Pick the first valid Python interpreter that exists in the workspace."""
+    candidates = []
+    for venv_name in (".venv", ".venv312"):
+        candidates.append(os.path.join(ROOT, venv_name, "Scripts", "python.exe"))
+        candidates.append(os.path.join(ROOT, venv_name, "bin", "python"))
+    candidates.extend([
+        shutil.which("python"),
+        shutil.which("python3"),
+        sys.executable,
+    ])
 
-PYTHON = VENV_PYTHON
+    seen = set()
+    for candidate in candidates:
+        if not candidate:
+            continue
+        normalized = os.path.normcase(os.path.normpath(candidate))
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        if not os.path.exists(candidate):
+            continue
+        try:
+            result = subprocess.run([candidate, "--version"], capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                return candidate
+        except Exception:
+            continue
+
+    return sys.executable
+
+PYTHON = resolve_python_executable()
 NPM = "npm.cmd" if sys.platform == "win32" else "npm"
 
 # Environment variables for microservices
@@ -65,6 +90,8 @@ COMMON_ENV = {
     "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
     "DB_NAME": os.getenv("DB_NAME", "HR"),
     "JWT_SECRET": os.getenv("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod"),
+    "HF_HUB_OFFLINE": "1",
+    "TRANSFORMERS_OFFLINE": "1",
 }
 
 SERVICES = [

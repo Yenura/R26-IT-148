@@ -31,12 +31,7 @@ class RankingService:
         if os.path.exists(pkl):
             try:
                 with open(pkl, "rb") as f:
-                    data = pickle.load(f)
-                if isinstance(data, dict) and "model" in data:
-                    self.ltr = data["model"]
-                    self.ltr.scaler = data.get("scaler")
-                else:
-                    self.ltr = data
+                    self.ltr = pickle.load(f)
                 logger.info("LambdaMART LTR model loaded")
             except Exception as exc:
                 logger.warning("Failed to load LTR model: %s", exc)
@@ -70,10 +65,13 @@ class RankingService:
         return role_str
 
     def _build_features(self, c, job):
-        eng = CSSEngine(job)
-        s_edu = round(max(0.0, min(1.0, float(c.S_edu))), 4) if c.S_edu is not None else eng.s_edu(c.edu_level, c.edu_relevance)
-        s_exp = round(max(0.0, min(1.0, float(c.S_exp))), 4) if c.S_exp is not None else eng.s_exp(c.years_experience)
-        s_skill = round(max(0.0, min(1.0, float(c.S_skill))), 4) if c.S_skill is not None else round(max(0.0, min(1.0, c.skill_score_raw)), 4)
+        if c.S_edu is not None and c.S_exp is not None and c.S_skill is not None:
+            s_edu, s_exp, s_skill = c.S_edu, c.S_exp, c.S_skill
+        else:
+            eng = CSSEngine(job)
+            s_edu = eng.s_edu(c.edu_level, c.edu_relevance)
+            s_exp = eng.s_exp(c.years_experience)
+            s_skill = round(max(0.0, min(1.0, c.skill_score_raw)), 4)
         return s_edu, s_exp, s_skill
 
     def rank(self, job_role, candidates, w_cv=0.40, w_int=0.60, use_ltr=True):
@@ -104,7 +102,6 @@ class RankingService:
                 P_code=max(0.0, min(1.0, c.P_code)),
                 gender=c.gender,
                 age_group=c.age_group,
-                has_coding=bool(getattr(c, "has_coding", True)),
             )
             s = eng.score_one(f)
             rows.append({
@@ -130,12 +127,10 @@ class RankingService:
 
         if use_ltr and self.ltr is not None:
             import numpy as np
-            import pandas as pd
-            df_ltr = pd.DataFrame([{
-                "S_edu": r["S_edu"], "S_exp": r["S_exp"], "S_skill": r["S_skill"],
-                "P_mcq": r["P_mcq"], "P_desc": r["P_desc"], "P_code": r["P_code"]
-            } for r in rows])
-            ltr_scores = self.ltr.predict(df_ltr)
+            X = np.array([[r["S_edu"], r["S_exp"], r["S_skill"],
+                           r["P_mcq"], r["P_desc"], r["P_code"]]
+                          for r in rows])
+            ltr_scores = self.ltr.predict(X)
             for r, sc in zip(rows, ltr_scores):
                 r["ltr_score"] = round(float(sc), 4)
 
@@ -146,16 +141,12 @@ class RankingService:
 
         passed = sorted([r for r in rows if r["passed_hard_filter"]],
                         key=_rank_key, reverse=True)
-        near_miss = sorted([r for r in rows if not r["passed_hard_filter"] and r["CSS"] > 0],
-                          key=_rank_key, reverse=True)
-        failed = [r for r in rows if not r["passed_hard_filter"] and r["CSS"] <= 0]
+        failed = [r for r in rows if not r["passed_hard_filter"]]
         for i, r in enumerate(passed, 1):
-            r["rank"] = i
-        for i, r in enumerate(near_miss, len(passed) + 1):
             r["rank"] = i
         for r in failed:
             r["rank"] = 0
-        return job, passed + near_miss + failed
+        return job, passed + failed
 
 
 _service = None

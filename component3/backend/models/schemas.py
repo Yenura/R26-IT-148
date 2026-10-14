@@ -27,9 +27,6 @@ class CandidateInput(BaseModel):
     mcq_score: Optional[float] = None
     descriptive_score: Optional[float] = None
     coding_score: Optional[float] = None
-    # False when the candidate's interview had no coding section (non-coding
-    # roles). Engine then skips the coding gate and redistributes its weight.
-    has_coding: bool = True
 
 
 class RankRequest(BaseModel):

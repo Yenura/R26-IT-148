@@ -35,23 +35,6 @@ class CandidateRegister(BaseModel):
         return v
 
 
-class ForgotPasswordRequest(BaseModel):
-    email: str = Field(..., max_length=200)
-
-    @field_validator("email")
-    @classmethod
-    def validate_email(cls, v: str) -> str:
-        v = v.strip().lower()
-        if not __import__("re").match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
-            raise ValueError("Invalid email format")
-        return v
-
-
-class ResetPasswordRequest(BaseModel):
-    token: str = Field(..., min_length=10, max_length=500)
-    new_password: str = Field(..., min_length=6, max_length=200)
-
-
 class LoginRequest(BaseModel):
     email: str = Field(..., max_length=200)
     password: str = Field(..., max_length=200)
@@ -409,18 +392,6 @@ class ApplicationOut(BaseModel):
     overall_score: float | None = None
     hire_probability: float | None = None
     skills: list[str] = []
-    skill_score: float | None = None
-    experience_score: float | None = None
-    education_score: float | None = None
-    mcq_score: float | None = None
-    descriptive_score: float | None = None
-    coding_score: float | None = None
-    S_cv: float | None = None
-    S_int: float | None = None
-    CSS: float | None = None
-    passed_filter: bool = True
-    verdict: str | None = None
-    badge_color: str | None = None
 
 
 class ApplicationCreate(BaseModel):
@@ -461,6 +432,3 @@ class InterviewScoresCreate(BaseModel):
     interview_score: float = Field(default=0, ge=0, le=100)
     grade: str = Field(default="", max_length=10)
     integrity_score: int | None = Field(default=None, ge=0, le=100)
-    mcq_total: int = Field(default=0, ge=0)
-    descriptive_total: int = Field(default=0, ge=0)
-    coding_total: int = Field(default=0, ge=0)

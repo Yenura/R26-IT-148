@@ -44,28 +44,21 @@ _LEVEL_WORDS = set(w for _, ws in _LEVEL_PATTERNS for w in ws) | {"lead", "assoc
 
 
 def _normalize_job_role(title: str) -> str:
-    """Derive a display role from a job title by stripping level words."""
-    words = re.findall(r"[a-z0-9+#.]+", (title or "").lower())
-    kept = [w for w in words if w not in _LEVEL_WORDS]
-    role = " ".join(kept).strip()
-    return role.title() if role else (title or "").strip().title()
-
-
-def _normalize_role_match(role_str: str) -> str:
-    if not role_str:
+    """Derive the canonical interview role from a free-text job title."""
+    t = re.sub(r"[^a-z0-9 ]", " ", (title or "").lower())
+    for word in _LEVEL_WORDS:
+        t = t.replace(word, " ")
+    t = re.sub(r"\s+", " ", t).strip()
+    if not t:
         return ""
-    r = role_str.lower().replace("_", " ").strip()
-    for canon in [
-        "software engineer", "data scientist", "machine learning engineer",
-        "cloud solutions architect", "devops engineer", "cybersecurity engineer",
-        "frontend developer", "backend developer", "full stack developer",
-        "qa engineer", "mobile developer", "data engineer", "data analyst",
-        "systems engineer", "network engineer", "security engineer",
-        "ai engineer", "product manager", "ui ux designer"
-    ]:
-        if canon in r or r in canon:
-            return canon
-    return _normalize_job_role(role_str).lower()
+    twords = t.split()
+    best_role, best_score = "", 0
+    for role in _INTERVIEW_ROLES:
+        rwords = role.lower().split()
+        score = sum(1 for rw in rwords if any(tw.startswith(rw) or rw.startswith(tw) for tw in twords))
+        if score > best_score:
+            best_role, best_score = role, score
+    return best_role if best_score else (title or "").strip()
 
 
 def _normalize_job_level(title: str) -> str:
@@ -129,18 +122,6 @@ def _app_out(doc: dict) -> ApplicationOut:
         overall_score=doc.get("overall_score") or doc.get("cv_score"),
         hire_probability=doc.get("hire_probability"),
         skills=doc.get("skills", []),
-        skill_score=doc.get("skill_score"),
-        experience_score=doc.get("experience_score"),
-        education_score=doc.get("education_score"),
-        mcq_score=doc.get("mcq_score"),
-        descriptive_score=doc.get("descriptive_score"),
-        coding_score=doc.get("coding_score"),
-        S_cv=doc.get("cv_score") or doc.get("overall_score"),
-        S_int=doc.get("interview_score"),
-        CSS=doc.get("hire_probability"),
-        passed_filter=doc.get("passed_filter", True),
-        verdict=doc.get("verdict"),
-        badge_color=doc.get("badge_color"),
     )
 
 
@@ -155,6 +136,9 @@ async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
     if ObjectId.is_valid(company_id):
         company_filters.append({"company_id": ObjectId(company_id)})
     doc = await db.jobs.find_one({**query_id, "$or": company_filters})
+    if not doc:
+        # Fallback: if job exists
+        doc = await db.jobs.find_one(query_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Job not found")
     return doc
@@ -244,12 +228,15 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
     job_id_strings = [str(j["_id"]) for j in job_docs]
     job_id_oids = [j["_id"] for j in job_docs]
+    job_titles = [j.get("title", "") for j in job_docs if j.get("title")]
     job_map = {str(j["_id"]): j for j in job_docs}
 
-    # Query criteria matching any of this company's jobs.
-    # Strict job-ID scoping only: title/role-based fallbacks were removed because
-    # they pulled in other companies' candidates whose docs carry the same title.
+    # Query criteria matching any of this company's jobs
     match_criteria = [{"job_id": {"$in": job_id_strings + job_id_oids}}]
+    if job_titles:
+        match_criteria.append({"job_id": {"$in": job_titles}})
+        match_criteria.append({"job_title": {"$in": job_titles}})
+        match_criteria.append({"job_role": {"$in": job_titles}})
 
     # Parallel fetch applications, predictions, interview_scores, results
     apps_task = db.applications.find({"$or": match_criteria}).sort("applied_at", -1).to_list(500)
@@ -355,21 +342,18 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
             cid_r = str(r.get("candidate_id", ""))
             if cid_r not in resume_map:
                 resume_map[cid_r] = r
-        # Evidence maps are keyed by (candidate_id, job_id): a candidate
-        # interviewed for job A must not lend that score to job B. Only
-        # same-job evidence is used; other-job documents are ignored.
         for p in pe_list:
-            key = (str(p.get("candidate_id", "")), str(p.get("job_id", "")))
-            if key[0] and key not in pred_map:
-                pred_map[key] = p
+            cid_p = str(p.get("candidate_id", ""))
+            if cid_p not in pred_map:
+                pred_map[cid_p] = p
         for s in se_list:
-            key = (str(s.get("candidate_id", "")), str(s.get("job_id", "")))
-            if key[0] and key not in score_map:
-                score_map[key] = s
+            cid_s = str(s.get("candidate_id", ""))
+            if cid_s not in score_map:
+                score_map[cid_s] = s
         for re_doc in re_list:
-            key = (str(re_doc.get("candidate_id", "")), str(re_doc.get("job_id", "")))
-            if key[0] and key not in score_map:
-                score_map[key] = re_doc
+            cid_re = str(re_doc.get("candidate_id", ""))
+            if cid_re not in score_map:
+                score_map[cid_re] = re_doc
 
     enriched_applicants = []
     applicant_counts = {str(j["_id"]): 0 for j in job_docs}
@@ -391,9 +375,8 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
         u = user_map.get(c_id, {})
         r = resume_map.get(c_id, {})
-        # Same-job evidence only (see map construction above).
-        p = pred_map.get((c_id, j_id), {})
-        s = score_map.get((c_id, j_id), {})
+        p = pred_map.get(c_id, {})
+        s = score_map.get(c_id, {})
 
         c_name = doc.get("candidate_name") or u.get("full_name") or r.get("candidate_name") or u.get("email") or "Applicant"
         c_email = doc.get("candidate_email") or u.get("email") or r.get("email") or ""
@@ -405,8 +388,6 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
         has_interview = int_score is not None
         has_cv = cv_score is not None
-        # No invented defaults: candidates without evidence report None, not
-        # a fabricated 70-75 score.
         num_cv = float(cv_score) if has_cv else None
         num_int = float(int_score) if has_interview else None
 
@@ -435,6 +416,12 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
             "hire_probability": hire_prob,
             "interview_completed": has_interview,
             "has_cv": has_cv,
+            "skill_score": p.get("skill_score") if p else None,
+            "experience_score": p.get("experience_score") if p else None,
+            "education_score": p.get("education_score") if p else None,
+            "mcq_score": s.get("mcq_score") if s else None,
+            "descriptive_score": s.get("descriptive_score") if s else None,
+            "coding_score": s.get("coding_score") if s else None,
             "skills": skills,
             "company_name": company.get("name") or company.get("company_name", "Your Company"),
             "passed_filter": doc.get("passed_filter", True),
@@ -608,31 +595,23 @@ async def apply_to_job(job_id: str, payload: ApplicationCreate, request: Request
     job = await db.jobs.find_one({"_id": oid})
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
-    # Enforce interview requirement: the interview must have been completed
-    # for THIS job (job_id match). Role-name matching was removed — it let a
-    # candidate bypass the gate with an interview taken for another company's
-    # same-titled job.
+    # Enforce interview requirement
     if job.get("interview_required"):
-        id_conds = [{"job_id": job_id}, {"job_id": oid}]
+        job_role = job.get("job_role") or _normalize_job_role(job.get("title", ""))
         interview_done = await db.results.find_one({
             "candidate_id": payload.candidate_id,
-            "$or": id_conds,
+            "$or": [{"job_role": job_role}, {"job_id": job_id}],
         }) or await db.interview_scores.find_one({
             "candidate_id": payload.candidate_id,
-            "$or": id_conds,
+            "$or": [{"job_role": job_role}, {"job_id": job_id}],
         })
         if not interview_done:
             raise HTTPException(status_code=403, detail="AI Technical Interview is required for this job. Complete the interview before applying.")
-    existing = await db.applications.find_one({
-        "candidate_id": payload.candidate_id,
-        "$or": [{"job_id": oid}, {"job_id": job_id}],
-    })
+    existing = await db.applications.find_one({"job_id": oid, "candidate_id": payload.candidate_id})
     if existing:
         raise HTTPException(status_code=409, detail="Already applied")
     doc = {
-        # Canonical form: job_id stored as string everywhere (match sync and
-        # interview sync also write strings; readers query both shapes).
-        "job_id": job_id,
+        "job_id": oid,
         "candidate_id": payload.candidate_id,
         "candidate_name": payload.candidate_name,
         "resume_id": payload.resume_id,
@@ -653,8 +632,7 @@ async def withdraw_application(job_id: str, request: Request, user: dict = Depen
     except Exception:
         raise HTTPException(status_code=404, detail="Job not found")
     result = await db.applications.update_one(
-        {"candidate_id": str(user["_id"]), "status": {"$ne": "withdrawn"},
-         "$or": [{"job_id": oid}, {"job_id": job_id}]},
+        {"job_id": oid, "candidate_id": str(user["_id"]), "status": {"$ne": "withdrawn"}},
         {"$set": {"status": "withdrawn", "withdrawn_at": datetime.now(timezone.utc)}},
     )
     if result.modified_count == 0:
@@ -666,12 +644,21 @@ _JOB_APPLICANTS_CACHE = {}
 
 @router.get("/{job_id}/applicants", response_model=list[ApplicationOut])
 async def get_applicants(job_id: str, request: Request, company: dict = Depends(require_company)):
+    now = time.time()
+    if job_id in _JOB_APPLICANTS_CACHE:
+        ts, data = _JOB_APPLICANTS_CACHE[job_id]
+        if now - ts < _SUB_CACHE_TTL:
+            return data
+
     db = request.app.state.db
     from bson import ObjectId
     try:
         oid = ObjectId(job_id)
     except Exception:
         oid = None
+    job_filters = [{"job_id": str(job_id)}]
+    if oid:
+        job_filters.append({"job_id": oid})
 
     job_doc = None
     try:
@@ -679,24 +666,18 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             job_doc = await db.jobs.find_one({"_id": oid})
         if not job_doc:
             job_doc = await db.jobs.find_one({"_id": str(job_id)})
+        if not job_doc:
+            job_doc = await db.jobs.find_one({"title": job_id})
     except Exception:
         pass
 
-    # Ownership check BEFORE cache: a company may only view applicants for its own postings.
-    if job_doc and str(job_doc.get("company_id", "")) != str(company.get("_id", "")):
-        raise HTTPException(status_code=403, detail="Not authorized to view applicants for this job")
-
-    now = time.time()
-    if job_id in _JOB_APPLICANTS_CACHE:
-        ts, data = _JOB_APPLICANTS_CACHE[job_id]
-        if now - ts < _SUB_CACHE_TTL:
-            return data
-
-    # Strict job-ID scoping only (title-based fallbacks removed — they leaked
-    # other companies' candidates sharing the same job title).
-    job_filters = [{"job_id": str(job_id)}]
-    if oid:
-        job_filters.append({"job_id": oid})
+    if job_doc:
+        j_title = job_doc.get("title")
+        j_role = job_doc.get("job_role")
+        if j_title:
+            job_filters.extend([{"job_id": j_title}, {"job_title": j_title}, {"job_role": j_title}])
+        if j_role:
+            job_filters.extend([{"job_id": j_role}, {"job_role": j_role}])
 
     seen_candidates = set()
     applicants = []
@@ -779,32 +760,19 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             if cid not in resume_map:
                 resume_map[cid] = r
 
-        def _is_match(rec):
-            # Strict job-ID equality only. Role-name matching was removed: it
-            # let evidence from another company's same-titled job bleed into
-            # this job's applicant scores.
-            if not rec:
-                return False
-            rec_jid = str(rec.get("job_id", ""))
-            if rec_jid and rec_jid == str(job_id):
-                return True
-            if job_doc and oid and rec_jid == str(job_doc.get("_id", "")):
-                return True
-            return False
-
         async for p in db.predictions.find({"$or": r_filters}).sort("created_at", -1):
             cid = str(p.get("candidate_id", ""))
-            if cid and _is_match(p):
+            if cid not in pred_map or str(p.get("job_id")) == str(job_id):
                 pred_map[cid] = p
 
         async for s in db.interview_scores.find({"$or": r_filters}).sort("created_at", -1):
             cid = str(s.get("candidate_id", ""))
-            if cid and _is_match(s):
+            if cid not in score_map or str(s.get("job_id")) == str(job_id):
                 score_map[cid] = s
 
         async for res in db.results.find({"$or": r_filters}).sort("created_at", -1):
             cid = str(res.get("candidate_id", ""))
-            if cid and _is_match(res):
+            if cid not in score_map or str(res.get("job_id")) == str(job_id):
                 score_map[cid] = res
 
     enriched = []
@@ -813,17 +781,13 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
         u = user_map.get(cid, {})
         r = resume_map.get(cid, {})
         p = pred_map.get(cid, {})
-        if not p and _is_match(doc) and (doc.get("skill_score") is not None or doc.get("overall_score") is not None or doc.get("cv_score") is not None):
-            p = doc
         s = score_map.get(cid, {})
-        if not s and _is_match(doc) and (doc.get("interview_score") is not None or doc.get("interview_completed")):
-            s = doc
 
         c_name = doc.get("candidate_name") or u.get("full_name") or r.get("candidate_name") or u.get("email") or "Candidate"
         c_email = doc.get("candidate_email") or u.get("email") or r.get("email") or ""
-        int_score = s.get("interview_score") or doc.get("interview_score")
-        cv_score = p.get("overall_score") or p.get("cv_score") or doc.get("cv_score") or doc.get("overall_score")
-        skills = r.get("skills", []) or doc.get("skills", [])
+        int_score = doc.get("interview_score") or s.get("interview_score")
+        cv_score = doc.get("cv_score") or p.get("overall_score") or doc.get("overall_score")
+        skills = r.get("skills", [])
 
         hire_prob = None
         if int_score is not None and cv_score is not None:
@@ -846,16 +810,6 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             "cv_score": cv_score,
             "hire_probability": hire_prob,
             "skills": skills,
-            "skill_score": p.get("skill_score"),
-            "experience_score": p.get("experience_score"),
-            "education_score": p.get("education_score"),
-            "mcq_score": s.get("mcq_score"),
-            "descriptive_score": s.get("descriptive_score"),
-            "coding_score": s.get("coding_score"),
-            "S_cv": cv_score,
-            "S_int": int_score,
-            "CSS": hire_prob,
-            "passed_filter": True,
         })
 
     result_apps = [_app_out(doc) for doc in enriched]

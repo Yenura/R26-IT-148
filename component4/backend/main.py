@@ -49,7 +49,7 @@ if not MONGODB_URI:
     raise SystemExit(1)
 DB_NAME         = os.getenv("DB_NAME", "HR")
 ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS", "http://localhost:5174,http://127.0.0.1:5174"
+    "ALLOWED_ORIGINS", "http://localhost:5174"
 ).split(",")
 
 
@@ -127,6 +127,7 @@ from routers import skill_gap, career, progress, analytics  # noqa: E402
 # Standard /api/v1 mounts
 app.include_router(skill_gap.router, prefix="/api/v1/skill-gap", tags=["Skill Gap Analysis"])
 app.include_router(career.router,    prefix="/api/v1/career",    tags=["Career Guidance"])
+app.include_router(career.router,    prefix="/api/v1",           tags=["Career Guidance (Direct)"])
 app.include_router(progress.router,  prefix="/api/v1/progress",  tags=["Progress Tracking"])
 app.include_router(analytics.router, prefix="/api/v1/analytics", tags=["Analytics"])
 

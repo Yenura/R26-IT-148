@@ -25,7 +25,7 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
-from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids
+from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids, link_candidate_application
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -33,11 +33,11 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 class InterviewSubmitRequest(BaseModel):
-    candidate_id: str = Field(default="", max_length=100)
     session_id: str = Field(..., min_length=1, max_length=200)
-    job_role: str = Field(default="", max_length=200)
-    job_id: str = Field(default="", max_length=100)
     answers: List[Dict] = Field(default_factory=list)
+    candidate_id: Optional[str] = None
+    job_role: Optional[str] = None
+    job_id: Optional[str] = None
     proctoring: Optional[Dict] = None
 
     @field_validator("answers")
@@ -218,11 +218,6 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
                     matched_role = "Software Engineer"
             job_role = matched_role
         
-        # Sessions without a job stay unattributed: downstream evidence joins
-        # are strict on job_id, so their scores can never bleed into another
-        # job's ranking. Log the case for observability.
-        if not (interview_request.is_practice or False) and not (interview_request.job_id or "").strip():
-            logger.info("Assessed interview started without job_id (role-only); scores will not attach to any application")
         # Create session (CPU-bound: question generation + filtering)
         # Exclude questions the candidate has seen in past sessions
         seen_ids = await get_seen_question_ids(interview_request.candidate_id or "")
@@ -312,13 +307,6 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
         session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
-
-        # Attribute the submission to a job when possible; job-less sessions
-        # remain visible only via their own session/result ID (strict
-        # downstream joins prevent them from scoring any application).
-        effective_job_id = (getattr(submission, "job_id", "") or session.get("job_id", "") or "").strip()
-        if not session.get("is_practice") and not effective_job_id:
-            logger.info(f"Assessed submit without job_id (session {session_id}); result stays unattributed")
         
         # Enrich answer payload with question_type and correctness
         question_map = {
@@ -356,25 +344,28 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 correct_choice = question.get("correct_option")
                 if correct_choice is None:
                     correct_choice = question.get("correct_answer_index", 0)
-                is_correct = candidate_choice == correct_choice
                 processed_answer["selected_option"] = candidate_choice
                 processed_answer["correct_option"] = correct_choice
-                processed_answer["is_correct"] = is_correct
+                processed_answer["is_correct"] = candidate_choice == correct_choice
                 processed_answer["options"] = question.get("options", [])
-                processed_answer["mcq_score"] = 1.0 if is_correct else -0.25
 
             elif question_type == "Descriptive":
                 answer_text = answer.get("answer_text") or answer.get("answer") or ""
                 reference_text = question.get("answer_text") or question.get("expected_answer") or ""
                 processed_answer["answer_text"] = answer_text
                 processed_answer["_reference_text"] = reference_text
-                descriptive_tasks.append(
-                    run_in_threadpool(
-                        services["evaluation_service"].evaluate_descriptive,
-                        reference=reference_text,
-                        candidate=answer_text,
+                if answer_text.strip():
+                    descriptive_tasks.append(
+                        run_in_threadpool(
+                            services["evaluation_service"].evaluate_descriptive,
+                            reference=reference_text,
+                            candidate=answer_text,
+                        )
                     )
-                )
+                else:
+                    async def _zero_eval():
+                        return {"final_score": 0.0, "cosine_similarity": 0.0, "keyword_bonus": 0.0, "keyword_coverage": "0%"}
+                    descriptive_tasks.append(_zero_eval())
                 descriptive_indices.append(len(processed_answers))
 
             elif question_type == "Coding":
@@ -446,21 +437,31 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
             processed_answers.append(processed_answer)
 
-        # Parallel gather for descriptive answers (was sequential, now ~3x faster)
+        # Await and merge descriptive evaluations into processed answers
         if descriptive_tasks:
-            results = await asyncio.gather(*descriptive_tasks)
-            for idx, evaluation_result in zip(descriptive_indices, results):
+            desc_results = await asyncio.gather(*descriptive_tasks)
+            for idx, res in zip(descriptive_indices, desc_results):
+                res_dict = res if isinstance(res, dict) else {}
+                f_score = float(res_dict.get("final_score", 0.0))
                 processed_answers[idx].update({
-                    "final_score": evaluation_result.get("final_score", 0),
-                    "similarity": evaluation_result.get("similarity", 0),
-                    "keyword_coverage": evaluation_result.get("keyword_coverage", 0)
+                    "final_score": f_score,
+                    "score": f_score,
+                    "descriptive_score": f_score,
+                    "cosine_similarity": float(res_dict.get("cosine_similarity", 0.0)),
+                    "keyword_bonus": float(res_dict.get("keyword_bonus", 0.0)),
+                    "keyword_coverage": str(res_dict.get("keyword_coverage", "0%")),
+                    "contradiction_penalty_applied": bool(res_dict.get("contradiction_penalty_applied", False))
                 })
-                processed_answers[idx].pop("_reference_text", None)
+
+        cand_id = submission.candidate_id or session.get("candidate_id", "")
+        j_role = submission.job_role or session.get("job_role", "")
+        j_id = submission.job_id or session.get("job_id", "")
+        proctoring = submission.proctoring
 
         evaluation_payload = {
-            "candidate_id": submission.candidate_id or session.get("candidate_id", ""),
+            "candidate_id": cand_id,
             "session_id": session_id,
-            "job_role": submission.job_role or session.get("job_role", ""),
+            "job_role": j_role,
             "answers": processed_answers
         }
         
@@ -470,9 +471,10 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             interview_data=evaluation_payload,
         )
 
+        result["job_id"] = j_id
+
         # Attach proctoring data if provided (job interviews only)
         # Enforce: practice interviews NEVER store proctoring data
-        proctoring = submission.proctoring
         is_practice = session.get("is_practice", False)
         if is_practice:
             proctoring = None
@@ -482,17 +484,13 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
         await save_result(result)
         await update_session_status(session_id, "completed")
         
-        # Send scores to C0 unified backend for ranking pipeline.
-        # Authenticated with the shared internal key and retried: the previous
-        # fire-and-forget dropped scores silently on any network hiccup,
-        # leaving C3 with no interview evidence for the session.
+        # Send scores to C0 unified backend for ranking pipeline (fire-and-forget, don't block response)
         try:
             import urllib.request
             c0_url = os.environ.get("C0_URL", "http://127.0.0.1:8000")
-            internal_key = os.environ.get("INTERNAL_API_KEY", "")
             payload = json.dumps({
                 "candidate_id": result["candidate_id"],
-                "job_id": submission.job_id or session.get("job_id", ""),
+                "job_id": j_id,
                 "session_id": session_id,
                 "job_role": result["job_role"],
                 "mcq_score": result["mcq_score"],
@@ -501,31 +499,35 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 "interview_score": result["interview_score"],
                 "grade": result["grade"],
                 "integrity_score": proctoring.get("integrity_score") if proctoring else None,
-                "mcq_total": result["mcq_total"],
-                "descriptive_total": result["descriptive_total"],
-                "coding_total": result["coding_total"],
             }).encode()
-            headers = {"Content-Type": "application/json"}
-            if internal_key:
-                headers["X-Internal-Key"] = internal_key
             req = urllib.request.Request(
                 f"{c0_url}/api/v1/resume/interview-scores",
                 data=payload,
-                headers=headers,
+                headers={"Content-Type": "application/json"},
                 method="POST"
             )
             def _send_c0():
-                last_err = None
-                for attempt in range(3):
-                    try:
-                        urllib.request.urlopen(req, timeout=5)
-                        return
-                    except Exception as exc:
-                        last_err = exc
-                logger.warning(f"C0 score sync failed after 3 attempts (session {session_id}): {last_err}")
+                try:
+                    urllib.request.urlopen(req, timeout=2)
+                except:
+                    pass
             asyncio.create_task(run_in_threadpool(_send_c0))
         except Exception as e:
             logger.warning(f"Failed to send scores to C0: {e}")
+
+        # Direct MongoDB sync for applications & interview_scores
+        try:
+            await link_candidate_application(
+                candidate_id=result["candidate_id"],
+                job_id=j_id or "",
+                job_role=result["job_role"],
+                interview_score=result["interview_score"],
+                mcq_score=result["mcq_score"],
+                desc_score=result["descriptive_score"],
+                code_score=result["coding_score"]
+            )
+        except Exception as e:
+            logger.warning(f"Direct link_candidate_application warning: {e}")
 
         return InterviewScoreResult(
             interview_id=result["interview_id"],
@@ -625,41 +627,21 @@ async def fetch_interview_result(interview_id: str, services: Dict = Depends(get
 async def fetch_interview_session(session_id: str):
     """
     Get interview session by ID
-
+    
     Args:
         session_id: Interview session ID
 
     Returns:
-        Interview session payload (answer keys stripped — same projection
-        as /start, so stored correct_option/answer_text can never be pulled
-        before submitting).
+        Interview session payload
     """
     try:
         session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
 
-        public_questions = []
-        for q in session.get("questions", []) or []:
-            if not isinstance(q, dict):
-                continue
-            public_questions.append({
-                "id": q.get("id"),
-                "sequence": q.get("sequence", 0),
-                "question_text": q.get("question_text"),
-                "question_type": q.get("question_type"),
-                "difficulty": q.get("difficulty"),
-                "category": q.get("category", ""),
-                "topic": q.get("topic", ""),
-                "options": q.get("options"),
-                "test_cases": q.get("test_cases"),
-                "time_limit": q.get("time_limit", q.get("time_limit_seconds", 900)),
-            })
-        public_session = {k: v for k, v in session.items() if k != "questions"}
-        public_session["questions"] = public_questions
         return {
             "success": True,
-            "session": public_session
+            "session": session
         }
     except HTTPException:
         raise

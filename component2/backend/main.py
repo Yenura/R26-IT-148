@@ -123,7 +123,7 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 # CORS Configuration
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:5174,http://127.0.0.1:5174"
+    "http://localhost:5174"
 ).split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -133,6 +133,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Compatibility middleware: support /interview without /api/v1 prefix
+@app.middleware("http")
+async def compatibility_middleware(request: Request, call_next):
+    if request.url.path.startswith("/interview"):
+        request.scope["path"] = "/api/v1" + request.url.path
+    return await call_next(request)
 
 
 # Request/Response logging middleware

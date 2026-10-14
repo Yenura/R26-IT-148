@@ -1,13 +1,13 @@
-import { useEffect, useState, useRef, useCallback, lazy, Suspense } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
   Play, CheckCircle2, Code, FileText, Settings, Sparkles,
-  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase, Eye
+  ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase
 } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { getChartTheme } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
-
-const ScoreChart = lazy(() => import('../components/ScoreChart'))
 import { useAuth } from '../hooks/useAuth'
 import useProctoring from '../hooks/useProctoring'
 import PageHeader from '../components/PageHeader'
@@ -33,11 +33,11 @@ const ROLE_LANGUAGES = {
   "Site Reliability Engineer": ["Python","Go","Bash"],
   "Network Engineer": ["Python"],
 }
-const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst","Network Engineer"]
+const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst"]
 
 export default function Interview() {
+  const ct = getChartTheme()
   const navigate = useNavigate()
-  useAuth('candidate')
   const [searchParams] = useSearchParams()
   const jobRole = searchParams.get('role') || ''
   const jobSkills = searchParams.get('skills') || ''
@@ -258,7 +258,7 @@ export default function Interview() {
 
   const questions = session?.questions || []
   const q = questions[currentQ]
-  if (step === 'quiz' && !q) {
+  if (step === 'interview' && !q) {
     return (
       <div style={{ padding: 60, textAlign: 'center' }}>
         <p>Loading question...</p>
@@ -810,21 +810,9 @@ export default function Interview() {
           description={`Comprehensive AI evaluation breakdown for ${selectedRole}. Scores are recorded to your candidate profile.`}
           icon={Trophy}
           actions={
-            <div style={{ display: 'flex', gap: 8 }}>
-              {result.interview_id && (
-                <button className="btn btn-primary btn-sm" onClick={() => navigate(`/candidate/interview/result/${result.interview_id}`)}>
-                  <FileText size={14} /> Full Report
-                </button>
-              )}
-              {!isPracticeMode && result.interview_id && (
-                <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/candidate/interview/proctoring/${result.interview_id}`)}>
-                  <Eye size={14} /> Proctoring
-                </button>
-              )}
-              <button className="btn btn-ghost btn-sm" onClick={() => setStep('setup')}>
-                <RefreshCw size={14} /> Retake Assessment
-              </button>
-            </div>
+            <button className="btn btn-ghost btn-sm" onClick={() => setStep('setup')}>
+              <RefreshCw size={14} /> Retake Assessment
+            </button>
           }
         />
 
@@ -836,18 +824,36 @@ export default function Interview() {
           <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--color-primary)', lineHeight: 1, fontFamily: 'var(--p-font-mono)', marginBottom: 8 }}>
             {overallScore.toFixed(1)}%
           </div>
-          <div style={{ display: 'inline-flex', marginBottom: 20 }}>
+          <div style={{ display: 'inline-flex', marginBottom: 16 }}>
             <ScoreBadge score={overallScore} />
           </div>
 
+          {result?.weights_used && (
+            <div style={{ fontSize: '12px', color: 'var(--color-fg-muted)', marginBottom: 18, fontFamily: 'var(--p-font-mono)' }}>
+              Weighting Formula: {((result.weights_used.mcq || 0) * 100).toFixed(0)}% MCQ + {((result.weights_used.descriptive || 0) * 100).toFixed(0)}% Theory + {((result.weights_used.coding || 0) * 100).toFixed(0)}% Coding
+            </div>
+          )}
+
           <div className="grid grid-3" style={{ gap: 'var(--p-space-4)', textAlign: 'left' }}>
             <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>Weight: {((result?.weights_used?.mcq ?? 0.25) * 100).toFixed(0)}%</span>
+                <span className="badge badge-subtle" style={{ fontSize: '10px' }}>MCQ</span>
+              </div>
               <ScoreMeter score={mcqScore} label="MCQ Accuracy (P_mcq)" size="sm" />
             </div>
             <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>Weight: {((result?.weights_used?.descriptive ?? 0.35) * 100).toFixed(0)}%</span>
+                <span className="badge badge-subtle" style={{ fontSize: '10px' }}>Theory</span>
+              </div>
               <ScoreMeter score={descScore} label="Theory Cosine (P_desc)" size="sm" />
             </div>
             <div style={{ padding: 14, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>Weight: {((result?.weights_used?.coding ?? 0.40) * 100).toFixed(0)}%</span>
+                <span className="badge badge-subtle" style={{ fontSize: '10px' }}>Code</span>
+              </div>
               <ScoreMeter score={codeScore} label="Coding Sandbox (P_code)" size="sm" />
             </div>
           </div>
@@ -858,10 +864,22 @@ export default function Interview() {
           <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
             Section Score Breakdown
           </h3>
-          <div style={{ height: 220, width: '100%' }}>
-            <Suspense fallback={<div style={{ height: 220, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-fg-muted)' }}>Loading chart...</div>}>
-              <ScoreChart data={chartData} />
-            </Suspense>
+          <div style={{ height: 240, width: '100%', minHeight: 240, position: 'relative' }}>
+            <ResponsiveContainer width="100%" height={240}>
+              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+                <XAxis dataKey="name" stroke={ct.axis || '#64748b'} tick={{ fill: ct.text || '#94a3b8', fontSize: 12 }} dy={6} />
+                <YAxis domain={[0, 100]} stroke={ct.axis || '#64748b'} tick={{ fill: ct.text || '#94a3b8', fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ background: ct.tooltipBg || '#1e1b4b', border: `1px solid ${ct.tooltipBorder || '#4338ca'}`, borderRadius: 8, color: '#fff' }}
+                  formatter={(val) => [`${Number(val).toFixed(1)}%`, 'Score']}
+                />
+                <Bar dataKey="score" radius={[6, 6, 0, 0]}>
+                  {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--color-primary)' : index === 1 ? 'var(--color-info)' : 'var(--color-purple)'} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
 

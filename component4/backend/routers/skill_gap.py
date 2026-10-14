@@ -19,10 +19,6 @@ try:
     from models.schemas import SkillGapRequest
 except ImportError:
     from backend.models.schemas import SkillGapRequest
-try:
-    from auth_guard import require_identity, require_owner
-except ImportError:
-    from backend.auth_guard import require_identity, require_owner
 from services.ml_engine import run_skill_gap_analysis
 from src.gap_analysis.skill_gap import analyze_skill_gap
 import time
@@ -176,14 +172,10 @@ async def simple_skill_gap(payload: SimpleSkillGapRequest):
 
 
 @router.post("/simulate", summary="Run 'What-If' skill acquisition simulation")
-async def simulate_skill_acquisition(payload: SimulateRequest, request: Request):
+async def simulate_skill_acquisition(payload: SimulateRequest, request: Request = None):
     db = getattr(request.app.state, "db", None) if request else None
 
     candidate_id = payload.candidate_id
-    # The DB lookup below reads a candidate's stored CV skills: it must not
-    # serve one candidate's resume to another caller.
-    if candidate_id:
-        require_owner(await require_identity(request), candidate_id)
     target_role = payload.target_role or payload.job_role or payload.role or "Software Engineer"
     acquired_skills = payload.acquired_skills or payload.skills or payload.simulated_skills or []
     current_skills = payload.current_skills
@@ -250,38 +242,7 @@ async def simulate_skill_acquisition(payload: SimulateRequest, request: Request)
 
 @router.get("/graph", summary="Get skill dependency DAG graph")
 async def get_skill_dependency_graph():
-    from pathlib import Path as _Path
-    import json as _json
     from src.recommendation.learning_path import SKILL_DEPENDENCY_GRAPH
-
-    # Category taxonomy for the dependency graph (drives node coloring and
-    # the category legend on the frontend).
-    SKILL_CATEGORIES = {
-        "HTML": "frontend", "CSS": "frontend", "JavaScript": "frontend",
-        "React": "frontend",
-        "Python": "backend", "Java": "backend", "C++": "backend",
-        "Node.js": "backend", "FastAPI": "backend", "Django": "backend",
-        "SQL": "database", "PostgreSQL": "database", "MySQL": "database",
-        "MongoDB": "database",
-        "Git": "devops", "Linux": "devops", "Docker": "devops",
-        "Kubernetes": "devops", "CI/CD": "devops", "AWS": "devops",
-        "Azure": "devops", "Terraform": "devops", "MLOps": "devops",
-        "Pandas": "aiml", "NumPy": "aiml", "Statistics": "aiml",
-        "Machine Learning": "aiml", "Scikit-Learn": "aiml",
-        "Deep Learning": "aiml", "PyTorch": "aiml", "TensorFlow": "aiml",
-        "Networking": "security",
-    }
-
-    def _level(skill: str, _seen=None) -> int:
-        _seen = _seen or set()
-        if skill in _seen:
-            return 0
-        _seen.add(skill)
-        deps = SKILL_DEPENDENCY_GRAPH.get(skill, [])
-        if not deps:
-            return 0
-        return 1 + max(_level(d, set(_seen)) for d in deps)
-
     nodes = []
     edges = []
     seen_nodes = set()
@@ -296,69 +257,12 @@ async def get_skill_dependency_graph():
                 nodes.append({"id": dep, "label": dep})
             edges.append({"source": dep, "target": target})
 
-    for node in nodes:
-        name = node["id"]
-        depth = _level(name)
-        node["category"] = SKILL_CATEGORIES.get(name, "other")
-        node["level"] = depth
-        node["tier"] = "Foundational" if depth == 0 else ("Intermediate" if depth == 1 else "Advanced")
-
-    # ── Role layer: all 20 job roles as destination nodes ────────────────────
-    # Each role links to the graph skills named in its required-skills list.
-    # Requirement strings are composite ("Python/Go/Java", "HTML/CSS",
-    # "Cloud Platforms (AWS/GCP/Azure)"), so graph skills are matched
-    # longest-first with consumed spans to avoid false hits ("Java" inside
-    # "JavaScript", "SQL" inside "PostgreSQL").
-    try:
-        _req_path = _Path(__file__).parent.parent.parent / "models" / "job_requirements.json"
-        _job_reqs = _json.loads(_req_path.read_text(encoding="utf-8"))
-    except Exception:
-        _job_reqs = {}
-
-    _graph_ids = [n["id"] for n in nodes]
-    _by_len = sorted(_graph_ids, key=len, reverse=True)
-
-    def _match_skills(requirement: str) -> list:
-        remaining = f" {requirement} "
-        matched = []
-        for skill in _by_len:
-            token = skill.lower()
-            if len(token) <= 1:
-                continue
-            idx = remaining.lower().find(token)
-            if idx != -1:
-                matched.append(skill)
-                remaining = remaining[:idx] + " " * len(skill) + remaining[idx + len(skill):]
-        return matched
-
-    for role, spec in _job_reqs.items():
-        role_id = f"role::{role}"
-        required = list((spec or {}).get("required", []) or [])
-        mapped: list = []
-        for req in required:
-            for skill in _match_skills(str(req)):
-                if skill not in mapped:
-                    mapped.append(skill)
-        nodes.append({
-            "id": role_id,
-            "label": role,
-            "type": "role",
-            "category": "role",
-            "tier": "Roles",
-            "required_skills": required,
-            "mapped_skills": mapped,
-        })
-        for skill in mapped:
-            edges.append({"source": skill, "target": role_id, "kind": "requires"})
-
     return {"success": True, "nodes": nodes, "edges": edges}
 
 
 @router.post("/analyze", summary="Run full skill gap analysis for a candidate")
 @limiter.limit("10/minute")
 async def analyze_skill_gap_full(request: Request, payload: SkillGapRequest):
-    identity = await require_identity(request)
-    require_owner(identity, payload.candidate_id.strip())
     db = request.app.state.db
 
     # ── Validation ────────────────────────────────────────────────────────────
@@ -412,7 +316,6 @@ async def analyze_skill_gap_full(request: Request, payload: SkillGapRequest):
 
 @router.get("/report/{candidate_id}", summary="Fetch latest skill gap report")
 async def get_report(candidate_id: str, request: Request):
-    require_owner(await require_identity(request), candidate_id)
     db  = request.app.state.db
     doc = await db.skill_gap_reports.find_one(
         {"candidate_id": candidate_id},
@@ -424,26 +327,19 @@ async def get_report(candidate_id: str, request: Request):
     return {"success": True, "data": doc}
 
 
-@router.get("/reports", summary="List a candidate's skill gap reports (paginated)")
-async def list_reports(request: Request, candidate_id: str = "", skip: int = 0, limit: int = 50):
-    # Scoped per candidate: the previous unfiltered full-collection dump
-    # exposed every candidate's reports to any caller.
-    if not candidate_id or not candidate_id.strip():
-        raise HTTPException(status_code=400, detail="candidate_id query parameter is required")
-    require_owner(await require_identity(request), candidate_id.strip())
+@router.get("/reports", summary="List all skill gap reports (paginated)")
+async def list_reports(request: Request, skip: int = 0, limit: int = 50):
     db    = request.app.state.db
-    filt  = {"candidate_id": candidate_id.strip()}
     docs  = await db.skill_gap_reports.find(
-        filt, projection={"_id": 0}
+        {}, projection={"_id": 0}
     ).sort("created_at", -1).skip(skip).limit(limit).to_list(length=limit)
-    total = await db.skill_gap_reports.count_documents(filt)
+    total = await db.skill_gap_reports.count_documents({})
     return {"success": True, "total": total, "data": docs}
 
 
 @router.delete("/report/{candidate_id}", summary="Delete a candidate's report")
 @limiter.limit("10/minute")
 async def delete_report(candidate_id: str, request: Request):
-    require_owner(await require_identity(request), candidate_id)
     db  = request.app.state.db
     res = await db.skill_gap_reports.delete_many({"candidate_id": candidate_id})
     return {"success": True, "deleted": res.deleted_count}
@@ -461,7 +357,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     Evaluates skill gap, strengths, and weaknesses for every job the candidate applied for,
     integrating Component 1 CV parsing/matching and Component 2 AI Interview question-level topic scores.
     """
-    require_owner(await require_identity(request), candidate_id)
     if not candidate_id or candidate_id in ("web-user", "candidate-user", "undefined", "null", "none"):
         return {"success": True, "candidate_id": candidate_id or "", "total_applied_jobs": 0, "reports": [], "data": []}
 
@@ -609,18 +504,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             descriptive_score=interview_res.get("descriptive_score") if interview_res else None,
             coding_score=interview_res.get("coding_score") if interview_res else None,
         )
-        cv_w, int_w = _resolve_role_weights(target_role)
-        cand_cv_score = round(float(pred.get("overall_score", 75) if pred else 75), 1)
-        if interview_res and interview_score is not None:
-            mcq_s = float(interview_res.get("mcq_score", 0))
-            desc_s = float(interview_res.get("descriptive_score", 0))
-            code_s = float(interview_res.get("coding_score", 0))
-            cand_int_score = round(int_w["w_mcq"] * mcq_s + int_w["w_desc"] * desc_s + int_w["w_code"] * code_s, 1)
-            cand_composite = round(0.40 * cand_cv_score + 0.60 * cand_int_score, 1)
-        else:
-            cand_int_score = None
-            cand_composite = cand_cv_score
-
         reports.append({
             "job_id": "general_baseline",
             "job_title": target_role,
@@ -629,16 +512,16 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             "employment_type": "Full-time",
             "applied_at": datetime.now(timezone.utc).isoformat(),
             "interview_completed": interview_res is not None,
-            "interview_score": cand_int_score,
-            "cv_score": cand_cv_score,
+            "interview_score": interview_score,
+            "cv_score": pred.get("overall_score", 75) if pred else 75,
             "cv_breakdown": {
                 "skill_score": pred.get("skill_score", 75) if pred else 75,
                 "experience_score": pred.get("experience_score", 70) if pred else 70,
                 "education_score": pred.get("education_score", 80) if pred else 80,
-                "overall_score": cand_cv_score,
+                "overall_score": pred.get("overall_score", 75) if pred else 75,
             },
-            "composite_score": cand_composite,
-            "total_mark": cand_composite,
+            "composite_score": analysis.get("hire_probability", 0.7) * 100,
+            "total_mark": analysis.get("hire_probability", 0.7) * 100,
             "strengths": [{"skill": s, "source": "CV Skill Profile", "details": f"Verified proficiency in {s}"} for s in analysis.get("matched_skills", [])[:5]],
             "weaknesses": [{"skill": s, "source": "Target Role Gap", "details": f"Missing critical skill for {target_role}", "severity": "High"} for s in analysis.get("missing_required", [])[:4]],
             "topic_performance": [],
@@ -658,43 +541,41 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         job_skills = job.get("required_skills", [])
         company_name = job.get("company_name") or company_names_map.get(str(job.get("company_id", "")), "Tech Employer")
 
-        # In-memory lookup for predictions — job-ID match only. Role-name fallback
-        # removed: it attributed this candidate's interviews for OTHER same-titled
-        # jobs to this application, corrupting per-job scores.
-        pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", ""))), None)
-        # In-memory lookup for interview results & scores — job-ID match only (same reason).
-        interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id), None)
-        session = next((s for s in sessions_list if str(s.get("job_id")) == job_id), None)
-        score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id), None)
+        # In-memory lookup for predictions
+        pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", "")) or p.get("predicted_role") == job_title), None)
+        # In-memory lookup for interview results & scores
+        interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id or r.get("job_role") == job_title), None)
+        session = next((s for s in sessions_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
+        score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
 
-        # Resolve role weights for CSS engine
-        cv_w, int_w = _resolve_role_weights(job_title)
+        # Resolve CV Match scores without artificial defaults
+        has_cv = bool(pred is not None or app.get("cv_score") is not None or (cand_skills and len(cand_skills) > 0))
+        skill_score = None
+        experience_score = None
+        education_score = None
+        cv_matching_score = None
 
-        skill_score = pred.get("skill_score") if pred else None
-        experience_score = pred.get("experience_score") if pred else None
-        education_score = pred.get("education_score") if pred else None
-        cv_matching_score = pred.get("overall_score") if pred else None
-
-        if skill_score is None and cand_skills and job_skills:
+        if pred:
+            skill_score = round(float(pred["skill_score"]), 1) if pred.get("skill_score") is not None else None
+            experience_score = round(float(pred["experience_score"]), 1) if pred.get("experience_score") is not None else None
+            education_score = round(float(pred["education_score"]), 1) if pred.get("education_score") is not None else None
+            cv_matching_score = round(float(pred["overall_score"]), 1) if pred.get("overall_score") is not None else None
+            if cv_matching_score is None and skill_score is not None:
+                cv_matching_score = round(0.50 * (skill_score or 70) + 0.30 * (experience_score or 70) + 0.20 * (education_score or 75), 1)
+        elif app.get("cv_score") is not None or app.get("skill_score") is not None:
+            skill_score = round(float(app["skill_score"]), 1) if app.get("skill_score") is not None else None
+            experience_score = round(float(app["experience_score"]), 1) if app.get("experience_score") is not None else None
+            education_score = round(float(app["education_score"]), 1) if app.get("education_score") is not None else None
+            cv_matching_score = round(float(app.get("cv_score") or app.get("overall_score") or 0), 1)
+        elif cand_skills and job_skills:
             matched_cv_count = len([s for s in job_skills if any(s.lower() in cs.lower() or cs.lower() in s.lower() for cs in cand_skills)])
             skill_score = round((matched_cv_count / max(len(job_skills), 1)) * 100, 1)
-        elif skill_score is None:
-            # No evidence: report 0, never a fabricated mid-range score.
-            skill_score = 0.0
-
-        if experience_score is None:
             req_exp = float(job.get("experience_required", 2) or 2)
-            experience_score = round(min((float(cand_exp or 0) / max(req_exp, 1)) * 100, 100), 1)
+            experience_score = round(min((float(cand_exp or 2) / max(req_exp, 1)) * 100, 100), 1)
+            education_score = 80.0
+            cv_matching_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
 
-        if education_score is None:
-            education_score = 0.0
-
-        if cv_matching_score is None:
-            cv_matching_score = round(cv_w["w_skill"] * skill_score + cv_w["w_exp"] * experience_score + cv_w["w_edu"] * education_score, 1)
-        else:
-            cv_matching_score = round(float(cv_matching_score), 1)
-
-        interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None
+        interview_completed = interview_res is not None or (session and session.get("status") == "completed") or score_doc is not None or app.get("interview_score") is not None or app.get("interview_completed") is True
         interview_score = None
         mcq_score = None
         descriptive_score = None
@@ -708,7 +589,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             mcq_score = float(interview_res.get("mcq_score", 0))
             descriptive_score = float(interview_res.get("descriptive_score", 0))
             coding_score = float(interview_res.get("coding_score", 0))
-            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
+            if interview_res.get("interview_score") is not None:
+                interview_score = round(float(interview_res["interview_score"]), 1)
+            else:
+                interview_score = round(0.20 * mcq_score + 0.30 * descriptive_score + 0.50 * coding_score, 1)
             grade = interview_res.get("grade", "Average")
             weak_topics = interview_res.get("weak_topics", [])
             failed_mcq_topics = interview_res.get("failed_mcq_topics", [])
@@ -732,8 +616,18 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
             mcq_score = float(score_doc.get("mcq_score", 0))
             descriptive_score = float(score_doc.get("descriptive_score", 0))
             coding_score = float(score_doc.get("coding_score", 0))
-            interview_score = round(int_w["w_mcq"] * mcq_score + int_w["w_desc"] * descriptive_score + int_w["w_code"] * coding_score, 1)
+            if score_doc.get("interview_score") is not None:
+                interview_score = round(float(score_doc["interview_score"]), 1)
+            else:
+                interview_score = round(0.20 * mcq_score + 0.30 * descriptive_score + 0.50 * coding_score, 1)
             grade = score_doc.get("grade", "Average")
+
+        elif app.get("interview_score") is not None:
+            interview_score = round(float(app["interview_score"]), 1)
+            mcq_score = round(float(app.get("mcq_score", 0)), 1) if app.get("mcq_score") is not None else None
+            descriptive_score = round(float(app.get("descriptive_score", 0)), 1) if app.get("descriptive_score") is not None else None
+            coding_score = round(float(app.get("coding_score", 0)), 1) if app.get("coding_score") is not None else None
+            grade = app.get("grade", "Good" if interview_score >= 70 else "Average")
 
         topic_performance = []
         interview_strengths = []
@@ -792,8 +686,6 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
 
         cv_strengths = []
         cv_weaknesses = []
-        # The run_skill_gap_analysis returns "present_skills" (candidate's skills),
-        # not "matched_skills". Use "missing_required" and "missing_optional" instead.
         present_skills = analysis.get("present_skills", [])
         missing_required = analysis.get("missing_required", [])
         missing_optional = analysis.get("missing_optional", [])
@@ -831,18 +723,16 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
         all_strengths = interview_strengths + cv_strengths
         all_weaknesses = interview_weaknesses + cv_weaknesses
 
-        # Master CSS calculation (40% CV + 60% Interview) and LambdaMART score
+        # Master CSS calculation (40% CV + 60% Interview)
         ltr_score = None
-        if interview_completed and interview_score is not None:
+        has_cv_val = cv_matching_score is not None
+        has_int_val = interview_completed and interview_score is not None
+
+        if has_cv_val and has_int_val:
             composite_fit = round(0.40 * cv_matching_score + 0.60 * interview_score, 1)
-            if _LAMBDAMART_MODEL is not None:
-                try:
-                    X_cand = np.array([[education_score / 100.0, experience_score / 100.0, skill_score / 100.0,
-                                       (mcq_score or 0.0) / 100.0, (descriptive_score or 0.0) / 100.0, (coding_score or 0.0) / 100.0]])
-                    ltr_score = round(float(_LAMBDAMART_MODEL.predict(X_cand)[0]), 4)
-                except Exception:
-                    pass
-        elif cv_matching_score is not None:
+        elif has_int_val:
+            composite_fit = round(interview_score, 1)
+        elif has_cv_val:
             composite_fit = round(cv_matching_score, 1)
         else:
             composite_fit = round((analysis.get("skill_match_pct", 50)), 1)

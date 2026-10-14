@@ -812,22 +812,38 @@ class InterviewService:
     def _evaluate_mcq_answers(self, answers: List[Dict]) -> float:
         if not answers:
             return 0
-        total_score = sum(a.get("mcq_score", 1.0 if a.get("is_correct", False) else -0.25) for a in answers)
-        mcq_score = max(0.0, total_score) / len(answers) * 100
-        return round(mcq_score, 2)
+        correct_count = sum(1 for a in answers if a.get("is_correct", False))
+        return round(correct_count / len(answers) * 100, 2)
     
     def _evaluate_descriptive_answers(self, answers: List[Dict]) -> float:
         """Evaluate descriptive answers"""
         if not answers:
-            return 0
+            return 0.0
         
-        # Average of individual scores
-        scores = [
-            a.get("final_score", 0) for a in answers
-        ]
+        scores = []
+        for a in answers:
+            s = a.get("final_score")
+            if s is None:
+                s = a.get("score")
+            if s is None:
+                s = a.get("descriptive_score")
+            if s is None:
+                # If neither is present, try fallback evaluation
+                ref = a.get("_reference_text") or a.get("expected_answer") or ""
+                cand = a.get("answer_text") or a.get("answer") or ""
+                if cand.strip():
+                    ref_tokens = set(re.findall(r"\w+", ref.lower()))
+                    cand_tokens = set(re.findall(r"\w+", cand.lower()))
+                    intersection = ref_tokens.intersection(cand_tokens)
+                    union = ref_tokens.union(cand_tokens)
+                    sim = len(intersection) / max(len(union), 1)
+                    cov = len(intersection) / max(len(ref_tokens), 1)
+                    s = round((sim * 0.7 + cov * 0.3) * 100, 2)
+                else:
+                    s = 0.0
+            scores.append(float(s if s is not None else 0.0))
         
-        score = sum(scores) / len(scores) if scores else 0
-        return float(score)
+        return round(sum(scores) / len(scores), 2) if scores else 0.0
     
     def _evaluate_coding_answers(self, answers: List[Dict]) -> float:
         """Evaluate coding answers"""

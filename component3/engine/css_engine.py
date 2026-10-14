@@ -78,9 +78,6 @@ class CandidateFeatures:
     P_code: float
     gender:    Optional[str] = None
     age_group: Optional[str] = None
-    # False when the candidate's interview contained no coding section
-    # (non-coding roles). Gate + weights must then ignore coding entirely.
-    has_coding: bool = True
 
 
 @dataclass
@@ -107,47 +104,17 @@ class CSSEngine:
         job.validate()
 
     def hard_filter(self, f: CandidateFeatures):
-        """Equation 1 — Hard filter with soft penalty for near-miss candidates.
-        
-        Returns:
-            (passed, reason, penalty_factor)
-            - passed: True if all criteria met
-            - reason: Description of failure reason
-            - penalty_factor: 1.0 if passed, 0.0-0.9 for near-miss, 0.0 for far miss
-        """
+        """Equation 1"""
         j = self.job
-        NEAR_MISS_THRESHOLD = 0.80  # Within 80% of threshold = near-miss
-        
         if f.edu_level < j.min_edu:
-            deficit = (j.min_edu - f.edu_level) / max(j.min_edu, 1)
-            if deficit <= 0.20:
-                return False, f"Education near-miss: {EDU_LEVEL_NAMES[f.edu_level]} < {EDU_LEVEL_NAMES[j.min_edu]}", 0.70
-            return False, f"Education {EDU_LEVEL_NAMES[f.edu_level]} < min {EDU_LEVEL_NAMES[j.min_edu]}", 0.0
-            
+            return False, f"Education {EDU_LEVEL_NAMES[f.edu_level]} < min {EDU_LEVEL_NAMES[j.min_edu]}"
         if f.years_experience < j.min_exp_years:
-            ratio = f.years_experience / j.min_exp_years
-            if ratio >= NEAR_MISS_THRESHOLD:
-                penalty = 0.70 + 0.25 * (ratio - NEAR_MISS_THRESHOLD) / (1 - NEAR_MISS_THRESHOLD)
-                return False, f"Experience near-miss: {f.years_experience:.1f}y vs {j.min_exp_years:.1f}y required", penalty
-            return False, f"Experience {f.years_experience:.1f}y < min {j.min_exp_years:.1f}y", 0.0
-            
+            return False, f"Experience {f.years_experience:.1f}y < min {j.min_exp_years:.1f}y"
         if f.skill_score_raw < j.min_skill_threshold:
-            ratio = f.skill_score_raw / j.min_skill_threshold
-            if ratio >= NEAR_MISS_THRESHOLD:
-                penalty = 0.70 + 0.25 * (ratio - NEAR_MISS_THRESHOLD) / (1 - NEAR_MISS_THRESHOLD)
-                return False, f"Skill near-miss: {f.skill_score_raw:.2f} vs {j.min_skill_threshold:.2f} threshold", penalty
-            return False, f"Skill {f.skill_score_raw:.2f} < threshold {j.min_skill_threshold:.2f}", 0.0
-            
-        # No coding section administered (non-coding roles): a candidate cannot
-        # fail a gate for a test they were never given. Skip the coding check.
-        if f.has_coding and f.P_code < j.min_code_threshold:
-            ratio = f.P_code / j.min_code_threshold
-            if ratio >= NEAR_MISS_THRESHOLD:
-                penalty = 0.70 + 0.25 * (ratio - NEAR_MISS_THRESHOLD) / (1 - NEAR_MISS_THRESHOLD)
-                return False, f"Coding near-miss: {f.P_code:.2f} vs {j.min_code_threshold:.2f} threshold", penalty
-            return False, f"Coding {f.P_code:.2f} < threshold {j.min_code_threshold:.2f}", 0.0
-            
-        return True, "", 1.0
+            return False, f"Skill {f.skill_score_raw:.2f} < threshold {j.min_skill_threshold:.2f}"
+        if f.P_code < j.min_code_threshold:
+            return False, f"Coding {f.P_code:.2f} < threshold {j.min_code_threshold:.2f}"
+        return True, ""
 
     def s_edu(self, edu_level, edu_rel):
         """Equation 2"""
@@ -168,16 +135,6 @@ class CSSEngine:
         j = self.job
         return round(j.w_mcq*pm + j.w_desc*pd_ + j.w_code*pc, 4)
 
-    def s_int_no_coding(self, pm, pd_):
-        """Equation 7 with coding weight redistributed (mirrors C2 _normalize_weights).
-
-        Used when the interview had no coding section: the coding share is
-        reallocated to MCQ/descriptive pro-rata instead of scoring 0.
-        """
-        j = self.job
-        denom = (j.w_mcq + j.w_desc) or 1.0
-        return round((j.w_mcq / denom) * pm + (j.w_desc / denom) * pd_, 4)
-
     def css(self, scv, sint):
         """Equation 8 — MASTER"""
         w_cv  = self.job.W_CV
@@ -188,20 +145,18 @@ class CSSEngine:
         res = CandidateScore(candidate_id=f.candidate_id,
                               job_role=f.job_role,
                               P_mcq=f.P_mcq, P_desc=f.P_desc, P_code=f.P_code)
-        passed, reason, penalty = self.hard_filter(f)
-        res.passed_hard_filter = passed
-        res.filter_fail_reason = reason
+        # Compute true sub-scores and master CSS
         res.S_edu   = self.s_edu(f.edu_level, f.edu_relevance)
         res.S_exp   = self.s_exp(f.years_experience)
         res.S_skill = round(float(np.clip(f.skill_score_raw, 0, 1)), 4)
         res.S_cv    = self.s_cv(res.S_edu, res.S_exp, res.S_skill)
-        if f.has_coding:
-            res.S_int = self.s_int(f.P_mcq, f.P_desc, f.P_code)
-        else:
-            res.S_int = self.s_int_no_coding(f.P_mcq, f.P_desc)
+        res.S_int   = self.s_int(f.P_mcq, f.P_desc, f.P_code)
         res.CSS     = self.css(res.S_cv, res.S_int)
-        if not passed:
-            res.CSS = round(res.CSS * penalty, 4)
+
+        # Evaluate hard filter criteria
+        passed, reason = self.hard_filter(f)
+        res.passed_hard_filter = passed
+        res.filter_fail_reason = reason
         return res
 
     def rank_pool(self, candidates: List[CandidateFeatures]) -> List[CandidateScore]:

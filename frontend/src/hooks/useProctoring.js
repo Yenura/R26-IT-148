@@ -115,7 +115,7 @@ export default function useProctoring(active, options = {}) {
           'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm'
         )
         mediaPipeDetectorRef.current = await FaceDetector.createFromOptions(filesetResolver, {
-          baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short/float16/1/blaze_face_short.tflite', delegate: 'GPU' },
+          baseOptions: { modelAssetPath: 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite', delegate: 'GPU' },
           runningMode: 'VIDEO',
           minDetectionConfidence: 0.5,
         })
@@ -232,7 +232,7 @@ export default function useProctoring(active, options = {}) {
         const faceWidth = Math.abs(rightCheek.x - leftCheek.x) || 0.01
         const cheekOffset = (rightCheek.x - leftCheek.x) / faceWidth
         // Roll (tilt): eye angle
-        const eyeAngle = Math.atan2(rightEyeOuter.y - leftEyeOuter.y, rightEyeOuter.x - leftEyeOuter.x)
+        const eyeAngle = Math.atan2(rightEye.y - leftEye.y, rightEye.x - leftEye.x)
         const roll = Math.round(eyeAngle * 100) / 100
         const pitch = Math.round((chinOffset - 0.5) * 100) / 100
         const yaw = Math.round((cheekOffset - 0.5) * 100) / 100

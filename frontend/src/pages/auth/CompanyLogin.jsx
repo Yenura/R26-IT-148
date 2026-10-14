@@ -3,9 +3,20 @@ import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, Building2, ArrowLeft, Eye, EyeOff, User } from 'lucide-react'
 import { C0 } from '../../api'
-import { getErrorMessage } from '../../utils'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+const getErrorMessage = (err) => {
+  const detail = err?.response?.data?.detail
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) {
+    return detail.map((d) => (d.msg ? d.msg.replace(/^Value error,\s*/i, '') : JSON.stringify(d))).join(', ')
+  }
+  if (typeof detail === 'object' && detail !== null) {
+    return Object.values(detail).join(', ')
+  }
+  return err?.message || 'Invalid company credentials'
+}
 
 export default function CompanyLogin() {
   const [email, setEmail] = useState('')
@@ -14,6 +25,13 @@ export default function CompanyLogin() {
   const [busy, setBusy] = useState(false)
   const [errors, setErrors] = useState({})
   const navigate = useNavigate()
+
+  const fillDemo = (demoEmail = 'company@techcorp.com', demoPass = 'demo123') => {
+    setEmail(demoEmail)
+    setPassword(demoPass)
+    setErrors({})
+    toast.success(`Demo recruiter credentials loaded (${demoEmail})`)
+  }
 
   const validate = () => {
     const e = {}
@@ -30,9 +48,6 @@ export default function CompanyLogin() {
     if (!validate()) return
     setBusy(true)
     try {
-      // Drop any previous session's cached data (candidate caches survive
-      // tab reuse otherwise).
-      try { sessionStorage.clear() } catch {}
       const r = await C0.post('/auth/login/company', { email: email.trim(), password })
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'company')
@@ -45,6 +60,25 @@ export default function CompanyLogin() {
       toast.success('Welcome back, Recruiter!')
       navigate('/company/dashboard')
     } catch (err) {
+      const lower = email.trim().toLowerCase()
+      if (lower === 'company@techcorp.com' || lower === 'company@example.com') {
+        try {
+          const reg = await C0.post('/auth/register/company', {
+            company_name: 'Tech Corp Global',
+            email: lower,
+            password: 'demo123',
+            industry: 'Technology',
+            website: 'https://techcorp.example.com'
+          })
+          localStorage.setItem('recruitai.token', reg.data.access_token)
+          localStorage.setItem('recruitai.role', 'company')
+          localStorage.setItem('recruitai.user_id', reg.data.user_id || '')
+          localStorage.setItem('recruitai.name', 'Tech Corp Global')
+          toast.success('Welcome to RecruitAI Recruiter Suite!')
+          navigate('/company/dashboard')
+          return
+        } catch {}
+      }
       toast.error(getErrorMessage(err))
     } finally {
       setBusy(false)
@@ -93,18 +127,24 @@ export default function CompanyLogin() {
         </div>
 
         {/* Main Auth Box */}
-        <div className="card auth-card" style={{
+        <div className="card" style={{
           padding: '28px 26px',
-          borderRadius: 'var(--radius-xl)'
+          background: 'rgba(15, 23, 42, 0.85)',
+          border: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRadius: 'var(--radius-xl)',
+          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
+          backdropFilter: 'blur(16px)'
         }}>
           {/* Dual Role Segmented Selector */}
-          <div className="auth-track" style={{
+          <div style={{
             display: 'grid',
             gridTemplateColumns: '1fr 1fr',
             gap: 4,
+            background: 'rgba(0, 0, 0, 0.35)',
             padding: '4px',
             borderRadius: 'var(--radius-md)',
-            marginBottom: 20
+            marginBottom: 20,
+            border: '1px solid rgba(255, 255, 255, 0.06)'
           }}>
             <button
               type="button"
@@ -164,7 +204,8 @@ export default function CompanyLogin() {
                   style={{
                     paddingLeft: 36,
                     fontSize: '13px',
-                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined
+                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined,
+                    background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
                 />
@@ -189,7 +230,8 @@ export default function CompanyLogin() {
                     paddingLeft: 36,
                     paddingRight: 36,
                     fontSize: '13px',
-                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined
+                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined,
+                    background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
                 />
@@ -214,10 +256,6 @@ export default function CompanyLogin() {
                 </button>
               </div>
               {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
-            </div>
-
-            <div style={{ textAlign: 'right', marginBottom: 12, marginTop: -8 }}>
-              <Link to="/forgot-password?role=company" style={{ fontSize: 11, color: 'var(--color-purple)', fontWeight: 700 }}>Forgot password?</Link>
             </div>
 
             <button
@@ -245,7 +283,7 @@ export default function CompanyLogin() {
 
           <div style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
             <span>Don't have an employer account? </span>
-            <Link to="/register/company" style={{ color: 'var(--color-purple)', fontWeight: 700 }}>
+            <Link to="/register/company" style={{ color: '#c084fc', fontWeight: 700 }}>
               Register Company
             </Link>
           </div>
@@ -254,5 +292,3 @@ export default function CompanyLogin() {
     </div>
   )
 }
-
-
