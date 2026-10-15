@@ -90,12 +90,9 @@ COMMON_ENV = {
     "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
     "DB_NAME": os.getenv("DB_NAME", "HR"),
     "JWT_SECRET": os.getenv("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod"),
-<<<<<<< Updated upstream
     "HF_HUB_OFFLINE": "1",
     "TRANSFORMERS_OFFLINE": "1",
-=======
     "INTERNAL_API_KEY": os.getenv("INTERNAL_API_KEY", "recruitai-internal-service-key-2026"),
->>>>>>> Stashed changes
 }
 
 SERVICES = [
