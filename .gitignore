@@ -406,7 +406,6 @@ __marimo__/
 AGENTS.md
 opencode.json
 Viva_Document.md
-*.md
 hooks/claude-codex-hooks.json
 hooks/copilot-hooks.json
 hooks/ponytail-activate.js
