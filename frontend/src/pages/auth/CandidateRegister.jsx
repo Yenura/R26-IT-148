@@ -84,7 +84,7 @@ export default function CandidateRegister() {
             width: 48,
             height: 48,
             borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+            background: 'linear-gradient(135deg, var(--color-primary), #0068d0)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -112,11 +112,11 @@ export default function CandidateRegister() {
                 value={form.full_name}
                 onChange={set('full_name')}
                 placeholder="e.g. Alex Morgan"
-                style={{ paddingLeft: 36, borderColor: errors.full_name ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.full_name ? 'var(--color-danger, #ff453a)' : undefined }}
                 required
               />
             </div>
-            {errors.full_name && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.full_name}</p>}
+            {errors.full_name && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.full_name}</p>}
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -129,11 +129,11 @@ export default function CandidateRegister() {
                 value={form.email}
                 onChange={set('email')}
                 placeholder="alex@example.com"
-                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ff453a)' : undefined }}
                 required
               />
             </div>
-            {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
+            {errors.email && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
           </div>
 
           <div style={{ marginBottom: 20 }}>
@@ -146,7 +146,7 @@ export default function CandidateRegister() {
                 value={form.password}
                 onChange={set('password')}
                 placeholder="Minimum 6 characters"
-                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ff453a)' : undefined }}
                 required
               />
               <button
@@ -169,7 +169,7 @@ export default function CandidateRegister() {
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
+            {errors.password && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
           </div>
 
           <button

@@ -153,7 +153,7 @@ export default function InterviewResult() {
             borderRadius: 'var(--radius-full)',
             background: passed ? 'var(--color-success-muted)' : 'var(--color-danger-muted)',
             color: passed ? 'var(--color-success)' : 'var(--color-danger)',
-            border: `1px solid ${passed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(244, 63, 94, 0.3)'}`
+            border: `1px solid ${passed ? 'rgba(48, 209, 88, 0.3)' : 'rgba(255, 69, 58, 0.3)'}`
           }}>
             {passed ? 'Qualified' : 'Below Threshold'}
           </span>
@@ -208,7 +208,7 @@ export default function InterviewResult() {
                   background: 'var(--color-bg-elevated)',
                   borderRadius: 'var(--radius-md)',
                   borderLeft: `4px solid ${isCorrect ? 'var(--color-success)' : 'var(--color-danger)'}`,
-                  border: `1px solid ${isCorrect ? 'rgba(16, 185, 129, 0.2)' : 'rgba(244, 63, 94, 0.2)'}`,
+                  border: `1px solid ${isCorrect ? 'rgba(48, 209, 88, 0.2)' : 'rgba(255, 69, 58, 0.2)'}`,
                   borderLeftWidth: 4,
                   borderLeftColor: isCorrect ? 'var(--color-success)' : 'var(--color-danger)',
                   display: 'flex',

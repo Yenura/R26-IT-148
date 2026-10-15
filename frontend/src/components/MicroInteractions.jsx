@@ -106,7 +106,7 @@ export function CardTilt({ children, style, intensity = 8 }) {
   )
 }
 
-export function FloatingParticles({ count = 30, color = 'rgba(59,130,246,0.25)' }) {
+export function FloatingParticles({ count = 30, color = 'rgba(10,132,255,0.25)' }) {
   const canvasRef = useRef(null)
 
   useEffect(() => {

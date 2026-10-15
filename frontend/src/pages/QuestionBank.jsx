@@ -367,7 +367,7 @@ export default function QuestionBank() {
                                       <div key={oIdx} style={{
                                         padding: '8px 12px',
                                         borderRadius: 'var(--radius-sm)',
-                                        border: `1px solid ${isCorrectOpt ? 'rgba(16, 185, 129, 0.4)' : 'var(--color-border-subtle)'}`,
+                                        border: `1px solid ${isCorrectOpt ? 'rgba(48, 209, 88, 0.4)' : 'var(--color-border-subtle)'}`,
                                         background: isCorrectOpt ? 'var(--color-success-muted)' : 'var(--color-bg-elevated)',
                                         display: 'flex',
                                         alignItems: 'center',

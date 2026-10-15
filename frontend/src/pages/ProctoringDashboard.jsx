@@ -156,7 +156,7 @@ export default function ProctoringDashboard() {
           borderRadius: 'var(--radius-full)',
           background: integrityScore >= 80 ? 'var(--color-success-muted)' : integrityScore >= 50 ? 'var(--color-warning-muted)' : 'var(--color-danger-muted)',
           color: integrityScore >= 80 ? 'var(--color-success)' : integrityScore >= 50 ? 'var(--color-warning)' : 'var(--color-danger)',
-          border: `1px solid ${integrityScore >= 80 ? 'rgba(16,185,129,0.3)' : integrityScore >= 50 ? 'rgba(245,158,11,0.3)' : 'rgba(244,63,94,0.3)'}`
+          border: `1px solid ${integrityScore >= 80 ? 'rgba(48,209,88,0.3)' : integrityScore >= 50 ? 'rgba(245,158,11,0.3)' : 'rgba(255,69,58,0.3)'}`
         }}>
           {integrityScore >= 80 ? 'Clean Session' : integrityScore >= 50 ? 'Minor Flags Detected' : 'Multiple Integrity Violations'}
         </span>
@@ -250,7 +250,7 @@ export default function ProctoringDashboard() {
             textAlign: 'center',
             background: 'var(--color-success-muted)',
             borderRadius: 'var(--radius-md)',
-            border: '1px solid rgba(16, 185, 129, 0.25)'
+            border: '1px solid rgba(48, 209, 88, 0.25)'
           }}>
             <CheckCircle2 size={32} style={{ color: 'var(--color-success)', margin: '0 auto 8px' }} />
             <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-success)' }}>No Proctoring Flags</div>

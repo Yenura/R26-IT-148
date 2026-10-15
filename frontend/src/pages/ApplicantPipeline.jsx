@@ -214,7 +214,7 @@ export default function ApplicantPipeline() {
                       </td>
                       <td>
                         <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                          <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal).toFixed(0)}%</span>
+                          <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#bf5af2' }}>{Number(sEduVal).toFixed(0)}%</span>
                         </div>
                       </td>
                       <td>
@@ -407,7 +407,7 @@ export default function ApplicantPipeline() {
 
             {/* Weak Topics */}
             {detail.weak_topics?.length > 0 && (
-              <div style={{ padding: 12, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: 16 }}>
+              <div style={{ padding: 12, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,69,58,0.2)', marginBottom: 16 }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-danger)', marginBottom: 4 }}>Weak Areas Identified</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   {detail.weak_topics.map((t, i) => (
@@ -532,8 +532,8 @@ export default function ApplicantPipeline() {
                 {detail.answers.map((ans, idx) => {
                   const isWrong = ans.question_type === 'MCQ' && ans.is_correct === false
                   const isCodingWrong = ans.question_type === 'Coding' && (ans.code_score || 0) < 50
-                  const highlight = isWrong || isCodingWrong ? 'rgba(239,68,68,0.08)' : 'var(--color-bg-elevated)'
-                  const borderColor = isWrong || isCodingWrong ? 'rgba(239,68,68,0.3)' : 'var(--color-border-subtle)'
+                  const highlight = isWrong || isCodingWrong ? 'rgba(255,69,58,0.08)' : 'var(--color-bg-elevated)'
+                  const borderColor = isWrong || isCodingWrong ? 'rgba(255,69,58,0.3)' : 'var(--color-border-subtle)'
                   return (
                     <div key={ans.question_id || idx} style={{ padding: 12, background: highlight, borderRadius: 'var(--radius-sm)', border: `1px solid ${borderColor}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>

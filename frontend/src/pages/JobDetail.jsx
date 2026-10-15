@@ -316,7 +316,7 @@ export default function JobDetail() {
                   <div style={{
                     padding: 12,
                     background: interviewDone ? 'var(--color-success-muted)' : 'var(--color-purple-muted)',
-                    border: `1px solid ${interviewDone ? 'rgba(16, 185, 129, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`,
+                    border: `1px solid ${interviewDone ? 'rgba(48, 209, 88, 0.3)' : 'rgba(191, 90, 242, 0.3)'}`,
                     borderRadius: 'var(--radius-sm)'
                   }}>
                     <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: interviewDone ? 'var(--color-success)' : 'var(--color-purple)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -337,7 +337,7 @@ export default function JobDetail() {
                     <div style={{
                       padding: '10px 12px',
                       background: 'var(--color-success-muted)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      border: '1px solid rgba(48, 209, 88, 0.3)',
                       borderRadius: 'var(--radius-sm)',
                       color: 'var(--color-success)',
                       fontSize: 'var(--p-text-sm)',

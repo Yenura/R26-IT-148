@@ -194,7 +194,7 @@ export default function SkillGapReports() {
                           padding: '2px 8px', borderRadius: 'var(--radius-full)',
                           background: report.status === 'completed' ? 'var(--color-success-muted)' : 'var(--color-warning-muted)',
                           color: report.status === 'completed' ? 'var(--color-success)' : 'var(--color-warning)',
-                          border: `1px solid ${report.status === 'completed' ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                          border: `1px solid ${report.status === 'completed' ? 'rgba(48, 209, 88, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
                         }}>
                           {report.status === 'completed' ? 'Completed' : 'Pending'}
                         </span>

@@ -6,8 +6,8 @@ export default function ErrorState({
   onRetry
 }) {
   return (
-    <div style={{ padding: 40, textAlign: 'center', background: 'rgba(239, 68, 68, 0.05)', borderRadius: 14, border: '1px solid rgba(239, 68, 68, 0.2)', margin: '20px 0' }}>
-      <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(239, 68, 68, 0.1)', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+    <div style={{ padding: 40, textAlign: 'center', background: 'rgba(255, 69, 58, 0.05)', borderRadius: 14, border: '1px solid rgba(255, 69, 58, 0.2)', margin: '20px 0' }}>
+      <div style={{ width: 52, height: 52, borderRadius: '50%', background: 'rgba(255, 69, 58, 0.1)', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
         <AlertCircle size={26} />
       </div>
       <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{title}</h3>

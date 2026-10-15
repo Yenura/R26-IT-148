@@ -133,7 +133,7 @@ export default function Landing() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{
             width: 28, height: 28, borderRadius: 6,
-            background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+            background: 'linear-gradient(135deg, var(--color-primary), #0068d0)',
             display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
           }}>
             <Brain size={16} color="#ffffff" strokeWidth={2.5} />
@@ -181,7 +181,7 @@ export default function Landing() {
           <div>
             <div className="hero-eyebrow" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'var(--color-primary-muted)', border: '1px solid rgba(59,130,246,0.25)',
+              background: 'var(--color-primary-muted)', border: '1px solid rgba(10,132,255,0.25)',
               borderRadius: 999, padding: '6px 16px', fontSize: 'var(--p-text-xs)',
               color: 'var(--color-primary)', marginBottom: 'var(--p-space-5)', fontWeight: 'var(--p-weight-bold)',
               textTransform: 'uppercase', letterSpacing: '0.06em'
@@ -244,7 +244,7 @@ export default function Landing() {
               borderRadius: 'var(--p-radius-xl)',
               background: 'var(--color-bg-elevated)',
               border: '1px solid var(--color-border)',
-              boxShadow: 'var(--shadow-xl), 0 0 45px rgba(59, 130, 246, 0.15)',
+              boxShadow: 'var(--shadow-xl), 0 0 45px rgba(10, 132, 255, 0.15)',
               overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center',
               position: 'relative'
             }}>
@@ -355,7 +355,7 @@ export default function Landing() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ padding: '8px 14px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(59, 130, 246, 0.25)' }}>
+              <div style={{ padding: '8px 14px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(10, 132, 255, 0.25)' }}>
                 <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)' }}>
                   {features[activeTab].stat}
                 </span>
@@ -466,7 +466,7 @@ export default function Landing() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{
               width: 24, height: 24, borderRadius: 6,
-              background: 'linear-gradient(135deg, var(--color-primary), #6366f1)',
+              background: 'linear-gradient(135deg, var(--color-primary), #0a84ff)',
               display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff'
             }}>
               <Brain size={13} />

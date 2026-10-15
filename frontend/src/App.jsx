@@ -163,11 +163,11 @@ export default function App() {
                   width: 32,
                   height: 32,
                   borderRadius: 'var(--radius-md)',
-                  background: 'linear-gradient(135deg, #2563eb, #6366f1)',
+                  background: 'linear-gradient(135deg, #0071e3, #0a84ff)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)',
+                  boxShadow: '0 2px 8px rgba(0, 113, 227, 0.4)',
                   flexShrink: 0
                 }}>
                   <Brain size={19} color="#ffffff" strokeWidth={2.5} />
@@ -182,7 +182,7 @@ export default function App() {
                   borderRadius: 'var(--radius-full)',
                   background: role === 'company' ? 'var(--color-purple-muted)' : 'var(--color-primary-muted)',
                   color: role === 'company' ? 'var(--color-purple)' : 'var(--color-primary)',
-                  border: `1px solid ${role === 'company' ? 'rgba(139, 92, 246, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`,
+                  border: `1px solid ${role === 'company' ? 'rgba(191, 90, 242, 0.25)' : 'rgba(10, 132, 255, 0.25)'}`,
                 }}>
                   {role === 'company' ? 'Recruiter' : 'Candidate'}
                 </span>
@@ -310,7 +310,7 @@ export default function App() {
 
       {/* Main Content Shell */}
       <div className="app-shell">
-        <main className="main-content">
+        <main className="main-content route-enter" key={location.pathname}>
           <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>

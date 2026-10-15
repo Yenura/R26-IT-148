@@ -35,7 +35,7 @@ export default function ResetPassword() {
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
         <Link to="/" className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}><ArrowLeft size={14} /> Back to Home</Link>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ margin: '0 auto 12px', width: 48, height: 48, borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><KeyRound size={22} /></div>
+          <div style={{ margin: '0 auto 12px', width: 48, height: 48, borderRadius: 'var(--radius-md)', background: 'linear-gradient(135deg, var(--color-primary), #0068d0)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><KeyRound size={22} /></div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>Reset Password</h1>
           <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>Paste the token from Forgot Password and choose a new password.</p>
         </div>

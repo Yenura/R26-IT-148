@@ -92,7 +92,7 @@ export default function CompanyRegister() {
             width: 48,
             height: 48,
             borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, var(--color-purple), #6366f1)',
+            background: 'linear-gradient(135deg, var(--color-purple), #0a84ff)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -120,11 +120,11 @@ export default function CompanyRegister() {
                 value={form.company_name}
                 onChange={set('company_name')}
                 placeholder="e.g. Acme Tech Inc."
-                style={{ paddingLeft: 36, borderColor: errors.company_name ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.company_name ? 'var(--color-danger, #ff453a)' : undefined }}
                 required
               />
             </div>
-            {errors.company_name && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.company_name}</p>}
+            {errors.company_name && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.company_name}</p>}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -137,11 +137,11 @@ export default function CompanyRegister() {
                 value={form.email}
                 onChange={set('email')}
                 placeholder="recruiter@acme.com"
-                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ff453a)' : undefined }}
                 required
               />
             </div>
-            {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
+            {errors.email && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -154,7 +154,7 @@ export default function CompanyRegister() {
                 value={form.password}
                 onChange={set('password')}
                 placeholder="Minimum 6 characters"
-                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ff453a)' : undefined }}
                 required
               />
               <button
@@ -177,7 +177,7 @@ export default function CompanyRegister() {
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
+            {errors.password && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>

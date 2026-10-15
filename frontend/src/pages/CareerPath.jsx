@@ -187,7 +187,7 @@ export default function CareerPath() {
                            <span key={`${s}-${i}`} className="chip" style={{
                             fontSize: 10, padding: '2px 8px',
                             background: 'var(--color-success-muted)', color: 'var(--color-success)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            border: '1px solid rgba(48, 209, 88, 0.3)',
                           }}>{s}</span>
                         ))}
                       </div>

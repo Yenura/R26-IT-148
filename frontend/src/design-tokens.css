@@ -1,7 +1,11 @@
 /*
- * RecruitAI Premium Design Tokens
+ * RecruitAI Design Tokens — Apple Edition
  * Architecture: Primitive → Semantic → Component
- * Inspired by Linear, Stripe, and Vercel luxury SaaS design systems.
+ * Redesigned per the apple-design skill (primary design skill):
+ * WWDC fluid-interface principles — system typography with size-specific
+ * tracking/leading, translucent materials for floating chrome, instant
+ * press feedback, expo-out motion, reduced-motion/transparency support.
+ * Brand palette: Apple System Colors (adaptive light/dark).
  */
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -13,28 +17,28 @@
   --p-white: #ffffff;
   --p-black: #000000;
 
-  /* Blue (primary — trust, dependability) */
-  --p-blue-50: #eff6ff;
-  --p-blue-100: #dbeafe;
-  --p-blue-200: #bfdbfe;
-  --p-blue-300: #93c5fd;
-  --p-blue-400: #60a5fa;
-  --p-blue-500: #3b82f6;
-  --p-blue-600: #2563eb;
-  --p-blue-700: #1d4ed8;
-  --p-blue-800: #1e40af;
+  /* Blue (brand primary — Apple System Blue, adaptive) */
+  --p-blue-50: #eef7ff;
+  --p-blue-100: #d8e9ff;
+  --p-blue-200: #b3d4ff;
+  --p-blue-300: #7ab8ff;
+  --p-blue-400: #409cff;
+  --p-blue-500: #0a84ff;
+  --p-blue-600: #0071e3;
+  --p-blue-700: #0060c4;
+  --p-blue-800: #004d9e;
 
   /* Emerald (accent — growth, opportunity) */
   --p-emerald-50: #ecfdf5;
   --p-emerald-100: #d1fae5;
   --p-emerald-200: #a7f3d0;
   --p-emerald-300: #6ee7b7;
-  --p-emerald-400: #34d399;
-  --p-emerald-500: #10b981;
-  --p-emerald-600: #059669;
-  --p-emerald-700: #047857;
-  --p-emerald-800: #065f46;
-  --p-emerald-900: #064e3b;
+  --p-emerald-400: #30d158;
+  --p-emerald-500: #30d158;
+  --p-emerald-600: #1a9e50;
+  --p-emerald-700: #15803d;
+  --p-emerald-800: #0f6130;
+  --p-emerald-900: #0b4a26;
 
   /* Amber (warning) */
   --p-amber-50: #fffbeb;
@@ -43,22 +47,22 @@
   --p-amber-300: #fcd34d;
   --p-amber-400: #fbbf24;
   --p-amber-500: #f59e0b;
-  --p-amber-600: #d97706;
-  --p-amber-700: #b45309;
-  --p-amber-800: #92400e;
-  --p-amber-900: #78350f;
+  --p-amber-600: #b25f00;
+  --p-amber-700: #926100;
+  --p-amber-800: #744d00;
+  --p-amber-900: #5c3d00;
 
   /* Rose (danger) */
   --p-rose-50: #fff1f2;
   --p-rose-100: #ffe4e6;
   --p-rose-200: #fecdd3;
   --p-rose-300: #fda4af;
-  --p-rose-400: #fb7185;
-  --p-rose-500: #f43f5e;
-  --p-rose-600: #e11d48;
-  --p-rose-700: #be123c;
-  --p-rose-800: #9f1239;
-  --p-rose-900: #881337;
+  --p-rose-400: #ff6961;
+  --p-rose-500: #ff453a;
+  --p-rose-600: #e0342c;
+  --p-rose-700: #b3111b;
+  --p-rose-800: #8f0e16;
+  --p-rose-900: #720b12;
 
   /* Zinc (neutrals — tinted, modern) */
   --p-zinc-50: #fafafa;
@@ -100,9 +104,9 @@
   --p-text-4xl: 28px;
   --p-text-5xl: 36px;
 
-  /* ── Font families ────────────────────────────────────────────── */
-  --p-font-sans: 'Plus Jakarta Sans', 'Inter', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --p-font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, monospace;
+  /* ── Font families (Apple §15: platform system font first) ─────── */
+  --p-font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Segoe UI', 'Inter', 'Plus Jakarta Sans', 'Outfit', sans-serif;
+  --p-font-mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
 
   /* ── Font weights ──────────────────────────────────────────────── */
   --p-weight-normal: 400;
@@ -116,6 +120,18 @@
   --p-leading-normal: 1.55;
   --p-leading-relaxed: 1.7;
 
+  /* ── Size-specific tracking & leading (Apple §15) ────────────────
+     Large display: negative tracking + tight leading.
+     Body: neutral tracking + comfortable leading.
+     Small caps/labels: slightly positive tracking for legibility. */
+  --p-tracking-display: -0.025em;
+  --p-tracking-title: -0.015em;
+  --p-tracking-body: 0;
+  --p-tracking-caption: 0.02em;
+  --p-leading-display: 1.05;
+  --p-leading-title: 1.2;
+  --p-leading-body: 1.55;
+
   /* ── Border radius ─────────────────────────────────────────────── */
   --p-radius-none: 0;
   --p-radius-sm: 8px;
@@ -124,20 +140,29 @@
   --p-radius-xl: 24px;
   --p-radius-full: 9999px;
 
-  /* ── Shadows (tinted blue for premium depth) ───────────────────── */
+  /* ── Shadows (Apple-blue tinted depth) ─────────────────────────── */
   --p-shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --p-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.04);
-  --p-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(59, 130, 246, 0.06);
-  --p-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(59, 130, 246, 0.08);
-  --p-shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(59, 130, 246, 0.1);
-  --p-shadow-glow: 0 0 40px rgba(59, 130, 246, 0.15);
+  --p-shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(10, 132, 255, 0.04);
+  --p-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(10, 132, 255, 0.06);
+  --p-shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(10, 132, 255, 0.08);
+  --p-shadow-xl: 0 16px 64px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(10, 132, 255, 0.1);
+  --p-shadow-glow: 0 0 40px rgba(10, 132, 255, 0.15);
 
-  /* ── Timing ────────────────────────────────────────────────────── */
+  /* ── Timing (Apple §1/§4: instant press, expo-out settle) ─────── */
+  --p-duration-press: 100ms;
   --p-duration-fast: 120ms;
   --p-duration-normal: 200ms;
   --p-duration-slow: 350ms;
   --p-ease-default: cubic-bezier(0.16, 1, 0.3, 1);
   --p-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --p-ease-press: ease-out;
+
+  /* ── Translucent materials (Apple §12) ─────────────────────────── */
+  --material-blur: blur(20px) saturate(180%);
+  --material-blur-lg: blur(28px) saturate(180%);
+  --material-bar: rgba(8, 8, 12, 0.62);
+  --material-menu: rgba(18, 18, 26, 0.78);
+  --material-edge: rgba(255, 255, 255, 0.12);
 
   /* ── Z-index scale ─────────────────────────────────────────────── */
   --p-z-base: 0;
@@ -147,13 +172,13 @@
   --p-z-modal: 1300;
   --p-z-toast: 1400;
 
-  /* ── Glassmorphic Defaults ──────────────────────────────────────── */
-  --glass-bg: rgba(10, 10, 15, 0.95);
+  /* ── Glassmorphic Defaults (dark = floating material) ──────────── */
+  --glass-bg: var(--material-menu);
   --glass-blur: blur(0px);
   --glass-border: rgba(255, 255, 255, 0.06);
 
   /* ── Focus ring ────────────────────────────────────────────────── */
-  --p-focus-ring: 0 0 0 3px rgba(99, 102, 241, 0.4);
+  --p-focus-ring: 0 0 0 3px rgba(10, 132, 255, 0.4);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -164,12 +189,12 @@
 :root {
   color-scheme: dark;
 
-  /* Backgrounds with layered depth */
-  --color-bg: #0a0a0f;
-  --color-bg-soft: #12121a;
-  --color-bg-elevated: #161622;
-  --color-surface: #12121a;
-  --color-surface-hover: #1a1a2e;
+  /* Backgrounds with layered depth (Apple dark: true-black base) */
+  --color-bg: #000000;
+  --color-bg-soft: #0a0a0f;
+  --color-bg-elevated: #101016;
+  --color-surface: #101016;
+  --color-surface-hover: #17171f;
 
   /* Foregrounds */
   --color-fg: #f8fafc;
@@ -181,42 +206,42 @@
   --color-border-subtle: rgba(255, 255, 255, 0.05);
   --color-border-strong: rgba(255, 255, 255, 0.16);
 
-  /* Primary (Electric Indigo / Sapphire) */
-  --color-primary: #6366f1;
-  --color-primary-hover: #818cf8;
-  --color-primary-active: #4f46e5;
+  /* Primary (Apple System Blue) */
+  --color-primary: #0a84ff;
+  --color-primary-hover: #409cff;
+  --color-primary-active: #0060cc;
   --color-primary-fg: #ffffff;
-  --color-primary-muted: rgba(99, 102, 241, 0.12);
+  --color-primary-muted: rgba(10, 132, 255, 0.12);
 
-  /* Accent / success (Emerald Green with vibrant glow) */
-  --color-success: #10b981;
-  --color-success-hover: #34d399;
+  /* Accent / success (Apple System Green) */
+  --color-success: #30d158;
+  --color-success-hover: #45e06b;
   --color-success-fg: #ffffff;
-  --color-success-muted: rgba(16, 185, 129, 0.12);
+  --color-success-muted: rgba(48, 209, 88, 0.12);
 
-  /* Warning (Amber with subtle glow) */
-  --color-warning: #f59e0b;
-  --color-warning-hover: #fbbf24;
-  --color-warning-fg: #ffffff;
-  --color-warning-muted: rgba(245, 158, 11, 0.12);
+  /* Warning (Apple System Yellow, legible on black) */
+  --color-warning: #ffd60a;
+  --color-warning-hover: #ffdb33;
+  --color-warning-fg: #000000;
+  --color-warning-muted: rgba(255, 214, 10, 0.12);
 
-  /* Danger (Rose Coral with subtle glow) */
-  --color-danger: #f43f5e;
-  --color-danger-hover: #fb7185;
+  /* Danger (Apple System Red) */
+  --color-danger: #ff453a;
+  --color-danger-hover: #ff6b62;
   --color-danger-fg: #ffffff;
-  --color-danger-muted: rgba(244, 63, 94, 0.12);
+  --color-danger-muted: rgba(255, 69, 58, 0.12);
 
-  /* Info (Sky Blue) */
-  --color-info: #38bdf8;
-  --color-info-muted: rgba(56, 189, 248, 0.12);
+  /* Info (Apple Teal/Blue tint) */
+  --color-info: #64d2ff;
+  --color-info-muted: rgba(100, 210, 255, 0.12);
 
-  /* Purple (Coding & AI Sandbox) */
-  --color-purple: #a855f7;
-  --color-purple-muted: rgba(168, 85, 247, 0.12);
+  /* Purple (Apple System Purple) */
+  --color-purple: #bf5af2;
+  --color-purple-muted: rgba(191, 90, 242, 0.12);
 
-  /* Orange (high priority) */
-  --color-orange: #f97316;
-  --color-orange-muted: rgba(249, 115, 22, 0.12);
+  /* Orange (Apple System Orange) */
+  --color-orange: #ff9f0a;
+  --color-orange-muted: rgba(255, 159, 10, 0.12);
 
   /* On-button text */
   --color-on-primary: #ffffff;
@@ -257,23 +282,31 @@
   --chart-grid: var(--p-zinc-800);
 
   /* Scrollbar */
-  --scrollbar-track: #07090e;
-  --scrollbar-thumb: #1e293b;
+  --scrollbar-track: #000000;
+  --scrollbar-thumb: #2c2c30;
 
   /* Input */
-  --input-bg: #0f1422;
+  --input-bg: #0c0c13;
+}
+
+/* ── Translucent material mappings (dark) ────────────────────────── */
+:root {
+  --navbar-bg: var(--material-bar);
+  --navbar-blur: var(--material-blur);
+  --menu-bg: var(--material-menu);
+  --menu-blur: var(--material-blur);
 }
 
 /* ── Light theme (Ultra-Clean Silicon Valley Palette) ────────────── */
 [data-theme="light"] {
   color-scheme: light;
 
-  /* Backgrounds with crisp layered depth */
-  --color-bg: #f8fafc;
-  --color-bg-soft: #f1f5f9;
+  /* Backgrounds with crisp layered depth (Apple light: #f5f5f7) */
+  --color-bg: #f5f5f7;
+  --color-bg-soft: #e9e9ee;
   --color-bg-elevated: #ffffff;
   --color-surface: #ffffff;
-  --color-surface-hover: #f8fafc;
+  --color-surface-hover: #ececf1;
 
   /* Foregrounds (High Contrast & Legible) */
   --color-fg: #0f172a;
@@ -285,42 +318,42 @@
   --color-border-subtle: #f1f5f9;
   --color-border-strong: #cbd5e1;
 
-  /* Primary (Executive Sapphire Blue) */
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-primary-active: #1e40af;
+  /* Primary (Apple Blue, contrast-safe on #f5f5f7) */
+  --color-primary: #0071e3;
+  --color-primary-hover: #0068d0;
+  --color-primary-active: #0058b5;
   --color-primary-fg: #ffffff;
-  --color-primary-muted: rgba(37, 99, 235, 0.09);
+  --color-primary-muted: rgba(0, 113, 227, 0.09);
 
-  /* Accent / Success (Vibrant Emerald) */
-  --color-success: #059669;
-  --color-success-hover: #047857;
+  /* Accent / Success (deep Apple Green, contrast-safe) */
+  --color-success: #178040;
+  --color-success-hover: #126e34;
   --color-success-fg: #ffffff;
-  --color-success-muted: rgba(5, 150, 105, 0.09);
+  --color-success-muted: rgba(23, 128, 64, 0.09);
 
-  /* Warning (Warm Amber) */
-  --color-warning: #d97706;
-  --color-warning-hover: #b45309;
+  /* Warning (deep amber, contrast-safe) */
+  --color-warning: #926100;
+  --color-warning-hover: #755200;
   --color-warning-fg: #ffffff;
-  --color-warning-muted: rgba(217, 119, 6, 0.09);
+  --color-warning-muted: rgba(146, 97, 0, 0.1);
 
-  /* Danger (Clean Rose Crimson) */
-  --color-danger: #e11d48;
-  --color-danger-hover: #be123c;
+  /* Danger (Apple deep red, contrast-safe) */
+  --color-danger: #d70015;
+  --color-danger-hover: #a30012;
   --color-danger-fg: #ffffff;
-  --color-danger-muted: rgba(225, 29, 72, 0.09);
+  --color-danger-muted: rgba(215, 0, 21, 0.08);
 
-  /* Info (Deep Sky) */
-  --color-info: #0284c7;
-  --color-info-muted: rgba(2, 132, 199, 0.09);
+  /* Info (deep teal, contrast-safe) */
+  --color-info: #007194;
+  --color-info-muted: rgba(0, 113, 148, 0.09);
 
-  /* Purple (AI Intelligence & Neural Sandbox) */
-  --color-purple: #7c3aed;
-  --color-purple-muted: rgba(124, 58, 237, 0.09);
+  /* Purple (deep Apple Purple, contrast-safe) */
+  --color-purple: #7e22ce;
+  --color-purple-muted: rgba(126, 34, 206, 0.09);
 
-  /* Orange (High Priority) */
-  --color-orange: #ea580c;
-  --color-orange-muted: rgba(234, 88, 12, 0.09);
+  /* Orange (burnt Apple Orange, contrast-safe) */
+  --color-orange: #c2410c;
+  --color-orange-muted: rgba(194, 65, 12, 0.09);
 
   /* On-button text */
   --color-on-primary: #ffffff;
@@ -328,7 +361,7 @@
   --color-on-danger: #ffffff;
 
   /* Focus ring */
-  --color-focus-ring: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  --color-focus-ring: 0 0 0 3px rgba(0, 113, 227, 0.25);
 
   /* Shadows (Light Crisp Shadows) */
   --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -336,7 +369,7 @@
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
-  --shadow-glow: 0 0 30px rgba(37, 99, 235, 0.12);
+  --shadow-glow: 0 0 30px rgba(0, 113, 227, 0.12);
 
   /* Chart tokens */
   --chart-tooltip-bg: #ffffff;
@@ -351,13 +384,22 @@
   /* Form Inputs */
   --input-bg: #ffffff;
   --input-border: #cbd5e1;
-  --input-border-focus: #2563eb;
-  --input-shadow-focus: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  --input-border-focus: #0071e3;
+  --input-shadow-focus: 0 0 0 3px rgba(0, 113, 227, 0.2);
 
   /* Glassmorphism */
-  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-bg: rgba(255, 255, 255, 0.65);
   --glass-blur: blur(12px);
   --glass-border: rgba(0, 0, 0, 0.08);
+
+  /* Translucent materials (light) */
+  --material-bar: rgba(255, 255, 255, 0.65);
+  --material-menu: rgba(255, 255, 255, 0.82);
+  --material-edge: rgba(0, 0, 0, 0.08);
+  --navbar-bg: var(--material-bar);
+  --navbar-blur: var(--material-blur);
+  --menu-bg: var(--material-menu);
+  --menu-blur: var(--material-blur);
 
   /* Component Layer Overrides for Light Mode */
   --card-bg: #ffffff;
@@ -365,8 +407,8 @@
   --card-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
   --card-shadow-hover: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
   --card-border-hover: #cbd5e1;
-  --card-border-active: #2563eb;
-  --card-border-active-glow: rgba(37, 99, 235, 0.15);
+  --card-border-active: #0071e3;
+  --card-border-active-glow: rgba(0, 113, 227, 0.15);
 
   --table-header-bg: #f8fafc;
   --table-header-fg: #64748b;
@@ -396,13 +438,13 @@
   --sidebar-bg: #ffffff;
   --sidebar-border: #e2e8f0;
   --sidebar-item-fg: #475569;
-  --sidebar-item-active-bg: rgba(37, 99, 235, 0.08);
-  --sidebar-item-active-fg: #2563eb;
-  --sidebar-item-active-bar: #2563eb;
+  --sidebar-item-active-bg: rgba(0, 113, 227, 0.08);
+  --sidebar-item-active-fg: #0071e3;
+  --sidebar-item-active-bar: #0071e3;
 
   --progress-bg: #e2e8f0;
   --progress-border: #cbd5e1;
-  --progress-fill: #2563eb;
+  --progress-fill: #0071e3;
 
   /* ── Direct Linear/Vercel Variable Compatibility (Light Mode) ────── */
   --bg-primary: #f8fafc;
@@ -412,10 +454,10 @@
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
-  --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
-  --success-500: #059669;
-  --warning-500: #d97706;
-  --error-500: #dc2626;
+  --primary-gradient: linear-gradient(135deg, #0071e3 0%, #0a84ff 100%);
+  --success-500: #178040;
+  --warning-500: #926100;
+  --error-500: #d70015;
 
   /* Backward Compatibility */
   --bg: var(--color-bg);
@@ -544,7 +586,7 @@
   --modal-border: var(--color-border);
   --modal-radius: var(--radius-xl);
   --modal-shadow: var(--shadow-xl);
-  --modal-overlay: rgba(0, 0, 0, 0.6);
+  --modal-overlay: rgba(0, 0, 0, 0.5);
   --modal-max-width: 480px;
   --modal-padding: var(--p-space-6);
 

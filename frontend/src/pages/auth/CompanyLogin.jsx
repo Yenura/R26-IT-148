@@ -108,7 +108,7 @@ export default function CompanyLogin() {
             width: 52,
             height: 52,
             borderRadius: 'var(--radius-lg)',
-            background: 'linear-gradient(135deg, #9333ea 0%, #6366f1 100%)',
+            background: 'linear-gradient(135deg, #9333ea 0%, #0a84ff 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -204,13 +204,13 @@ export default function CompanyLogin() {
                   style={{
                     paddingLeft: 36,
                     fontSize: '13px',
-                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined,
+                    borderColor: errors.email ? 'var(--color-danger, #ff453a)' : undefined,
                     background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
                 />
               </div>
-              {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
+              {errors.email && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
             </div>
 
             <div style={{ marginBottom: 20 }}>
@@ -230,7 +230,7 @@ export default function CompanyLogin() {
                     paddingLeft: 36,
                     paddingRight: 36,
                     fontSize: '13px',
-                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined,
+                    borderColor: errors.password ? 'var(--color-danger, #ff453a)' : undefined,
                     background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
@@ -255,7 +255,7 @@ export default function CompanyLogin() {
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
+              {errors.password && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
             </div>
 
             <button
@@ -272,7 +272,7 @@ export default function CompanyLogin() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                background: 'linear-gradient(135deg, #9333ea 0%, #6366f1 100%)',
+                background: 'linear-gradient(135deg, #9333ea 0%, #0a84ff 100%)',
                 boxShadow: '0 4px 16px rgba(147, 51, 234, 0.35)',
                 border: 'none'
               }}

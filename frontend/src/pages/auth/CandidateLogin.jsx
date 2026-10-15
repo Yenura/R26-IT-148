@@ -91,7 +91,7 @@ export default function CandidateLogin() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(ellipse at top, rgba(59, 130, 246, 0.12) 0%, var(--color-bg) 70%)',
+      background: 'radial-gradient(ellipse at top, rgba(10, 132, 255, 0.12) 0%, var(--color-bg) 70%)',
       padding: '24px 16px',
       position: 'relative',
       overflow: 'hidden'
@@ -108,12 +108,12 @@ export default function CandidateLogin() {
             width: 52,
             height: 52,
             borderRadius: 'var(--radius-lg)',
-            background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
+            background: 'linear-gradient(135deg, #0a84ff 0%, #0a84ff 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             color: '#fff',
-            boxShadow: '0 8px 24px rgba(59, 130, 246, 0.35)',
+            boxShadow: '0 8px 24px rgba(10, 132, 255, 0.35)',
             border: '1px solid rgba(255, 255, 255, 0.2)'
           }}>
             <Brain size={28} color="#ffffff" strokeWidth={2.5} />
@@ -161,7 +161,7 @@ export default function CandidateLogin() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
-                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+                boxShadow: '0 2px 8px rgba(10, 132, 255, 0.3)'
               }}
             >
               <User size={13} /> Candidate
@@ -204,13 +204,13 @@ export default function CandidateLogin() {
                   style={{
                     paddingLeft: 36,
                     fontSize: '13px',
-                    borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined,
+                    borderColor: errors.email ? 'var(--color-danger, #ff453a)' : undefined,
                     background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
                 />
               </div>
-              {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
+              {errors.email && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
             </div>
 
             <div style={{ marginBottom: 20 }}>
@@ -230,7 +230,7 @@ export default function CandidateLogin() {
                     paddingLeft: 36,
                     paddingRight: 36,
                     fontSize: '13px',
-                    borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined,
+                    borderColor: errors.password ? 'var(--color-danger, #ff453a)' : undefined,
                     background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
@@ -255,7 +255,7 @@ export default function CandidateLogin() {
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
+              {errors.password && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
             </div>
 
             <button
@@ -272,8 +272,8 @@ export default function CandidateLogin() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)',
-                boxShadow: '0 4px 16px rgba(59, 130, 246, 0.35)'
+                background: 'linear-gradient(135deg, #0a84ff 0%, #0a84ff 100%)',
+                boxShadow: '0 4px 16px rgba(10, 132, 255, 0.35)'
               }}
             >
               <User size={15} /> {busy ? 'Signing in...' : 'Sign In as Candidate'}
@@ -282,7 +282,7 @@ export default function CandidateLogin() {
 
           <div style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
             <span>Don't have a candidate account? </span>
-            <Link to="/register/candidate" style={{ color: 'var(--color-primary-light, #93c5fd)', fontWeight: 700 }}>
+            <Link to="/register/candidate" style={{ color: 'var(--color-primary-light, #9cc2ff)', fontWeight: 700 }}>
               Create Account
             </Link>
           </div>

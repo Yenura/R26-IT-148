@@ -11,16 +11,16 @@ import EmptyState from '../components/EmptyState'
 import SkeletonLoader from '../components/SkeletonLoader'
 
 const CATEGORY_COLORS = {
-  frontend: { bg: '#dbeafe', fg: '#2563eb', border: '#93c5fd' },
+  frontend: { bg: '#dbeafe', fg: '#0071e3', border: '#9cc2ff' },
   backend: { bg: '#dcfce7', fg: '#16a34a', border: '#86efac' },
-  devops: { bg: '#fef3c7', fg: '#d97706', border: '#fcd34d' },
+  devops: { bg: '#fef3c7', fg: '#926100', border: '#fcd34d' },
   database: { bg: '#f3e8ff', fg: '#9333ea', border: '#c4b5fd' },
-  testing: { bg: '#ffe4e6', fg: '#e11d48', border: '#fda4af' },
+  testing: { bg: '#ffe4e6', fg: '#d70015', border: '#fda4af' },
   mobile: { bg: '#cffafe', fg: '#0891b2', border: '#67e8f9' },
   design: { bg: '#fce7f3', fg: '#db2777', border: '#f9a8d4' },
-  aiml: { bg: '#ede9fe', fg: '#7c3aed', border: '#a78bfa' },
-  ai_ml: { bg: '#ede9fe', fg: '#7c3aed', border: '#a78bfa' },
-  security: { bg: '#fef2f2', fg: '#dc2626', border: '#fca5a5' },
+  aiml: { bg: '#ede9fe', fg: '#8b5cf6', border: '#c9a6ff' },
+  ai_ml: { bg: '#ede9fe', fg: '#8b5cf6', border: '#c9a6ff' },
+  security: { bg: '#fef2f2', fg: '#d70015', border: '#fca5a5' },
   other: { bg: 'var(--color-bg-elevated)', fg: 'var(--color-fg-muted)', border: 'var(--color-border)' },
   default: { bg: 'var(--color-primary-muted)', fg: 'var(--color-primary)', border: 'var(--color-primary)' },
 }

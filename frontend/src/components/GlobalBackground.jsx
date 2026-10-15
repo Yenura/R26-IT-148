@@ -72,8 +72,8 @@ export default function GlobalBackground() {
           width: '100vw',
           height: '100vh',
           background: isDark
-            ? `radial-gradient(650px circle at ${pos.x}px ${pos.y}px, rgba(99, 102, 241, 0.14), rgba(139, 92, 246, 0.07) 35%, rgba(59, 130, 246, 0.02) 65%, transparent 80%)`
-            : `radial-gradient(600px circle at ${pos.x}px ${pos.y}px, rgba(37, 99, 235, 0.08), rgba(99, 102, 241, 0.04) 40%, transparent 75%)`,
+            ? `radial-gradient(650px circle at ${pos.x}px ${pos.y}px, rgba(10, 132, 255, 0.14), rgba(191, 90, 242, 0.07) 35%, rgba(10, 132, 255, 0.02) 65%, transparent 80%)`
+            : `radial-gradient(600px circle at ${pos.x}px ${pos.y}px, rgba(0, 113, 227, 0.08), rgba(10, 132, 255, 0.04) 40%, transparent 75%)`,
           opacity: opacity,
           transition: 'opacity 0.4s ease',
           willChange: 'background',
@@ -91,8 +91,8 @@ export default function GlobalBackground() {
           height: '500px',
           borderRadius: '50%',
           background: isDark
-            ? 'radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 70%)'
-            : 'radial-gradient(circle, rgba(37, 99, 235, 0.03) 0%, transparent 70%)',
+            ? 'radial-gradient(circle, rgba(10, 132, 255, 0.05) 0%, transparent 70%)'
+            : 'radial-gradient(circle, rgba(0, 113, 227, 0.03) 0%, transparent 70%)',
           filter: 'blur(90px)',
           pointerEvents: 'none',
         }}
@@ -106,7 +106,7 @@ export default function GlobalBackground() {
           height: '550px',
           borderRadius: '50%',
           background: isDark
-            ? 'radial-gradient(circle, rgba(139, 92, 246, 0.05) 0%, transparent 70%)'
+            ? 'radial-gradient(circle, rgba(191, 90, 242, 0.05) 0%, transparent 70%)'
             : 'radial-gradient(circle, rgba(147, 51, 234, 0.03) 0%, transparent 70%)',
           filter: 'blur(100px)',
           pointerEvents: 'none',

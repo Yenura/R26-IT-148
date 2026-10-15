@@ -179,7 +179,7 @@ export default function SkillGapReportDetail() {
 
       {/* Matched Skills */}
       {matchedSkills.length > 0 && (
-        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(48, 209, 88, 0.25)' }}>
           <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-success)' }}>
             <CheckCircle2 size={18} /> Matched Skills ({matchedSkills.length})
           </h3>
@@ -191,7 +191,7 @@ export default function SkillGapReportDetail() {
                 <div key={name || idx} style={{
                   padding: '10px 14px', background: 'var(--color-bg-elevated)',
                   borderRadius: 'var(--radius-sm)', borderLeft: '4px solid var(--color-success)',
-                  border: '1px solid rgba(16, 185, 129, 0.2)'
+                  border: '1px solid rgba(48, 209, 88, 0.2)'
                 }}>
                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{name}</div>
                   {details && <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 3 }}>{details}</div>}
@@ -204,7 +204,7 @@ export default function SkillGapReportDetail() {
 
       {/* Missing Skills */}
       {missingSkills.length > 0 && (
-        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)', borderRadius: 'var(--radius-xl)', border: '1px solid rgba(255, 69, 58, 0.25)' }}>
           <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: 8, color: 'var(--color-danger)' }}>
             <AlertCircle size={18} /> Missing Skills ({missingSkills.length})
           </h3>
@@ -219,7 +219,7 @@ export default function SkillGapReportDetail() {
                   padding: '10px 14px', background: 'var(--color-bg-elevated)',
                   borderRadius: 'var(--radius-sm)',
                   borderLeft: `4px solid ${isCritical ? 'var(--color-danger)' : 'var(--color-warning)'}`,
-                  border: `1px solid ${isCritical ? 'rgba(244, 63, 94, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
+                  border: `1px solid ${isCritical ? 'rgba(255, 69, 58, 0.2)' : 'rgba(245, 158, 11, 0.2)'}`
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)' }}>{name}</span>

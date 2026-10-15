@@ -247,7 +247,7 @@ export default function JobBoard() {
                         borderRadius: 'var(--radius-full)',
                         background: 'var(--color-success-muted)',
                         color: 'var(--color-success)',
-                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                        border: '1px solid rgba(48, 209, 88, 0.3)',
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: 3
@@ -311,7 +311,7 @@ export default function JobBoard() {
                       fontSize: 'var(--p-text-xs)',
                       background: isInterviewed ? 'var(--color-success-muted)' : undefined,
                       color: isInterviewed ? 'var(--color-success)' : undefined,
-                      border: isInterviewed ? '1px solid rgba(16, 185, 129, 0.3)' : undefined,
+                      border: isInterviewed ? '1px solid rgba(48, 209, 88, 0.3)' : undefined,
                     }}
                   >
                     <MessageSquare size={13} /> {isInterviewed ? 'Retake Interview' : 'Start Interview'}

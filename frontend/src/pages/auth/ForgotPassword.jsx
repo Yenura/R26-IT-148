@@ -39,7 +39,7 @@ export default function ForgotPassword({ role = 'candidate' }) {
       <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column' }}>
         <Link to={isCompany ? '/login/company' : '/login/candidate'} className="btn btn-ghost btn-sm" style={{ marginBottom: 20, alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6 }}><ArrowLeft size={14} /> Back to Sign In</Link>
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <div style={{ margin: '0 auto 12px', width: 48, height: 48, borderRadius: 'var(--radius-md)', background: isCompany ? 'linear-gradient(135deg, var(--color-purple), #6366f1)' : 'linear-gradient(135deg, var(--color-primary), #4f46e5)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><KeyRound size={22} /></div>
+          <div style={{ margin: '0 auto 12px', width: 48, height: 48, borderRadius: 'var(--radius-md)', background: isCompany ? 'linear-gradient(135deg, var(--color-purple), #0a84ff)' : 'linear-gradient(135deg, var(--color-primary), #0068d0)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}><KeyRound size={22} /></div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--color-fg)', margin: 0 }}>Forgot Password</h1>
           <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>{isCompany ? 'Employer' : 'Candidate'} — enter your email to generate a reset link.</p>
         </div>

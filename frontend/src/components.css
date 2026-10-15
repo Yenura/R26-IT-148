@@ -24,7 +24,12 @@ body {
   font-family: var(--p-font-sans);
   font-size: var(--p-text-md);
   line-height: var(--p-leading-normal);
+  letter-spacing: var(--p-tracking-body);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-optical-sizing: auto;
+  font-synthesis-weight: auto;
   overflow-x: hidden;
 }
 
@@ -215,8 +220,11 @@ code {
   position: sticky;
   top: 0;
   z-index: var(--p-z-sticky);
-  background: var(--color-bg);
-  border-bottom: 1px solid var(--color-border);
+  /* Apple §12: floating translucent material, content scrolls underneath */
+  background: var(--navbar-bg, var(--material-bar));
+  -webkit-backdrop-filter: var(--navbar-blur, var(--material-blur));
+  backdrop-filter: var(--navbar-blur, var(--material-blur));
+  border-bottom: 1px solid var(--color-border-subtle);
   height: 56px;
   flex-shrink: 0;
 }
@@ -285,6 +293,11 @@ code {
   font-weight: var(--p-weight-semibold);
 }
 
+.navbar-link:active {
+  transform: scale(0.96);
+  transition-duration: var(--p-duration-press);
+}
+
 .navbar-right {
   display: flex;
   align-items: center;
@@ -329,12 +342,28 @@ code {
   top: calc(100% + 8px);
   right: 0;
   min-width: 180px;
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
+  /* Apple §7/§12: material anchored to its trigger, grows from source */
+  background: var(--menu-bg, var(--material-menu));
+  -webkit-backdrop-filter: var(--menu-blur, var(--material-blur));
+  backdrop-filter: var(--menu-blur, var(--material-blur));
+  border: 1px solid var(--color-border);
   border-radius: var(--p-radius-md);
   box-shadow: var(--shadow-lg);
   padding: var(--p-space-2);
   z-index: var(--p-z-dropdown);
+  transform-origin: top right;
+  animation: menu-in var(--duration-normal) var(--ease);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 .navbar-dropdown-label {
@@ -456,7 +485,8 @@ code {
 .page-head h1 {
   font-size: var(--p-text-4xl);
   font-weight: var(--p-weight-extrabold);
-  letter-spacing: -0.5px;
+  letter-spacing: var(--p-tracking-title);
+  line-height: var(--p-leading-title);
   margin-bottom: var(--p-space-1);
 }
 
@@ -511,7 +541,8 @@ code {
 }
 
 .card-interactive:active {
-  transition-duration: 0.1s;
+  transition-duration: var(--p-duration-press);
+  transform: scale(0.99);
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -541,7 +572,8 @@ code {
   font-size: var(--p-text-4xl);
   font-weight: var(--p-weight-extrabold);
   margin-top: var(--p-space-2);
-  letter-spacing: -0.5px;
+  letter-spacing: var(--p-tracking-title);
+  line-height: var(--p-leading-title);
   font-variant-numeric: tabular-nums;
 }
 
@@ -581,7 +613,11 @@ code {
   white-space: nowrap;
   position: relative;
   user-select: none;
+  -webkit-user-select: none;
   text-decoration: none;
+  /* Apple §1: kill tap delay, feedback lives on the press */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn:hover {
@@ -592,7 +628,8 @@ code {
 .btn:active {
   background: var(--btn-bg-active, var(--color-primary-active));
   color: var(--btn-fg, #ffffff);
-  transform: translateY(1px);
+  transform: scale(0.97);
+  transition-duration: var(--p-duration-press);
 }
 
 .btn:disabled {
@@ -623,7 +660,8 @@ code {
 .btn-primary:active {
   background: var(--color-primary-active);
   color: var(--color-primary-fg, #ffffff) !important;
-  transform: translateY(1px);
+  transform: scale(0.97);
+  transition-duration: var(--p-duration-press);
 }
 
 .btn-primary:focus,
@@ -657,7 +695,8 @@ code {
 
 .btn-secondary:active {
   background: var(--color-border-subtle);
-  transform: translateY(1px);
+  transform: scale(0.97);
+  transition-duration: var(--p-duration-press);
 }
 
 .btn-secondary:focus-visible {
@@ -687,7 +726,8 @@ code {
 .btn-ghost:active {
   background: var(--color-border-subtle);
   color: var(--color-fg);
-  transform: translateY(1px);
+  transform: scale(0.97);
+  transition-duration: var(--p-duration-press);
 }
 
 .btn-ghost:focus-visible {
@@ -717,7 +757,8 @@ code {
 .btn-success:active {
   background: var(--p-emerald-700);
   color: var(--color-success-fg, #ffffff) !important;
-  transform: translateY(1px);
+  transform: scale(0.97);
+  transition-duration: var(--p-duration-press);
 }
 
 .btn-success:focus-visible {
@@ -749,7 +790,8 @@ code {
 .btn-danger:active {
   background: var(--p-rose-700);
   color: var(--color-danger-fg, #ffffff) !important;
-  transform: translateY(1px);
+  transform: scale(0.97);
+  transition-duration: var(--p-duration-press);
 }
 
 .btn-danger:focus-visible {
@@ -780,7 +822,8 @@ code {
 .btn-warn:active {
   background: var(--p-amber-700);
   color: var(--color-warning-fg, #ffffff) !important;
-  transform: translateY(1px);
+  transform: scale(0.97);
+  transition-duration: var(--p-duration-press);
 }
 
 .btn-warn:focus-visible {
@@ -1087,6 +1130,9 @@ select option {
 .modal-overlay.open {
   opacity: 1;
   pointer-events: auto;
+  /* Apple §12: dim to focus + push back; material arrives, not just fades */
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
 }
 
 .modal {
@@ -1099,7 +1145,9 @@ select option {
   width: 90%;
   max-height: 85vh;
   overflow-y: auto;
-  transform: translateY(8px) scale(0.98);
+  /* Apple §12: materialize — scale + rise together on enter */
+  transform: translateY(12px) scale(0.96);
+  transform-origin: center center;
   transition: transform var(--duration-normal) var(--ease);
 }
 
@@ -1230,7 +1278,8 @@ select option {
   position: absolute;
   font-size: var(--p-text-2xl);
   font-weight: var(--p-weight-extrabold);
-  letter-spacing: -0.5px;
+  letter-spacing: var(--p-tracking-title);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -1479,6 +1528,22 @@ pre {
 
 .fade-in {
   animation: fadeIn var(--duration-slow) var(--ease-out);
+}
+
+/* Route enter — symmetric, expo-out settle (Apple §7) */
+@keyframes route-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.route-enter {
+  animation: route-in var(--duration-slow) var(--ease);
 }
 
 @keyframes shimmer {
@@ -1996,18 +2061,18 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 .cvm-pillar-card.pillar-skill::before {
-  background: linear-gradient(90deg, #2563eb, #60a5fa);
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.6);
+  background: linear-gradient(90deg, #0071e3, #5aa9ff);
+  box-shadow: 0 0 12px rgba(10, 132, 255, 0.6);
 }
 
 .cvm-pillar-card.pillar-exp::before {
-  background: linear-gradient(90deg, #059669, #34d399);
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.6);
+  background: linear-gradient(90deg, #178040, #30d158);
+  box-shadow: 0 0 12px rgba(48, 209, 88, 0.6);
 }
 
 .cvm-pillar-card.pillar-edu::before {
-  background: linear-gradient(90deg, #7c3aed, #a78bfa);
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.6);
+  background: linear-gradient(90deg, #8b5cf6, #c9a6ff);
+  box-shadow: 0 0 12px rgba(191, 90, 242, 0.6);
 }
 
 .cvm-pillar-card:hover {
@@ -2034,18 +2099,18 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 .cvm-quick-chip:hover {
-  background: rgba(59, 130, 246, 0.12);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: var(--color-primary-light, #93c5fd);
+  background: rgba(10, 132, 255, 0.12);
+  border-color: rgba(10, 132, 255, 0.35);
+  color: var(--color-primary-light, #9cc2ff);
   transform: translateY(-1px);
 }
 
 .cvm-quick-chip.selected {
-  background: rgba(59, 130, 246, 0.2);
-  border-color: #3b82f6;
-  color: #60a5fa;
+  background: rgba(10, 132, 255, 0.2);
+  border-color: #0a84ff;
+  color: #5aa9ff;
   font-weight: 700;
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.25);
+  box-shadow: 0 0 12px rgba(10, 132, 255, 0.25);
 }
 
 /* Interactive Competency Pills */
@@ -2062,28 +2127,28 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 .cvm-skill-pill.matched {
-  background: rgba(16, 185, 129, 0.12);
-  color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(48, 209, 88, 0.12);
+  color: #30d158;
+  border: 1px solid rgba(48, 209, 88, 0.3);
 }
 
 .cvm-skill-pill.matched:hover {
-  background: rgba(16, 185, 129, 0.22);
-  border-color: #10b981;
-  box-shadow: 0 0 12px rgba(16, 185, 129, 0.3);
+  background: rgba(48, 209, 88, 0.22);
+  border-color: #30d158;
+  box-shadow: 0 0 12px rgba(48, 209, 88, 0.3);
   transform: translateY(-1px);
 }
 
 .cvm-skill-pill.missing {
-  background: rgba(244, 63, 94, 0.1);
-  color: #fb7185;
-  border: 1px solid rgba(244, 63, 94, 0.3);
+  background: rgba(255, 69, 58, 0.1);
+  color: #ff6961;
+  border: 1px solid rgba(255, 69, 58, 0.3);
 }
 
 .cvm-skill-pill.missing:hover {
-  background: rgba(244, 63, 94, 0.2);
-  border-color: #f43f5e;
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.3);
+  background: rgba(255, 69, 58, 0.2);
+  border-color: #ff453a;
+  box-shadow: 0 0 12px rgba(255, 69, 58, 0.3);
   transform: translateY(-1px);
 }
 
@@ -2109,7 +2174,7 @@ DASHBOARD LAYOUTS (responsive two-column)
    LIGHT MODE TARGETED COMPREHENSIVE OVERRIDES
    ═══════════════════════════════════════════════════════════════════ */
 [data-theme="light"] body {
-  background-color: #f8fafc;
+  background-color: #f5f5f7;
   color: #0f172a;
 }
 
@@ -2130,9 +2195,10 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 [data-theme="light"] .navbar {
-  background: rgba(255, 255, 255, 0.96);
-  border-bottom-color: #e2e8f0;
-  backdrop-filter: blur(12px);
+  background: var(--navbar-bg);
+  border-bottom-color: var(--color-border-subtle);
+  -webkit-backdrop-filter: var(--navbar-blur);
+  backdrop-filter: var(--navbar-blur);
 }
 
 [data-theme="light"] .navbar-brand {
@@ -2149,8 +2215,8 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 [data-theme="light"] .navbar-link.active {
-  background-color: rgba(37, 99, 235, 0.09);
-  color: #2563eb;
+  background-color: rgba(0, 113, 227, 0.09);
+  color: #0071e3;
 }
 
 [data-theme="light"] input[type='text'],
@@ -2202,6 +2268,69 @@ DASHBOARD LAYOUTS (responsive two-column)
 }
 
 /* ═══════════════════════════════════════════════════════════════════
+   APPLE ACCESSIBILITY — reduced motion / transparency / contrast (§14)
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Reduced motion: cross-fade or static, never slide/spring/parallax */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .reveal,
+  .route-enter,
+  .hero-eyebrow,
+  .hero-title,
+  .hero-sub,
+  .hero-cta,
+  .hero-visual,
+  .stat-number {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Reduced transparency: frostier, near-solid materials */
+@media (prefers-reduced-transparency: reduce) {
+  .navbar,
+  .navbar-dropdown,
+  .modal-overlay.open {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .navbar {
+    background: var(--color-bg);
+  }
+
+  .navbar-dropdown {
+    background: var(--color-bg-elevated);
+  }
+}
+
+/* More contrast: defined borders on chrome and cards */
+@media (prefers-contrast: more) {
+  .navbar,
+  .card,
+  .stat,
+  .navbar-dropdown,
+  .modal {
+    border-color: var(--color-border-strong);
+  }
+
+  .btn-primary,
+  .btn-success,
+  .btn-danger {
+    border: 1px solid currentColor;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    MOUSE SPOTLIGHT & CARD HOVER LIGHTING
    ═══════════════════════════════════════════════════════════════════ */
 .card, .stat, .card-interactive {
@@ -2211,10 +2340,10 @@ DASHBOARD LAYOUTS (responsive two-column)
 
 [data-theme="dark"] .card-interactive:hover,
 [data-theme="dark"] .card:hover {
-  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.5), 0 0 25px rgba(10, 132, 255, 0.12);
 }
 
 [data-theme="light"] .card-interactive:hover,
 [data-theme="light"] .card:hover {
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 20px rgba(37, 99, 235, 0.08);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 0 20px rgba(0, 113, 227, 0.08);
 }

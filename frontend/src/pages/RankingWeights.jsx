@@ -153,7 +153,7 @@ export default function RankingWeights() {
             borderRadius: 'var(--radius-full)',
             background: Math.abs(totalWeight - 1) <= 0.05 ? 'var(--color-success-muted)' : 'var(--color-danger-muted)',
             color: Math.abs(totalWeight - 1) <= 0.05 ? 'var(--color-success)' : 'var(--color-danger)',
-            border: `1px solid ${Math.abs(totalWeight - 1) <= 0.05 ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'}`,
+            border: `1px solid ${Math.abs(totalWeight - 1) <= 0.05 ? 'rgba(48,209,88,0.3)' : 'rgba(255,69,58,0.3)'}`,
           }}>
             Total: {totalWeight.toFixed(2)}
           </div>

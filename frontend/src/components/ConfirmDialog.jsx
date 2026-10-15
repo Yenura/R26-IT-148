@@ -127,7 +127,7 @@ export default function ConfirmDialog({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            border: `1px solid ${danger ? 'rgba(244, 63, 94, 0.25)' : 'rgba(99, 102, 241, 0.25)'}`
+            border: `1px solid ${danger ? 'rgba(255, 69, 58, 0.25)' : 'rgba(10, 132, 255, 0.25)'}`
           }}>
             {danger
               ? <Trash2 size={20} style={{ color: 'var(--color-danger)' }} />

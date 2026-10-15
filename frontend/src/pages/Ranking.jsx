@@ -28,9 +28,9 @@ function getRecommendationInfo(cand) {
   if (cand.passed_hard_filter === false) {
     return {
       label: 'Disqualified',
-      color: '#ef4444',
-      bg: 'rgba(239, 68, 68, 0.15)',
-      border: 'rgba(239, 68, 68, 0.4)'
+      color: '#ff453a',
+      bg: 'rgba(255, 69, 58, 0.15)',
+      border: 'rgba(255, 69, 58, 0.4)'
     }
   }
 
@@ -40,17 +40,17 @@ function getRecommendationInfo(cand) {
   if (css >= 80) {
     return {
       label: 'Highly Qualified',
-      color: '#10b981',
-      bg: 'rgba(16, 185, 129, 0.15)',
-      border: 'rgba(16, 185, 129, 0.4)'
+      color: '#30d158',
+      bg: 'rgba(48, 209, 88, 0.15)',
+      border: 'rgba(48, 209, 88, 0.4)'
     }
   }
   if (css >= 65) {
     return {
       label: 'Recommended',
-      color: '#3b82f6',
-      bg: 'rgba(59, 130, 246, 0.15)',
-      border: 'rgba(59, 130, 246, 0.4)'
+      color: '#0a84ff',
+      bg: 'rgba(10, 132, 255, 0.15)',
+      border: 'rgba(10, 132, 255, 0.4)'
     }
   }
   if (css >= 50) {
@@ -63,9 +63,9 @@ function getRecommendationInfo(cand) {
   }
   return {
     label: 'Disqualified',
-    color: '#ef4444',
-    bg: 'rgba(239, 68, 68, 0.15)',
-    border: 'rgba(239, 68, 68, 0.4)'
+    color: '#ff453a',
+    bg: 'rgba(255, 69, 58, 0.15)',
+    border: 'rgba(255, 69, 58, 0.4)'
   }
 }
 
@@ -410,7 +410,7 @@ export default function Ranking() {
                           <td>
                             {hasCV && sSkillVal != null ? (
                               <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                                <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
+                                <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#bf5af2' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
                               </div>
                             ) : (
                               <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>

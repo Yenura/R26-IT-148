@@ -466,7 +466,7 @@ export default function Progress() {
               const isMastered = item.status === 'completed'
               const isInProgress = item.status === 'in_progress'
               const priority = item.priority || 'High'
-              const priorityBg = priority === 'Critical' ? 'rgba(239, 68, 68, 0.15)' : priority === 'High' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(99, 102, 241, 0.15)'
+              const priorityBg = priority === 'Critical' ? 'rgba(255, 69, 58, 0.15)' : priority === 'High' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(10, 132, 255, 0.15)'
               const priorityColor = priority === 'Critical' ? 'var(--color-danger)' : priority === 'High' ? 'var(--color-warning)' : 'var(--color-primary)'
 
               const accentBorderColor = isMastered

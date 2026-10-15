@@ -2,10 +2,10 @@ import React from 'react'
 
 export function getScoreRating(score) {
   const num = typeof score === 'number' ? score : parseFloat(score) || 0
-  if (num >= 85) return { label: 'Exceptional Match', color: 'var(--color-success)', bg: 'var(--color-success-muted)', border: 'rgba(16, 185, 129, 0.3)' }
-  if (num >= 70) return { label: 'Strong Fit', color: 'var(--color-primary)', bg: 'var(--color-primary-muted)', border: 'rgba(59, 130, 246, 0.3)' }
+  if (num >= 85) return { label: 'Exceptional Match', color: 'var(--color-success)', bg: 'var(--color-success-muted)', border: 'rgba(48, 209, 88, 0.3)' }
+  if (num >= 70) return { label: 'Strong Fit', color: 'var(--color-primary)', bg: 'var(--color-primary-muted)', border: 'rgba(10, 132, 255, 0.3)' }
   if (num >= 50) return { label: 'Moderate Fit', color: 'var(--color-warning)', bg: 'var(--color-warning-muted)', border: 'rgba(245, 158, 11, 0.3)' }
-  return { label: 'Needs Development', color: 'var(--color-danger)', bg: 'var(--color-danger-muted)', border: 'rgba(244, 63, 94, 0.3)' }
+  return { label: 'Needs Development', color: 'var(--color-danger)', bg: 'var(--color-danger-muted)', border: 'rgba(255, 69, 58, 0.3)' }
 }
 
 export default function ScoreMeter({

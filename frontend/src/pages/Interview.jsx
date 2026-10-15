@@ -346,7 +346,7 @@ export default function Interview() {
             )}
 
             {/* Proctoring notice */}
-            <div style={{ padding: 12, background: 'var(--color-purple-muted)', border: '1px solid rgba(139, 92, 246, 0.25)', borderRadius: 'var(--radius-sm)', marginBottom: 20 }}>
+            <div style={{ padding: 12, background: 'var(--color-purple-muted)', border: '1px solid rgba(191, 90, 242, 0.25)', borderRadius: 'var(--radius-sm)', marginBottom: 20 }}>
               <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-purple)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Settings size={13} /> Live Proctoring Active
               </div>
@@ -496,7 +496,7 @@ export default function Interview() {
               borderRadius: 'var(--radius-full)',
               background: timeLeft <= 30 ? 'var(--color-danger-muted)' : 'var(--color-bg-elevated)',
               color: timeLeft <= 30 ? 'var(--color-danger)' : 'var(--color-fg)',
-              border: `1px solid ${timeLeft <= 30 ? 'rgba(239,68,68,0.3)' : 'var(--color-border-subtle)'}`,
+              border: `1px solid ${timeLeft <= 30 ? 'rgba(255,69,58,0.3)' : 'var(--color-border-subtle)'}`,
               fontVariantNumeric: 'tabular-nums'
             }}>
               {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
@@ -695,7 +695,7 @@ export default function Interview() {
                   padding: 14,
                   background: 'var(--color-bg)',
                   borderRadius: 'var(--radius-md)',
-                  border: `1px solid ${runResults.syntax_valid === false ? 'rgba(244,63,94,0.4)' : 'var(--color-border-subtle)'}`,
+                  border: `1px solid ${runResults.syntax_valid === false ? 'rgba(255,69,58,0.4)' : 'var(--color-border-subtle)'}`,
                   fontFamily: 'var(--p-font-mono)',
                   fontSize: '12px'
                 }}>
@@ -713,8 +713,8 @@ export default function Interview() {
                         <div key={i} style={{
                           padding: '8px 12px',
                           borderRadius: 'var(--radius-sm)',
-                          border: `1px solid ${r.passed ? 'rgba(16,185,129,0.3)' : 'rgba(244,63,94,0.3)'}`,
-                          background: r.passed ? 'rgba(16,185,129,0.06)' : 'rgba(244,63,94,0.06)'
+                          border: `1px solid ${r.passed ? 'rgba(48,209,88,0.3)' : 'rgba(255,69,58,0.3)'}`,
+                          background: r.passed ? 'rgba(48,209,88,0.06)' : 'rgba(255,69,58,0.06)'
                         }}>
                           <div style={{ fontWeight: 700, marginBottom: 4, color: r.passed ? 'var(--color-success)' : 'var(--color-danger)' }}>
                             {r.passed ? '✓' : '✗'} Test Case {i + 1}
