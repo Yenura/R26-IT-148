@@ -571,7 +571,6 @@ screenshots/skillgap_fix_verify.png
 screenshots/skillgap_light.png
 nfr_test_report.json
 R26-IT-148_PLANNER_TASKS.json
-<<<<<<< Updated upstream
 *.yml
 *.json
 *.png
@@ -621,7 +620,6 @@ R26-IT-148_PLANNER_TASKS.json
 .opencode/skills/impeccable/SKILL.md
 .opencode/skills/playwright/SKILL.md
 .opencode/skills/web-design-guidelines/SKILL.md
-=======
 
 # Playwright test artifacts
 .playwright-mcp/
@@ -631,4 +629,4 @@ paper/
 .impeccable/design.json
 IT22306272_Individual_Thesis_Component2.docx
 ~$22306272_Individual_Thesis_Component2.docx
->>>>>>> Stashed changes
+
