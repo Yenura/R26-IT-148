@@ -620,3 +620,13 @@ R26-IT-148_PLANNER_TASKS.json
 .opencode/skills/impeccable/SKILL.md
 .opencode/skills/playwright/SKILL.md
 .opencode/skills/web-design-guidelines/SKILL.md
+
+# Playwright test artifacts
+.playwright-mcp/
+
+# Research paper draft ( teammate workspace, not app code )
+paper/
+.impeccable/design.json
+IT22306272_Individual_Thesis_Component2.docx
+~$22306272_Individual_Thesis_Component2.docx
+
