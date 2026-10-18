@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -46,6 +46,9 @@ export default function SkillGap() {
     }
   })
   const [selectedOpeningId, setSelectedOpeningId] = useState('')
+  const [simulatorMode, setSimulatorMode] = useState('company') // 'company' | 'position'
+  const [selectedSimCompany, setSelectedSimCompany] = useState('')
+  const [selectedSimPosition, setSelectedSimPosition] = useState('')
   const [roles, setRoles] = useState([])
   const [simulatedSkills, setSimulatedSkills] = useState([])
   const [customSimSkill, setCustomSimSkill] = useState('')
@@ -131,7 +134,7 @@ export default function SkillGap() {
   }
 
   const runSimulation = async () => {
-    if (!currentOpening || simulatedSkills.length === 0) return
+    if (!currentOpening) return
     setSimulating(true)
     try {
       const r = await c4SkillGapSimulate({
@@ -155,13 +158,69 @@ export default function SkillGap() {
         job_title: currentOpening.title,
         company_name: currentOpening.company_name || 'Selected Employer'
       })
-      toast.success(`Simulation Complete: +${data.coverage_improvement || 0}% improvement!`)
+      if ((data.coverage_improvement || 0) > 0) {
+        toast.success(`Simulation Complete: +${data.coverage_improvement}% improvement!`)
+      } else {
+        toast.success(`Simulation Complete: Baseline fit is ${data.simulated_coverage || 0}%.`)
+      }
     } catch { toast.error('Simulation failed') }
     finally { setSimulating(false) }
   }
 
+  const cleanCompName = (name) => {
+    if (!name) return 'General Tech'
+    const trimmed = name.trim()
+    if (/^techcorp\b/i.test(trimmed)) return 'TechCorp'
+    if (trimmed.toLowerCase() === 'slt') return 'SLT Mobitel'
+    return trimmed
+  }
+
+  // Unique companies with counts
+  const companyOptions = useMemo(() => {
+    const map = new Map()
+    availableJobs.forEach((j) => {
+      const c = cleanCompName(j.company_name)
+      map.set(c, (map.get(c) || 0) + 1)
+    })
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [availableJobs])
+
+  // Unique job positions / titles with counts
+  const positionOptions = useMemo(() => {
+    const map = new Map()
+    availableJobs.forEach((j) => {
+      const title = (j.title || j.job_role || 'Untitled Role').trim()
+      map.set(title, (map.get(title) || 0) + 1)
+    })
+    return Array.from(map.entries())
+      .map(([title, count]) => ({ title, count }))
+      .sort((a, b) => a.title.localeCompare(b.title))
+  }, [availableJobs])
+
+  // Filtered jobs based on active company selection
+  const filteredJobsByCompany = useMemo(() => {
+    if (!selectedSimCompany) return availableJobs
+    return availableJobs.filter((j) => cleanCompName(j.company_name) === selectedSimCompany)
+  }, [availableJobs, selectedSimCompany])
+
+  // Filtered jobs based on active position selection
+  const filteredJobsByPosition = useMemo(() => {
+    if (!selectedSimPosition) return availableJobs
+    return availableJobs.filter((j) => (j.title || j.job_role || '').trim().toLowerCase() === selectedSimPosition.toLowerCase())
+  }, [availableJobs, selectedSimPosition])
+
   const currentOpening = availableJobs.find(j => (j.id || j._id) === selectedOpeningId) || availableJobs[0]
   const openingRequiredSkills = currentOpening?.required_skills || []
+
+  // Keep selected company & position in sync when opening changes
+  useEffect(() => {
+    if (currentOpening) {
+      if (!selectedSimCompany) setSelectedSimCompany(cleanCompName(currentOpening.company_name))
+      if (!selectedSimPosition) setSelectedSimPosition((currentOpening.title || currentOpening.job_role || '').trim())
+    }
+  }, [currentOpening])
 
   const addSimSkill = (skill) => {
     const s = skill?.trim()
@@ -302,34 +361,37 @@ export default function SkillGap() {
                         const hasCV = selectedReport.cv_score != null
                         const hasInt = Boolean(selectedReport.interview_completed && selectedReport.interview_score != null)
 
-                        let totalScore = selectedReport.composite_score
-                        let totalLabel = 'Final Total Mark (CSS)'
+                        let totalScore = '0'
+                        let totalLabel = 'Final Total Mark'
                         if (hasCV && hasInt) {
-                          totalLabel = 'Final Total Mark (CSS)'
-                          totalScore = selectedReport.composite_score != null ? Number(selectedReport.composite_score).toFixed(1) : ((0.40 * selectedReport.cv_score + 0.60 * selectedReport.interview_score).toFixed(1))
+                          totalLabel = 'Final Total Mark'
+                          const rawVal = selectedReport.composite_score != null
+                            ? Number(selectedReport.composite_score)
+                            : (0.40 * Number(selectedReport.cv_score) + 0.60 * Number(selectedReport.interview_score))
+                          totalScore = Math.round(rawVal).toString()
                         } else if (hasCV) {
-                          totalLabel = 'Current Total (CV Mark)'
-                          totalScore = Number(selectedReport.cv_score).toFixed(1)
+                          totalLabel = 'Final CV Mark'
+                          totalScore = Math.round(Number(selectedReport.cv_score)).toString()
                         } else if (hasInt) {
-                          totalLabel = 'Current Total (Interview Mark)'
-                          totalScore = Number(selectedReport.interview_score).toFixed(1)
+                          totalLabel = 'Final Interview Mark'
+                          totalScore = Math.round(Number(selectedReport.interview_score)).toString()
                         } else {
-                          totalLabel = 'Overall Fit Score'
-                          totalScore = '0.0'
+                          totalLabel = 'Final Total Mark'
+                          totalScore = '0'
                         }
 
                         return (
                           <>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Overall Mark (S_cv)</div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Mark</div>
                               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasCV ? 'var(--color-primary)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                                {hasCV ? `${Number(selectedReport.cv_score).toFixed(0)}%` : 'Pending'}
+                                {hasCV ? `${Math.round(Number(selectedReport.cv_score))}%` : 'Pending'}
                               </div>
                             </div>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark (S_int)</div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark</div>
                               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasInt ? 'var(--color-purple)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                                {hasInt ? `${Number(selectedReport.interview_score).toFixed(0)}%` : 'Pending'}
+                                {hasInt ? `${Math.round(Number(selectedReport.interview_score))}%` : 'Pending'}
                               </div>
                             </div>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: (hasCV && hasInt) ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${(hasCV && hasInt) ? 'rgba(10, 132, 255, 0.4)' : 'var(--color-border)'}` }}>
@@ -500,26 +562,250 @@ export default function SkillGap() {
                 <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Building2 size={18} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
                 </h3>
-                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '2px 0 0' }}>Choose from active, verified job postings to simulate acquisitions.</p>
+                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '2px 0 0' }}>
+                  Filter and select your target opening by company name or by job position.
+                </p>
               </div>
               <span className="chip" style={{ fontSize: '11px', fontWeight: 700, background: 'var(--color-primary-muted)', color: 'var(--color-primary)' }}>
                 {availableJobs.length} Live Openings
               </span>
             </div>
-            <select
-              value={selectedOpeningId}
-              onChange={(e) => { setSelectedOpeningId(e.target.value); setSimulationResult(null); setSimulatedSkills([]) }}
-              style={{ width: '100%', height: 44, padding: '0 14px', background: 'var(--input-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)', fontWeight: 600 }}
-            >
-              {availableJobs.map((j) => {
-                const id = j.id || j._id
-                return (
-                  <option key={id} value={id}>
-                    {j.title} @ {j.company_name || 'Tech Company'} ({j.location || 'Remote'})
-                  </option>
-                )
-              })}
-            </select>
+
+            {/* 2 Tabs: Select by Company Name vs Select by Job Position */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Select Mode:
+              </span>
+              <div style={{ display: 'inline-flex', background: 'var(--color-bg)', padding: 3, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                <button
+                  type="button"
+                  onClick={() => setSimulatorMode('company')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: simulatorMode === 'company' ? 'var(--color-primary)' : 'transparent',
+                    color: simulatorMode === 'company' ? '#fff' : 'var(--color-fg-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Building2 size={13} /> Company Name
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimulatorMode('position')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: simulatorMode === 'position' ? 'var(--color-primary)' : 'transparent',
+                    color: simulatorMode === 'position' ? '#fff' : 'var(--color-fg-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Briefcase size={13} /> Job Position
+                </button>
+              </div>
+            </div>
+
+            {/* Tab 1: By Company Name */}
+            {simulatorMode === 'company' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+                {/* 1. Select Company */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Building2 size={13} style={{ color: 'var(--color-primary)' }} /> 1. Company Name:
+                  </label>
+                  <select
+                    value={selectedSimCompany}
+                    onChange={(e) => {
+                      const comp = e.target.value
+                      setSelectedSimCompany(comp)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                      if (comp) {
+                        const compJobs = availableJobs.filter((j) => cleanCompName(j.company_name) === comp)
+                        if (compJobs.length > 0) {
+                          setSelectedOpeningId(compJobs[0].id || compJobs[0]._id)
+                        }
+                      } else if (availableJobs.length > 0) {
+                        setSelectedOpeningId(availableJobs[0].id || availableJobs[0]._id)
+                      }
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    <option value="">🏢 All Companies ({availableJobs.length} openings)</option>
+                    {companyOptions.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name} ({c.count} open {c.count === 1 ? 'role' : 'roles'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Select Job Position at Company */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Briefcase size={13} style={{ color: 'var(--color-success)' }} /> 2. Job Position {selectedSimCompany ? `at ${selectedSimCompany}` : ''}:
+                  </label>
+                  <select
+                    value={selectedOpeningId}
+                    onChange={(e) => {
+                      setSelectedOpeningId(e.target.value)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    {filteredJobsByCompany.map((j) => {
+                      const id = j.id || j._id
+                      return (
+                        <option key={id} value={id}>
+                          {j.title} {j.company_name ? `@ ${cleanCompName(j.company_name)}` : ''} ({j.location || 'Remote'})
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
+              </div>
+            ) : (
+              /* Tab 2: By Job Position */
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+                {/* 1. Select Job Position */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Briefcase size={13} style={{ color: 'var(--color-primary)' }} /> 1. Job Position / Role:
+                  </label>
+                  <select
+                    value={selectedSimPosition}
+                    onChange={(e) => {
+                      const pos = e.target.value
+                      setSelectedSimPosition(pos)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                      if (pos) {
+                        const posJobs = availableJobs.filter((j) => (j.title || j.job_role || '').trim().toLowerCase() === pos.toLowerCase())
+                        if (posJobs.length > 0) {
+                          setSelectedOpeningId(posJobs[0].id || posJobs[0]._id)
+                        }
+                      } else if (availableJobs.length > 0) {
+                        setSelectedOpeningId(availableJobs[0].id || availableJobs[0]._id)
+                      }
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    <option value="">💼 All Positions ({positionOptions.length} unique roles)</option>
+                    {positionOptions.map((p) => (
+                      <option key={p.title} value={p.title}>
+                        {p.title} ({p.count} {p.count === 1 ? 'opening' : 'openings'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Select Company Hiring For Position */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Building2 size={13} style={{ color: 'var(--color-success)' }} /> 2. Company {selectedSimPosition ? `hiring for ${selectedSimPosition}` : ''}:
+                  </label>
+                  <select
+                    value={selectedOpeningId}
+                    onChange={(e) => {
+                      setSelectedOpeningId(e.target.value)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    {filteredJobsByPosition.map((j) => {
+                      const id = j.id || j._id
+                      return (
+                        <option key={id} value={id}>
+                          {cleanCompName(j.company_name)} — {j.title} ({j.location || 'Remote'})
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Selected Role Summary Pill */}
+            {currentOpening && (
+              <div style={{
+                marginTop: 16,
+                padding: '12px 16px',
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-primary-muted)',
+                    color: 'var(--color-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px'
+                  }}>
+                    {cleanCompName(currentOpening.company_name).slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                      {currentOpening.title || currentOpening.job_role}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                      🏢 {cleanCompName(currentOpening.company_name)} · 📍 {currentOpening.location || 'Remote'} {currentOpening.department ? `· 🏷️ ${currentOpening.department}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {currentOpening.experience_required && (
+                    <span className="chip" style={{ fontSize: '10px', padding: '3px 8px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', fontWeight: 600 }}>
+                      Exp: {currentOpening.experience_required}
+                    </span>
+                  )}
+                  <span className="chip" style={{ fontSize: '10px', padding: '3px 8px', background: 'var(--color-primary-muted)', color: 'var(--color-primary)', fontWeight: 700 }}>
+                    {openingRequiredSkills.length} Required Skills
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {currentOpening && (
@@ -527,9 +813,24 @@ export default function SkillGap() {
               {/* Missing Required Skills */}
 <div className="dashboard-grid dashboard-grid-equal" style={{ gap: 16 }}>
                 <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
-                  <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
-                    <AlertCircle size={15} /> Job Required Skills ({openingRequiredSkills.length})
-                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+                    <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
+                      <AlertCircle size={15} /> Job Required Skills ({openingRequiredSkills.length})
+                    </h4>
+                    {openingRequiredSkills.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSimulatedSkills(Array.from(new Set([...simulatedSkills, ...openingRequiredSkills])))
+                          toast.success(`Added all ${openingRequiredSkills.length} skills to simulation`)
+                        }}
+                        className="btn btn-ghost btn-xs"
+                        style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: 'var(--radius-sm)' }}
+                      >
+                        + Add All to Simulation
+                      </button>
+                    )}
+                  </div>
                   <p style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginBottom: 8 }}>Click any required skill below to add it to your simulation:</p>
                   {openingRequiredSkills.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -593,11 +894,11 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
               {/* Simulation Button */}
               <button
                 onClick={runSimulation}
-                disabled={simulating || simulatedSkills.length === 0}
+                disabled={simulating}
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '12px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                <Sparkles size={16} /> {simulating ? 'Calculating Impact...' : `Simulate Impact on ${currentOpening.title}`}
+                <Sparkles size={16} /> {simulating ? 'Calculating Impact...' : simulatedSkills.length > 0 ? `Simulate Impact (+${simulatedSkills.length} skills) on ${currentOpening.title}` : `Simulate Impact on ${currentOpening.title}`}
               </button>
 
               {/* Simulation Results */}
@@ -619,29 +920,70 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                     </div>
                   </div>
 
+                  {/* Guidance Tip when 0 skills were simulated */}
+                  {simulatedSkills.length === 0 && (
+                    <div style={{ padding: '12px 16px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Lightbulb size={16} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+                        <span>Showing baseline fit for {currentOpening.title}. Click any skill chip above or click <strong>+ Add All to Simulation</strong> to simulate acquiring them!</span>
+                      </div>
+                      {openingRequiredSkills.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSimulatedSkills(Array.from(new Set(openingRequiredSkills)))
+                            toast.success(`Added all ${openingRequiredSkills.length} skills! Click Simulate to see fit increase.`)
+                          }}
+                          className="btn btn-primary btn-xs"
+                          style={{ fontSize: '11px', fontWeight: 700 }}
+                        >
+                          + Add All Skills Now
+                        </button>
+                      )}
+                    </div>
+                  )}
+
                   {/* Resources Grid */}
                   {simulationResult.resources?.length > 0 && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-{simulationResult.resources.map((resItem) => {
-                        const pColor = resItem.priority === 'Critical' ? 'var(--color-danger)' : resItem.priority === 'High' ? 'var(--color-orange)' : 'var(--color-warning)'
-                        return (
-                          <div key={resItem.skill} style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                            <div>
-                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                                <span className="chip" style={{ fontSize: '10px', padding: '2px 8px', background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}40`, fontWeight: 700 }}>{resItem.priority} Priority</span>
-                                <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>{resItem.level || 'Beginner'} · {resItem.duration || '4 weeks'}</span>
+                    <div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 6 }}>
+                        <h3 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Code size={16} style={{ color: 'var(--color-primary)' }} />
+                          {simulationResult.simulated_coverage === 100 ? 'Advanced Industry Electives (Optional Boosters)' : `Targeted Learning Modules (${simulationResult.resources.length})`}
+                        </h3>
+                        {simulationResult.simulated_coverage === 100 && (
+                          <span className="chip" style={{ fontSize: '10px', padding: '2px 8px', background: 'var(--color-primary-muted)', color: 'var(--color-primary)', fontWeight: 700 }}>
+                            Optional Bonus Electives
+                          </span>
+                        )}
+                      </div>
+                      {simulationResult.simulated_coverage === 100 && (
+                        <p style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginBottom: 12 }}>
+                          You already meet 100% of this job's core requirements. These optional courses cover advanced industry topics to help you stand out from other applicants.
+                        </p>
+                      )}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+                        {simulationResult.resources.map((resItem) => {
+                          const pColor = resItem.priority === 'Critical' ? 'var(--color-danger)' : resItem.priority === 'High' ? 'var(--color-orange)' : 'var(--color-warning)'
+                          return (
+                            <div key={resItem.skill} style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                                  <span className="chip" style={{ fontSize: '10px', padding: '2px 8px', background: `${pColor}15`, color: pColor, border: `1px solid ${pColor}40`, fontWeight: 700 }}>{resItem.priority} Priority</span>
+                                  <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>{resItem.level || 'Beginner'} · {resItem.duration || '4 weeks'}</span>
+                                </div>
+                                <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 4 }}>
+                                  {resItem.skill}: <span style={{ color: 'var(--color-primary)' }}>{resItem.course}</span>
+                                </div>
                               </div>
-                              <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-fg)', marginBottom: 4 }}>
-                                {resItem.skill}: <span style={{ color: 'var(--color-primary)' }}>{resItem.course}</span>
-                              </div>
+                              <a href={resItem.url || `https://www.coursera.org/search?query=${encodeURIComponent(resItem.skill)}`} target="_blank" rel="noreferrer"
+                                className="btn btn-ghost btn-sm" style={{ marginTop: 12, fontSize: '11px', border: '1px solid var(--color-border)', display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
+                                Enroll / Explore <ExternalLink size={13} />
+                              </a>
                             </div>
-                            <a href={resItem.url || `https://www.coursera.org/search?query=${encodeURIComponent(resItem.skill)}`} target="_blank" rel="noreferrer"
-                              className="btn btn-ghost btn-sm" style={{ marginTop: 12, fontSize: '11px', border: '1px solid var(--color-border)', display: 'inline-flex', alignItems: 'center', gap: 6, alignSelf: 'flex-start' }}>
-                              Enroll / Explore <ExternalLink size={13} />
-                            </a>
-                          </div>
-                        )
-                      })}
+                          )
+                        })}
+                      </div>
                     </div>
                   )}
 
@@ -659,7 +1001,7 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                             </div>
                             <div>
                               <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>{planItem.title || planItem.skill}</div>
-                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{planItem.description || planItem.duration}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{planItem.action || planItem.description || planItem.duration || `Targeted curriculum to master ${planItem.skill}`}</div>
                             </div>
                           </div>
                         ))}

@@ -58,7 +58,8 @@ function getRecommendationInfo(cand) {
       label: 'Qualified',
       color: 'var(--color-warning)',
       bg: 'rgba(245, 158, 11, 0.15)',
-      border: 'rgba(245, 158, 11, 0.4)'
+      border: 'rgba(245, 158, 11, 0.4)',
+      reason: cand.reasoning || 'Meets core prerequisites'
     }
   }
   return {
@@ -111,8 +112,6 @@ export default function Ranking() {
       return []
     }
   })
-  const [allJobs, setAllJobs] = useState([])
-  const [viewScope, setViewScope] = useState('my') // 'my' | 'all'
 
   useEffect(() => {
     const token = localStorage.getItem('recruitai.token')
@@ -126,41 +125,30 @@ export default function Ranking() {
 
   const loadCompanyJobs = async () => {
     try {
-      const [myRes, allRes] = await Promise.all([
-        uJobsMy().catch(() => ({ data: [] })),
-        c0JobsAll().catch(() => ({ data: [] }))
-      ])
-      const userCompanyJobs = Array.isArray(myRes.data) ? myRes.data : []
-      const platformAllJobs = Array.isArray(allRes.data) ? allRes.data : []
+      const myRes = await uJobsMy().catch(() => ({ data: [] }))
+      const raw = myRes?.data
+      const userCompanyJobs = Array.isArray(raw) ? raw : (raw?.jobs || (raw?.data && Array.isArray(raw.data) ? raw.data : []))
       
       setMyJobs(userCompanyJobs)
-      setAllJobs(platformAllJobs)
+      setJobs(userCompanyJobs)
+      try {
+        sessionStorage.setItem('recruitai.company.jobs', JSON.stringify(userCompanyJobs))
+      } catch {}
 
-      const activeList = userCompanyJobs.length > 0 ? userCompanyJobs : platformAllJobs
-      setJobs(activeList)
-
-      if (activeList.length > 0) {
-        const targetJobId = (paramJobId && activeList.some(j => (j.id || j._id) === paramJobId))
+      if (userCompanyJobs.length > 0) {
+        const targetJobId = (paramJobId && userCompanyJobs.some(j => (j.id || j._id) === paramJobId))
           ? paramJobId
-          : (selectedJob || activeList[0].id || activeList[0]._id)
+          : ((selectedJob && userCompanyJobs.some(j => (j.id || j._id) === selectedJob)) ? selectedJob : (userCompanyJobs[0].id || userCompanyJobs[0]._id))
         setSelectedJob(targetJobId)
         computePipeline(targetJobId)
+      } else {
+        setSelectedJob('')
+        setResult(null)
       }
     } catch {
-      toast.error('Failed to load job openings')
+      toast.error('Failed to load your company job openings')
     } finally {
       setLoadingJobs(false)
-    }
-  }
-
-  const handleScopeChange = (newScope) => {
-    setViewScope(newScope)
-    const activeList = newScope === 'my' && myJobs.length > 0 ? myJobs : allJobs
-    setJobs(activeList)
-    if (activeList.length > 0) {
-      const firstJobId = activeList[0].id || activeList[0]._id
-      setSelectedJob(firstJobId)
-      computePipeline(firstJobId)
     }
   }
 
@@ -200,7 +188,7 @@ export default function Ranking() {
   const candidatesList = result?.data || result?.rankings || []
 
   return (
-    <div className="fade-in" style={{ maxWidth: 1140, margin: '0 auto' }}>
+    <div className="fade-in" style={{ maxWidth: 1240, margin: '0 auto', width: '100%' }}>
       {/* Header */}
       <PageHeader
         badge="Applicant Evaluation"
@@ -224,31 +212,11 @@ export default function Ranking() {
           {/* Job Selection Card */}
           <div className="card glass-card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
-                </h3>
-                {myJobs.length > 0 && (
-                  <div style={{ display: 'flex', gap: 4, background: 'var(--color-bg)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                    <button
-                      className={`btn btn-xs ${viewScope === 'my' ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => handleScopeChange('my')}
-                      style={{ fontSize: '11px', padding: '2px 8px' }}
-                    >
-                      🏢 My Openings ({myJobs.length})
-                    </button>
-                    <button
-                      className={`btn btn-xs ${viewScope === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-                      onClick={() => handleScopeChange('all')}
-                      style={{ fontSize: '11px', padding: '2px 8px' }}
-                    >
-                      🌐 All 20 IT Roles ({allJobs.length})
-                    </button>
-                  </div>
-                )}
-              </div>
-              <span style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
-                {jobs.length} Active Role{jobs.length > 1 ? 's' : ''} Available
+              <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
+              </h3>
+              <span className="chip" style={{ fontSize: '11px', fontWeight: 700, background: 'var(--color-primary-muted)', color: 'var(--color-primary)' }}>
+                {jobs.length} Active Posted Role{jobs.length > 1 ? 's' : ''}
               </span>
             </div>
 
@@ -306,37 +274,38 @@ export default function Ranking() {
                     <Trophy size={18} style={{ color: 'var(--color-primary)' }} />
                     Ranked Applicants for {selectedJobObj?.title || 'Selected Position'}
                   </h3>
-                  <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '2px 0 0 0' }}>
-                    Sorted by Overall Fit Score combining CV qualifications and interview scores.
+                  <p style={{ fontSize: 'var(--p-text-xs)', color: '#94a3b8', margin: '2px 0 0 0' }}>
+                    Sorted by composite fit combining verified CV qualifications with technical interview performance.
                   </p>
                 </div>
-                <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-primary)', background: 'var(--color-primary-muted)', padding: '3px 10px', borderRadius: 'var(--radius-full)' }}>
+                <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-primary)', background: 'var(--color-primary-muted)', padding: '4px 12px', borderRadius: 'var(--radius-full)' }}>
                   {candidatesList.length} Applicant{candidatesList.length > 1 ? 's' : ''} Evaluated
                 </span>
               </div>
 
-              <div style={{ overflowX: 'auto' }}>
-                <table className="table">
-                  <thead>
+              <div style={{ overflowX: 'auto', width: '100%' }}>
+                <table className="table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead style={{ background: 'rgba(255, 255, 255, 0.035)', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
                     <tr>
-                      <th style={{ width: 50 }}>Rank</th>
-                      <th>Candidate</th>
-                      <th>Overall Fit Score (CSS)</th>
-                      <th>CV Match (S_cv)</th>
-                      <th>Skills / Exp / Edu</th>
-                      <th>Interview (S_int)</th>
-                      <th>MCQ / Theory / Code</th>
-                      <th>Recommendation</th>
+                      <th style={{ width: 56, textAlign: 'center', padding: '13px 10px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>Rank</th>
+                      <th style={{ minWidth: 180, padding: '13px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>Candidate</th>
+                      <th style={{ width: 110, padding: '13px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>Total Score</th>
+                      <th style={{ width: 85, padding: '13px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>CV Score</th>
+                      <th style={{ minWidth: 185, padding: '13px 12px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>Skills / Exp / Edu</th>
+                      <th style={{ width: 105, padding: '13px 14px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>Interview Score</th>
+                      <th style={{ minWidth: 195, padding: '13px 12px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>MCQ / Theory / Code</th>
+                      <th style={{ width: 135, textAlign: 'right', padding: '13px 18px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#94a3b8', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>Recommendation</th>
                     </tr>
                   </thead>
                   <tbody>
                     {candidatesList.map((cand, idx) => {
-                      const isTop3 = (cand.rank <= 3 || idx < 3) && cand.passed_hard_filter
+                      const rankNum = cand.rank || idx + 1
+                      const isTop3 = rankNum <= 3 && cand.passed_hard_filter
                       const hasCV = cand.has_cv !== false && (cand.cv_score != null || cand.S_cv != null)
                       const hasInt = Boolean(cand.interview_completed || cand.interview_score != null || cand.S_int != null)
 
                       const cssVal = cand.final_score ?? (cand.CSS != null ? cand.CSS * 100 : (cand.blended_score ?? cand.hire_probability))
-                      const cssLabel = (hasCV && hasInt) ? 'Combined CSS' : (hasCV ? 'CV Fit Score' : (hasInt ? 'Interview Score' : 'Fit Score'))
+                      const cssLabel = (hasCV && hasInt) ? 'Combined Score' : (hasCV ? 'CV Fit' : (hasInt ? 'Interview Fit' : 'Fit Score'))
 
                       const sCvVal = hasCV ? (cand.cv_score ?? (cand.S_cv != null ? cand.S_cv * 100 : null)) : null
                       const sSkillVal = hasCV ? (cand.skill_score ?? (cand.S_skill != null ? cand.S_skill * 100 : null)) : null
@@ -348,10 +317,16 @@ export default function Ranking() {
                       const pDescVal = hasInt ? (cand.descriptive_score ?? (cand.P_desc != null ? cand.P_desc * 100 : null)) : null
                       const pCodeVal = hasInt ? (cand.coding_score ?? (cand.P_code != null ? cand.P_code * 100 : null)) : null
 
+                      const rec = getRecommendationInfo(cand)
+
                       return (
                         <tr
                           key={cand.candidate_id || idx}
-                          style={{ opacity: cand.passed_hard_filter ? 1 : 0.6 }}
+                          style={{
+                            borderBottom: '1px solid rgba(255, 255, 255, 0.04)',
+                            opacity: cand.passed_hard_filter ? 1 : 0.75,
+                            transition: 'background 0.15s ease'
+                          }}
                         >
                           <td>
                             <div style={{
@@ -373,33 +348,56 @@ export default function Ranking() {
                               {cand.passed_hard_filter ? `#${cand.rank || idx + 1}` : '✗'}
                             </div>
                           </td>
-                          <td>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                              <span style={{ fontWeight: 700, color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)' }}>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'nowrap' }}>
+                              <span
+                                style={{
+                                  fontWeight: 700,
+                                  color: 'var(--color-fg)',
+                                  fontSize: '13.5px',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  maxWidth: 175
+                                }}
+                                title={cleanCandidateName(cand.candidate_name, cand.candidate_id)}
+                              >
                                 {cleanCandidateName(cand.candidate_name, cand.candidate_id)}
                               </span>
                               {hasInt && (
-                                <span style={{ fontSize: '9.5px', color: 'var(--color-success)', background: 'var(--color-success-muted)', padding: '1px 5px', borderRadius: 'var(--radius-full)', fontWeight: 700 }}>
+                                <span style={{
+                                  fontSize: '9.5px',
+                                  color: '#10b981',
+                                  background: 'rgba(16, 185, 129, 0.12)',
+                                  border: '1px solid rgba(16, 185, 129, 0.28)',
+                                  padding: '1px 6px',
+                                  borderRadius: '9999px',
+                                  fontWeight: 700,
+                                  whiteSpace: 'nowrap',
+                                  flexShrink: 0,
+                                  display: 'inline-flex',
+                                  alignItems: 'center'
+                                }}>
                                   ✓ Assessed
                                 </span>
                               )}
                             </div>
-                            <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                            <div style={{ fontSize: '11px', color: '#64748b', marginTop: 2 }}>
                               ID: {cand.candidate_id?.slice(0, 10) || 'Verified'}
                             </div>
                           </td>
-                          <td>
-                            <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
-                              {cssVal != null ? `${Number(cssVal).toFixed(1)}%` : '—'}
+                          <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
+                            <div style={{ fontSize: '15px', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>
+                              {cssVal != null ? `${Math.round(Number(cssVal))}%` : '—'}
                             </div>
-                            <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', fontWeight: 600 }}>
+                            <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
                               {cssLabel}
                             </div>
                           </td>
-                          <td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
                             {hasCV && sCvVal != null ? (
-                              <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
-                                {Number(sCvVal).toFixed(0)}%
+                              <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>
+                                {Math.round(Number(sCvVal))}%
                               </div>
                             ) : (
                               <span style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--color-warning)', background: 'var(--color-warning-muted)', padding: '2px 6px', borderRadius: 'var(--radius-sm)' }}>
@@ -407,7 +405,7 @@ export default function Ranking() {
                               </span>
                             )}
                           </td>
-                          <td>
+                          <td style={{ padding: '12px 12px', verticalAlign: 'middle' }}>
                             {hasCV && sSkillVal != null ? (
                               <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
                                 <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: 'var(--color-purple)' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
@@ -416,10 +414,10 @@ export default function Ranking() {
                               <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
                             )}
                           </td>
-                          <td>
+                          <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
                             {hasInt && sIntVal != null ? (
-                              <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)', fontWeight: 800 }}>
-                                {Number(sIntVal).toFixed(0)}%
+                              <div style={{ fontSize: '13px', color: '#c084fc', fontFamily: 'var(--p-font-mono)', fontWeight: 800 }}>
+                                {Math.round(Number(sIntVal))}%
                               </div>
                             ) : (
                               <span style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--color-warning)', background: 'var(--color-warning-muted)', padding: '2px 6px', borderRadius: 'var(--radius-sm)' }}>
@@ -427,10 +425,57 @@ export default function Ranking() {
                               </span>
                             )}
                           </td>
-                          <td>
+                          <td style={{ padding: '12px 12px', verticalAlign: 'middle' }}>
                             {hasInt && pMcqVal != null ? (
-                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                                <span title="MCQ Score" style={{ color: 'var(--color-primary)' }}>{Number(pMcqVal).toFixed(0)}%</span> / <span title="Theory Score" style={{ color: 'var(--color-info)' }}>{Number(pDescVal || 0).toFixed(0)}%</span> / <span title="Coding Score" style={{ color: 'var(--color-purple)' }}>{Number(pCodeVal || 0).toFixed(0)}%</span>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' }}>
+                                <span
+                                  title={`MCQ Score: ${Math.round(Number(pMcqVal))}%`}
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    fontFamily: 'var(--p-font-mono)',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    background: 'rgba(59, 130, 246, 0.12)',
+                                    color: '#3b82f6',
+                                    border: '1px solid rgba(59, 130, 246, 0.25)',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  MCQ: {Math.round(Number(pMcqVal))}%
+                                </span>
+                                <span
+                                  title={`Theory/Descriptive Score: ${Math.round(Number(pDescVal || 0))}%`}
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    fontFamily: 'var(--p-font-mono)',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    background: 'rgba(14, 165, 233, 0.12)',
+                                    color: '#38bdf8',
+                                    border: '1px solid rgba(14, 165, 233, 0.25)',
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  Desc: {Math.round(Number(pDescVal || 0))}%
+                                </span>
+                                <span
+                                  title={`Live Coding Score: ${Math.round(Number(pCodeVal || 0))}%${(pCodeVal || 0) < 25 ? ' (Below 25% prerequisite threshold)' : ''}`}
+                                  style={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    fontFamily: 'var(--p-font-mono)',
+                                    padding: '2px 6px',
+                                    borderRadius: '4px',
+                                    background: (pCodeVal || 0) < 25 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(168, 85, 247, 0.12)',
+                                    color: (pCodeVal || 0) < 25 ? '#ef4444' : '#c084fc',
+                                    border: `1px solid ${(pCodeVal || 0) < 25 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(168, 85, 247, 0.25)'}`,
+                                    whiteSpace: 'nowrap'
+                                  }}
+                                >
+                                  Code: {Math.round(Number(pCodeVal || 0))}%
+                                </span>
                               </div>
                             ) : (
                               <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
@@ -446,13 +491,30 @@ export default function Ranking() {
                                   fontWeight: 700,
                                   color: rec.color,
                                   background: rec.bg,
-                                  padding: '3px 8px',
-                                  borderRadius: 'var(--radius-full)',
+                                  padding: '3px 10px',
+                                  borderRadius: '9999px',
                                   border: `1px solid ${rec.border}`,
                                   display: 'inline-block',
-                                  whiteSpace: 'nowrap'
-                                }}>
-                                  {rec.label}
+                                  whiteSpace: 'nowrap',
+                                  cursor: 'help'
+                                }}
+                              >
+                                {rec.label}
+                              </span>
+                              {cand.passed_hard_filter === false && cand.filter_fail_reason && (
+                                <span
+                                  title={cand.filter_fail_reason}
+                                  style={{
+                                    fontSize: '9.5px',
+                                    color: 'var(--color-danger)',
+                                    fontWeight: 600,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    maxWidth: 135
+                                  }}
+                                >
+                                  {cand.filter_fail_reason.includes('Skill') ? 'Low skills (<38%)' : (cand.filter_fail_reason.includes('coding') ? 'Low code (<25%)' : 'Prereq failed')}
                                 </span>
                                 {cand.integrity_score != null && (
                                   <span title={`Proctored integrity score: ${Math.round(cand.integrity_score)}%`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', whiteSpace: 'nowrap' }}>

@@ -150,23 +150,19 @@ def compute_gap(
     # Also decompose compound skills like "Swift/Kotlin or Flutter"
     import re as _re
     def fuzzy_has(skill, cand_set):
-        # First try decomposing compound skills
         parts = _re.split(r'[/|,]|\s+or\s+', skill)
-        parts = [p.strip() for p in parts if p.strip()]
+        parts = [skill] + [p.strip() for p in parts if p.strip()]
         for part in parts:
             pl = part.lower()
             for c in cand_set:
                 if pl == c:
                     return True
+                if pl in ("ci", "cd") and ("ci/cd" in c or "cicd" in c):
+                    return True
+                if c in ("ci", "cd") and ("ci/cd" in pl or "cicd" in pl):
+                    return True
                 if len(pl) >= 3 and len(c) >= 3 and (pl in c or c in pl):
                     return True
-        # Also try the full skill string
-        sl = skill.lower()
-        for c in cand_set:
-            if sl == c:
-                return True
-            if len(sl) >= 3 and len(c) >= 3 and (sl in c or c in sl):
-                return True
         return False
 
     miss_req = [s for s in required if not fuzzy_has(s, candidate_lower)]
