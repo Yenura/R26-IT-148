@@ -302,34 +302,37 @@ export default function SkillGap() {
                         const hasCV = selectedReport.cv_score != null
                         const hasInt = Boolean(selectedReport.interview_completed && selectedReport.interview_score != null)
 
-                        let totalScore = selectedReport.composite_score
-                        let totalLabel = 'Final Total Mark (CSS)'
+                        let totalScore = '0'
+                        let totalLabel = 'Final Total Mark'
                         if (hasCV && hasInt) {
-                          totalLabel = 'Final Total Mark (CSS)'
-                          totalScore = selectedReport.composite_score != null ? Number(selectedReport.composite_score).toFixed(1) : ((0.40 * selectedReport.cv_score + 0.60 * selectedReport.interview_score).toFixed(1))
+                          totalLabel = 'Final Total Mark'
+                          const rawVal = selectedReport.composite_score != null
+                            ? Number(selectedReport.composite_score)
+                            : (0.40 * Number(selectedReport.cv_score) + 0.60 * Number(selectedReport.interview_score))
+                          totalScore = Math.round(rawVal).toString()
                         } else if (hasCV) {
-                          totalLabel = 'Current Total (CV Mark)'
-                          totalScore = Number(selectedReport.cv_score).toFixed(1)
+                          totalLabel = 'Final CV Mark'
+                          totalScore = Math.round(Number(selectedReport.cv_score)).toString()
                         } else if (hasInt) {
-                          totalLabel = 'Current Total (Interview Mark)'
-                          totalScore = Number(selectedReport.interview_score).toFixed(1)
+                          totalLabel = 'Final Interview Mark'
+                          totalScore = Math.round(Number(selectedReport.interview_score)).toString()
                         } else {
-                          totalLabel = 'Overall Fit Score'
-                          totalScore = '0.0'
+                          totalLabel = 'Final Total Mark'
+                          totalScore = '0'
                         }
 
                         return (
                           <>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Overall Mark (S_cv)</div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Mark</div>
                               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasCV ? 'var(--color-primary)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                                {hasCV ? `${Number(selectedReport.cv_score).toFixed(0)}%` : 'Pending'}
+                                {hasCV ? `${Math.round(Number(selectedReport.cv_score))}%` : 'Pending'}
                               </div>
                             </div>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
-                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark (S_int)</div>
+                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark</div>
                               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasInt ? 'var(--color-purple)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                                {hasInt ? `${Number(selectedReport.interview_score).toFixed(0)}%` : 'Pending'}
+                                {hasInt ? `${Math.round(Number(selectedReport.interview_score))}%` : 'Pending'}
                               </div>
                             </div>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: (hasCV && hasInt) ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${(hasCV && hasInt) ? 'rgba(99, 102, 241, 0.4)' : 'var(--color-border)'}` }}>
