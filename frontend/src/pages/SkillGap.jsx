@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
@@ -46,6 +46,9 @@ export default function SkillGap() {
     }
   })
   const [selectedOpeningId, setSelectedOpeningId] = useState('')
+  const [simulatorMode, setSimulatorMode] = useState('company') // 'company' | 'position'
+  const [selectedSimCompany, setSelectedSimCompany] = useState('')
+  const [selectedSimPosition, setSelectedSimPosition] = useState('')
   const [roles, setRoles] = useState([])
   const [simulatedSkills, setSimulatedSkills] = useState([])
   const [customSimSkill, setCustomSimSkill] = useState('')
@@ -131,7 +134,7 @@ export default function SkillGap() {
   }
 
   const runSimulation = async () => {
-    if (!currentOpening || simulatedSkills.length === 0) return
+    if (!currentOpening) return
     setSimulating(true)
     try {
       const r = await c4SkillGapSimulate({
@@ -155,13 +158,69 @@ export default function SkillGap() {
         job_title: currentOpening.title,
         company_name: currentOpening.company_name || 'Selected Employer'
       })
-      toast.success(`Simulation Complete: +${data.coverage_improvement || 0}% improvement!`)
+      if ((data.coverage_improvement || 0) > 0) {
+        toast.success(`Simulation Complete: +${data.coverage_improvement}% improvement!`)
+      } else {
+        toast.success(`Simulation Complete: Baseline fit is ${data.simulated_coverage || 0}%.`)
+      }
     } catch { toast.error('Simulation failed') }
     finally { setSimulating(false) }
   }
 
+  const cleanCompName = (name) => {
+    if (!name) return 'General Tech'
+    const trimmed = name.trim()
+    if (/^techcorp\b/i.test(trimmed)) return 'TechCorp'
+    if (trimmed.toLowerCase() === 'slt') return 'SLT Mobitel'
+    return trimmed
+  }
+
+  // Unique companies with counts
+  const companyOptions = useMemo(() => {
+    const map = new Map()
+    availableJobs.forEach((j) => {
+      const c = cleanCompName(j.company_name)
+      map.set(c, (map.get(c) || 0) + 1)
+    })
+    return Array.from(map.entries())
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  }, [availableJobs])
+
+  // Unique job positions / titles with counts
+  const positionOptions = useMemo(() => {
+    const map = new Map()
+    availableJobs.forEach((j) => {
+      const title = (j.title || j.job_role || 'Untitled Role').trim()
+      map.set(title, (map.get(title) || 0) + 1)
+    })
+    return Array.from(map.entries())
+      .map(([title, count]) => ({ title, count }))
+      .sort((a, b) => a.title.localeCompare(b.title))
+  }, [availableJobs])
+
+  // Filtered jobs based on active company selection
+  const filteredJobsByCompany = useMemo(() => {
+    if (!selectedSimCompany) return availableJobs
+    return availableJobs.filter((j) => cleanCompName(j.company_name) === selectedSimCompany)
+  }, [availableJobs, selectedSimCompany])
+
+  // Filtered jobs based on active position selection
+  const filteredJobsByPosition = useMemo(() => {
+    if (!selectedSimPosition) return availableJobs
+    return availableJobs.filter((j) => (j.title || j.job_role || '').trim().toLowerCase() === selectedSimPosition.toLowerCase())
+  }, [availableJobs, selectedSimPosition])
+
   const currentOpening = availableJobs.find(j => (j.id || j._id) === selectedOpeningId) || availableJobs[0]
   const openingRequiredSkills = currentOpening?.required_skills || []
+
+  // Keep selected company & position in sync when opening changes
+  useEffect(() => {
+    if (currentOpening) {
+      if (!selectedSimCompany) setSelectedSimCompany(cleanCompName(currentOpening.company_name))
+      if (!selectedSimPosition) setSelectedSimPosition((currentOpening.title || currentOpening.job_role || '').trim())
+    }
+  }, [currentOpening])
 
   const addSimSkill = (skill) => {
     const s = skill?.trim()
@@ -498,31 +557,255 @@ export default function SkillGap() {
       {activeTab === 'explorer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           <div className="card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
               <div>
                 <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Building2 size={18} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
                 </h3>
-                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '2px 0 0' }}>Choose from active, verified job postings to simulate acquisitions.</p>
+                <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: '2px 0 0' }}>
+                  Filter and select your target opening by company name or by job position.
+                </p>
               </div>
               <span className="chip" style={{ fontSize: '11px', fontWeight: 700, background: 'var(--color-primary-muted)', color: 'var(--color-primary)' }}>
                 {availableJobs.length} Live Openings
               </span>
             </div>
-            <select
-              value={selectedOpeningId}
-              onChange={(e) => { setSelectedOpeningId(e.target.value); setSimulationResult(null); setSimulatedSkills([]) }}
-              style={{ width: '100%', height: 44, padding: '0 14px', background: 'var(--input-bg)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', color: 'var(--color-fg)', fontSize: 'var(--p-text-sm)', fontWeight: 600 }}
-            >
-              {availableJobs.map((j) => {
-                const id = j.id || j._id
-                return (
-                  <option key={id} value={id}>
-                    {j.title} @ {j.company_name || 'Tech Company'} ({j.location || 'Remote'})
-                  </option>
-                )
-              })}
-            </select>
+
+            {/* 2 Tabs: Select by Company Name vs Select by Job Position */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-fg-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Select Mode:
+              </span>
+              <div style={{ display: 'inline-flex', background: 'var(--color-bg)', padding: 3, borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
+                <button
+                  type="button"
+                  onClick={() => setSimulatorMode('company')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: simulatorMode === 'company' ? 'var(--color-primary)' : 'transparent',
+                    color: simulatorMode === 'company' ? '#fff' : 'var(--color-fg-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Building2 size={13} /> Company Name
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSimulatorMode('position')}
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    border: 'none',
+                    cursor: 'pointer',
+                    background: simulatorMode === 'position' ? 'var(--color-primary)' : 'transparent',
+                    color: simulatorMode === 'position' ? '#fff' : 'var(--color-fg-muted)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <Briefcase size={13} /> Job Position
+                </button>
+              </div>
+            </div>
+
+            {/* Tab 1: By Company Name */}
+            {simulatorMode === 'company' ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+                {/* 1. Select Company */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Building2 size={13} style={{ color: 'var(--color-primary)' }} /> 1. Company Name:
+                  </label>
+                  <select
+                    value={selectedSimCompany}
+                    onChange={(e) => {
+                      const comp = e.target.value
+                      setSelectedSimCompany(comp)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                      if (comp) {
+                        const compJobs = availableJobs.filter((j) => cleanCompName(j.company_name) === comp)
+                        if (compJobs.length > 0) {
+                          setSelectedOpeningId(compJobs[0].id || compJobs[0]._id)
+                        }
+                      } else if (availableJobs.length > 0) {
+                        setSelectedOpeningId(availableJobs[0].id || availableJobs[0]._id)
+                      }
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    <option value="">🏢 All Companies ({availableJobs.length} openings)</option>
+                    {companyOptions.map((c) => (
+                      <option key={c.name} value={c.name}>
+                        {c.name} ({c.count} open {c.count === 1 ? 'role' : 'roles'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Select Job Position at Company */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Briefcase size={13} style={{ color: 'var(--color-success)' }} /> 2. Job Position {selectedSimCompany ? `at ${selectedSimCompany}` : ''}:
+                  </label>
+                  <select
+                    value={selectedOpeningId}
+                    onChange={(e) => {
+                      setSelectedOpeningId(e.target.value)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    {filteredJobsByCompany.map((j) => {
+                      const id = j.id || j._id
+                      return (
+                        <option key={id} value={id}>
+                          {j.title} {j.company_name ? `@ ${cleanCompName(j.company_name)}` : ''} ({j.location || 'Remote'})
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
+              </div>
+            ) : (
+              /* Tab 2: By Job Position */
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+                {/* 1. Select Job Position */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Briefcase size={13} style={{ color: 'var(--color-primary)' }} /> 1. Job Position / Role:
+                  </label>
+                  <select
+                    value={selectedSimPosition}
+                    onChange={(e) => {
+                      const pos = e.target.value
+                      setSelectedSimPosition(pos)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                      if (pos) {
+                        const posJobs = availableJobs.filter((j) => (j.title || j.job_role || '').trim().toLowerCase() === pos.toLowerCase())
+                        if (posJobs.length > 0) {
+                          setSelectedOpeningId(posJobs[0].id || posJobs[0]._id)
+                        }
+                      } else if (availableJobs.length > 0) {
+                        setSelectedOpeningId(availableJobs[0].id || availableJobs[0]._id)
+                      }
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    <option value="">💼 All Positions ({positionOptions.length} unique roles)</option>
+                    {positionOptions.map((p) => (
+                      <option key={p.title} value={p.title}>
+                        {p.title} ({p.count} {p.count === 1 ? 'opening' : 'openings'})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Select Company Hiring For Position */}
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Building2 size={13} style={{ color: 'var(--color-success)' }} /> 2. Company {selectedSimPosition ? `hiring for ${selectedSimPosition}` : ''}:
+                  </label>
+                  <select
+                    value={selectedOpeningId}
+                    onChange={(e) => {
+                      setSelectedOpeningId(e.target.value)
+                      setSimulationResult(null)
+                      setSimulatedSkills([])
+                    }}
+                    style={{
+                      width: '100%', height: 42, padding: '0 12px',
+                      background: 'var(--input-bg)', border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)', color: 'var(--color-fg)',
+                      fontSize: 'var(--p-text-sm)', fontWeight: 600
+                    }}
+                  >
+                    {filteredJobsByPosition.map((j) => {
+                      const id = j.id || j._id
+                      return (
+                        <option key={id} value={id}>
+                          {cleanCompName(j.company_name)} — {j.title} ({j.location || 'Remote'})
+                        </option>
+                      )
+                    })}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Selected Role Summary Pill */}
+            {currentOpening && (
+              <div style={{
+                marginTop: 16,
+                padding: '12px 16px',
+                background: 'var(--color-bg-elevated)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-primary-muted)',
+                    color: 'var(--color-primary)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px'
+                  }}>
+                    {cleanCompName(currentOpening.company_name).slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
+                      {currentOpening.title || currentOpening.job_role}
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                      🏢 {cleanCompName(currentOpening.company_name)} · 📍 {currentOpening.location || 'Remote'} {currentOpening.department ? `· 🏷️ ${currentOpening.department}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {currentOpening.experience_required && (
+                    <span className="chip" style={{ fontSize: '10px', padding: '3px 8px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', fontWeight: 600 }}>
+                      Exp: {currentOpening.experience_required}
+                    </span>
+                  )}
+                  <span className="chip" style={{ fontSize: '10px', padding: '3px 8px', background: 'var(--color-primary-muted)', color: 'var(--color-primary)', fontWeight: 700 }}>
+                    {openingRequiredSkills.length} Required Skills
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           {currentOpening && (
@@ -530,9 +813,24 @@ export default function SkillGap() {
               {/* Missing Required Skills */}
 <div className="dashboard-grid dashboard-grid-equal" style={{ gap: 16 }}>
                 <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
-                  <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
-                    <AlertCircle size={15} /> Job Required Skills ({openingRequiredSkills.length})
-                  </h4>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+                    <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-danger)' }}>
+                      <AlertCircle size={15} /> Job Required Skills ({openingRequiredSkills.length})
+                    </h4>
+                    {openingRequiredSkills.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSimulatedSkills(Array.from(new Set([...simulatedSkills, ...openingRequiredSkills])))
+                          toast.success(`Added all ${openingRequiredSkills.length} skills to simulation`)
+                        }}
+                        className="btn btn-ghost btn-xs"
+                        style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: 'var(--radius-sm)' }}
+                      >
+                        + Add All to Simulation
+                      </button>
+                    )}
+                  </div>
                   <p style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginBottom: 8 }}>Click any required skill below to add it to your simulation:</p>
                   {openingRequiredSkills.length > 0 ? (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -567,13 +865,25 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
 
                 {/* Present Verified Skills + Add Input */}
                 <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
-                  <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
-                    <CheckCircle2 size={15} /> Simulated Acquired Skills ({simulatedSkills.length})
-                  </h4>
-                    {simulatedSkills.length > 0 ? (
-                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
- {[...new Set(simulatedSkills)].map((s, i) => (
-                         <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+                    <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                      <CheckCircle2 size={15} /> Simulated Acquired Skills ({simulatedSkills.length})
+                    </h4>
+                    {simulatedSkills.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSimulatedSkills([])}
+                        className="btn btn-ghost btn-xs"
+                        style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-fg-muted)', padding: '2px 6px' }}
+                      >
+                        Clear All
+                      </button>
+                    )}
+                  </div>
+                  {simulatedSkills.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                      {[...new Set(simulatedSkills)].map((s, i) => (
+                        <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                           {s}
                           <button onClick={() => removeSimSkill(s)} aria-label={`Remove ${s}`} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', fontWeight: 800 }}>×</button>
                         </span>
@@ -596,11 +906,11 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
               {/* Simulation Button */}
               <button
                 onClick={runSimulation}
-                disabled={simulating || simulatedSkills.length === 0}
+                disabled={simulating}
                 className="btn btn-primary"
                 style={{ width: '100%', padding: '12px 16px', fontSize: 'var(--p-text-sm)', fontWeight: 700, borderRadius: 'var(--radius-md)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                <Sparkles size={16} /> {simulating ? 'Calculating Impact...' : `Simulate Impact on ${currentOpening.title}`}
+                <Sparkles size={16} /> {simulating ? 'Calculating Impact...' : simulatedSkills.length > 0 ? `Simulate Impact (+${simulatedSkills.length} skills) on ${currentOpening.title}` : `Simulate Impact on ${currentOpening.title}`}
               </button>
 
               {/* Simulation Results */}
@@ -621,6 +931,29 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                       <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>+{simulationResult.coverage_improvement}%</div>
                     </div>
                   </div>
+
+                  {/* Guidance Tip when 0 skills were simulated */}
+                  {simulatedSkills.length === 0 && (
+                    <div style={{ padding: '12px 16px', background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div style={{ fontSize: '12px', color: 'var(--color-fg-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Lightbulb size={16} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+                        <span>Showing baseline fit for {currentOpening.title}. Click any skill chip above or click <strong>+ Add All to Simulation</strong> to simulate acquiring them!</span>
+                      </div>
+                      {openingRequiredSkills.length > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSimulatedSkills(Array.from(new Set(openingRequiredSkills)))
+                            toast.success(`Added all ${openingRequiredSkills.length} skills! Click Simulate to see fit increase.`)
+                          }}
+                          className="btn btn-primary btn-xs"
+                          style={{ fontSize: '11px', fontWeight: 700 }}
+                        >
+                          + Add All Skills Now
+                        </button>
+                      )}
+                    </div>
+                  )}
 
                   {/* Resources Grid */}
                   {simulationResult.resources?.length > 0 && (
