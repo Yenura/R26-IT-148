@@ -436,6 +436,7 @@ def main():
         history.append({"step": 0, "phase": "baseline", **base_metrics})
 
     optimizer.zero_grad()
+    start_step = global_step
     stop = False
     for epoch in range(1, args.epochs + 1):
         for input_ids, attn, labels in loader:
@@ -452,7 +453,7 @@ def main():
             if global_step % 25 == 0:
                 el = time.time() - t_start
                 print(f"  step {global_step:4d}  loss~{loss.item() * args.grad_accum:7.3f}  "
-                      f"{el/60:5.1f}min  {global_step*args.batch_size/el:4.2f} ex/s", flush=True)
+                      f"{el/60:5.1f}min  {max(global_step - start_step, 1)*args.batch_size/el:4.2f} ex/s", flush=True)
 
             if global_step % args.eval_every == 0 or global_step >= args.max_steps:
                 metrics, records = evaluate(model, tokenizer, eval_examples, args.max_src, args.max_tgt)

@@ -105,7 +105,6 @@ def main():
                     "question": qt,
                     "relevance_pct": round(relevance(qt, skills), 1),
                 })
-        gen_bank = None
     except Exception as exc:  # pragma: no cover
         print("app-path probe failed:", exc, flush=True)
 
@@ -145,13 +144,23 @@ def main():
     for t, m in metrics["by_type"].items():
         L.append(f"| {t} | {m['n']} | {m['bleu4']} | {m['rouge_l']} | {m['field_valid']} |")
     L.append("")
+    # Connect the metric to what the app actually does: the QG gate is
+    # all-or-nothing, so a batch survives only if every question parses.
+    bt = metrics["by_type"]
+
+    def _fv(t):
+        return (bt.get(t, {}).get("field_valid") or 0.0) / 100.0
+
+    batch_pass = _fv("[MCQ]") ** 2 * _fv("[Descriptive]") * _fv("[Coding]")
+    L.append(f"- implied all-pass rate for a 2 MCQ + 1 descriptive + 1 coding batch: "
+             f"~{100 * batch_pass:.1f}% (upper bound - the real gate, `_is_good_question`, is stricter)\n")
 
     hist = model_dir / "history.json"
     if hist.exists():
         rep = json.loads(hist.read_text(encoding="utf-8"))
         b = rep.get("baseline", {})
         L.append("## Training progression (generation metrics, not teacher-forced)\n")
-        L.append(f"- untrained truncated baseline: ROUGE-L {b.get('rouge_l')} / BLEU-4 {b.get('bleu4')} "
+        L.append(f"- untrained baseline: ROUGE-L {b.get('rouge_l')} / BLEU-4 {b.get('bleu4')} "
                  f"/ field-valid {b.get('field_valid')}%")
         L.append("")
         L.append("| step | phase | ROUGE-L | BLEU-4 | field-valid % | exact % |")
