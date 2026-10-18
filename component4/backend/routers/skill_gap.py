@@ -206,13 +206,26 @@ async def simulate_skill_acquisition(payload: SimulateRequest, request: Request 
     sim_pct = res_sim["skill_coverage_percentage"]
     diff = round(max(0.0, sim_pct - orig_pct), 2)
 
-    remaining_missing = [m["skill"] for m in res_sim["missing_skills"]]
+    # Distinguish required skill deficits from optional/advanced electives
+    missing_req = [m["skill"] for m in res_sim.get("missing_skills", []) if m.get("importance") == "Required"]
+    missing_opt = [m["skill"] for m in res_sim.get("missing_skills", []) if m.get("importance") != "Required"]
+
+    # When custom_required is provided for a job opening, deficits must only track required skills
+    if custom_required and len(custom_required) > 0:
+        remaining_missing = missing_req
+        optional_electives = missing_opt
+    else:
+        remaining_missing = missing_req if missing_req else missing_opt
+        optional_electives = missing_opt if missing_req else []
+
     resources = []
     try:
         from services.ml_engine import RESOURCES as _RESOURCES
     except Exception:
         _RESOURCES = {}
-    for sk in remaining_missing:
+
+    target_for_resources = remaining_missing if remaining_missing else optional_electives
+    for sk in target_for_resources:
         r = _RESOURCES.get(sk) or {
             "course": f"{sk} Fundamentals & Mastery",
             "url": f"https://www.coursera.org/search?query={sk.replace(' ', '+')}",
@@ -220,6 +233,11 @@ async def simulate_skill_acquisition(payload: SimulateRequest, request: Request 
             "level": "Intermediate"
         }
         resources.append({"skill": sk, **r})
+
+    learning_plan = [
+        {"step": i + 1, "skill": sk, "action": f"Acquire {sk} to unlock higher job match"}
+        for i, sk in enumerate(remaining_missing)
+    ]
 
     data_dict = {
         "target_role": target_role,
@@ -230,11 +248,9 @@ async def simulate_skill_acquisition(payload: SimulateRequest, request: Request 
         "matched_skills": res_sim["matched_skills"],
         "remaining_missing": remaining_missing,
         "remaining_missing_skills": remaining_missing,
+        "optional_electives": optional_electives,
         "resources": resources,
-        "learning_plan": [
-            {"step": i + 1, "skill": sk, "action": f"Acquire {sk} to unlock higher job match"}
-            for i, sk in enumerate(remaining_missing)
-        ],
+        "learning_plan": learning_plan,
     }
 
     return {"success": True, **data_dict, "data": data_dict}

@@ -77,6 +77,11 @@ def analyze_skill_gap(
         for c in cand_set:
             if sl == c:
                 return True
+            # Handle CI/CD and CI, CD abbreviations
+            if sl in ("ci", "cd") and ("ci/cd" in c or "cicd" in c):
+                return True
+            if c in ("ci", "cd") and ("ci/cd" in sl or "cicd" in sl):
+                return True
             # Substring match: both must be 3+ chars to avoid false positives
             if len(sl) >= 3 and len(c) >= 3:
                 if sl in c or c in sl:
@@ -84,10 +89,10 @@ def analyze_skill_gap(
         return False
 
     for s in norm_req_skills:
-        # Decompose compound skills like "Swift/Kotlin or Flutter" into individual skills
+        # Check full skill string first, then decomposed compound alternatives
         import re as _re
-        parts = _re.split(r'[/|,]|\s+or\s+', s)
-        parts = [p.strip() for p in parts if p.strip()]
+        split_parts = _re.split(r'[/|,]|\s+or\s+', s)
+        parts = [s] + [p.strip() for p in split_parts if p.strip()]
 
         if any(_fuzzy_has(p, curr_set) for p in parts):
             matched_skills.append(s)
@@ -102,8 +107,8 @@ def analyze_skill_gap(
 
     for s in norm_opt_skills:
         import re as _re
-        parts = _re.split(r'[/|,]|\s+or\s+', s)
-        parts = [p.strip() for p in parts if p.strip()]
+        split_parts = _re.split(r'[/|,]|\s+or\s+', s)
+        parts = [s] + [p.strip() for p in split_parts if p.strip()]
 
         if any(_fuzzy_has(p, curr_set) for p in parts):
             if s.lower() not in {m.lower() for m in matched_skills}:
