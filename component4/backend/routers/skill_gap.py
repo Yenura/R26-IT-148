@@ -206,21 +206,7 @@ async def simulate_skill_acquisition(payload: SimulateRequest, request: Request 
     sim_pct = res_sim["skill_coverage_percentage"]
     diff = round(max(0.0, sim_pct - orig_pct), 2)
 
-    # When custom_required is provided from a specific job opening,
-    # the roadmap should focus strictly on the required skills of that opening.
-    if custom_required and len(custom_required) > 0:
-        remaining_missing = [
-            m["skill"] for m in res_sim["missing_skills"]
-            if m.get("importance") == "Required"
-        ]
-        optional_benchmark_skills = [
-            m["skill"] for m in res_sim["missing_skills"]
-            if m.get("importance") == "Optional"
-        ]
-    else:
-        remaining_missing = [m["skill"] for m in res_sim["missing_skills"]]
-        optional_benchmark_skills = []
-
+    remaining_missing = [m["skill"] for m in res_sim["missing_skills"]]
     resources = []
     try:
         from services.ml_engine import RESOURCES as _RESOURCES
@@ -244,7 +230,6 @@ async def simulate_skill_acquisition(payload: SimulateRequest, request: Request 
         "matched_skills": res_sim["matched_skills"],
         "remaining_missing": remaining_missing,
         "remaining_missing_skills": remaining_missing,
-        "optional_skills": optional_benchmark_skills,
         "resources": resources,
         "learning_plan": [
             {"step": i + 1, "skill": sk, "action": f"Acquire {sk} to unlock higher job match"}
