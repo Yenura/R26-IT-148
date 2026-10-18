@@ -8,7 +8,7 @@
 [![LightGBM](https://img.shields.io/badge/ML-LightGBM_LambdaMART-FF6F00.svg)](https://lightgbm.readthedocs.io)
 [![Scikit-Learn](https://img.shields.io/badge/ML-Scikit--Learn-F7931E.svg?logo=scikit-learn&logoColor=white)](https://scikit-learn.org)
 [![PyTorch](https://img.shields.io/badge/Deep_Learning-PyTorch-EE4C2C.svg?logo=pytorch&logoColor=white)](https://pytorch.org)
-[![Tests](https://img.shields.io/badge/Tests-168%20Passed%20(100%25)-brightgreen.svg)](file:///c:/Users/thari/Desktop/My%20Project/R26-IT-148/component1/tests/)
+[![Tests](https://img.shields.io/badge/Tests-266%20Passed%20(100%25)-brightgreen.svg)](./recruit-ai/backend/tests/)
 
 > **SLIIT Final-Year Research Project (R26-IT-148)**  
 > An enterprise-grade, high-performance multi-microservice AI recruitment and career platform that unites automated CV parsing and NER extraction, dynamic speech-to-text technical interviews, listwise Learning-to-Rank (LTR) candidate selection, and priority-weighted skill gap career pathways into one unified SaaS platform.
@@ -235,24 +235,36 @@ cd frontend && npm run dev
 | **Candidate (Job Seeker)** | `candidate@demo.com` | `Candidate@123` | CV Upload, Match Scoring, AI Interview Sandbox, Skill Gap Simulator, Career Roadmap |
 | **Recruiter / Employer** | `recruiter@demo.com` | `Recruiter@123` | Post Jobs, Pipeline Management, LambdaMART Candidate Ranking, Dossier Export |
 
+### Password recovery
+Both login pages offer a **Forgot password?** link. The flow is `POST /auth/forgot-password` (single-use token, 15-minute expiry, generic response so emails can't be enumerated) followed by `POST /auth/reset-password`. Registration enforces format checks plus disposable-domain blocking and MX-record verification; there is no email-OTP step. Outbound mail is optional and env-configured (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASSWORD`, `SMTP_FROM`, `FRONTEND_URL`): when set, reset links are emailed; otherwise the API degrades gracefully (dev-secret deployments echo a one-time token for testing).
+
 ---
 
 ## 🧪 Automated Testing & Verification Suite
 
-The repository contains automated test suites covering parsing boundaries, mathematical formulas, and ML inference:
+Automated suites cover auth/session isolation, parsing boundaries, ranking math, and ML inference — 266 tests green across all components. Backend suites **must run per-directory** (C0/C2/C3/C4 share top-level `routers`/`models` package names, so a combined pytest run shadows modules). CI (`.github/workflows/tests.yml`) runs each suite as its own job.
 
 ```bash
-# Run Component 1 Test Suite (168 Tests)
+# Component 1 (199 tests: CV parsing, scoring, API + auth guards)
 pytest component1/tests/ -v
+
+# Gateway auth + session isolation (13 tests)
+pytest recruit-ai/backend/tests/ -v
+
+# Component 2 interview guards (9 tests)
+pytest component2/backend/tests/ -v
+
+# Component 3 ranking guards + scale math (9 tests)
+pytest component3/backend/tests/ -v
+
+# Component 4 skill-gap guards (15 tests)
+pytest component4/backend/tests/ -v
+
+# Frontend utilities (21 tests)
+cd frontend && npm test
 
 # Run Model Accuracy Audit Script across all 4 Components
 python show_accuracy.py
-```
-
-### Test Suite Execution Output:
-```
-============================== 168 passed in 106.10s ==============================
-Result: 100% Pass Rate (0 Failures, 0 Errors)
 ```
 
 ---
@@ -286,7 +298,7 @@ R26-IT-148/
 │   ├── backend/                           # FastAPI Router, Scorer Service, Predictor Wrapper
 │   ├── ml/                                # Extractor, Feature Engineering, Training & Evaluation
 │   ├── models/                            # Serialized Models (cv_classifier.pkl, label_encoder.pkl)
-│   └── tests/                             # 168 Unit, Bounds, and Integration Tests
+│   └── tests/                             # 199 Unit, Bounds, and Integration Tests
 │
 ├── component2/                            # Component 2: AI Technical Interview (Port 8002)
 │   ├── backend/                           # FastAPI Router, Session Store, Audio Stream Handler

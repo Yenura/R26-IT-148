@@ -11,21 +11,66 @@ from slowapi.util import get_remote_address
 from schemas import ResumeOut, ResumeUpdate, PredictionOut, InterviewScoresCreate
 from routers.auth import get_current_user, require_company, require_candidate
 from services.resume_parser import parse_resume_file, extract_entities
-from services.semantic_matcher import SemanticMatcher
 from services.role_classifier import RoleClassifier
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
 
-_matcher: SemanticMatcher | None = None
+
+def _oid_or_404(raw_id: str):
+    """Parse an ObjectId or raise 404 (never 500 on malformed ids)."""
+    from bson import ObjectId
+    if not ObjectId.is_valid(raw_id):
+        raise HTTPException(status_code=404, detail="Resume not found")
+    return ObjectId(raw_id)
+
+
+async def _company_candidate_ids(db, company_id: str) -> set:
+    """Candidate ids that applied to any of this company's jobs (str + ObjectId forms)."""
+    from bson import ObjectId
+    comp_filters = [{"company_id": str(company_id)}]
+    if ObjectId.is_valid(str(company_id)):
+        comp_filters.append({"company_id": ObjectId(company_id)})
+    jobs = await db.jobs.find({"$or": comp_filters}, {"_id": 1}).to_list(1000)
+    job_ids = [str(j["_id"]) for j in jobs]
+    if not job_ids:
+        return set()
+    apps = await db.applications.find(
+        {"$or": [{"job_id": {"$in": job_ids}}, {"job_id": {"$in": [j["_id"] for j in jobs]}}]},
+        {"candidate_id": 1},
+    ).to_list(10000)
+    ids = set()
+    for a in apps:
+        cid = a.get("candidate_id")
+        if cid:
+            ids.add(str(cid))
+            if ObjectId.is_valid(str(cid)):
+                ids.add(ObjectId(cid))
+    return ids
+
+
+async def _can_company_view_candidate(db, company_id: str, candidate_id: str) -> bool:
+    """True if the candidate applied to at least one of the company's jobs."""
+    if not candidate_id:
+        return False
+    job_ids = await _company_job_ids(db, company_id)
+    if not job_ids:
+        return False
+    app = await db.applications.find_one(
+        {"job_id": {"$in": job_ids}, "candidate_id": str(candidate_id)}
+    )
+    return app is not None
+
+
+async def _company_job_ids(db, company_id: str) -> list:
+    from bson import ObjectId
+    comp_filters = [{"company_id": str(company_id)}]
+    if ObjectId.is_valid(str(company_id)):
+        comp_filters.append({"company_id": ObjectId(company_id)})
+    jobs = await db.jobs.find({"$or": comp_filters}, {"_id": 1}).to_list(1000)
+    return [str(j["_id"]) for j in jobs] + [j["_id"] for j in jobs]
+
 _classifier: RoleClassifier | None = None
-
-
-def _get_matcher() -> SemanticMatcher:
-    global _matcher
-    if _matcher is None:
-        _matcher = SemanticMatcher()
-    return _matcher
 
 
 def _get_classifier() -> RoleClassifier:
@@ -76,6 +121,7 @@ def _pred_out(doc: dict) -> PredictionOut:
         resume_id=doc.get("resume_id", ""),
         candidate_id=doc.get("candidate_id", ""),
         job_id=doc.get("job_id", ""),
+        target_role=doc.get("target_role", ""),
         predicted_role=doc.get("predicted_role", ""),
         role_confidence=doc.get("role_confidence", 0),
         semantic_score=doc.get("semantic_score", 0),
@@ -140,10 +186,15 @@ async def upload_resume(
 
 @router.get("", response_model=list[ResumeOut])
 @router.get("/", response_model=list[ResumeOut])
+@limiter.limit("60/minute")
 async def list_resumes(request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
     if user.get("role") == "company":
-        cursor = db.resumes.find().sort("created_at", -1).limit(100)
+        # Companies see only candidates who applied to their own jobs.
+        cand_ids = await _company_candidate_ids(db, str(user["_id"]))
+        if not cand_ids:
+            return []
+        cursor = db.resumes.find({"candidate_id": {"$in": list(cand_ids)}}).sort("created_at", -1).limit(100)
     else:
         cursor = db.resumes.find({"candidate_id": str(user["_id"])}).sort("created_at", -1)
         results = [_resume_out(doc) async for doc in cursor]
@@ -152,6 +203,7 @@ async def list_resumes(request: Request, user: dict = Depends(get_current_user))
 
 
 @router.get("/predictions", response_model=list[PredictionOut])
+@limiter.limit("60/minute")
 async def list_predictions(request: Request, user: dict = Depends(get_current_user)):
     cursor = request.app.state.db.predictions.find({"candidate_id": str(user["_id"])}).sort("created_at", -1)
     return [_pred_out(doc) async for doc in cursor]
@@ -166,7 +218,7 @@ async def predict_role(
     db = request.app.state.db
     if resume_id:
         from bson import ObjectId
-        resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
+        resume_doc = await db.resumes.find_one({"_id": _oid_or_404(resume_id), "candidate_id": str(user["_id"])})
     else:
         resume_doc = await db.resumes.find_one(
             {"candidate_id": str(user["_id"])},
@@ -208,6 +260,7 @@ CANONICAL_ROLE_REQS = {
 
 @router.get("/match", response_model=PredictionOut)
 @router.post("/match", response_model=PredictionOut)
+@limiter.limit("20/minute")
 async def match_resume(
     request: Request,
     resume_id: str = "",
@@ -224,10 +277,8 @@ async def match_resume(
             if user.get("role") != "company":
                 query["candidate_id"] = str(user["_id"])
             resume_doc = await db.resumes.find_one(query)
-            if not resume_doc:
-                resume_doc = await db.resumes.find_one({"_id": ObjectId(resume_id)})
         except Exception:
-            pass
+            resume_doc = None
 
     if not resume_doc and user:
         from bson import ObjectId
@@ -240,17 +291,7 @@ async def match_resume(
         )
 
     if not resume_doc:
-        resume_doc = await db.resumes.find_one({}, sort=[("created_at", -1)])
-    if not resume_doc:
-        resume_doc = {
-            "_id": "default_resume",
-            "candidate_id": str(user.get("_id", "candidate_1")),
-            "candidate_name": user.get("name", "Applicant"),
-            "skills": ["Python", "React", "JavaScript", "SQL", "Git", "Docker"],
-            "experience_years": 3.0,
-            "education": "BSc Computer Science",
-            "raw_text": "Experienced Software Engineer with proficiency in Python, React, JavaScript, SQL, Git, and Docker."
-        }
+        raise HTTPException(status_code=404, detail="No resume found")
 
     job_doc = None
     if job_id:
@@ -268,13 +309,11 @@ async def match_resume(
     if isinstance(cand_skills_raw, str):
         cand_skills_raw = [s.strip() for s in cand_skills_raw.split(",") if s.strip()]
     resume_skills_lower = [str(s).strip().lower() for s in cand_skills_raw if str(s).strip()]
-    job_text = ""
     job_skills_original = []
     job_skills_lower = []
     required_years = 0.0
 
     if job_doc:
-        job_text = f"{job_doc.get('title', '')} {job_doc.get('description', '')}"
         raw_req_skills = job_doc.get("required_skills", [])
         if isinstance(raw_req_skills, str):
             raw_req_skills = [s.strip() for s in raw_req_skills.split(",") if s.strip()]
@@ -286,7 +325,6 @@ async def match_resume(
             required_years = 2.0
     elif target_role and target_role in CANONICAL_ROLE_REQS:
         role_data = CANONICAL_ROLE_REQS[target_role]
-        job_text = f"{target_role} required skills and experience"
         job_skills_original = role_data["skills"]
         job_skills_lower = [s.strip().lower() for s in job_skills_original]
         required_years = float(role_data["exp"])
@@ -296,14 +334,9 @@ async def match_resume(
         p_role, _ = classifier.predict(resume_text, cand_skills_raw)
         matched_target = target_role if (target_role and target_role in CANONICAL_ROLE_REQS) else p_role
         role_data = CANONICAL_ROLE_REQS.get(matched_target, CANONICAL_ROLE_REQS.get("Software Engineer", {"skills": ["Python", "SQL", "Git"], "exp": 2}))
-        job_text = f"{matched_target} required skills"
         job_skills_original = role_data["skills"]
         job_skills_lower = [s.strip().lower() for s in job_skills_original]
         required_years = float(role_data["exp"])
-
-    # Semantic: TF-IDF cosine similarity
-    matcher = _get_matcher()
-    semantic_score = matcher.compute_similarity(resume_text, job_text) if job_text else 0
 
     # Skill matching: bidirectional substring match (fuzzy)
     def _skill_matches(job_skill: str, cand_skills: list) -> bool:
@@ -372,17 +405,20 @@ async def match_resume(
         career_suggestions.append("Consider pursuing a higher degree")
     career_suggestions.append(f"Best suited role: {final_predicted}")
 
-    match_target_key = job_id or target_role or ""
+    # job_id holds only real job references; role-based evaluations
+    # are namespaced by target_role instead of polluting job_id.
+    real_job_id = job_id if job_doc else ""
+    target_role_key = target_role or ""
     now = datetime.now(timezone.utc)
     res_id_str = str(resume_doc.get("_id", "demo_resume_01"))
 
     doc = {
         "resume_id": res_id_str,
         "candidate_id": str(user["_id"]),
-        "job_id": match_target_key,
+        "job_id": real_job_id,
+        "target_role": target_role_key,
         "predicted_role": final_predicted,
         "role_confidence": round(confidence, 4),
-        "semantic_score": round(semantic_score, 2),
         "skill_score": round(skill_score, 2),
         "experience_score": round(experience_score, 2),
         "education_score": round(education_score, 2),
@@ -400,7 +436,7 @@ async def match_resume(
 
     try:
         await db.predictions.update_one(
-            {"resume_id": res_id_str, "job_id": match_target_key},
+            {"resume_id": res_id_str, "job_id": real_job_id, "target_role": target_role_key},
             {"$set": doc},
             upsert=True
         )
@@ -441,8 +477,6 @@ async def get_resume(resume_id: str, request: Request, user: dict = Depends(get_
         if user.get("role") != "company":
             query["candidate_id"] = str(user["_id"])
         doc = await request.app.state.db.resumes.find_one(query)
-        if not doc:
-            doc = await request.app.state.db.resumes.find_one({"_id": ObjectId(resume_id)})
     except Exception:
         raise HTTPException(status_code=404, detail="Resume not found")
     if not doc:
@@ -455,7 +489,7 @@ async def get_resume(resume_id: str, request: Request, user: dict = Depends(get_
 async def update_resume(resume_id: str, payload: ResumeUpdate, request: Request, user: dict = Depends(get_current_user)):
     from bson import ObjectId
     db = request.app.state.db
-    doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
+    doc = await db.resumes.find_one({"_id": _oid_or_404(resume_id), "candidate_id": str(user["_id"])})
     if not doc:
         raise HTTPException(status_code=404, detail="Resume not found")
     updates = {k: v for k, v in payload.model_dump(exclude_unset=True).items() if v is not None}
@@ -470,7 +504,7 @@ async def update_resume(resume_id: str, payload: ResumeUpdate, request: Request,
 async def delete_resume(resume_id: str, request: Request, user: dict = Depends(get_current_user)):
     from bson import ObjectId
     db = request.app.state.db
-    doc = await db.resumes.find_one({"_id": ObjectId(resume_id), "candidate_id": str(user["_id"])})
+    doc = await db.resumes.find_one({"_id": _oid_or_404(resume_id), "candidate_id": str(user["_id"])})
     if not doc:
         raise HTTPException(status_code=404, detail="Resume not found")
     await db.resumes.delete_one({"_id": doc["_id"]})
@@ -507,7 +541,11 @@ async def parse_resume_text(
 
 @limiter.limit("60/minute")
 @router.post("/interview-scores")
-async def save_interview_scores(payload: InterviewScoresCreate, request: Request):
+async def save_interview_scores(payload: InterviewScoresCreate, request: Request, user: dict = Depends(get_current_user)):
+    # Scores may only be recorded for the authenticated candidate
+    # (C2 forwards the candidate's own Authorization header).
+    if payload.candidate_id != str(user["_id"]):
+        raise HTTPException(status_code=403, detail="Cannot record scores for another user")
     db = request.app.state.db
     doc = {
         "candidate_id": payload.candidate_id,
@@ -596,8 +634,10 @@ async def save_interview_scores(payload: InterviewScoresCreate, request: Request
 
 
 @router.get("/interview-scores/{candidate_id}")
-async def get_interview_scores(candidate_id: str, request: Request):
+async def get_interview_scores(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
+    if str(user["_id"]) != str(candidate_id) and not await _can_company_view_candidate(db, str(user["_id"]), candidate_id):
+        raise HTTPException(status_code=404, detail="No scores found")
     cursor = db.interview_scores.find({"candidate_id": candidate_id}).sort("created_at", -1)
     scores = []
     async for doc in cursor:
@@ -606,8 +646,10 @@ async def get_interview_scores(candidate_id: str, request: Request):
     return scores
 
 @router.get("/interview-detail/{candidate_id}")
-async def get_interview_detail(candidate_id: str, request: Request):
+async def get_interview_detail(candidate_id: str, request: Request, user: dict = Depends(get_current_user)):
     db = request.app.state.db
+    if str(user["_id"]) != str(candidate_id) and not await _can_company_view_candidate(db, str(user["_id"]), candidate_id):
+        raise HTTPException(status_code=404, detail="No interview data found")
     cursor = db.results.find({"candidate_id": candidate_id}).sort("created_at", -1)
     results = []
     async for doc in cursor:
