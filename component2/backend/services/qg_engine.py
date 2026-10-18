@@ -226,24 +226,19 @@ def generate_questions_qg(
             logger.info("QG model returned no questions; falling back to static bank")
             return None
 
-        # Never discard a whole batch over one bad item. Keep every question
-        # that passes the quality gate; the caller tops up any shortfall from
-        # the static bank (InterviewService._top_up_questions).
+        # All-or-nothing: a batch is used only if EVERY question passes the
+        # quality gate. The neural QG model is weak (off-topic items slip
+        # through the gate), so a partly-bad batch is discarded and the caller
+        # falls back to the curated static bank.
         good = [q for q in combined if _is_good_question(q)]
-        if not good:
-            logger.warning(
-                "QG model: 0/%d questions passed the quality gate; falling back to static bank",
-                total,
-            )
-            return None
-        if len(good) < total:
-            logger.info(
-                "QG model: %d/%d questions passed the quality gate; caller tops up "
-                "%d from the static bank", len(good), total, total - len(good),
-            )
-        else:
+        if len(good) == total:
             logger.info("QG model generated %d valid questions", len(good))
-        return good[:total]
+            return good
+        logger.warning(
+            "QG model: %d/%d questions failed the quality gate; falling back to static bank",
+            total - len(good), total,
+        )
+        return None
     except Exception as exc:
         logger.warning("QG model generation failed: %s", exc)
         return None

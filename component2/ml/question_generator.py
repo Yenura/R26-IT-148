@@ -122,15 +122,44 @@ def _parse_l(text: str) -> str:
     return m.group(1).strip() if m else "Python"
 
 
+def _normalize_test_case(tc: Dict) -> Dict:
+    """Convert the trained coding shape into the shape the interviewer expects.
+
+    The fine-tuned model emits test cases as ``{"input": {"raw": "x = <literal>"},
+    "expected_output": <literal>}``. The interview router can only execute a test
+    when ``input`` is a dict of Python literals, so unwrap ``raw`` into
+    ``{"x": <literal>}`` when that is exactly what it holds.
+    """
+    inp = tc.get("input")
+    if not (isinstance(inp, dict) and set(inp) == {"raw"} and isinstance(inp.get("raw"), str)):
+        return tc
+    try:
+        import ast
+
+        node = ast.parse(inp["raw"].strip(), mode="exec")
+        if len(node.body) == 1 and isinstance(node.body[0], ast.Assign):
+            target = node.body[0].targets[0]
+            if isinstance(target, ast.Name):
+                out = dict(tc)
+                out["input"] = {target.id: ast.literal_eval(node.body[0].value)}
+                return out
+    except Exception:
+        pass
+    return tc
+
+
 def _parse_t(text: str) -> List[Dict]:
-    m = re.search(r"[Tt]:\s*(\[.*?\])", text, re.DOTALL)
+    # NB: a non-greedy ``\[.*?\]`` truncates at the first ``]``, which breaks
+    # test cases whose inputs contain lists (e.g. "stones = [2,7,4,1]"). Decode
+    # the first JSON value instead so nesting is handled.
+    m = re.search(r"[Tt]:\s*", text)
     if m:
         try:
-            parsed = json.loads(m.group(1))
+            parsed, _ = json.JSONDecoder().raw_decode(text[m.end():].lstrip())
             if isinstance(parsed, list):
-                # LLM output is a trust boundary: keep only well-formed test
+                # Model output is a trust boundary: keep only well-formed test
                 # cases, or the Pydantic response model 500s the whole session.
-                return [t for t in parsed if isinstance(t, dict)]
+                return [_normalize_test_case(t) for t in parsed if isinstance(t, dict)]
             return []
         except (json.JSONDecodeError, ValueError):
             pass
