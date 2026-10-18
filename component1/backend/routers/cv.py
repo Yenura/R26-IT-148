@@ -24,6 +24,11 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Reques
 
 import sys, os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from auth_guard import require_identity, require_owner_or_service
+except ImportError:  # fallback when imported as backend.routers.cv
+    from backend.auth_guard import require_identity, require_owner_or_service
 
 from backend.models.schemas import (
     BatchRankItem,
@@ -67,6 +72,17 @@ def _make_candidate_id(provided: Optional[str] = None) -> str:
     if provided and _CANDIDATE_ID_RE.match(provided):
         return provided
     return str(uuid.uuid4()).replace("-", "_")
+
+
+def _bind_candidate_id(identity: dict, provided: Optional[str] = None) -> str:
+    """Bind writes to the caller's identity: candidate role callers always
+    resolve to their JWT sub (incoming candidate_id is never trusted);
+    company/service roles pass through to the client-supplied ID."""
+    if identity.get("role") == "candidate":
+        sub = str(identity.get("sub") or "").strip()
+        if sub:
+            return sub
+    return _make_candidate_id(provided)
 
 
 async def _full_analysis(
@@ -205,6 +221,7 @@ async def list_roles():
 async def classify_cv(
     payload: ClassifyRequest,
     predictor=Depends(_get_predictor),
+    identity: dict = Depends(require_identity),
 ):
     """Classify a resume text into one of the 20 canonical roles.
     Does not persist the result.
@@ -235,11 +252,12 @@ async def analyze_cv_text(
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
     db=Depends(_get_db),
+    identity: dict = Depends(require_identity),
 ):
     """Analyze a CV supplied as raw text.
     Parses, extracts entities, classifies role, computes 3 independent scores, persists to MongoDB.
     """
-    candidate_id   = _make_candidate_id(payload.candidate_id)
+    candidate_id   = _bind_candidate_id(identity, payload.candidate_id)
     candidate_name = payload.candidate_name or "Unknown"
     text           = parser.extract_text_from_raw(payload.text)
 
@@ -269,13 +287,14 @@ async def analyze_cv_file(
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
     db=Depends(_get_db),
+    identity: dict = Depends(require_identity),
 ):
     data = await file.read()
     text = parser.extract_text_from_bytes(data, file.filename or "resume.txt")
     if not text or not text.strip():
         raise HTTPException(status_code=422, detail="Could not extract text from the uploaded file. Please ensure it is a valid PDF, DOCX, or TXT.")
 
-    c_id   = _make_candidate_id(candidate_id)
+    c_id   = _bind_candidate_id(identity, candidate_id)
     c_name = (candidate_name or "Unknown").strip()
 
     result = await _full_analysis(
@@ -301,6 +320,7 @@ async def screen_resume(
     candidate_name: Optional[str] = Form(None),
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
+    identity: dict = Depends(require_identity),
 ):
     """Screen uploaded CV file (PDF, DOCX, or TXT) against a job posting and return:
     - Component 1 Scores (S_skill, S_exp, S_edu)
@@ -325,7 +345,7 @@ async def screen_resume(
     if not text or len(text.strip()) < 5:
         raise HTTPException(status_code=422, detail="Could not extract meaningful text from the uploaded file.")
 
-    c_id = _make_candidate_id(candidate_id)
+    c_id = _bind_candidate_id(identity, candidate_id)
     j_id = job_id or "JOB001"
     pred = predictor.predict(text)
     features = extractor.extract(text, target_role=pred.job_role)
@@ -398,6 +418,7 @@ async def screen_batch(
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
     db=Depends(_get_db),
+    identity: dict = Depends(require_identity),
 ):
     """Batch process multiple candidates applying for a particular job.
     Returns array of candidates with independent Component 1 scores (S_skill, S_exp, S_edu).
@@ -408,7 +429,7 @@ async def screen_batch(
     results = []
     for candidate in payload.candidates:
         text = parser.extract_text_from_raw(candidate.text)
-        c_id = _make_candidate_id(candidate.candidate_id)
+        c_id = _bind_candidate_id(identity, candidate.candidate_id)
         c_name = candidate.candidate_name or "Unknown"
 
         analysis = await _full_analysis(
@@ -458,6 +479,7 @@ async def rank_candidates(
     predictor=Depends(_get_predictor),
     matcher=Depends(_get_matcher),
     db=Depends(_get_db),
+    identity: dict = Depends(require_identity),
 ):
     """Given a job specification/description + a list of CVs, compute 3 independent scores per candidate."""
     results: List[CVAnalysisResponse] = []
@@ -466,7 +488,7 @@ async def rank_candidates(
 
     for candidate in payload.candidates:
         text = parser.extract_text_from_raw(candidate.text)
-        c_id   = _make_candidate_id(candidate.candidate_id)
+        c_id   = _bind_candidate_id(identity, candidate.candidate_id)
         c_name = candidate.candidate_name or "Unknown"
         analysis = await _full_analysis(
             text=text,
@@ -521,9 +543,16 @@ async def list_cvs(
     skip:  int = Query(0, ge=0),
     limit: int = Query(20, ge=1, le=100),
     db=Depends(_get_db),
+    identity: dict = Depends(require_identity),
 ):
-    total = await db.cv_analyses.count_documents({})
-    cursor = db.cv_analyses.find({}, {"_id": 0}).skip(skip).limit(limit).sort("analysis_timestamp", -1)
+    if identity.get("role") == "candidate":
+        sub = str(identity.get("sub") or "").strip()
+        query = {"candidate_id": sub} if sub else {"candidate_id": "__none__"}
+        total = await db.cv_analyses.count_documents(query)
+        cursor = db.cv_analyses.find(query, {"_id": 0}).skip(skip).limit(limit).sort("analysis_timestamp", -1)
+    else:
+        total = await db.cv_analyses.count_documents({})
+        cursor = db.cv_analyses.find({}, {"_id": 0}).skip(skip).limit(limit).sort("analysis_timestamp", -1)
     items  = await cursor.to_list(length=limit)
     return PaginatedCVList(total=total, skip=skip, limit=limit, items=items)
 
@@ -531,7 +560,8 @@ async def list_cvs(
 # ── GET /api/v1/cv/{candidate_id} ────────────────────────────────────────────
 
 @router.get("/{candidate_id}", response_model=CVAnalysisResponse, summary="Get stored CV analysis")
-async def get_cv(candidate_id: str, db=Depends(_get_db)):
+async def get_cv(candidate_id: str, db=Depends(_get_db), identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     doc = await db.cv_analyses.find_one({"candidate_id": candidate_id}, {"_id": 0})
     if not doc:
         raise HTTPException(status_code=404, detail=f"Candidate '{candidate_id}' not found")
@@ -541,11 +571,12 @@ async def get_cv(candidate_id: str, db=Depends(_get_db)):
 # ── DELETE /api/v1/cv/{candidate_id} ─────────────────────────────────────────
 
 @router.delete("/{candidate_id}", response_model=DeleteResponse, summary="Delete stored CV analysis")
-async def delete_cv(candidate_id: str, db=Depends(_get_db)):
+async def delete_cv(candidate_id: str, db=Depends(_get_db), identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     result = await db.cv_analyses.delete_one({"candidate_id": candidate_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail=f"Candidate '{candidate_id}' not found")
-    return DeleteResponse(deleted=True, candidate_id=candidate_id, message="Analysis deleted.")
+    return DeleteResponse(success=True, candidate_id=candidate_id, message="Analysis deleted.")
 
 
 # ── DB helper ─────────────────────────────────────────────────────────────────
@@ -560,4 +591,5 @@ async def _upsert(db, result: CVAnalysisResponse):
         doc,
         upsert=True,
     )
+
 

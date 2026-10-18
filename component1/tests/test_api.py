@@ -79,7 +79,22 @@ def _make_mock_app():
 
 @pytest.fixture(scope="module")
 def client():
-    return _make_mock_app()
+    """Authenticated test client: routers require a candidate JWT
+    (anonymous calls correctly 401, so the suite presents one)."""
+    from jose import jwt
+    import datetime
+    token = jwt.encode(
+        {
+            "sub": "test-candidate-1",
+            "role": "candidate",
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1),
+        },
+        os.environ.get("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod"),
+        algorithm="HS256",
+    )
+    c = _make_mock_app()
+    c.headers.update({"Authorization": f"Bearer {token}"})
+    return c
 
 
 # ── /api/v1/roles ──────────────────────────────────────────────────────────────
@@ -270,3 +285,31 @@ class TestHealthEndpoint:
     def test_root_component_field(self, client):
         r = client.get("/")
         assert r.json()["component"] == 1
+
+
+# ── Auth guards (anonymous callers must be rejected) ─────────────────────────
+
+class TestAuthGuards:
+    @pytest.fixture(scope="class")
+    def anon_client(self):
+        return _make_mock_app()
+
+    def test_classify_anonymous_401(self, anon_client, swe_resume_text):
+        r = anon_client.post("/api/v1/cv/classify", json={"text": swe_resume_text})
+        assert r.status_code == 401
+
+    def test_analyze_anonymous_401(self, anon_client, swe_resume_text):
+        r = anon_client.post("/api/v1/cv/analyze", json={"text": swe_resume_text})
+        assert r.status_code == 401
+
+    def test_rank_anonymous_401(self, anon_client, swe_resume_text, sample_jd_swe):
+        payload = {
+            "job_description": sample_jd_swe,
+            "candidates": [{"text": swe_resume_text, "candidate_name": "A"}],
+        }
+        r = anon_client.post("/api/v1/cv/rank", json=payload)
+        assert r.status_code == 401
+
+    def test_get_cv_other_user_403(self, client):
+        r = client.get("/api/v1/cv/does-not-belong-to-test-candidate-1")
+        assert r.status_code in (403, 404)
