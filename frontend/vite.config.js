@@ -22,12 +22,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
-        manualChunks: {
-          'vendor-icons': ['lucide-react'],
-          'vendor-charts': ['recharts'],
-          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'vendor-anim': ['framer-motion', 'gsap'],
-          'vendor-utils': ['axios'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('recharts')) return 'vendor-charts'
+            if (id.includes('lucide-react')) return 'vendor-icons'
+            if (id.includes('axios')) return 'vendor-utils'
+            return 'vendor'
+          }
         }
       }
     }

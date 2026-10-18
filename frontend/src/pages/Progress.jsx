@@ -200,30 +200,30 @@ export default function Progress() {
 
   const careerTier = pct >= 85
     ? {
-        title: selectedRoleFilter === 'all' ? 'Full Competency Mastery' : `Full ${selectedRoleFilter} Mastery`,
-        level: 'Level 4 · Mastery Stage',
+        title: 'High Competency Completion',
+        status: 'Advanced Readiness',
         color: 'var(--color-purple)',
-        desc: `Outstanding progress! You have mastered almost all technical competencies diagnosed across ${selectedRoleFilter === 'all' ? 'your job applications' : selectedRoleFilter}.`
+        desc: 'Outstanding progress! You have completed almost all diagnosed technical competencies across your target learning goals.'
       }
-    : pct >= 60
+    : pct >= 50
     ? {
-        title: selectedRoleFilter === 'all' ? 'Advanced Upskilling Standing' : `Advanced ${selectedRoleFilter} Standing`,
-        level: 'Level 3 · Advanced Stage',
+        title: 'Active Skill Development',
+        status: 'In Progress',
         color: 'var(--color-success)',
-        desc: `Great momentum! Over half of your diagnosed technical competencies for ${selectedRoleFilter === 'all' ? 'your applications' : selectedRoleFilter} are completed.`
+        desc: 'Great momentum! You are actively closing critical skill deficits. Continue working through your in-progress competencies.'
       }
-    : pct >= 30
+    : pct > 0
     ? {
-        title: selectedRoleFilter === 'all' ? 'Active Learning & Progression' : `Active ${selectedRoleFilter} Upskilling`,
-        level: 'Level 2 · Intermediate Stage',
+        title: 'Early Progress & Learning',
+        status: 'Learning Underway',
         color: 'var(--color-primary)',
-        desc: `You are actively closing critical skill gaps for ${selectedRoleFilter === 'all' ? 'your application goals' : selectedRoleFilter}. Keep advancing your in-progress competencies.`
+        desc: 'You have started closing your diagnosed skill gaps. Work through the recommended modules below to boost your job match fit.'
       }
     : {
-        title: selectedRoleFilter === 'all' ? 'Foundation & Diagnostics Stage' : `${selectedRoleFilter} Diagnostic Baseline`,
-        level: 'Level 1 · Foundation Stage',
+        title: 'Diagnosed Skill Gap Action Plan',
+        status: 'Action Plan Ready',
         color: 'var(--color-warning)',
-        desc: `Track and complete your diagnosed technical skill deficits below to increase your job match fit for ${selectedRoleFilter === 'all' ? 'all applied roles' : selectedRoleFilter}.`
+        desc: 'Below are key competencies diagnosed from your job applications and assessments. Click "In Progress" as you study, or "Mastered" once completed.'
       }
 
   const filteredSkills = roleScopedSkills.filter((s) => {
@@ -267,61 +267,6 @@ export default function Progress() {
         }
       />
 
-      {/* Target Career Filter Bar */}
-      {uniqueRoles.length > 0 && (
-        <div style={{
-          marginBottom: 'var(--p-space-5)',
-          padding: '12px 16px',
-          background: 'var(--color-bg-elevated)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-xl)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: 12
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Sparkles size={16} style={{ color: 'var(--color-primary)' }} />
-            <span style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              Target Career Focus:
-            </span>
-          </div>
-
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-            {uniqueRoles.length > 1 && (
-              <button
-                onClick={() => setSelectedRoleFilter('all')}
-                className={`btn btn-sm ${selectedRoleFilter === 'all' ? 'btn-primary' : 'btn-ghost'}`}
-                style={{ fontSize: 'var(--p-text-xs)', borderRadius: 'var(--radius-full)', padding: '4px 12px' }}
-              >
-                All Careers ({skills.length})
-              </button>
-            )}
-            {uniqueRoles.map((role) => {
-              const count = skills.filter((s) => s.source_role === role).length
-              const isSelected = selectedRoleFilter.toLowerCase() === role.toLowerCase() || uniqueRoles.length === 1
-              return (
-                <button
-                  key={role}
-                  onClick={() => setSelectedRoleFilter(role)}
-                  className={`btn btn-sm ${isSelected ? 'btn-primary' : 'btn-ghost'}`}
-                  style={{
-                    fontSize: 'var(--p-text-xs)',
-                    borderRadius: 'var(--radius-full)',
-                    padding: '4px 14px',
-                    border: isSelected ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
-                    fontWeight: 700
-                  }}
-                >
-                  🎯 {role} ({count} {count === 1 ? 'goal' : 'goals'})
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
       {/* KPI & Skill Trajectory Banner */}
       <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 24, alignItems: 'center' }}>
@@ -347,20 +292,20 @@ export default function Progress() {
                 {pct.toFixed(0)}%
               </span>
               <span style={{ fontSize: '9px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>
-                Mastery
+                Completed
               </span>
             </div>
           </div>
 
           <div>
             <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: careerTier.color, letterSpacing: '0.08em', marginBottom: 3 }}>
-              Roadmap Standing · {careerTier.level}
+              Skill Learning Progress · {careerTier.status}
             </div>
             <h2 style={{ fontSize: '1.35rem', fontWeight: 800, margin: '0 0 6px 0', color: 'var(--color-fg)', letterSpacing: '-0.02em' }}>
               {careerTier.title}
             </h2>
             <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-secondary)', margin: 0, maxWidth: 640, lineHeight: 1.5 }}>
-              {careerTier.desc}
+              {careerTier.desc} ({roleCompletedCount} of {roleTotalCount} competencies mastered)
             </p>
           </div>
         </div>
@@ -369,11 +314,11 @@ export default function Progress() {
       {/* KPI Stat Strip with Auto CountUp */}
       <div className="grid grid-4" style={{ gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-6)' }}>
         <StatCard
-          label={selectedRoleFilter === 'all' ? "Total Goals" : `${selectedRoleFilter} Goals`}
+          label="Total Goals"
           value={roleTotalCount}
           icon={Award}
           color="primary"
-          helperText="Target skills identified"
+          helperText="Diagnosed target skills"
         />
         <StatCard
           label="Mastered"
@@ -394,7 +339,7 @@ export default function Progress() {
           value={`${pct.toFixed(0)}%`}
           icon={TrendingUp}
           color="purple"
-          helperText="Role roadmap index"
+          helperText="Completed goals ratio"
         />
       </div>
 

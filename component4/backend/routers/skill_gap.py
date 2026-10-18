@@ -380,9 +380,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
     scores_task = db.interview_scores.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
     results_task = db.results.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
     sessions_task = db.sessions.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
+    cv_analyses_task = db.cv_analyses.find({"$or": cand_id_filters}).sort("analysis_timestamp", -1).to_list(100)
 
-    resumes_list, apps_list, preds_list, scores_list, results_list, sessions_list = await asyncio.gather(
-        resumes_task, apps_task, preds_task, scores_task, results_task, sessions_task
+    resumes_list, apps_list, preds_list, scores_list, results_list, sessions_list, cv_analyses_list = await asyncio.gather(
+        resumes_task, apps_task, preds_task, scores_task, results_task, sessions_task, cv_analyses_task
     )
 
     resume = resumes_list[0] if resumes_list else None
