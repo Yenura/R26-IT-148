@@ -995,7 +995,7 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                             </div>
                             <div>
                               <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-fg)' }}>{planItem.title || planItem.skill}</div>
-                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{planItem.description || planItem.duration}</div>
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{planItem.action || planItem.description || planItem.duration || `Targeted curriculum to master ${planItem.skill}`}</div>
                             </div>
                           </div>
                         ))}
