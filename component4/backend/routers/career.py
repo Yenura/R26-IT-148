@@ -3,7 +3,8 @@
 import sys, os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Depends
+from auth_guard import require_identity, require_owner_or_service
 from pydantic import BaseModel, Field
 
 COMPONENT_ROOT = Path(__file__).parent.parent.parent
@@ -97,7 +98,8 @@ async def learning_path_endpoint(payload: LearningPathRequest):
 
 
 @router.post("/path", summary="Generate detailed career path for a candidate")
-async def generate_career_path(payload: CareerPathRequest, request: Request):
+async def generate_career_path(payload: CareerPathRequest, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, payload.candidate_id)
     db   = request.app.state.db
     role = payload.current_role
     path = CAREER_PATHS.get(role, ["Junior", "Mid-Level", "Senior", "Lead", "Principal"])
@@ -196,7 +198,8 @@ async def list_career_roles():
 
 
 @router.get("/roadmap/{candidate_id}", summary="Get saved roadmap for a candidate")
-async def get_roadmap(candidate_id: str, request: Request):
+async def get_roadmap(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     db  = request.app.state.db
     doc = await db.skill_gap_reports.find_one(
         {"candidate_id": candidate_id},

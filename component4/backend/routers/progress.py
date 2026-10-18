@@ -1,6 +1,7 @@
 """Router: Progress Tracking endpoints with Applied Job & Interview Deficit Integration"""
 
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Depends
+from auth_guard import require_identity, require_owner_or_service
 from datetime import datetime, timezone
 from bson import ObjectId
 from typing import Any, Dict, Optional, List
@@ -50,7 +51,8 @@ class ProgressUpdateRequest(BaseModel):
 
 @router.post("/update", summary="Update skill learning progress")
 @limiter.limit("30/minute")
-async def update_progress(payload: ProgressUpdateRequest, request: Request):
+async def update_progress(payload: ProgressUpdateRequest, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, payload.candidate_id)
     db = request.app.state.db
     from services.ml_engine import RESOURCES
     
@@ -116,7 +118,8 @@ async def update_progress(payload: ProgressUpdateRequest, request: Request):
 
 @router.post("/sync-from-applied-interviews/{candidate_id}", summary="Auto-sync weak skills directly from candidate's applied jobs and interview results")
 @limiter.limit("10/minute")
-async def sync_progress_from_applied_interviews(candidate_id: str, request: Request):
+async def sync_progress_from_applied_interviews(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     """
     Scans candidate applied jobs, interview results, CV match history and skill gap reports,
     identifies weak skills & knowledge gaps, and populates the Progress Matrix with structured learning paths.
@@ -394,7 +397,7 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
 
 @router.post("/populate", summary="Auto-populate progress from latest skill gap report")
 @limiter.limit("10/minute")
-async def populate_progress(request: Request):
+async def populate_progress(request: Request, identity: dict = Depends(require_identity)):
     db = request.app.state.db
     candidate_id = "web-user"
     try:
@@ -403,12 +406,14 @@ async def populate_progress(request: Request):
             candidate_id = str(body["candidate_id"]).strip()
     except Exception:
         pass
+    require_owner_or_service(identity, candidate_id)
 
-    return await sync_progress_from_applied_interviews(candidate_id, request)
+    return await sync_progress_from_applied_interviews(candidate_id, request, identity)
 
 
 @router.get("/{candidate_id}", summary="Get full progress for a candidate")
-async def get_progress(candidate_id: str, request: Request):
+async def get_progress(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     cached = _get_cached_progress(candidate_id)
     if cached:
         return cached
@@ -422,15 +427,6 @@ async def get_progress(candidate_id: str, request: Request):
         {"$or": query_filters},
         projection={"_id": 0},
     ).sort("updated_at", -1).to_list(length=100)
-
-    if not docs and (candidate_id == "web-user" or not ObjectId.is_valid(candidate_id)):
-        latest = await db.progress_tracking.find_one(sort=[("updated_at", -1)])
-        if latest and latest.get("candidate_id"):
-            fb_cid = str(latest["candidate_id"])
-            docs = await db.progress_tracking.find(
-                {"candidate_id": fb_cid},
-                projection={"_id": 0},
-            ).sort("updated_at", -1).to_list(length=100)
 
     stats = {
         "not_started": sum(1 for d in docs if d.get("status") == "not_started"),
@@ -448,7 +444,8 @@ async def get_progress(candidate_id: str, request: Request):
 
 @router.delete("/{candidate_id}/{skill}", summary="Delete a specific progress skill goal")
 @limiter.limit("20/minute")
-async def delete_progress_skill(candidate_id: str, skill: str, request: Request):
+async def delete_progress_skill(candidate_id: str, skill: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     db = request.app.state.db
     res = await db.progress_tracking.delete_one({"candidate_id": candidate_id, "skill": skill})
     _invalidate_progress_cache(candidate_id)
@@ -457,7 +454,8 @@ async def delete_progress_skill(candidate_id: str, skill: str, request: Request)
 
 @router.delete("/{candidate_id}", summary="Reset all progress for a candidate")
 @limiter.limit("10/minute")
-async def reset_progress(candidate_id: str, request: Request):
+async def reset_progress(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     db = request.app.state.db
     res = await db.progress_tracking.delete_many({"candidate_id": candidate_id})
     _invalidate_progress_cache(candidate_id)
