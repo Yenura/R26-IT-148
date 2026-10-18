@@ -955,35 +955,6 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                     </div>
                   )}
 
-                  {/* 100% Coverage Celebration Card */}
-                  {simulationResult.simulated_coverage === 100 && (
-                    <div style={{
-                      padding: '20px 24px',
-                      background: 'var(--color-success-muted)',
-                      borderRadius: 'var(--radius-lg)',
-                      border: '1px solid rgba(16, 185, 129, 0.4)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 16
-                    }}>
-                      <div style={{
-                        width: 44, height: 44, borderRadius: 'var(--radius-full)',
-                        background: 'var(--color-success)', color: '#fff',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-                      }}>
-                        <CheckCircle2 size={24} />
-                      </div>
-                      <div>
-                        <h4 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-success)', margin: '0 0 4px' }}>
-                          100% Fit Achieved! All Required Competencies Satisfied
-                        </h4>
-                        <p style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', margin: 0 }}>
-                          You have simulated acquiring all core requirements for <strong>{currentOpening.title}</strong> at <strong>{currentOpening.company_name}</strong>. You have 0 required skill deficits remaining!
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Resources Grid */}
                   {simulationResult.resources?.length > 0 && (
                     <div>
