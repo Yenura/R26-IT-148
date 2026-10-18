@@ -458,11 +458,23 @@ class InterviewService:
                     num_code = 0
             except:
                 pass
-            # Ensure total matches
+            # Ensure total matches: scale each type proportionally
+            # (largest remainder) instead of only shrinking coding.
             total_specified = num_mcq + num_desc + num_code
             if total_specified != num_questions:
-                # Adjust coding count to match total
-                num_code = max(0, num_questions - num_mcq - num_desc)
+                if total_specified > 0:
+                    raw = [num_mcq, num_desc, num_code]
+                    scaled = [r * num_questions / total_specified for r in raw]
+                    base = [int(s) for s in scaled]
+                    rema = num_questions - sum(base)
+                    order = sorted(range(3), key=lambda i: scaled[i] - base[i], reverse=True)
+                    for i in order[:max(0, rema)]:
+                        base[i] += 1
+                    num_mcq, num_desc, num_code = base
+                else:
+                    num_mcq, num_desc, num_code = self._get_question_distribution(
+                        job_role, coding_profile, num_questions
+                    )
             # Override coding profile based on actual coding count
             if num_code == 0:
                 coding_profile = "none"
@@ -501,11 +513,19 @@ class InterviewService:
             )
 
         if qg_questions:
-            all_questions = qg_questions
-            mcq_questions = [q for q in all_questions if q.get("question_type") == "MCQ"]
-            desc_questions = [q for q in all_questions if q.get("question_type") == "Descriptive"]
-            code_questions = [q for q in all_questions if q.get("question_type") == "Coding"]
-            logger.info("Interview session using QG model generated questions (%s items)", len(all_questions))
+            # Drop generated questions that name a different role, then
+            # top up from the bank so the requested total still holds.
+            qg_questions = self._prefer_role_consistent(qg_questions, job_role)
+            mcq_questions = [q for q in qg_questions if q.get("question_type") == "MCQ"]
+            desc_questions = [q for q in qg_questions if q.get("question_type") == "Descriptive"]
+            code_questions = [q for q in qg_questions if q.get("question_type") == "Coding"]
+            logger.info("Interview session using QG model generated questions (%s items)", len(qg_questions))
+            all_questions = mcq_questions + desc_questions + code_questions
+            want = num_mcq + num_desc + num_code
+            if len(all_questions) < want:
+                all_questions = self._top_up_questions(
+                    all_questions, want, coding_profile=coding_profile, job_role=job_role
+                )
         else:
             # Select questions by type from bank
             mcq_questions = self._select_questions_by_type(
@@ -519,10 +539,12 @@ class InterviewService:
                 coding_profile=coding_profile, difficulty=difficulty, exclude_ids=exclude_ids
             )
 
-            # Combine all questions and top up if bank is smaller than requested count.
+            # Combine all questions, drop any naming a different role,
+            # and top up if the bank is smaller than requested count.
             all_questions = mcq_questions + desc_questions + code_questions
+            all_questions = self._prefer_role_consistent(all_questions, job_role)
             if len(all_questions) < num_questions:
-                all_questions = self._top_up_questions(all_questions, num_questions, coding_profile=coding_profile)
+                all_questions = self._top_up_questions(all_questions, num_questions, coding_profile=coding_profile, job_role=job_role)
         
         # Create session with high-entropy ID to avoid collisions.
         candidate_prefix = re.sub(r"[^A-Za-z0-9]", "", candidate_id or "CAND")[:4].upper() or "CAND"
@@ -561,7 +583,38 @@ class InterviewService:
         
         return session
 
-    def _top_up_questions(self, selected_questions: List[Dict], target_count: int, coding_profile: str = "full") -> List[Dict]:
+    def _mentions_other_role(self, q: Dict, job_role: str) -> bool:
+        """True if the question text explicitly names a different canonical
+        role (e.g. a 'Cybersecurity Analyst' question inside a
+        'Software Engineer' interview). Full multiword names with word
+        boundaries, so plain English is never flagged."""
+        target = (job_role or "").strip().lower()
+        hay = f"{q.get('category', '')} {q.get('topic', '')} {q.get('question_text', '')}".lower()
+        for role in (self.job_requirements or {}):
+            r = str(role).strip().lower()
+            if not r or r == target:
+                continue
+            if len(r.split()) < 2:
+                # Single-word names ("Go", "R") collide with plain English;
+                # only multiword role names are safe to match.
+                continue
+            pattern = r"\b" + r"\s+".join(map(re.escape, r.split())) + r"\b"
+            if re.search(pattern, hay):
+                return True
+        return False
+
+    def _prefer_role_consistent(self, questions: List[Dict], job_role: str) -> List[Dict]:
+        """Drop questions naming a different role. Never returns empty:
+        falls back to the unfiltered pool rather than breaking the session."""
+        kept = [q for q in questions if not self._mentions_other_role(q, job_role)]
+        if kept:
+            dropped = len(questions) - len(kept)
+            if dropped:
+                logger.info("Role filter dropped %d off-role questions for %s", dropped, job_role)
+            return kept
+        return questions
+
+    def _top_up_questions(self, selected_questions: List[Dict], target_count: int, coding_profile: str = "full", job_role: str = "") -> List[Dict]:
         """Top up with unused unique questions first; only repeat as last resort."""
         if not selected_questions:
             return []
@@ -571,8 +624,16 @@ class InterviewService:
         existing_texts = {q.get("question_text", "").strip().lower() for q in topped_up if q.get("question_text")}
 
         # 1) Fill from remaining bank with unseen question text (shuffled for randomness).
+        # Role-consistent questions first so top-ups don't reintroduce leaks.
         remaining = [c for c in self.question_bank if c.get("question_text", "").strip().lower() not in existing_texts]
-        random.shuffle(remaining)
+        if job_role:
+            consistent = [c for c in remaining if not self._mentions_other_role(c, job_role)]
+            rest = [c for c in remaining if self._mentions_other_role(c, job_role)]
+            random.shuffle(consistent)
+            random.shuffle(rest)
+            remaining = consistent + rest
+        else:
+            random.shuffle(remaining)
         for candidate in remaining:
             if len(topped_up) >= target_count:
                 break

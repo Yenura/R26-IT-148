@@ -90,7 +90,16 @@ def _get_qg_generator():
         bank = _get_question_bank()
         _qg_generator = QuestionGenerator(model_path=model_path, fallback_bank=bank)
         if _qg_generator.is_available:
-            logger.info("QG model loaded from %s", model_path)
+            backend = _qg_generator.backend
+            logger.info(
+                "QG model active: type=%s path=%s (requested %s)",
+                backend["type"], backend["path"], model_path,
+            )
+            if backend["path"] and backend["path"] != model_path:
+                logger.warning(
+                    "Requested QG model %s could not load; using fallback %s",
+                    model_path, backend["path"],
+                )
             return _qg_generator
         logger.warning("QG model not available")
         _qg_generator = None
@@ -123,6 +132,39 @@ def _get_question_bank() -> List[Dict]:
 
     _question_bank = []
     return _question_bank
+
+
+def describe_qg_backend() -> Dict:
+    """Report the configured vs. actually-active QG backend.
+
+    Does NOT force a model load (which is slow); only reads file presence and,
+    if a generator is already loaded, its real type/path.
+    """
+    models_dir = os.environ.get(
+        "MODELS_DIR",
+        str(Path(__file__).parent.parent.parent / "models"),
+    )
+    t5_path = os.path.join(models_dir, "t5_qg")
+    v2_path = os.path.join(models_dir, "qg_model_v2")
+    if os.path.isdir(t5_path) and os.path.isfile(os.path.join(t5_path, "model.safetensors")):
+        configured = "t5_qg"
+    elif os.path.isdir(v2_path):
+        configured = "qg_model_v2"
+    else:
+        configured = "qg_model"
+
+    info: Dict = {
+        "configured": configured,
+        "loaded": _qg_generator is not None,
+        "active_type": None,
+        "active_path": None,
+    }
+    if _qg_generator is not None:
+        backend = _qg_generator.backend
+        info["active_type"] = backend.get("type")
+        info["active_path"] = backend.get("path")
+        info["degraded"] = bool(backend.get("path")) and backend.get("path") != t5_path
+    return info
 
 
 def merge_skill_lists(role_defaults: List[str], employer_skills: Optional[List[str]]) -> List[str]:
@@ -180,32 +222,28 @@ def generate_questions_qg(
             num_code=num_code,
         )
         total = num_mcq + num_desc + num_code
-        if combined and len(combined) == total:
-            good = [q for q in combined if _is_good_question(q)]
-            if len(good) == total:
-                logger.info("QG model generated %d valid questions", len(good))
-                return good
+        if not combined:
+            logger.info("QG model returned no questions; falling back to static bank")
+            return None
+
+        # Never discard a whole batch over one bad item. Keep every question
+        # that passes the quality gate; the caller tops up any shortfall from
+        # the static bank (InterviewService._top_up_questions).
+        good = [q for q in combined if _is_good_question(q)]
+        if not good:
             logger.warning(
-                "QG model: %d/%d questions failed quality gate; falling back to static bank",
-                total - len(good), total,
+                "QG model: 0/%d questions passed the quality gate; falling back to static bank",
+                total,
             )
             return None
-        if combined and len(combined) > 0:
-            good = [q for q in combined if _is_good_question(q)]
-            if good and len(good) >= len(combined) // 2:
-                logger.info(
-                    "QG model generated %d/%d valid questions; using partial results",
-                    len(good), total,
-                )
-                return good[:total]
-            logger.warning(
-                "QG model: only %d/%d questions passed quality gate; falling back to static bank",
-                len(good), total,
+        if len(good) < total:
+            logger.info(
+                "QG model: %d/%d questions passed the quality gate; caller tops up "
+                "%d from the static bank", len(good), total, total - len(good),
             )
-            return None
         else:
-            logger.info("QG model returned no questions; falling through")
-        return None
+            logger.info("QG model generated %d valid questions", len(good))
+        return good[:total]
     except Exception as exc:
         logger.warning("QG model generation failed: %s", exc)
         return None
