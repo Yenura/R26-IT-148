@@ -318,6 +318,13 @@ async def sync_progress_from_applied_interviews(candidate_id: str, request: Requ
                     "reason": f"High-demand competency for {target_role} professionals",
                     "priority": "High"
                 })
+    # If we found genuine weak skills from applied jobs/predictions, remove legacy placeholder default skills
+    has_real_deficits = any(w.get("source_company") != "Industry Benchmark" for w in weak_skills_found)
+    if has_real_deficits:
+        await db.progress_tracking.delete_many({
+            "candidate_id": candidate_id,
+            "source_company": "Industry Benchmark"
+        })
 
     # Upsert each skill into progress_tracking
     for item in weak_skills_found:
