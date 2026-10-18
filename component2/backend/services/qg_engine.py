@@ -6,6 +6,7 @@ Replaces the RAG+LLM system with direct QG model + static bank fallback.
 import json
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -17,17 +18,48 @@ _qg_generator = None
 _question_bank = None
 
 
-def _is_good_question(q: Dict) -> bool:
+def _is_degenerate(text: str) -> bool:
+    """True when the model has fallen into a repetition loop.
+
+    Weak seq2seq models lock onto a phrase and repeat it --
+    "senior senior senior", "a risk when a risk when a risk when ...".
+    """
+    words = re.findall(r"[a-z']+", text.lower())
+    for i in range(len(words) - 2):
+        if words[i] == words[i + 1] == words[i + 2]:
+            return True
+    if len(words) >= 10:
+        grams = [tuple(words[i:i + 3]) for i in range(len(words) - 2)]
+        if len(grams) != len(set(grams)):
+            return True
+    return False
+
+
+def _is_good_question(q: Dict, job_role: str = "", skills: Optional[List[str]] = None) -> bool:
     """True if a generated question is usable.
 
     The tiny QG model can emit fragment/noise questions (``<unk>`` tokens,
-    placeholder test cases, missing answer keys). Broken questions make
-    scoring garbage no matter how good the scorer is.
+    repeated filler, placeholder test cases, missing answer keys). Broken
+    questions make scoring garbage no matter how good the scorer is.
     """
     text = json.dumps(q, ensure_ascii=False)
     if "<unk>" in text or "<pad>" in text:
         return False
     qtext = q.get("question_text") or ""
+    if _is_degenerate(qtext):
+        return False
+    # Topical relevance. The generator fills category/topic straight from the
+    # skill list, so testing those always "succeeds"; the question text itself
+    # has to name the role or one of its skills. Applied to MCQ/Descriptive only
+    # -- the corpus conditions those on the role, whereas coding prompts carry
+    # algorithm tags instead, so a coding question legitimately never names a
+    # role skill.
+    if skills and q.get("question_type") in ("MCQ", "Descriptive"):
+        low = qtext.lower()
+        named = (bool(job_role) and job_role.lower() in low) or \
+            any(s and s.lower() in low for s in skills)
+        if not named:
+            return False
     if len(qtext) < 20:
         return False
     t = q.get("question_type")
@@ -227,10 +259,9 @@ def generate_questions_qg(
             return None
 
         # All-or-nothing: a batch is used only if EVERY question passes the
-        # quality gate. The neural QG model is weak (off-topic items slip
-        # through the gate), so a partly-bad batch is discarded and the caller
-        # falls back to the curated static bank.
-        good = [q for q in combined if _is_good_question(q)]
+        # quality gate. The neural QG model is weak, so a partly-bad batch is
+        # discarded and the caller falls back to the curated static bank.
+        good = [q for q in combined if _is_good_question(q, job_role, skills)]
         if len(good) == total:
             logger.info("QG model generated %d valid questions", len(good))
             return good

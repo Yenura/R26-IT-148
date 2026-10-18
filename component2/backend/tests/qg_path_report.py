@@ -49,7 +49,7 @@ for role in roles:
     raw = gen.generate_for_session(
         job_role=role, skills=skills, num_mcq=2, num_desc=1, num_code=ncode
     ) or []
-    good = [q for q in raw if _is_good_question(q)]
+    good = [q for q in raw if _is_good_question(q, role, skills)]
     raw_total += len(raw)
     good_total += len(good)
 
