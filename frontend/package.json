@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "npx --yes vitest@3 run"
   },
   "dependencies": {
     "@mediapipe/tasks-vision": "^1.0.1",

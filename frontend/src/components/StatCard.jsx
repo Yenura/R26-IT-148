@@ -7,6 +7,11 @@ function AnimatedNumber({ value }) {
 
   useEffect(() => {
     if (!isNumber) return
+    // Reduced motion: settle instantly instead of ticking.
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplay(num)
+      return
+    }
     let start = 0
     const duration = 900
     const startTime = performance.now()

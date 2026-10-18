@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  ListOrdered, Trophy, Briefcase, Award, Brain,
+  ListOrdered, Trophy, Briefcase, Award, Brain, Shield,
   CheckCircle2, Users, ArrowRight, Eye, ChevronRight, Plus
 } from 'lucide-react'
 import { uJobsMy, c3Pipeline, c0JobsAll } from '../api'
@@ -28,7 +28,7 @@ function getRecommendationInfo(cand) {
   if (cand.passed_hard_filter === false) {
     return {
       label: 'Disqualified',
-      color: '#ff453a',
+      color: 'var(--color-danger)',
       bg: 'rgba(255, 69, 58, 0.15)',
       border: 'rgba(255, 69, 58, 0.4)'
     }
@@ -40,7 +40,7 @@ function getRecommendationInfo(cand) {
   if (css >= 80) {
     return {
       label: 'Highly Qualified',
-      color: '#30d158',
+      color: 'var(--color-success)',
       bg: 'rgba(48, 209, 88, 0.15)',
       border: 'rgba(48, 209, 88, 0.4)'
     }
@@ -48,7 +48,7 @@ function getRecommendationInfo(cand) {
   if (css >= 65) {
     return {
       label: 'Recommended',
-      color: '#0a84ff',
+      color: 'var(--color-primary)',
       bg: 'rgba(10, 132, 255, 0.15)',
       border: 'rgba(10, 132, 255, 0.4)'
     }
@@ -56,14 +56,14 @@ function getRecommendationInfo(cand) {
   if (css >= 50) {
     return {
       label: 'Qualified',
-      color: '#f59e0b',
+      color: 'var(--color-warning)',
       bg: 'rgba(245, 158, 11, 0.15)',
       border: 'rgba(245, 158, 11, 0.4)'
     }
   }
   return {
     label: 'Disqualified',
-    color: '#ff453a',
+    color: 'var(--color-danger)',
     bg: 'rgba(255, 69, 58, 0.15)',
     border: 'rgba(255, 69, 58, 0.4)'
   }
@@ -222,7 +222,7 @@ export default function Ranking() {
       ) : (
         <>
           {/* Job Selection Card */}
-          <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+          <div className="card glass-card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -299,7 +299,7 @@ export default function Ranking() {
           {busy ? (
             <SkeletonLoader type="table" rows={5} cols={6} />
           ) : result && candidatesList.length > 0 ? (
-            <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--p-space-6)' }}>
+            <div className="card glass-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--p-space-6)' }}>
               <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -362,7 +362,7 @@ export default function Ranking() {
                                 ? (isTop3 ? 'var(--color-primary)' : 'var(--color-border-subtle)')
                                 : 'var(--color-danger-muted)',
                               color: cand.passed_hard_filter
-                                ? (isTop3 ? '#fff' : 'var(--color-fg)')
+                                ? (isTop3 ? 'var(--p-white)' : 'var(--color-fg)')
                                 : 'var(--color-danger)',
                               display: 'flex',
                               alignItems: 'center',
@@ -410,7 +410,7 @@ export default function Ranking() {
                           <td>
                             {hasCV && sSkillVal != null ? (
                               <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                                <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#bf5af2' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
+                                <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: 'var(--color-purple)' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
                               </div>
                             ) : (
                               <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
@@ -440,6 +440,7 @@ export default function Ranking() {
                             {(() => {
                               const rec = getRecommendationInfo(cand)
                               return (
+                                <>
                                 <span style={{
                                   fontSize: '10.5px',
                                   fontWeight: 700,
@@ -453,6 +454,12 @@ export default function Ranking() {
                                 }}>
                                   {rec.label}
                                 </span>
+                                {cand.integrity_score != null && (
+                                  <span title={`Proctored integrity score: ${Math.round(cand.integrity_score)}%`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', whiteSpace: 'nowrap' }}>
+                                    <Shield size={11} /> {Math.round(cand.integrity_score)}%
+                                  </span>
+                                )}
+                                </>
                               )
                             })()}
                           </td>
@@ -470,7 +477,7 @@ export default function Ranking() {
               icon={Users}
             />
           ) : (
-            <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-6)' }}>
+            <div className="card glass-card" style={{ textAlign: 'center', padding: 'var(--p-space-6)' }}>
               <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
                 Select a job opening above and click <strong>Rank Applicants</strong> to evaluate candidates.
               </p>

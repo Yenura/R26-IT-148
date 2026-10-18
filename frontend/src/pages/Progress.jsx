@@ -323,7 +323,7 @@ export default function Progress() {
       )}
 
       {/* KPI & Skill Trajectory Banner */}
-      <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
+      <div className="card glass-card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 24, alignItems: 'center' }}>
           {/* Progress Ring with Radial Glow */}
           <div style={{ position: 'relative', width: 96, height: 96, flexShrink: 0 }}>
@@ -399,7 +399,7 @@ export default function Progress() {
       </div>
 
       {/* Add Custom Skill Form */}
-      <div className="card" style={{ padding: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)', borderRadius: 'var(--radius-lg)' }}>
+      <div className="card glass-card" style={{ padding: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)', borderRadius: 'var(--radius-lg)' }}>
         <form onSubmit={addCustomSkill} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
           <input
             type="text"
@@ -415,7 +415,7 @@ export default function Progress() {
       </div>
 
       {/* Skill List & Filters */}
-      <div className="card" style={{ padding: 'var(--p-space-5)', borderRadius: 'var(--radius-xl)' }}>
+      <div className="card glass-card" style={{ padding: 'var(--p-space-5)', borderRadius: 'var(--radius-xl)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--p-space-4)', flexWrap: 'wrap', gap: 12 }}>
           {/* Status Filter Tabs */}
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -478,7 +478,7 @@ export default function Progress() {
               return (
                 <div
                   key={item.skill || idx}
-                  className="card"
+                  className="card glass-card"
                   style={{
                     padding: '16px 20px',
                     borderRadius: 'var(--radius-lg)',
@@ -581,7 +581,7 @@ export default function Progress() {
                         alignItems: 'center',
                         gap: 4,
                         background: isMastered ? 'var(--color-success)' : undefined,
-                        color: isMastered ? '#fff' : undefined
+                        color: isMastered ? 'var(--p-white)' : undefined
                       }}
                     >
                       <Check size={13} /> Mastered

@@ -22,11 +22,13 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
+        // Only split packages the app actually imports (verified by grep:
+        // three/fiber/drei/framer-motion/gsap/remotion have zero imports
+        // in src). Listing unimported packages here forces Rollup to emit
+        // dead ~180KB+ chunks, so they stay out.
         manualChunks: {
           'vendor-icons': ['lucide-react'],
           'vendor-charts': ['recharts'],
-          'vendor-three': ['three', '@react-three/fiber', '@react-three/drei'],
-          'vendor-anim': ['framer-motion', 'gsap'],
           'vendor-utils': ['axios'],
         }
       }

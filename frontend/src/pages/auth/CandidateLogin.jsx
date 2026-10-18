@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff, Building2 } from 'lucide-react'
-import { C0 } from '../../api'
+import { C0, clearApiCache } from '../../api'
+import { isValidEmail } from '../../utils'
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 
 const getErrorMessage = (err) => {
   const detail = err?.response?.data?.detail
@@ -29,7 +30,7 @@ export default function CandidateLogin() {
   const validate = () => {
     const e = {}
     if (!email.trim()) e.email = 'Email is required'
-    else if (!EMAIL_RE.test(email.trim())) e.email = 'Enter a valid email address'
+    else if (!isValidEmail(email.trim())) e.email = 'Enter a valid email address'
     if (!password) e.password = 'Password is required'
     else if (password.length < 6) e.password = 'Password must be at least 6 characters'
     setErrors(e)
@@ -43,6 +44,7 @@ export default function CandidateLogin() {
     try {
       const r = await C0.post('/auth/login/candidate', { email: email.trim(), password })
       try { sessionStorage.clear() } catch {}
+      clearApiCache()
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'candidate')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -67,6 +69,8 @@ export default function CandidateLogin() {
           localStorage.setItem('recruitai.role', 'candidate')
           localStorage.setItem('recruitai.user_id', reg.data.user_id || '')
           localStorage.setItem('recruitai.name', 'Demo Candidate')
+          try { sessionStorage.clear() } catch {}
+          clearApiCache()
           toast.success('Welcome to RecruitAI!')
           navigate('/candidate/dashboard')
           return
@@ -91,7 +95,7 @@ export default function CandidateLogin() {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      background: 'radial-gradient(ellipse at top, rgba(10, 132, 255, 0.12) 0%, var(--color-bg) 70%)',
+      background: 'var(--color-bg)',
       padding: '24px 16px',
       position: 'relative',
       overflow: 'hidden'
@@ -108,7 +112,7 @@ export default function CandidateLogin() {
             width: 52,
             height: 52,
             borderRadius: 'var(--radius-lg)',
-            background: 'linear-gradient(135deg, #0a84ff 0%, #0a84ff 100%)',
+            background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -129,11 +133,10 @@ export default function CandidateLogin() {
         {/* Main Auth Box */}
         <div className="card" style={{
           padding: '28px 26px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          border: '1px solid rgba(255, 255, 255, 0.1)',
+          background: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-xl)',
-          boxShadow: '0 12px 40px rgba(0, 0, 0, 0.4)',
-          backdropFilter: 'blur(16px)'
+          boxShadow: 'var(--shadow-lg)'
         }}>
           {/* Dual Role Segmented Selector */}
           <div style={{
@@ -182,7 +185,7 @@ export default function CandidateLogin() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 6,
-                transition: 'all 0.2s ease'
+                transition: 'background-color 0.2s ease, color 0.2s ease'
               }}
             >
               <Building2 size={13} /> Employer
@@ -204,18 +207,21 @@ export default function CandidateLogin() {
                   style={{
                     paddingLeft: 36,
                     fontSize: '13px',
-                    borderColor: errors.email ? 'var(--color-danger, #ff453a)' : undefined,
+                    borderColor: errors.email ? 'var(--color-danger)' : undefined,
                     background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
                 />
               </div>
-              {errors.email && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
+              {errors.email && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
             </div>
 
             <div style={{ marginBottom: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                 <label style={{ fontSize: '12px', fontWeight: 600, margin: 0, color: 'var(--color-fg-secondary)' }}>Password</label>
+                <Link to="/forgot-password" style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-primary)' }}>
+                  Forgot password?
+                </Link>
               </div>
               <div style={{ position: 'relative' }}>
                 <Lock size={15} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-fg-muted)' }} />
@@ -230,7 +236,7 @@ export default function CandidateLogin() {
                     paddingLeft: 36,
                     paddingRight: 36,
                     fontSize: '13px',
-                    borderColor: errors.password ? 'var(--color-danger, #ff453a)' : undefined,
+                    borderColor: errors.password ? 'var(--color-danger)' : undefined,
                     background: 'rgba(0, 0, 0, 0.25)'
                   }}
                   required
@@ -255,7 +261,7 @@ export default function CandidateLogin() {
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
-              {errors.password && <p style={{ color: 'var(--color-danger, #ff453a)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
+              {errors.password && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
             </div>
 
             <button
@@ -272,7 +278,7 @@ export default function CandidateLogin() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: 8,
-                background: 'linear-gradient(135deg, #0a84ff 0%, #0a84ff 100%)',
+                background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%)',
                 boxShadow: '0 4px 16px rgba(10, 132, 255, 0.35)'
               }}
             >
@@ -282,7 +288,7 @@ export default function CandidateLogin() {
 
           <div style={{ textAlign: 'center', marginTop: 20, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
             <span>Don't have a candidate account? </span>
-            <Link to="/register/candidate" style={{ color: 'var(--color-primary-light, #9cc2ff)', fontWeight: 700 }}>
+            <Link to="/register/candidate" style={{ color: 'var(--color-primary-hover)', fontWeight: 700 }}>
               Create Account
             </Link>
           </div>

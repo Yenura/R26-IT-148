@@ -194,7 +194,7 @@ export default function JobDetail() {
         
         {/* Left Column: Job Description & Details */}
         <div>
-          <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)' }}>
+          <div className="card glass-card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-6)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
               <span style={{
                 fontSize: '11px',
@@ -289,7 +289,7 @@ export default function JobDetail() {
 
         {/* Right Column: Sticky Action & Screening Summary */}
         <div>
-          <div className="card" style={{ padding: 'var(--p-space-5)', position: 'sticky', top: 76 }}>
+          <div className="card glass-card" style={{ padding: 'var(--p-space-5)', position: 'sticky', top: 76 }}>
             <h3 style={{ margin: '0 0 12px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
               {role === 'company' ? 'Job Management' : 'Application Summary'}
             </h3>
@@ -392,7 +392,7 @@ export default function JobDetail() {
           onClick={() => setResumeSelectOpen(false)}
         >
           <div
-            style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-xl)', padding: 'var(--p-space-5)', maxWidth: 420, width: '100%', boxShadow: 'var(--shadow-xl)' }}
+            style={{ background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-strong)', borderRadius: 'var(--radius-xl)', padding: 'var(--p-space-5)', maxWidth: 420, width: '100%', boxShadow: 'var(--shadow-xl)', backdropFilter: 'var(--material-blur)' }}
             onClick={(e) => e.stopPropagation()}
           >
             <h3 style={{ margin: '0 0 12px', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>Select Resume to Submit</h3>

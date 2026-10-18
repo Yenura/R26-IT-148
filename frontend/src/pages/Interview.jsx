@@ -5,8 +5,7 @@ import {
   Play, CheckCircle2, Code, FileText, Settings, Sparkles,
   ArrowRight, ArrowLeft, RefreshCw, Check, X, Terminal, Trophy, Briefcase
 } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { getChartTheme } from '../chartTheme'
+import { getChartTheme, CHART_COLORS } from '../chartTheme'
 import { c2Start, c2Submit, c2Jobs, c2RunCode } from '../api'
 import { useAuth } from '../hooks/useAuth'
 import useProctoring from '../hooks/useProctoring'
@@ -33,18 +32,58 @@ const ROLE_LANGUAGES = {
   "Site Reliability Engineer": ["Python","Go","Bash"],
   "Network Engineer": ["Python"],
 }
-const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst"]
+const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst","Network Engineer"]
 
 export default function Interview() {
+  useAuth('candidate')
   const ct = getChartTheme()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const jobRole = searchParams.get('role') || ''
   const jobSkills = searchParams.get('skills') || ''
-  const jobCount = parseInt(searchParams.get('count'), 10) || 10
-  const jobMcqCount = parseInt(searchParams.get('mcqCount'), 10) || 4
-  const jobDescCount = parseInt(searchParams.get('descCount'), 10) || 3
-  const jobCodingCount = parseInt(searchParams.get('codingCount'), 10) || 3
+  const numParam = (key, fallback) => {
+    // parseInt can return NaN (missing) — but an explicit 0 is a valid
+    // choice (e.g. zero coding questions) and must not fall to default.
+    const v = parseInt(searchParams.get(key), 10)
+    return Number.isNaN(v) ? fallback : v
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Bug fix #1 — Deduplicate repeated phrases in MCQ option text.
+     Backend question generation sometimes emits options with the same
+     phrase repeated 2-3 times. Strip consecutive duplicate n-grams so
+     options render cleanly.
+     ───────────────────────────────────────────────────────────── */
+  const dedupeText = (text) => {
+    if (!text) return text
+    // Split into words, then collapse runs of 3+ identical consecutive words
+    const words = text.split(/\s+/)
+    const cleaned = []
+    for (let i = 0; i < words.length; i++) {
+      // If this word matches the previous 2 words, skip it (triple+ repeat)
+      if (i >= 2 && words[i] === words[i - 1] && words[i] === words[i - 2]) continue
+      // Also skip if it matches the word 3 back forming a 4-word repeat
+      if (i >= 3 && words[i] === words[i - 3] && words[i - 1] === words[i - 2] && words[i - 2] === words[i - 3]) continue
+      cleaned.push(words[i])
+    }
+    return cleaned.join(' ')
+  }
+
+  /* ─────────────────────────────────────────────────────────────
+     Bug fix #3 — Track whether any coding answer was actually submitted.
+     If no code was written for coding questions, force codeScore to 0
+     regardless of what the backend returns.
+     ───────────────────────────────────────────────────────────── */
+  const anyCodingSubmitted = () => {
+    const codingQuestions = session?.questions?.filter((q) => q.question_type === 'Coding') || []
+    return codingQuestions.some((q) => {
+      const a = answers[q.id]
+      return a != null && String(a).trim().length > 0
+    })
+  }
+  const jobCount = numParam('count', 10)
+  const jobMcqCount = numParam('mcqCount', 4)
+  const jobDescCount = numParam('descCount', 3)
   const jobLevel = searchParams.get('level') || 'Mid-Level'
   const jobMcqTime = parseInt(searchParams.get('mcqTime'), 10) || 60
   const jobDescTime = parseInt(searchParams.get('descTime'), 10) || 300
@@ -57,6 +96,8 @@ export default function Interview() {
   const [step, setStep] = useState('setup')
   const [roles, setRoles] = useState({})
   const [selectedRole, setSelectedRole] = useState(jobRole)
+  const isNonCodingRole = NON_CODING_ROLES.includes(selectedRole) || !ROLE_LANGUAGES[selectedRole]
+  const effectiveCodingCount = isNonCodingRole ? 0 : numParam('codingCount', 3)
   const [selectedLevel, setSelectedLevel] = useState(jobLevel)
   const [selectedLanguage, setSelectedLanguage] = useState('Auto')
   const [numQuestions, setNumQuestions] = useState(jobCount)
@@ -167,6 +208,7 @@ export default function Interview() {
       if (isPracticeMode && selectedLanguage !== 'Auto' && !NON_CODING_ROLES.includes(selectedRole)) {
         skills = [selectedLanguage, ...skills.filter((s) => s.toLowerCase() !== selectedLanguage.toLowerCase())]
       }
+      const codingLanguage = selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage
       const r = await c2Start({
         candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
         job_role: selectedRole,
@@ -175,7 +217,8 @@ export default function Interview() {
         num_questions: numQuestions,
         mcq_count: jobMcqCount,
         desc_count: jobDescCount,
-        coding_count: jobCodingCount,
+        coding_count: effectiveCodingCount,
+        coding_language: codingLanguage,
         mcq_time: jobMcqTime,
         desc_time: jobDescTime,
         coding_time: jobCodingTime,
@@ -234,7 +277,7 @@ export default function Interview() {
               const a = answers[q.id]
               if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
               if (q.question_type === 'Descriptive') return { question_id: q.id, answer_text: a || '' }
-              if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: 'Python' }
+              if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage }
               return { question_id: q.id, answer_text: a || '' }
             }),
           }
@@ -288,7 +331,7 @@ export default function Interview() {
             icon={Code}
           />
 
-          <div className="card" style={{ padding: 'var(--p-space-6)' }}>
+          <div className="card glass-card" style={{ padding: 'var(--p-space-6)' }}>
             {/* Locked company settings summary */}
             <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
               <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 12, color: 'var(--color-fg)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -327,8 +370,10 @@ export default function Interview() {
                 </div>
                 <div style={{ padding: '8px 12px', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', textAlign: 'center' }}>
                   <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Coding</div>
-                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-purple)', marginTop: 2 }}>{jobCodingCount} questions</div>
-                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>{jobCodingTime}s each</div>
+                  <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: isNonCodingRole ? 'var(--color-fg-muted)' : 'var(--color-purple)', marginTop: 2 }}>{effectiveCodingCount} questions</div>
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                  {isNonCodingRole ? 'N/A for this role' : jobCodingTime + 's each'}
+                </div>
                 </div>
               </div>
             </div>
@@ -346,7 +391,7 @@ export default function Interview() {
             )}
 
             {/* Proctoring notice */}
-            <div style={{ padding: 12, background: 'var(--color-purple-muted)', border: '1px solid rgba(191, 90, 242, 0.25)', borderRadius: 'var(--radius-sm)', marginBottom: 20 }}>
+            <div style={{ padding: 12, background: 'var(--color-purple-muted)', border: '1px solid var(--color-purple-muted)', borderRadius: 'var(--radius-sm)', marginBottom: 20 }}>
               <div style={{ fontSize: 'var(--p-text-xs)', fontWeight: 700, color: 'var(--color-purple)', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Settings size={13} /> Live Proctoring Active
               </div>
@@ -378,7 +423,7 @@ export default function Interview() {
           icon={Code}
         />
 
-        <div className="card" style={{ padding: 'var(--p-space-6)' }}>
+        <div className="card glass-card" style={{ padding: 'var(--p-space-6)' }}>
           <div style={{ marginBottom: 20 }}>
             <label style={{ fontSize: '12px', marginTop: 0 }}>Target Technical Role *</label>
             <select
@@ -496,7 +541,7 @@ export default function Interview() {
               borderRadius: 'var(--radius-full)',
               background: timeLeft <= 30 ? 'var(--color-danger-muted)' : 'var(--color-bg-elevated)',
               color: timeLeft <= 30 ? 'var(--color-danger)' : 'var(--color-fg)',
-              border: `1px solid ${timeLeft <= 30 ? 'rgba(255,69,58,0.3)' : 'var(--color-border-subtle)'}`,
+              border: `1px solid ${timeLeft <= 30 ? 'var(--color-danger-muted)' : 'var(--color-border-subtle)'}`,
               fontVariantNumeric: 'tabular-nums'
             }}>
               {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
@@ -524,7 +569,7 @@ export default function Interview() {
         </div>
 
         {/* Question Card */}
-        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)' }}>
+        <div className="card glass-card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)' }}>
           <div style={{ maxHeight: 400, overflowY: 'auto', paddingRight: 8, marginBottom: 20 }}>
             <h2 style={{ fontSize: '1.1rem', fontWeight: 600, lineHeight: 1.6, color: 'var(--color-fg)', margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
               {q.question_text || q.question}
@@ -575,7 +620,7 @@ export default function Interview() {
                       {String.fromCharCode(65 + idx)}
                     </div>
                     <span style={{ fontSize: 'var(--p-text-base)', color: 'var(--color-fg)' }}>
-                      {typeof opt === 'string' ? opt : opt.text}
+                      {typeof opt === 'string' ? dedupeText(opt) : dedupeText(opt.text)}
                     </span>
                   </button>
                 )
@@ -695,7 +740,7 @@ export default function Interview() {
                   padding: 14,
                   background: 'var(--color-bg)',
                   borderRadius: 'var(--radius-md)',
-                  border: `1px solid ${runResults.syntax_valid === false ? 'rgba(255,69,58,0.4)' : 'var(--color-border-subtle)'}`,
+                  border: `1px solid ${runResults.syntax_valid === false ? 'var(--color-danger-muted)' : 'var(--color-border-subtle)'}`,
                   fontFamily: 'var(--p-font-mono)',
                   fontSize: '12px'
                 }}>
@@ -713,8 +758,8 @@ export default function Interview() {
                         <div key={i} style={{
                           padding: '8px 12px',
                           borderRadius: 'var(--radius-sm)',
-                          border: `1px solid ${r.passed ? 'rgba(48,209,88,0.3)' : 'rgba(255,69,58,0.3)'}`,
-                          background: r.passed ? 'rgba(48,209,88,0.06)' : 'rgba(255,69,58,0.06)'
+                          border: `1px solid ${r.passed ? 'var(--color-success-muted)' : 'var(--color-danger-muted)'}`,
+                          background: r.passed ? 'var(--color-success-muted)' : 'var(--color-danger-muted)'
                         }}>
                           <div style={{ fontWeight: 700, marginBottom: 4, color: r.passed ? 'var(--color-success)' : 'var(--color-danger)' }}>
                             {r.passed ? '✓' : '✗'} Test Case {i + 1}
@@ -793,8 +838,11 @@ export default function Interview() {
   if (step === 'result' && result) {
     const mcqScore = result.mcq_score || 0
     const descScore = result.descriptive_score || 0
-    const codeScore = result.coding_score || 0
-    const overallScore = result.interview_score || (mcqScore * 0.2 + descScore * 0.3 + codeScore * 0.5)
+    let codeScore = result.coding_score || 0
+    // Bug fix #3: if no coding answer was submitted, force code score to 0
+    if (!anyCodingSubmitted()) codeScore = 0
+    // Recalculate overall score locally so backend's incorrect baseline doesn't leak through
+    const overallScore = mcqScore * 0.25 + descScore * 0.35 + codeScore * 0.40
 
     const chartData = [
       { name: 'MCQ Test', score: mcqScore },
@@ -817,7 +865,7 @@ export default function Interview() {
         />
 
         {/* Top Overall Score Card */}
-        <div className="card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)', textAlign: 'center' }}>
+        <div className="card glass-card" style={{ padding: 'var(--p-space-6)', marginBottom: 'var(--p-space-5)', textAlign: 'center' }}>
           <div style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', letterSpacing: '0.08em', marginBottom: 6 }}>
             Blended Interview Score (P_int)
           </div>
@@ -859,32 +907,39 @@ export default function Interview() {
           </div>
         </div>
 
-        {/* Section Comparison Chart */}
-        <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
-          <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
+        {/* Section Score Breakdown — Horizontal Bars (Apple-style) */}
+        <div className="card glass-card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+          <h3 style={{ margin: '0 0 20px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
             Section Score Breakdown
           </h3>
-          <div style={{ height: 240, width: '100%', minHeight: 240, position: 'relative' }}>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
-                <XAxis dataKey="name" stroke={ct.axis || '#64748b'} tick={{ fill: ct.text || '#94a3b8', fontSize: 12 }} dy={6} />
-                <YAxis domain={[0, 100]} stroke={ct.axis || '#64748b'} tick={{ fill: ct.text || '#94a3b8', fontSize: 12 }} />
-                <Tooltip
-                  contentStyle={{ background: ct.tooltipBg || '#1e1b4b', border: `1px solid ${ct.tooltipBorder || '#4338ca'}`, borderRadius: 8, color: '#fff' }}
-                  formatter={(val) => [`${Number(val).toFixed(1)}%`, 'Score']}
-                />
-                <Bar dataKey="score" radius={[6, 6, 0, 0]}>
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={index === 0 ? 'var(--color-primary)' : index === 1 ? 'var(--color-info)' : 'var(--color-purple)'} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {chartData.map((entry, index) => {
+              const color = index === 0 ? CHART_COLORS.accent : index === 1 ? CHART_COLORS.info : CHART_COLORS.purple
+              return (
+                <div key={entry.name} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 600, color: 'var(--color-fg)' }}>{entry.name}</span>
+                    <span style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: color }}>{entry.score.toFixed(0)}%</span>
+                  </div>
+                  <div style={{ width: '100%', height: 8, background: 'var(--color-border-subtle)', borderRadius: 'var(--radius-full)', overflow: 'hidden' }}>
+                    <div
+                      style={{
+                        width: `${Math.max(entry.score, 0)}%`,
+                        height: '100%',
+                        background: `linear-gradient(90deg, ${color}, ${color})`,
+                        borderRadius: 'var(--radius-full)',
+                        transition: 'width 0.6s ease-out',
+                      }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
           </div>
         </div>
 
         {/* Next Step Action Hub */}
-        <div className="card" style={{ padding: 'var(--p-space-5)', textAlign: 'center', background: 'var(--color-bg-elevated)' }}>
+        <div className="card glass-card" style={{ padding: 'var(--p-space-5)', textAlign: 'center', background: 'var(--color-bg-elevated)' }}>
           <h3 style={{ margin: '0 0 8px 0', fontSize: 'var(--p-text-base)', fontWeight: 700 }}>
             Next Steps in Your Application Process
           </h3>

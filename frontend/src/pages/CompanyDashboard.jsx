@@ -331,8 +331,7 @@ export default function CompanyDashboard() {
     <div className="fade-in" style={{
       maxWidth: 1180,
       margin: '0 auto',
-      position: 'relative',
-      backgroundImage: 'radial-gradient(ellipse at 85% 5%, rgba(10, 132, 255, 0.08) 0%, transparent 55%), radial-gradient(ellipse at 15% 40%, rgba(191, 90, 242, 0.05) 0%, transparent 45%)'
+      position: 'relative'
     }}>
       {/* Header & Primary CTAs */}
       <PageHeader
@@ -352,7 +351,7 @@ export default function CompanyDashboard() {
                 <Download size={15} /> Export
               </button>
               {exportOpen && (
-                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 4, minWidth: 140, zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
+                <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: 4, background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', padding: 4, minWidth: 140, zIndex: 50, boxShadow: 'var(--shadow-xl)', backdropFilter: 'var(--material-blur)' }}>
                   <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => handleExport('csv')}>CSV</button>
                   <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => handleExport('excel')}>Excel</button>
                   <button className="btn btn-ghost btn-sm" style={{ width: '100%', justifyContent: 'flex-start' }} onClick={() => handleExport('pdf')}>PDF</button>
@@ -400,7 +399,7 @@ export default function CompanyDashboard() {
       )}
 
       {/* Active Jobs Data Table */}
-      <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      <div className="card glass-card" style={{ padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h3 style={{ margin: 0, fontSize: 'var(--p-text-lg)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>

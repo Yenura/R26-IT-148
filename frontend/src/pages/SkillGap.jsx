@@ -220,7 +220,7 @@ export default function SkillGap() {
       {activeTab === 'applied' && (
         <div>
           {loadingApplied ? (
-            <div className="card" style={{ padding: 48, textAlign: 'center' }}>
+            <div className="card glass-card" style={{ padding: 48, textAlign: 'center' }}>
               <RefreshCw size={28} className="spin" style={{ color: 'var(--color-primary)', margin: '0 auto 12px' }} />
               <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 600, color: 'var(--color-fg)' }}>Analyzing applied jobs and interview scores...</div>
               <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>Connecting resume qualifications with technical interview evaluations</div>
@@ -282,7 +282,7 @@ export default function SkillGap() {
 
               {/* Selected Job Report */}
               {selectedReport && (
-                <div className="card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
+                <div className="card glass-card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
                   {/* Header & Scores */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, paddingBottom: 18, borderBottom: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
                     <div>
@@ -367,7 +367,7 @@ export default function SkillGap() {
                           Your CV Match score is recorded! Complete the AI Technical Interview to unlock your full combined score and top ranking.
                         </span>
                       </div>
-                      <Link to={`/candidate/interview?role=${selectedReport.job_title}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      <Link to={`/candidate/interview?role=${selectedReport.job_title}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: 'var(--p-white)', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         Start Technical Assessment
                       </Link>
                     </div>
@@ -494,7 +494,7 @@ export default function SkillGap() {
       {/* TAB 2: EXPLORER & WHAT-IF SIMULATOR */}
       {activeTab === 'explorer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
+          <div className="card glass-card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -654,7 +654,7 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {simulationResult.learning_plan.map((planItem, i) => (
 <div key={planItem.skill || i} style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-full)', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-full)', background: 'var(--color-primary)', color: 'var(--p-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
                               {planItem.phase || i + 1}
                             </div>
                             <div>

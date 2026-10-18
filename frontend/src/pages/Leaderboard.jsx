@@ -16,7 +16,7 @@ function getRecommendationInfo(cand) {
   if (cand.passed_hard_filter === false) {
     return {
       label: 'Disqualified',
-      color: '#ff453a',
+      color: 'var(--color-danger)',
       bg: 'rgba(255, 69, 58, 0.15)',
       border: 'rgba(255, 69, 58, 0.4)'
     }
@@ -28,7 +28,7 @@ function getRecommendationInfo(cand) {
   if (css >= 80) {
     return {
       label: 'Highly Qualified',
-      color: '#30d158',
+      color: 'var(--color-success)',
       bg: 'rgba(48, 209, 88, 0.15)',
       border: 'rgba(48, 209, 88, 0.4)'
     }
@@ -36,7 +36,7 @@ function getRecommendationInfo(cand) {
   if (css >= 65) {
     return {
       label: 'Recommended',
-      color: '#0a84ff',
+      color: 'var(--color-primary)',
       bg: 'rgba(10, 132, 255, 0.15)',
       border: 'rgba(10, 132, 255, 0.4)'
     }
@@ -44,14 +44,14 @@ function getRecommendationInfo(cand) {
   if (css >= 50) {
     return {
       label: 'Qualified',
-      color: '#f59e0b',
+      color: 'var(--color-warning)',
       bg: 'rgba(245, 158, 11, 0.15)',
       border: 'rgba(245, 158, 11, 0.4)'
     }
   }
   return {
     label: 'Disqualified',
-    color: '#ff453a',
+    color: 'var(--color-danger)',
     bg: 'rgba(255, 69, 58, 0.15)',
     border: 'rgba(255, 69, 58, 0.4)'
   }
@@ -241,7 +241,7 @@ export default function Leaderboard() {
       </div>
 
       {/* Filter & Search Controls */}
-      <div className="card" style={{ padding: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
+      <div className="card glass-card" style={{ padding: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
           {/* Company-Specific Job Filter or Domain Filter */}
           {userRole === 'company' && companyJobs.length > 0 ? (
@@ -313,7 +313,7 @@ export default function Leaderboard() {
           icon={Trophy}
         />
       ) : (
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card glass-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ overflowX: 'auto' }}>
             {userRole === 'company' ? (
               <table className="table">
@@ -362,7 +362,7 @@ export default function Leaderboard() {
                               ? (isTop3 ? 'var(--color-primary)' : 'var(--color-border-subtle)')
                               : 'var(--color-danger-muted)',
                             color: cand.passed_hard_filter !== false
-                              ? (isTop3 ? '#fff' : 'var(--color-fg)')
+                              ? (isTop3 ? 'var(--p-white)' : 'var(--color-fg)')
                               : 'var(--color-danger)',
                             display: 'flex',
                             alignItems: 'center',
@@ -410,7 +410,7 @@ export default function Leaderboard() {
                         <td>
                           {hasCV && sSkillVal != null ? (
                             <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                              <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#bf5af2' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
+                              <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: 'var(--color-purple)' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
                             </div>
                           ) : (
                             <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
@@ -484,7 +484,7 @@ export default function Leaderboard() {
                             height: 28,
                             borderRadius: 'var(--radius-sm)',
                             background: isTop3 ? 'var(--color-primary)' : 'var(--color-border-subtle)',
-                            color: isTop3 ? '#fff' : 'var(--color-fg)',
+                            color: isTop3 ? 'var(--p-white)' : 'var(--color-fg)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
