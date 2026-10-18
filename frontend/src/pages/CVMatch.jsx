@@ -1138,12 +1138,12 @@ export default function CVMatch() {
               width: 36,
               height: 36,
               borderRadius: 'var(--radius-md)',
-              background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2))',
+              background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.2), rgba(191, 90, 242, 0.2))',
               color: 'var(--color-primary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '1px solid rgba(59, 130, 246, 0.3)'
+              border: '1px solid rgba(10, 132, 255, 0.3)'
             }}>
               <FileText size={20} />
             </div>
@@ -1189,7 +1189,7 @@ export default function CVMatch() {
           {/* CARD 1: CANDIDATE RESUME */}
           <div style={{
             padding: '22px',
-            background: 'rgba(15, 23, 42, 0.75)',
+            background: 'var(--color-bg-elevated)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
@@ -1201,7 +1201,7 @@ export default function CVMatch() {
           }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-hover)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <UserCheck size={16} /> 1. Candidate Profile
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1212,7 +1212,7 @@ export default function CVMatch() {
                     type="button"
                     onClick={() => setShowUploadZone(!showUploadZone)}
                     className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid rgba(59, 130, 246, 0.3)', color: 'var(--color-primary-light, #93c5fd)' }}
+                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid rgba(10, 132, 255, 0.3)', color: 'var(--color-primary-hover)' }}
                   >
                     {showUploadZone ? 'Close Upload' : '+ Upload New CV'}
                   </button>
@@ -1268,7 +1268,7 @@ export default function CVMatch() {
                     type="button"
                     className="btn-ghost btn-sm"
                     onClick={() => deleteResume(selectedResume)}
-                    style={{ padding: '8px', color: 'var(--color-danger)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)' }}
+                    style={{ padding: '8px', color: 'var(--color-danger)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: 'var(--radius-md)' }}
                     title="Delete resume"
                   >
                     <Trash2 size={15} />
@@ -1280,8 +1280,8 @@ export default function CVMatch() {
               {currentResumeDoc && (
                 <div style={{
                   padding: '12px 14px',
-                  background: 'rgba(30, 41, 59, 0.4)',
-                  border: '1px solid rgba(59, 130, 246, 0.2)',
+                  background: 'var(--color-bg-elevated)',
+                  border: '1px solid rgba(10, 132, 255, 0.2)',
                   borderRadius: 'var(--radius-md)',
                   display: 'flex',
                   flexDirection: 'column',
@@ -1292,14 +1292,14 @@ export default function CVMatch() {
                       width: 40,
                       height: 40,
                       borderRadius: 'var(--radius-md)',
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                      color: '#ffffff',
+                      background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-purple) 100%)',
+                      color: 'var(--p-white)fff',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: 800,
                       fontSize: '14px',
-                      boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                      boxShadow: '0 4px 12px rgba(10, 132, 255, 0.3)',
                       flexShrink: 0
                     }}>
                       {cleanCandidateName(currentResumeDoc.candidate_name, currentResumeDoc.filename).split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
@@ -1346,7 +1346,7 @@ export default function CVMatch() {
           {/* CARD 2: TARGET COMPANY & ROLE */}
           <div style={{
             padding: '22px',
-            background: 'rgba(15, 23, 42, 0.75)',
+            background: 'var(--color-bg-elevated)',
             border: '1px solid rgba(255, 255, 255, 0.08)',
             borderRadius: 'var(--radius-lg)',
             display: 'flex',
@@ -1358,7 +1358,7 @@ export default function CVMatch() {
           }}>
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-light, #93c5fd)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-hover)', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <Briefcase size={16} /> 2. Target Evaluation Standard
                 </span>
                 {/* Mode Selector Tabs */}
@@ -1373,7 +1373,7 @@ export default function CVMatch() {
                       border: 'none',
                       cursor: 'pointer',
                       background: targetMode === 'company' ? 'var(--color-primary)' : 'transparent',
-                      color: targetMode === 'company' ? '#fff' : 'var(--color-fg-muted)',
+                      color: targetMode === 'company' ? 'var(--p-white)' : 'var(--color-fg-muted)',
                       fontWeight: targetMode === 'company' ? 700 : 500
                     }}
                   >
@@ -1388,8 +1388,8 @@ export default function CVMatch() {
                       borderRadius: '4px',
                       border: 'none',
                       cursor: 'pointer',
-                      background: targetMode === 'benchmark' ? '#9333ea' : 'transparent',
-                      color: targetMode === 'benchmark' ? '#fff' : 'var(--color-fg-muted)',
+                      background: targetMode === 'benchmark' ? 'var(--color-purple)' : 'transparent',
+                      color: targetMode === 'benchmark' ? 'var(--p-white)' : 'var(--color-fg-muted)',
                       fontWeight: targetMode === 'benchmark' ? 700 : 500
                     }}
                   >
@@ -1492,7 +1492,7 @@ export default function CVMatch() {
                 /* Benchmark Canonical 20 Roles */
                 <div style={{ marginBottom: 10 }}>
                   <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Compass size={12} style={{ color: '#a855f7' }} /> Standard Canonical IT Role:
+                    <Compass size={12} style={{ color: 'var(--color-purple)' }} /> Standard Canonical IT Role:
                   </label>
                   <select
                     value={selectedCanonicalRole}
@@ -1510,7 +1510,7 @@ export default function CVMatch() {
                       padding: '9px 12px',
                       borderRadius: 'var(--radius-md)',
                       background: 'var(--color-bg)',
-                      border: '1px solid #9333ea',
+                      border: '1px solid var(--color-purple)',
                       color: 'var(--color-fg)'
                     }}
                   >
@@ -1545,10 +1545,10 @@ export default function CVMatch() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: 12,
-            background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 50%, #ec4899 100%)',
+            background: 'var(--color-primary)',
             border: 'none',
-            color: '#ffffff',
-            boxShadow: '0 6px 24px rgba(139, 92, 246, 0.4)',
+            color: 'var(--p-white)fff',
+            boxShadow: 'var(--shadow-md)',
             cursor: busy ? 'not-allowed' : 'pointer',
             transition: 'all 0.3s ease',
             letterSpacing: '0.01em'
@@ -1608,7 +1608,7 @@ export default function CVMatch() {
           {/* Executive Candidate Fit Banner */}
           <div style={{
             padding: 'var(--p-space-5)',
-            background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.9) 100%)',
+            background: 'var(--color-bg-elevated)',
             borderRadius: 'var(--radius-lg)',
             border: '1px solid var(--color-border)',
             marginBottom: 'var(--p-space-5)',
@@ -1666,7 +1666,7 @@ export default function CVMatch() {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '20px 24px',
-              background: 'rgba(15, 23, 42, 0.85)',
+              background: 'var(--color-bg-elevated)',
               borderRadius: 'var(--radius-lg)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
               minWidth: 165,
@@ -1691,7 +1691,7 @@ export default function CVMatch() {
                 type="button"
                 onClick={() => setShowDossierModal(true)}
                 className="btn btn-sm btn-ghost"
-                style={{ marginTop: 12, width: '100%', fontSize: '11px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)' }}
+                style={{ marginTop: 12, width: '100%', fontSize: '11px', padding: '6px 10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: 'var(--color-primary)', border: '1px solid rgba(10, 132, 255, 0.25)', borderRadius: 'var(--radius-md)' }}
                 title="Preview printable executive evaluation dossier"
               >
                 <FileText size={12} /> View Evaluation Dossier
@@ -1775,7 +1775,7 @@ export default function CVMatch() {
                     </div>
 
                     <div style={{ width: '100%', height: 7, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
-                      <div className="progress-bar-fill" style={{ width: `${Math.min(skillScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #2563eb, #60a5fa)', borderRadius: 4, boxShadow: '0 0 10px rgba(59, 130, 246, 0.5)' }} />
+                      <div className="progress-bar-fill" style={{ width: `${Math.min(skillScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-primary-hover), var(--color-info))', borderRadius: 4, boxShadow: '0 0 10px rgba(10, 132, 255, 0.5)' }} />
                     </div>
 
                     <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1819,7 +1819,7 @@ export default function CVMatch() {
                     </div>
 
                     <div style={{ width: '100%', height: 7, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
-                      <div className="progress-bar-fill" style={{ width: `${Math.min(expScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #059669, #34d399)', borderRadius: 4, boxShadow: '0 0 10px rgba(16, 185, 129, 0.5)' }} />
+                      <div className="progress-bar-fill" style={{ width: `${Math.min(expScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-success), var(--color-success-hover))', borderRadius: 4, boxShadow: '0 0 10px rgba(48, 209, 88, 0.5)' }} />
                     </div>
 
                     <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1835,7 +1835,7 @@ export default function CVMatch() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Role-Relevant Experience:</span>
-                      <strong style={{ color: '#34d399' }}>{roleRelevantExp.toFixed(1)} years ({relevantMonths.toFixed(0)} mos)</strong>
+                      <strong style={{ color: 'var(--color-success)' }}>{roleRelevantExp.toFixed(1)} years ({relevantMonths.toFixed(0)} mos)</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Role Requirement:</span>
@@ -1848,16 +1848,16 @@ export default function CVMatch() {
                 <div className="cvm-pillar-card pillar-edu">
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: '#a855f7', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-purple)', letterSpacing: '0.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
                         <GraduationCap size={14} /> Education & Qualifications
                       </span>
-                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#a855f7', fontFamily: 'var(--p-font-mono)' }}>
+                      <span style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--color-purple)', fontFamily: 'var(--p-font-mono)' }}>
                         {eduScore.toFixed(0)}%
                       </span>
                     </div>
 
                     <div style={{ width: '100%', height: 7, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
-                      <div className="progress-bar-fill" style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, #7c3aed, #a78bfa)', borderRadius: 4, boxShadow: '0 0 10px rgba(139, 92, 246, 0.5)' }} />
+                      <div className="progress-bar-fill" style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-purple), var(--color-primary-hover))', borderRadius: 4, boxShadow: '0 0 10px rgba(191, 90, 242, 0.5)' }} />
                     </div>
 
                     <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1875,7 +1875,7 @@ export default function CVMatch() {
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Academic Discipline:</span>
-                      <strong style={{ color: '#c084fc' }}>{candidateDegreeField}</strong>
+                      <strong style={{ color: 'var(--color-purple)' }}>{candidateDegreeField}</strong>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Target Benchmark:</span>
@@ -1889,8 +1889,8 @@ export default function CVMatch() {
               {/* Direct Next Action Bar */}
               <div style={{
                 padding: '16px 20px',
-                background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%)',
-                border: '1px solid rgba(99, 102, 241, 0.25)',
+                background: 'linear-gradient(135deg, rgba(0, 113, 227, 0.1) 0%, rgba(191, 90, 242, 0.1) 100%)',
+                border: '1px solid rgba(10, 132, 255, 0.25)',
                 borderRadius: 'var(--radius-lg)',
                 marginBottom: 'var(--p-space-5)',
                 display: 'flex',
@@ -1935,12 +1935,12 @@ export default function CVMatch() {
               {/* Skills Breakdown: Matched vs Missing */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 'var(--p-space-4)', marginBottom: 'var(--p-space-5)' }}>
                 {/* Matched Skills */}
-                <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
+                <div className="card glass-card" style={{ padding: 'var(--p-space-5)', background: 'var(--color-success-muted)', border: '1px solid rgba(48, 209, 88, 0.25)', borderRadius: 'var(--radius-lg)', margin: 0 }}>
                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
                     <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                       <CheckCircle2 size={16} /> Matched Role Competencies
                     </span>
-                    <span style={{ fontSize: '11px', fontWeight: 800, background: 'rgba(16, 185, 129, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: 800, background: 'rgba(48, 209, 88, 0.15)', color: 'var(--color-success)', padding: '2px 8px', borderRadius: 'var(--radius-full)', border: '1px solid rgba(48, 209, 88, 0.3)' }}>
                       {activeMatchedSkills.length} Verified
                     </span>
                   </div>
@@ -1962,8 +1962,8 @@ export default function CVMatch() {
                  </div>
 
                  {/* Missing Skills */}
-                 <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.3) 0%, rgba(15, 23, 42, 0.5) 100%)', border: '1px solid rgba(244, 63, 94, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
-                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: '#fb7185', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+                 <div className="card glass-card" style={{ padding: 'var(--p-space-5)', background: 'var(--color-danger-muted)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: 'var(--radius-md)', margin: 0 }}>
+                   <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
                      <AlertCircle size={16} /> Missing Competencies to Develop ({activeMissingSkills.length})
                    </div>
                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -2011,10 +2011,10 @@ export default function CVMatch() {
                 </div>
               )}
               {/* Detailed Verified Employment & Work History Intelligence */}
-              <div className="card" style={{
+              <div className="card glass-card" style={{
                 padding: 'var(--p-space-5)',
-                background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.6) 100%)',
-                border: '1px solid rgba(16, 185, 129, 0.25)',
+                background: 'var(--color-bg-elevated)',
+                border: '1px solid rgba(48, 209, 88, 0.25)',
                 borderRadius: 'var(--radius-lg)',
                 marginBottom: 'var(--p-space-5)'
               }}>
@@ -2024,7 +2024,7 @@ export default function CVMatch() {
                       width: 32,
                       height: 32,
                       borderRadius: 'var(--radius-md)',
-                      background: 'rgba(16, 185, 129, 0.15)',
+                      background: 'rgba(48, 209, 88, 0.15)',
                       color: 'var(--color-success)',
                       display: 'flex',
                       alignItems: 'center',
@@ -2046,22 +2046,22 @@ export default function CVMatch() {
                     <span style={{
                       fontSize: '11px',
                       fontWeight: 800,
-                      background: 'rgba(16, 185, 129, 0.15)',
+                      background: 'rgba(48, 209, 88, 0.15)',
                       color: 'var(--color-success)',
                       padding: '4px 10px',
                       borderRadius: 'var(--radius-full)',
-                      border: '1px solid rgba(16, 185, 129, 0.3)'
+                      border: '1px solid rgba(48, 209, 88, 0.3)'
                     }}>
                       {employmentRecords.length > 0 ? `${employmentRecords.length} Verified Positions` : 'Career Profile'}
                     </span>
                     <span style={{
                       fontSize: '11px',
                       fontWeight: 800,
-                      background: 'rgba(59, 130, 246, 0.15)',
+                      background: 'rgba(10, 132, 255, 0.15)',
                       color: 'var(--color-primary)',
                       padding: '4px 10px',
                       borderRadius: 'var(--radius-full)',
-                      border: '1px solid rgba(59, 130, 246, 0.3)'
+                      border: '1px solid rgba(10, 132, 255, 0.3)'
                     }}>
                       {roleRelevantExp.toFixed(1)} yrs Relevant / {candExp.toFixed(1)} yrs Total
                     </span>
@@ -2074,14 +2074,14 @@ export default function CVMatch() {
                       const relCat = rec.relevance_category || 'RELEVANT'
                       const isHigh = relCat === 'HIGHLY_RELEVANT'
                       const isPart = relCat === 'PARTIALLY_RELEVANT'
-                      const badgeColor = isHigh ? '#34d399' : (isPart ? '#fbbf24' : '#60a5fa')
-                      const badgeBg = isHigh ? 'rgba(16, 185, 129, 0.15)' : (isPart ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)')
-                      const badgeBorder = isHigh ? 'rgba(16, 185, 129, 0.3)' : (isPart ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)')
+                      const badgeColor = isHigh ? 'var(--color-success)' : (isPart ? 'var(--color-warning)' : 'var(--color-info)')
+                      const badgeBg = isHigh ? 'rgba(48, 209, 88, 0.15)' : (isPart ? 'rgba(245, 158, 11, 0.15)' : 'rgba(10, 132, 255, 0.15)')
+                      const badgeBorder = isHigh ? 'rgba(48, 209, 88, 0.3)' : (isPart ? 'rgba(245, 158, 11, 0.3)' : 'rgba(10, 132, 255, 0.3)')
 
                       return (
                         <div key={`rec-${idx}`} style={{
                           padding: '14px 16px',
-                          background: 'rgba(15, 23, 42, 0.7)',
+                          background: 'var(--color-bg-elevated)',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
                           borderRadius: 'var(--radius-md)',
                           display: 'flex',
@@ -2138,9 +2138,9 @@ export default function CVMatch() {
                                       fontSize: '10px',
                                       padding: '2px 6px',
                                       borderRadius: 4,
-                                      background: 'rgba(59, 130, 246, 0.1)',
-                                      color: '#93c5fd',
-                                      border: '1px solid rgba(59, 130, 246, 0.2)'
+                                      background: 'rgba(10, 132, 255, 0.1)',
+                                      color: 'var(--color-primary-hover)',
+                                      border: '1px solid rgba(10, 132, 255, 0.2)'
                                     }}>
                                       {tech}
                                     </span>
@@ -2161,10 +2161,10 @@ export default function CVMatch() {
               </div>
 
               {/* Detailed Academic Verification & Qualification Dossier */}
-              <div className="card" style={{
+              <div className="card glass-card" style={{
                 padding: 'var(--p-space-5)',
-                background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.6) 100%)',
-                border: '1px solid rgba(168, 85, 247, 0.25)',
+                background: 'var(--color-bg-elevated)',
+                border: '1px solid rgba(191, 90, 242, 0.25)',
                 borderRadius: 'var(--radius-lg)',
                 marginBottom: 'var(--p-space-5)'
               }}>
@@ -2174,8 +2174,8 @@ export default function CVMatch() {
                       width: 32,
                       height: 32,
                       borderRadius: 'var(--radius-md)',
-                      background: 'rgba(168, 85, 247, 0.15)',
-                      color: '#c084fc',
+                      background: 'rgba(191, 90, 242, 0.15)',
+                      color: 'var(--color-purple)',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center'
@@ -2195,11 +2195,11 @@ export default function CVMatch() {
                   <span style={{
                     fontSize: '11px',
                     fontWeight: 800,
-                    background: 'rgba(168, 85, 247, 0.15)',
-                    color: '#c084fc',
+                    background: 'rgba(191, 90, 242, 0.15)',
+                    color: 'var(--color-purple)',
                     padding: '4px 10px',
                     borderRadius: 'var(--radius-full)',
-                    border: '1px solid rgba(168, 85, 247, 0.3)'
+                    border: '1px solid rgba(191, 90, 242, 0.3)'
                   }}>
                     {eduScore >= 90 ? 'Full Academic Alignment (100%)' : `${eduScore.toFixed(0)}% Qualification Match`}
                   </span>
@@ -2210,7 +2210,7 @@ export default function CVMatch() {
                   gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
                   gap: 14,
                   padding: '14px 16px',
-                  background: 'rgba(15, 23, 42, 0.7)',
+                  background: 'var(--color-bg-elevated)',
                   border: '1px solid rgba(255, 255, 255, 0.08)',
                   borderRadius: 'var(--radius-md)'
                 }}>
@@ -2221,7 +2221,7 @@ export default function CVMatch() {
                     <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-fg)' }}>
                       {cleanEducationText(c1Result?.education || currentResumeDoc?.education, 120)}
                     </div>
-                    <div style={{ fontSize: '11px', color: '#c084fc', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <div style={{ fontSize: '11px', color: 'var(--color-purple)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={12} /> Verified Academic Record
                     </div>
                   </div>
@@ -2230,7 +2230,7 @@ export default function CVMatch() {
                     <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', textTransform: 'uppercase', fontWeight: 700, marginBottom: 4 }}>
                       Academic Field & Discipline
                     </div>
-                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: '#c084fc' }}>
+                    <div style={{ fontSize: 'var(--p-text-sm)', fontWeight: 800, color: 'var(--color-purple)' }}>
                       {candidateDegreeField}
                     </div>
                     <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4 }}>
@@ -2306,10 +2306,10 @@ export default function CVMatch() {
               </div>
 
               {/* Simulation Sandbox Card */}
-              <div className="card" style={{ padding: 'var(--p-space-5)', background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.6) 100%)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--p-space-5)' }}>
+              <div className="card glass-card" style={{ padding: 'var(--p-space-5)', background: 'var(--color-bg-elevated)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', marginBottom: 'var(--p-space-5)' }}>
                 <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-fg-muted)', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span>Missing Competencies for {displayJobTitle}:</span>
-                  <span style={{ fontSize: '10px', color: 'var(--color-primary)', background: 'rgba(59, 130, 246, 0.1)', padding: '1px 7px', borderRadius: 10 }}>Click pill to toggle</span>
+                  <span style={{ fontSize: '10px', color: 'var(--color-primary)', background: 'rgba(10, 132, 255, 0.1)', padding: '1px 7px', borderRadius: 10 }}>Click pill to toggle</span>
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
@@ -2324,9 +2324,9 @@ export default function CVMatch() {
                           style={{
                             padding: '7px 16px',
                             borderRadius: 'var(--radius-full)',
-                            border: `1px solid ${isSelected ? '#10b981' : 'rgba(255, 255, 255, 0.12)'}`,
-                            background: isSelected ? 'rgba(16, 185, 129, 0.18)' : 'rgba(255, 255, 255, 0.04)',
-                            color: isSelected ? '#34d399' : 'var(--color-fg)',
+                            border: `1px solid ${isSelected ? 'var(--color-success)' : 'rgba(255, 255, 255, 0.12)'}`,
+                            background: isSelected ? 'rgba(48, 209, 88, 0.18)' : 'rgba(255, 255, 255, 0.04)',
+                            color: isSelected ? 'var(--color-success)' : 'var(--color-fg)',
                             cursor: 'pointer',
                             fontSize: 'var(--p-text-xs)',
                             fontWeight: 700,
@@ -2334,7 +2334,7 @@ export default function CVMatch() {
                             alignItems: 'center',
                             gap: 7,
                             transition: 'all 0.2s ease',
-                            boxShadow: isSelected ? '0 0 14px rgba(16, 185, 129, 0.3)' : 'none'
+                            boxShadow: isSelected ? '0 0 14px rgba(48, 209, 88, 0.3)' : 'none'
                           }}
                         >
                           <span>{isSelected ? '✓ Acquired' : '+ Acquire'}</span>
@@ -2353,23 +2353,23 @@ export default function CVMatch() {
                 {simulationResult && (
                   <div style={{
                     padding: 'var(--p-space-4)',
-                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%)',
-                    border: '1px solid rgba(16, 185, 129, 0.4)',
+                    background: 'linear-gradient(135deg, rgba(48, 209, 88, 0.15) 0%, rgba(5, 150, 105, 0.25) 100%)',
+                    border: '1px solid rgba(48, 209, 88, 0.4)',
                     borderRadius: 'var(--radius-md)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     flexWrap: 'wrap',
                     gap: 14,
-                    boxShadow: '0 4px 16px rgba(16, 185, 129, 0.15)'
+                    boxShadow: '0 4px 16px rgba(48, 209, 88, 0.15)'
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{
                         width: 44,
                         height: 44,
                         borderRadius: 'var(--radius-md)',
-                        background: 'rgba(16, 185, 129, 0.25)',
-                        color: '#34d399',
+                        background: 'rgba(48, 209, 88, 0.25)',
+                        color: 'var(--color-success)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -2378,9 +2378,9 @@ export default function CVMatch() {
                         <Zap size={22} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: '#34d399', display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span>+{simulationResult.coverage_improvement || 0}% Projected Match Coverage Boost!</span>
-                          <span style={{ fontSize: '11px', background: 'rgba(16, 185, 129, 0.25)', padding: '2px 8px', borderRadius: 10, color: '#ffffff' }}>
+                          <span style={{ fontSize: '11px', background: 'rgba(48, 209, 88, 0.25)', padding: '2px 8px', borderRadius: 10, color: 'var(--p-white)fff' }}>
                             {simulationResult.original_coverage || 0}% → {simulationResult.simulated_coverage || 0}%
                           </span>
                         </div>
@@ -2422,10 +2422,10 @@ export default function CVMatch() {
                     return (
                       <div
                         key={rec.target_role || rec.role}
-                        className="card"
+                        className="card glass-card"
                         style={{
                           padding: 'var(--p-space-5)',
-                          background: 'linear-gradient(180deg, rgba(30, 41, 59, 0.35) 0%, rgba(15, 23, 42, 0.55) 100%)',
+                          background: 'var(--color-bg-elevated)',
                           border: '1px solid rgba(255, 255, 255, 0.08)',
                           borderRadius: 'var(--radius-lg)',
                           margin: 0,
@@ -2443,9 +2443,9 @@ export default function CVMatch() {
                             <span style={{
                               fontSize: '11px',
                               fontWeight: 800,
-                              color: isHigh ? '#34d399' : 'var(--color-primary)',
-                              background: isHigh ? 'rgba(16, 185, 129, 0.15)' : 'var(--color-primary-muted)',
-                              border: `1px solid ${isHigh ? 'rgba(16, 185, 129, 0.3)' : 'rgba(59, 130, 246, 0.3)'}`,
+                              color: isHigh ? 'var(--color-success)' : 'var(--color-primary)',
+                              background: isHigh ? 'rgba(48, 209, 88, 0.15)' : 'var(--color-primary-muted)',
+                              border: `1px solid ${isHigh ? 'rgba(48, 209, 88, 0.3)' : 'rgba(10, 132, 255, 0.3)'}`,
                               padding: '3px 9px',
                               borderRadius: 'var(--radius-full)'
                             }}>
@@ -2484,8 +2484,8 @@ export default function CVMatch() {
                             fontSize: '11.5px',
                             fontWeight: 700,
                             color: 'var(--color-primary)',
-                            background: 'rgba(59, 130, 246, 0.08)',
-                            border: '1px solid rgba(59, 130, 246, 0.25)',
+                            background: 'rgba(10, 132, 255, 0.08)',
+                            border: '1px solid rgba(10, 132, 255, 0.25)',
                             borderRadius: 'var(--radius-md)',
                             display: 'flex',
                             alignItems: 'center',
@@ -2500,7 +2500,7 @@ export default function CVMatch() {
                   })}
                 </div>
               ) : (
-                <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-6)', background: 'var(--color-bg)' }}>
+                <div className="card glass-card" style={{ textAlign: 'center', padding: 'var(--p-space-6)', background: 'var(--color-bg)' }}>
                   <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
                     Career progression recommendations active for <strong>{displayJobTitle}</strong> profile.
                   </p>
@@ -2547,10 +2547,10 @@ export default function CVMatch() {
               </div>
 
               {/* Interactive Progress & Filter Hub Card */}
-              <div className="card" style={{
+              <div className="card glass-card" style={{
                 padding: '16px 20px',
-                background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.7) 100%)',
-                border: '1px solid rgba(59, 130, 246, 0.25)',
+                background: 'var(--color-bg-elevated)',
+                border: '1px solid rgba(10, 132, 255, 0.25)',
                 borderRadius: 'var(--radius-lg)',
                 marginBottom: 'var(--p-space-5)'
               }}>
@@ -2560,7 +2560,7 @@ export default function CVMatch() {
                       width: 36,
                       height: 36,
                       borderRadius: 'var(--radius-md)',
-                      background: 'rgba(59, 130, 246, 0.15)',
+                      background: 'rgba(10, 132, 255, 0.15)',
                       color: 'var(--color-primary)',
                       display: 'flex',
                       alignItems: 'center',
@@ -2586,26 +2586,25 @@ export default function CVMatch() {
                     padding: '4px 12px',
                     borderRadius: 'var(--radius-full)',
                     background: completedRoadmapSkills.length === effectiveLearningPath.length && effectiveLearningPath.length > 0
-                      ? 'rgba(16, 185, 129, 0.2)'
-                      : 'rgba(59, 130, 246, 0.15)',
+                      ? 'rgba(48, 209, 88, 0.2)'
+                      : 'rgba(10, 132, 255, 0.15)',
                     color: completedRoadmapSkills.length === effectiveLearningPath.length && effectiveLearningPath.length > 0
-                      ? '#34d399'
-                      : 'var(--color-primary-light, #93c5fd)',
-                    border: '1px solid rgba(59, 130, 246, 0.3)'
+                      ? 'var(--color-success)'
+                      : 'var(--color-primary-hover)',
+                    border: '1px solid rgba(10, 132, 255, 0.3)'
                   }}>
                     {Math.round((completedRoadmapSkills.length / Math.max(effectiveLearningPath.length, 1)) * 100)}% Readiness
                   </span>
                 </div>
 
                 {/* Progress Bar */}
-                <div style={{ width: '100%', height: 8, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 14 }}>
+                <div style={{ width: '100%', height: 8, background: 'var(--progress-bg)', borderRadius: 4, overflow: 'hidden', marginBottom: 14 }}>
                   <div style={{
                     width: `${Math.min(Math.round((completedRoadmapSkills.length / Math.max(effectiveLearningPath.length, 1)) * 100), 100)}%`,
                     height: '100%',
-                    background: 'linear-gradient(90deg, #2563eb, #34d399)',
+                    background: 'var(--color-success)',
                     borderRadius: 4,
-                    transition: 'width 0.3s ease',
-                    boxShadow: '0 0 12px rgba(16, 185, 129, 0.4)'
+                    transition: 'width 0.3s ease'
                   }} />
                 </div>
 
@@ -2652,29 +2651,29 @@ export default function CVMatch() {
                       const isCritical = item.priority === 'Critical'
                       const isHigh = item.priority === 'High'
 
-                      const priorityBg = isCritical ? 'rgba(239, 68, 68, 0.15)' : (isHigh ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)')
-                      const priorityColor = isCritical ? '#f87171' : (isHigh ? '#fbbf24' : '#93c5fd')
-                      const priorityBorder = isCritical ? 'rgba(239, 68, 68, 0.3)' : (isHigh ? 'rgba(245, 158, 11, 0.3)' : 'rgba(59, 130, 246, 0.3)')
+                      const priorityBg = isCritical ? 'rgba(255, 69, 58, 0.15)' : (isHigh ? 'rgba(245, 158, 11, 0.15)' : 'rgba(10, 132, 255, 0.15)')
+                      const priorityColor = isCritical ? 'var(--color-danger)' : (isHigh ? 'var(--color-warning)' : 'var(--color-primary-hover)')
+                      const priorityBorder = isCritical ? 'rgba(255, 69, 58, 0.3)' : (isHigh ? 'rgba(245, 158, 11, 0.3)' : 'rgba(10, 132, 255, 0.3)')
 
                       return (
                         <div
                           key={item.skill || item.title || idx}
-                          className="card"
+                          className="card glass-card"
                           style={{
                             padding: '18px 22px',
                             background: isCompleted
-                              ? 'linear-gradient(180deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.6) 100%)'
-                              : 'linear-gradient(180deg, rgba(30, 41, 59, 0.4) 0%, rgba(15, 23, 42, 0.65) 100%)',
+                              ? 'var(--color-success-muted)'
+                              : 'var(--color-bg-elevated)',
                             borderRadius: 'var(--radius-lg)',
                             border: isCompleted
-                              ? '1px solid rgba(16, 185, 129, 0.4)'
-                              : (isCritical ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)'),
+                              ? '1px solid rgba(48, 209, 88, 0.4)'
+                              : (isCritical ? '1px solid rgba(255, 69, 58, 0.3)' : '1px solid rgba(255, 255, 255, 0.08)'),
                             margin: 0,
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 14,
                             transition: 'all 0.2s ease',
-                            boxShadow: isCompleted ? '0 0 16px rgba(16, 185, 129, 0.1)' : 'none'
+                            boxShadow: isCompleted ? '0 0 16px rgba(48, 209, 88, 0.1)' : 'none'
                           }}
                         >
                           {/* Card Top Row: Step, Title, Badges */}
@@ -2685,9 +2684,9 @@ export default function CVMatch() {
                                 height: 38,
                                 borderRadius: 'var(--radius-md)',
                                 background: isCompleted
-                                  ? 'linear-gradient(135deg, #059669 0%, #10b981 100%)'
-                                  : 'linear-gradient(135deg, rgba(37, 99, 235, 0.3) 0%, rgba(59, 130, 246, 0.5) 100%)',
-                                color: '#ffffff',
+                                  ? 'linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%)'
+                                  : 'linear-gradient(135deg, rgba(0, 113, 227, 0.3) 0%, rgba(10, 132, 255, 0.5) 100%)',
+                                color: 'var(--p-white)fff',
                                 fontWeight: 900,
                                 fontSize: '14px',
                                 fontFamily: 'var(--p-font-mono)',
@@ -2695,8 +2694,8 @@ export default function CVMatch() {
                                 alignItems: 'center',
                                 justifyContent: 'center',
                                 flexShrink: 0,
-                                border: isCompleted ? '1px solid #34d399' : '1px solid rgba(147, 197, 253, 0.3)',
-                                boxShadow: isCompleted ? '0 0 10px rgba(16, 185, 129, 0.4)' : 'none'
+                                border: isCompleted ? '1px solid var(--color-success)' : '1px solid rgba(147, 197, 253, 0.3)',
+                                boxShadow: isCompleted ? '0 0 10px rgba(48, 209, 88, 0.4)' : 'none'
                               }}>
                                 {isCompleted ? '✓' : `0${item.step}`}
                               </div>
@@ -2785,7 +2784,7 @@ export default function CVMatch() {
                               borderRadius: 'var(--radius-md)',
                               border: '1px solid rgba(255, 255, 255, 0.04)'
                             }}>
-                              <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary-light, #93c5fd)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
+                              <div style={{ fontSize: '10.5px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--color-primary-hover)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5 }}>
                                 <Lightbulb size={12} /> Key Syllabus Concepts:
                               </div>
                               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -2794,9 +2793,9 @@ export default function CVMatch() {
                                     fontSize: '11px',
                                     fontWeight: 600,
                                     padding: '3px 9px',
-                                    background: 'rgba(59, 130, 246, 0.1)',
-                                    color: '#bae6fd',
-                                    border: '1px solid rgba(59, 130, 246, 0.2)',
+                                    background: 'rgba(10, 132, 255, 0.1)',
+                                    color: 'var(--color-primary-hover)',
+                                    border: '1px solid rgba(10, 132, 255, 0.2)',
                                     borderRadius: 6
                                   }}>
                                     {top}
@@ -2810,8 +2809,8 @@ export default function CVMatch() {
                           {item.project && (
                             <div style={{
                               padding: '12px 14px',
-                              background: 'linear-gradient(135deg, rgba(37, 99, 235, 0.08) 0%, rgba(139, 92, 246, 0.08) 100%)',
-                              border: '1px solid rgba(99, 102, 241, 0.2)',
+                              background: 'linear-gradient(135deg, rgba(0, 113, 227, 0.08) 0%, rgba(191, 90, 242, 0.08) 100%)',
+                              border: '1px solid rgba(10, 132, 255, 0.2)',
                               borderRadius: 'var(--radius-md)',
                               display: 'flex',
                               alignItems: 'flex-start',
@@ -2821,8 +2820,8 @@ export default function CVMatch() {
                                 width: 26,
                                 height: 26,
                                 borderRadius: 6,
-                                background: 'rgba(99, 102, 241, 0.2)',
-                                color: '#a5b4fc',
+                                background: 'rgba(10, 132, 255, 0.2)',
+                                color: 'var(--color-purple)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
@@ -2860,7 +2859,7 @@ export default function CVMatch() {
                                   handleSimulateSkill(item.skill)
                                 }}
                                 className="btn btn-sm btn-ghost"
-                                style={{ fontSize: '11.5px', padding: '5px 10px', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                                style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--color-success)', border: '1px solid rgba(48, 209, 88, 0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                                 title="Simulate impact on overall fit score in Sandbox"
                               >
                                 <Zap size={13} /> Simulate in Sandbox
@@ -2878,7 +2877,7 @@ export default function CVMatch() {
                                   navigate(`/candidate/interview?${params.toString()}`)
                                 }}
                                 className="btn btn-sm btn-ghost"
-                                style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 5 }}
+                                style={{ fontSize: '11.5px', padding: '5px 10px', color: 'var(--color-primary)', border: '1px solid rgba(10, 132, 255, 0.25)', borderRadius: 'var(--radius-md)', display: 'inline-flex', alignItems: 'center', gap: 5 }}
                                 title="Practice interview questions specifically for this skill"
                               >
                                 <Play size={13} /> Interview Quiz
@@ -2894,11 +2893,11 @@ export default function CVMatch() {
                                 style={{
                                   fontSize: '11.5px',
                                   padding: '5px 12px',
-                                  color: 'var(--color-primary-light, #93c5fd)',
+                                  color: 'var(--color-primary-hover)',
                                   display: 'inline-flex',
                                   alignItems: 'center',
                                   gap: 5,
-                                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                                  border: '1px solid rgba(10, 132, 255, 0.25)',
                                   borderRadius: 'var(--radius-md)'
                                 }}
                               >
@@ -2911,7 +2910,7 @@ export default function CVMatch() {
                     })}
                 </div>
               ) : (
-                <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-6)', background: 'var(--color-bg)' }}>
+                <div className="card glass-card" style={{ textAlign: 'center', padding: 'var(--p-space-6)', background: 'var(--color-bg)' }}>
                   <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
                     All technical learning roadmap milestones completed for <strong>{displayJobTitle}</strong>!
                   </p>
@@ -2942,7 +2941,7 @@ export default function CVMatch() {
           padding: 20
         }}>
           <div style={{
-            background: '#ffffff',
+            background: 'var(--p-white)',
             color: '#0f172a',
             width: '100%',
             maxWidth: 900,
@@ -2967,11 +2966,11 @@ export default function CVMatch() {
               zIndex: 10
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <FileText size={20} color="#2563eb" />
+                <FileText size={20} color="#0071e3" />
                 <span style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>
                   Candidate Evaluation Dossier Preview
                 </span>
-                <span style={{ fontSize: '11px', background: '#dbeafe', color: '#1e40af', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
+                <span style={{ fontSize: '11px', background: '#dbeafe', color: '#0058b5', padding: '2px 8px', borderRadius: 12, fontWeight: 700 }}>
                   Ready for Print / PDF Export
                 </span>
               </div>
@@ -2995,12 +2994,12 @@ export default function CVMatch() {
             </div>
 
             {/* Printable Document Body */}
-            <div className="dossier-print-container" style={{ padding: '36px 40px', background: '#ffffff', color: '#0f172a', lineHeight: 1.5 }}>
+            <div className="dossier-print-container" style={{ padding: '36px 40px', background: 'var(--p-white)', color: '#0f172a', lineHeight: 1.5 }}>
               
               {/* Document Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: 16, marginBottom: 24 }}>
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#2563eb', marginBottom: 4 }}>
+                  <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#0071e3', marginBottom: 4 }}>
                     RecruitAI Enterprise Talent Suite · Component 1
                   </div>
                   <h1 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#0f172a', margin: '0 0 4px 0' }}>
@@ -3017,7 +3016,7 @@ export default function CVMatch() {
                     padding: '6px 14px',
                     borderRadius: 8,
                     background: fitTier.bg || '#dbeafe',
-                    color: fitTier.color || '#1e40af',
+                    color: fitTier.color || '#0058b5',
                     fontWeight: 800,
                     fontSize: '12px',
                     border: '1px solid #cbd5e1',
@@ -3054,7 +3053,7 @@ export default function CVMatch() {
 
                 <div>
                   <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Evaluated Position</div>
-                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#2563eb', marginTop: 2 }}>
+                  <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0071e3', marginTop: 2 }}>
                     {displayJobTitle}
                   </div>
                   <div style={{ fontSize: '12px', color: '#475569', marginTop: 4 }}>
@@ -3073,7 +3072,7 @@ export default function CVMatch() {
                   {/* Overall Fit */}
                   <div style={{ padding: '14px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, textAlign: 'center' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Overall Fit Score</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#2563eb', marginTop: 4 }}>{overallFitScore.toFixed(0)}%</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0071e3', marginTop: 4 }}>{overallFitScore.toFixed(0)}%</div>
                     <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>Weighted Index</div>
                   </div>
 
@@ -3143,7 +3142,7 @@ export default function CVMatch() {
                         <div>
                           <strong>Phase {idx + 1}: {item.skill || item.title}</strong> — <span style={{ color: '#64748b' }}>{item.description || 'Target skill competency'}</span>
                         </div>
-                        <span style={{ fontSize: '10px', color: '#2563eb', fontWeight: 700 }}>Recommended Priority</span>
+                        <span style={{ fontSize: '10px', color: '#0071e3', fontWeight: 700 }}>Recommended Priority</span>
                       </div>
                     ))}
                   </div>

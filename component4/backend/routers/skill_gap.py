@@ -4,7 +4,8 @@ import sys, os, asyncio
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from datetime import datetime, timezone
-from fastapi import APIRouter, Request, HTTPException
+from fastapi import APIRouter, Request, HTTPException, Depends
+from auth_guard import require_identity, require_owner_or_service
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 from slowapi import Limiter
@@ -278,7 +279,8 @@ async def get_skill_dependency_graph():
 
 @router.post("/analyze", summary="Run full skill gap analysis for a candidate")
 @limiter.limit("10/minute")
-async def analyze_skill_gap_full(request: Request, payload: SkillGapRequest):
+async def analyze_skill_gap_full(request: Request, payload: SkillGapRequest, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, payload.candidate_id)
     db = request.app.state.db
 
     # ── Validation ────────────────────────────────────────────────────────────
@@ -331,7 +333,8 @@ async def analyze_skill_gap_full(request: Request, payload: SkillGapRequest):
 
 
 @router.get("/report/{candidate_id}", summary="Fetch latest skill gap report")
-async def get_report(candidate_id: str, request: Request):
+async def get_report(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     db  = request.app.state.db
     doc = await db.skill_gap_reports.find_one(
         {"candidate_id": candidate_id},
@@ -344,7 +347,10 @@ async def get_report(candidate_id: str, request: Request):
 
 
 @router.get("/reports", summary="List all skill gap reports (paginated)")
-async def list_reports(request: Request, skip: int = 0, limit: int = 50):
+async def list_reports(request: Request, skip: int = 0, limit: int = 50, identity: dict = Depends(require_identity)):
+    # Paginated dump of everyone's reports: company/service roles only.
+    if identity.get("role") not in ("service", "admin", "company"):
+        raise HTTPException(status_code=403, detail="Access denied")
     db    = request.app.state.db
     docs  = await db.skill_gap_reports.find(
         {}, projection={"_id": 0}
@@ -355,7 +361,8 @@ async def list_reports(request: Request, skip: int = 0, limit: int = 50):
 
 @router.delete("/report/{candidate_id}", summary="Delete a candidate's report")
 @limiter.limit("10/minute")
-async def delete_report(candidate_id: str, request: Request):
+async def delete_report(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     db  = request.app.state.db
     res = await db.skill_gap_reports.delete_many({"candidate_id": candidate_id})
     return {"success": True, "deleted": res.deleted_count}
@@ -368,7 +375,8 @@ async def list_roles():
 
 
 @router.get("/applied-jobs/{candidate_id}", summary="Get multi-job skill gap & interview analysis for candidate applied jobs")
-async def get_applied_jobs_skill_gap(candidate_id: str, request: Request):
+async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     """
     Evaluates skill gap, strengths, and weaknesses for every job the candidate applied for,
     integrating Component 1 CV parsing/matching and Component 2 AI Interview question-level topic scores.

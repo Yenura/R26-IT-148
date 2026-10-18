@@ -299,11 +299,13 @@ export default function CandidateDashboard() {
                 {resumes.map((r) => (
                   <div
                     key={r.id}
+                    className="glass-card card-interactive"
                     style={{
                       padding: 'var(--p-space-4)',
                       borderRadius: 'var(--radius-md)',
                       border: '1px solid var(--color-border-subtle)',
                       background: 'var(--color-bg-elevated)',
+                      backdropFilter: 'var(--material-blur)',
                       transition: 'all var(--duration-normal) var(--ease)'
                     }}
                   >
@@ -389,14 +391,14 @@ export default function CandidateDashboard() {
                                     width: 42,
                                     height: 42,
                                     borderRadius: 'var(--radius-md)',
-                                    background: 'linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)',
-                                    color: '#ffffff',
+                                    background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-purple-600) 100%)',
+                                    color: 'var(--p-white)',
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     fontWeight: 800,
                                     fontSize: '14px',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                                    boxShadow: '0 4px 12px var(--shadow-glow)',
                                     flexShrink: 0
                                   }}>
                                     {initials}
@@ -410,7 +412,7 @@ export default function CandidateDashboard() {
                                     </div>
                                     <div style={{ fontSize: '11.5px', color: 'var(--color-fg-muted)', marginTop: 4, display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                                        <GraduationCap size={13} style={{ color: 'var(--color-primary-light, #93c5fd)' }} />
+                                        <GraduationCap size={13} style={{ color: 'var(--color-primary-light)' }} />
                                         {cleanEducationText(r.education)}
                                       </span>
                                       <span>•</span>
@@ -437,7 +439,7 @@ export default function CandidateDashboard() {
                                     onClick={() => deleteResume(r.id)}
                                     aria-label="Delete resume"
                                     title="Delete resume"
-                                    style={{ padding: 6, minWidth: 32, minHeight: 32, color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(244, 63, 94, 0.15)' }}
+                                    style={{ padding: 6, minWidth: 32, minHeight: 32, color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255, 69, 58, 0.15)' }}
                                   >
                                     <Trash2 size={13} />
                                   </button>
@@ -470,7 +472,7 @@ export default function CandidateDashboard() {
                                   className="btn btn-ghost btn-sm"
                                   style={{ fontSize: '11px', padding: '4px 10px', border: '1px solid rgba(255, 255, 255, 0.08)' }}
                                 >
-                                  <MessagesSquare size={12} style={{ color: '#a78bfa' }} /> Practice Mock Interview
+                                  <MessagesSquare size={12} style={{ color: 'var(--color-purple)' }} /> Practice Mock Interview
                                 </Link>
                                 <Link
                                   to={`/pipeline/cv-match?resumeId=${r.id}`}
@@ -509,11 +511,13 @@ export default function CandidateDashboard() {
                   return (
                     <div
                       key={app.id || app.job_id}
+                      className="glass-card card-interactive"
                       style={{
                         padding: '12px 14px',
                         borderRadius: 'var(--radius-sm)',
                         border: '1px solid var(--color-border-subtle)',
                         background: 'var(--color-bg-elevated)',
+                        backdropFilter: 'var(--material-blur)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
@@ -539,7 +543,7 @@ export default function CandidateDashboard() {
                           borderRadius: 'var(--radius-full)',
                           background: app.status === 'withdrawn' ? 'var(--color-danger-muted)' : 'var(--color-success-muted)',
                           color: app.status === 'withdrawn' ? 'var(--color-danger)' : 'var(--color-success)',
-                          border: `1px solid ${app.status === 'withdrawn' ? 'rgba(244, 63, 94, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`,
+                          border: `1px solid ${app.status === 'withdrawn' ? 'var(--color-danger-muted)' : 'var(--color-success-muted)'}`,
                           textTransform: 'capitalize'
                         }}>
                           {app.status || 'Under Review'}
@@ -632,14 +636,15 @@ export default function CandidateDashboard() {
                   return (
                     <div
                       key={job.id}
+                      className="glass-card card-interactive"
                       style={{
                         padding: '14px 16px',
                         borderRadius: 'var(--radius-md)',
                         border: '1px solid var(--color-border-subtle)',
                         background: 'var(--color-bg-elevated)',
+                        backdropFilter: 'var(--material-blur)',
                         transition: 'all var(--duration-normal) var(--ease)'
                       }}
-                      className="card-interactive"
                     >
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -647,14 +652,14 @@ export default function CandidateDashboard() {
                             width: 32,
                             height: 32,
                             borderRadius: 'var(--radius-sm)',
-                            background: 'linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2))',
-                            color: 'var(--color-primary-light, #93c5fd)',
+                            background: 'linear-gradient(135deg, var(--color-primary-muted) 0%, var(--color-purple-muted) 100%)',
+                            color: 'var(--color-primary-hover)',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
                             fontSize: '11px',
                             fontWeight: 800,
-                            border: '1px solid rgba(59, 130, 246, 0.3)',
+                            border: '1px solid var(--color-primary-muted)',
                             flexShrink: 0
                           }}>
                             {compInitials}
@@ -663,7 +668,7 @@ export default function CandidateDashboard() {
                             <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--color-fg)' }}>
                               {job.title}
                             </div>
-                            <div style={{ fontSize: '11px', color: 'var(--color-primary-light, #93c5fd)', fontWeight: 600, marginTop: 1 }}>
+                            <div style={{ fontSize: '11px', color: 'var(--color-primary-hover)', fontWeight: 600, marginTop: 1 }}>
                               {compName}
                             </div>
                           </div>
@@ -678,7 +683,7 @@ export default function CandidateDashboard() {
                             type="button"
                             onClick={() => navigate(`/pipeline/cv-match?jobId=${job.id}&role=${encodeURIComponent(job.job_role || job.title)}`)}
                             className="btn btn-ghost btn-sm"
-                            style={{ fontSize: '11px', padding: '4px 9px', color: 'var(--color-primary)', border: '1px solid rgba(59, 130, 246, 0.25)', borderRadius: 'var(--radius-md)', fontWeight: 600 }}
+                            style={{ fontSize: '11px', padding: '4px 9px', color: 'var(--color-primary)', border: '1px solid var(--color-primary-muted)', borderRadius: 'var(--radius-md)', fontWeight: 600 }}
                             title="Evaluate your CV fit score for this position"
                           >
                             <Sparkles size={11} /> Evaluate Fit
@@ -723,8 +728,8 @@ export default function CandidateDashboard() {
           <div
             className="card"
             style={{
-              background: 'linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.8) 100%)',
-              border: '1px solid rgba(59, 130, 246, 0.3)',
+              background: 'var(--color-bg-elevated)',
+              border: '1px solid var(--color-primary-muted)',
               borderRadius: 'var(--radius-lg)',
               padding: 'var(--p-space-5)'
             }}
@@ -745,28 +750,28 @@ export default function CandidateDashboard() {
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <Sparkles size={13} style={{ color: '#38bdf8' }} /> 3-Pillar CV Match
+                <Sparkles size={13} style={{ color: 'var(--color-info)' }} /> 3-Pillar CV Match
               </Link>
               <Link
                 to="/candidate/interview"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <MessagesSquare size={13} style={{ color: '#a78bfa' }} /> Mock Interview
+                <MessagesSquare size={13} style={{ color: 'var(--color-purple)' }} /> Mock Interview
               </Link>
               <Link
                 to="/candidate/skill-gap"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <Target size={13} style={{ color: '#34d399' }} /> Skill Gap Sandbox
+                <Target size={13} style={{ color: 'var(--color-success)' }} /> Skill Gap Sandbox
               </Link>
               <Link
                 to="/pipeline/progress"
                 className="btn btn-ghost btn-sm"
                 style={{ fontSize: '11px', padding: '8px 10px', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'flex-start', border: '1px solid rgba(255, 255, 255, 0.08)' }}
               >
-                <ArrowRight size={13} style={{ color: '#fbbf24' }} /> Roadmap Tracker
+                <ArrowRight size={13} style={{ color: 'var(--color-warning)' }} /> Roadmap Tracker
               </Link>
             </div>
           </div>

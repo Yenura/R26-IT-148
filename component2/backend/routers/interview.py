@@ -4,6 +4,7 @@ Handles HTTP endpoints for interview management
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Request
+from auth_guard import require_identity, require_owner_or_service
 from typing import List, Dict, Optional
 from starlette.concurrency import run_in_threadpool
 from slowapi import Limiter
@@ -25,7 +26,8 @@ from models.schemas import (
     ErrorResponse, DifficultyEnum, QuestionTypeEnum
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
-from db import save_session, get_session, save_result, get_result, update_session_status, get_seen_question_ids, link_candidate_application
+from services.qg_engine import describe_qg_backend
+from db import save_session, get_session, save_result, get_result, get_result_by_session, update_session_status, get_seen_question_ids, link_candidate_application
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
@@ -100,6 +102,7 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
     sandbox_wrapper = (
         "import sys as _sys\n"
         "from io import StringIO\n"
+        "_sys.setrecursionlimit(100000)\n"
         "_blocked = {\n"
         "    'os','subprocess','shutil','socket','pathlib','ctypes',\n"
         "    'multiprocessing','threading','signal','inspect','importlib',\n"
@@ -109,7 +112,14 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
         "    'smtplib','ftplib','telnetlib','xmlrpc',\n"
         "    'webbrowser','code','codeop','compileall',\n"
         "    '_thread','dummy_thread',\n"
+        "    'sys',\n"
         "}\n"
+        "# Deny file access and code generation even without imports:\n"
+        "# 'sys' is blocked above so sys.modules['os'] is unreachable.\n"
+        "import builtins as _bi\n"
+        "for _n in ('open','eval','exec','compile','input','exit','quit','help',\n"
+        "           'globals','locals','vars','dir','memoryview','breakpoint'):\n"
+        "    _bi.__dict__.pop(_n, None)\n"
         "_real_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__\n"
         "def _safe_import(name, *a, **kw):\n"
         "    top = name.split('.')[0]\n"
@@ -168,16 +178,20 @@ def get_services():
 
 @router.post("/start", response_model=InterviewSession)
 @limiter.limit("10/minute")
-async def start_interview(request: Request, interview_request: InterviewRequest, services: Dict = Depends(get_services)):
+async def start_interview(request: Request, interview_request: InterviewRequest, services: Dict = Depends(get_services), identity: dict = Depends(require_identity)):
     """
     Create and start a new interview session
-    
+
     Args:
         request: Interview creation request with candidate_id, job_role, skills, num_questions
-        
+
     Returns:
         Interview session with questions
     """
+    # Candidates are bound to their own identity: a spoofed candidate_id
+    # in the body is replaced, never trusted.
+    if identity.get("role") == "candidate":
+        interview_request.candidate_id = identity.get("sub", "") or interview_request.candidate_id
     try:
         interview_service = services["interview_service"]
         
@@ -290,7 +304,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
 
 @router.post("/submit", response_model=InterviewScoreResult)
 @limiter.limit("5/minute")
-async def submit_answers(request: Request, submission: InterviewSubmitRequest, services: Dict = Depends(get_services)):
+async def submit_answers(request: Request, submission: InterviewSubmitRequest, services: Dict = Depends(get_services), identity: dict = Depends(require_identity)):
     """
     Submit answers and get evaluation results
     
@@ -307,6 +321,40 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
         session = await get_session(session_id)
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
+
+        # Bind the submit to the session owner's identity: a spoofed
+        # candidate_id in the body can neither steal nor poison a session.
+        require_owner_or_service(identity, session.get("candidate_id", ""))
+
+        # Idempotent re-submit: a completed session returns its stored
+        # result instead of re-running evaluation (also closes the
+        # double-submit race when timers and clicks fire together).
+        if session.get("status") == "completed":
+            existing = await get_result_by_session(session_id)
+            if existing:
+                prox = existing.get("proctoring") if isinstance(existing, dict) else None
+                return InterviewScoreResult(
+                    interview_id=existing.get("interview_id", ""),
+                    candidate_id=existing.get("candidate_id", ""),
+                    session_id=existing.get("session_id", session_id),
+                    job_role=existing.get("job_role", ""),
+                    mcq_score=existing.get("mcq_score", 0),
+                    descriptive_score=existing.get("descriptive_score", 0),
+                    coding_score=existing.get("coding_score", 0),
+                    interview_score=existing.get("interview_score", 0),
+                    grade=existing.get("grade", "Average"),
+                    mcq_total=existing.get("mcq_total", 0),
+                    mcq_correct=existing.get("mcq_correct", 0),
+                    descriptive_total=existing.get("descriptive_total", 0),
+                    coding_total=existing.get("coding_total", 0),
+                    coding_tests_passed=existing.get("coding_tests_passed", 0),
+                    weak_topics=existing.get("weak_topics", []),
+                    weights_used=existing.get("weights_used", {}),
+                    created_at=existing.get("created_at"),
+                    integrity_score=(prox.get("integrity_score") if isinstance(prox, dict)
+                                     else existing.get("integrity_score")),
+                    proctoring=prox,
+                )
         
         # Enrich answer payload with question_type and correctness
         question_map = {
@@ -503,7 +551,11 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
             req = urllib.request.Request(
                 f"{c0_url}/api/v1/resume/interview-scores",
                 data=payload,
-                headers={"Content-Type": "application/json"},
+                headers={
+                    "Content-Type": "application/json",
+                    # Forward the candidate's own token so C0 can authorize the sync.
+                    "Authorization": request.headers.get("authorization", ""),
+                },
                 method="POST"
             )
             def _send_c0():
@@ -560,7 +612,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
 @router.post("/code/run")
 @limiter.limit("10/minute")
-async def run_candidate_code(request: Request, payload: CodeRunRequest):
+async def run_candidate_code(request: Request, payload: CodeRunRequest, identity: dict = Depends(require_identity)):
     """
     Run candidate code against the question's test cases without scoring.
     Uses the exact same sandbox as submit, so what the candidate sees in
@@ -597,7 +649,7 @@ async def run_candidate_code(request: Request, payload: CodeRunRequest):
 
 
 @router.get("/result/{interview_id}", response_model=EvaluationResponse)
-async def fetch_interview_result(interview_id: str, services: Dict = Depends(get_services)):
+async def fetch_interview_result(interview_id: str, services: Dict = Depends(get_services), identity: dict = Depends(require_identity)):
     """
     Get evaluation result for an interview
     
@@ -612,19 +664,23 @@ async def fetch_interview_result(interview_id: str, services: Dict = Depends(get
         if not result:
             raise HTTPException(status_code=404, detail="Interview result not found")
 
+        require_owner_or_service(identity, result.get("candidate_id", ""))
+
         return EvaluationResponse(
             success=True,
             message="Interview result retrieved",
             data=result
         )
-        
+
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error retrieving result: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/session/{session_id}", response_model=Dict)
-async def fetch_interview_session(session_id: str):
+async def fetch_interview_session(session_id: str, identity: dict = Depends(require_identity)):
     """
     Get interview session by ID
     
@@ -639,6 +695,8 @@ async def fetch_interview_session(session_id: str):
         if not session:
             raise HTTPException(status_code=404, detail="Interview session not found")
 
+        require_owner_or_service(identity, session.get("candidate_id", ""))
+
         return {
             "success": True,
             "session": session
@@ -651,7 +709,7 @@ async def fetch_interview_session(session_id: str):
 
 
 @router.get("/proctoring/{interview_id}")
-async def fetch_proctoring_analysis(interview_id: str):
+async def fetch_proctoring_analysis(interview_id: str, identity: dict = Depends(require_identity)):
     """
     Get proctoring analysis for an interview result.
     Returns feature vectors + computed non-verbal/speech/confidence analysis.
@@ -660,6 +718,7 @@ async def fetch_proctoring_analysis(interview_id: str):
         result = await get_result(interview_id)
         if not result:
             raise HTTPException(status_code=404, detail="Interview result not found")
+        require_owner_or_service(identity, result.get("candidate_id", ""))
         proctoring = result.get("proctoring")
         if not proctoring:
             raise HTTPException(status_code=404, detail="No proctoring data available (practice interview or legacy session)")
@@ -792,6 +851,7 @@ async def health_check(services: Dict = Depends(get_services)):
             "status": "healthy",
             "available_jobs": available_jobs,
             "questions_in_bank": question_count,
+            "qg_backend": describe_qg_backend(),
             "component": "Component 2: AI Interview System",
             "port": 8002
         }

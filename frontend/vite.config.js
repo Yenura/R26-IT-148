@@ -22,13 +22,14 @@ export default defineConfig({
     chunkSizeWarningLimit: 800,
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('recharts')) return 'vendor-charts'
-            if (id.includes('lucide-react')) return 'vendor-icons'
-            if (id.includes('axios')) return 'vendor-utils'
-            return 'vendor'
-          }
+        // Only split packages the app actually imports (verified by grep:
+        // three/fiber/drei/framer-motion/gsap/remotion have zero imports
+        // in src). Listing unimported packages here forces Rollup to emit
+        // dead ~180KB+ chunks, so they stay out.
+        manualChunks: {
+          'vendor-icons': ['lucide-react'],
+          'vendor-charts': ['recharts'],
+          'vendor-utils': ['axios'],
         }
       }
     }

@@ -141,7 +141,7 @@ export default function ApplicantPipeline() {
 
       {/* Applicant Rankings or Raw List */}
       {rankings.length > 0 ? (
-        <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--p-space-6)' }}>
+        <div className="card glass-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--p-space-6)' }}>
           <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Trophy size={18} style={{ color: 'var(--color-primary)' }} /> Ranked Applicant Standings
@@ -186,7 +186,7 @@ export default function ApplicantPipeline() {
                           height: 28,
                           borderRadius: 'var(--radius-sm)',
                           background: r.passed_hard_filter ? (i < 3 ? 'var(--color-primary)' : 'var(--color-border-subtle)') : 'var(--color-danger-muted)',
-                          color: r.passed_hard_filter ? (i < 3 ? '#fff' : 'var(--color-fg)') : 'var(--color-danger)',
+                          color: r.passed_hard_filter ? (i < 3 ? 'var(--p-white)' : 'var(--color-fg)') : 'var(--color-danger)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'center',
@@ -214,7 +214,7 @@ export default function ApplicantPipeline() {
                       </td>
                       <td>
                         <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
-                          <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal).toFixed(0)}%</span> / <span title="Education Match" style={{ color: '#a855f7' }}>{Number(sEduVal).toFixed(0)}%</span>
+                          <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal).toFixed(0)}%</span> / <span title="Education Match" style={{ color: 'var(--color-purple)' }}>{Number(sEduVal).toFixed(0)}%</span>
                         </div>
                       </td>
                       <td>
@@ -237,6 +237,11 @@ export default function ApplicantPipeline() {
                             {r.filter_fail_reason || 'Disqualified'}
                           </span>
                         )}
+                        {r.integrity_score != null && (
+                          <span title={`Proctored integrity score: ${Math.round(r.integrity_score)}%`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)' }}>
+                            <Shield size={11} /> {Math.round(r.integrity_score)}%
+                          </span>
+                        )}
                       </td>
                       <td style={{ textAlign: 'right' }}>
                         <button
@@ -257,7 +262,7 @@ export default function ApplicantPipeline() {
         </div>
       ) : applicants.length > 0 ? (
         /* Unranked Applicants List */
-        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+        <div className="card glass-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
               <Users size={18} style={{ color: 'var(--color-primary)' }} /> Applicants in Pipeline ({applicants.length})
@@ -407,7 +412,7 @@ export default function ApplicantPipeline() {
 
             {/* Weak Topics */}
             {detail.weak_topics?.length > 0 && (
-              <div style={{ padding: 12, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(239,68,68,0.2)', marginBottom: 16 }}>
+              <div style={{ padding: 12, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,69,58,0.2)', marginBottom: 16 }}>
                 <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--color-danger)', marginBottom: 4 }}>Weak Areas Identified</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                   {detail.weak_topics.map((t, i) => (
@@ -532,8 +537,8 @@ export default function ApplicantPipeline() {
                 {detail.answers.map((ans, idx) => {
                   const isWrong = ans.question_type === 'MCQ' && ans.is_correct === false
                   const isCodingWrong = ans.question_type === 'Coding' && (ans.code_score || 0) < 50
-                  const highlight = isWrong || isCodingWrong ? 'rgba(239,68,68,0.08)' : 'var(--color-bg-elevated)'
-                  const borderColor = isWrong || isCodingWrong ? 'rgba(239,68,68,0.3)' : 'var(--color-border-subtle)'
+                  const highlight = isWrong || isCodingWrong ? 'rgba(255,69,58,0.08)' : 'var(--color-bg-elevated)'
+                  const borderColor = isWrong || isCodingWrong ? 'rgba(255,69,58,0.3)' : 'var(--color-border-subtle)'
                   return (
                     <div key={ans.question_id || idx} style={{ padding: 12, background: highlight, borderRadius: 'var(--radius-sm)', border: `1px solid ${borderColor}` }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>

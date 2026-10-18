@@ -30,7 +30,18 @@ from backend.main import app
 
 @pytest.fixture
 def client():
-    with TestClient(app) as test_client:
+    import datetime
+    from jose import jwt
+    token = jwt.encode(
+        {
+            "sub": "test-candidate-1",
+            "role": "candidate",
+            "exp": datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1),
+        },
+        os.environ.get("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod"),
+        algorithm="HS256",
+    )
+    with TestClient(app, headers={"Authorization": f"Bearer {token}"}) as test_client:
         yield test_client
 
 

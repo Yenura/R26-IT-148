@@ -24,7 +24,7 @@ export default class ErrorBoundary extends Component {
             An unexpected error occurred. Please try refreshing the page.
           </p>
           {this.state.error && (
-            <div style={{ textAlign: 'left', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', borderRadius: 8, padding: 12, marginBottom: 20, fontSize: '12px', color: '#f87171', overflowX: 'auto', fontFamily: 'monospace' }}>
+            <div style={{ textAlign: 'left', background: 'rgba(255, 69, 58, 0.1)', border: '1px solid rgba(255, 69, 58, 0.3)', borderRadius: 8, padding: 12, marginBottom: 20, fontSize: '12px', color: '#f87171', overflowX: 'auto', fontFamily: 'monospace' }}>
               <strong>Error:</strong> {String(this.state.error?.message || this.state.error)}
               {this.state.error?.stack && (
                 <pre style={{ marginTop: 8, fontSize: '11px', whiteSpace: 'pre-wrap', maxHeight: 150, overflowY: 'auto' }}>

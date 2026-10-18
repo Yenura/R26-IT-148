@@ -4,6 +4,75 @@ from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
 
+# ── Email hygiene ───────────────────────────────────────────────────
+# Format is enforced everywhere an email is collected; deliverability
+# (disposable block + MX lookup) only at registration so login and
+# password-reset can never lock out — or enumerate — existing users.
+_DISPOSABLE_DOMAINS = frozenset({
+    "mailinator.com", "guerrillamail.com", "guerrillamail.org", "10minutemail.com",
+    "10minutemail.net", "tempmail.com", "temp-mail.org", "throwawaymail.com",
+    "yopmail.com", "yopmail.fr", "yopmail.net", "sharklasers.com", "grr.la",
+    "guerrillamailblock.com", "pokemail.net", "spam4.me", "dispostable.com",
+    "maildrop.cc", "harakirimail.com", "trashmail.com", "trashmail.net",
+    "trashmail.org", "wegwerfmail.de", "wegwerfmail.net", "wegwerfmail.org",
+    "getnada.com", "nada.ltd", "mohmal.com", "emailondeck.com", "fakeinbox.com",
+    "mailnesia.com", "mintemail.com", "mytemp.email", "tempail.com", "tmpmail.org",
+    "moakt.com", "tmail.ws", "dropmail.me", "emailfake.com", "fakemail.net",
+    "inboxkitten.com", "spamgourmet.com", "33mail.com", "e4ward.com",
+})
+
+_EMAIL_RE = re.compile(r'^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$')
+
+
+def check_email_format(v: str) -> str:
+    v = v.strip().lower()
+    if len(v) > 254:
+        raise ValueError("Email is too long")
+    if not _EMAIL_RE.match(v):
+        raise ValueError("Invalid email format")
+    local, _, domain = v.partition("@")
+    if not local or local.startswith(".") or local.endswith(".") or ".." in local:
+        raise ValueError("Invalid email format")
+    if not domain or ".." in domain or domain[0] in ".-" or domain[-1] in ".-":
+        raise ValueError("Invalid email format")
+    return v
+
+
+def check_email_domain(v: str) -> str:
+    """Block disposable domains and verify the domain accepts mail (MX/A).
+    Fails open when DNS itself is unreachable so registration stays available."""
+    domain = v.partition("@")[2]
+    if domain in _DISPOSABLE_DOMAINS:
+        raise ValueError("Disposable email addresses are not allowed")
+    try:
+        import dns.resolver
+        import dns.exception
+        try:
+            answers = dns.resolver.resolve(domain, "MX", lifetime=5)
+            if len(answers) > 0:
+                return v
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+            pass
+        try:
+            answers = dns.resolver.resolve(domain, "A", lifetime=5)
+            if len(answers) > 0:
+                return v
+        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN):
+            pass
+        raise ValueError("Email domain does not accept mail")
+    except ValueError:
+        raise
+    except Exception:
+        return v
+
+
+def check_website(v: str) -> str:
+    v = (v or "").strip()
+    if v and not re.match(r'^https?://[^\s/$.?#].[^\s]*$', v, re.IGNORECASE):
+        raise ValueError("Website must start with http:// or https://")
+    return v
+
+
 # ── Auth ────────────────────────────────────────────────────────
 class CompanyRegister(BaseModel):
     company_name: str = Field(..., min_length=2, max_length=200)
@@ -15,10 +84,12 @@ class CompanyRegister(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
-        v = v.strip().lower()
-        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
-            raise ValueError("Invalid email format")
-        return v
+        return check_email_domain(check_email_format(v))
+
+    @field_validator("website")
+    @classmethod
+    def validate_website(cls, v: str) -> str:
+        return check_website(v)
 
 
 class CandidateRegister(BaseModel):
@@ -29,10 +100,7 @@ class CandidateRegister(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
-        v = v.strip().lower()
-        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
-            raise ValueError("Invalid email format")
-        return v
+        return check_email_domain(check_email_format(v))
 
 
 class LoginRequest(BaseModel):
@@ -42,10 +110,7 @@ class LoginRequest(BaseModel):
     @field_validator("email")
     @classmethod
     def validate_email(cls, v: str) -> str:
-        v = v.strip().lower()
-        if not re.match(r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$', v):
-            raise ValueError("Invalid email format")
-        return v
+        return check_email_format(v)
 
 
 class Token(BaseModel):
@@ -73,9 +138,30 @@ class ProfileUpdate(BaseModel):
     industry: str | None = Field(default=None, max_length=200)
     website: str | None = Field(default=None, max_length=500)
 
+    @field_validator("website")
+    @classmethod
+    def validate_website(cls, v: str | None) -> str | None:
+        if v is None:
+            return v
+        return check_website(v)
+
 
 class PasswordChange(BaseModel):
     current_password: str = Field(..., max_length=200)
+    new_password: str = Field(..., min_length=6, max_length=200)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str = Field(..., max_length=200)
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        return check_email_format(v)
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=20, max_length=200)
     new_password: str = Field(..., min_length=6, max_length=200)
 
 
@@ -364,6 +450,7 @@ class PredictionOut(BaseModel):
     resume_id: str
     candidate_id: str
     job_id: str = ""
+    target_role: str = ""
     predicted_role: str = ""
     role_confidence: float = 0
     semantic_score: float = 0
@@ -391,6 +478,8 @@ class ApplicationOut(BaseModel):
     cv_score: float | None = None
     overall_score: float | None = None
     hire_probability: float | None = None
+    integrity_score: float | None = None
+    integrity_adjusted: bool = False
     skills: list[str] = []
 
 

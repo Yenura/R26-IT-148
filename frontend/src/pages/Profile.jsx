@@ -9,6 +9,7 @@ import {
   authUploadAvatar, uResumeList
 } from '../api'
 import PageHeader from '../components/PageHeader'
+import { avatarSrc } from '../utils'
 
 export default function Profile() {
   const navigate = useNavigate()
@@ -94,7 +95,7 @@ export default function Profile() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
   const setPw = (k) => (e) => setPwForm((f) => ({ ...f, [k]: e.target.value }))
 
-  if (!profile) return <div className="card" style={{ padding: 40, textAlign: 'center' }}>
+  if (!profile) return <div className="card glass-card" style={{ padding: 40, textAlign: 'center' }}>
     <div className="shimmer" style={{ height: 20, width: 200, margin: '0 auto 12px', borderRadius: 6 }} />
     <div className="shimmer" style={{ height: 14, width: 140, margin: '0 auto', borderRadius: 6 }} />
   </div>
@@ -109,7 +110,7 @@ export default function Profile() {
       />
 
       {/* Avatar & Header Card */}
-      <div className="card" style={{ padding: 'var(--p-space-5)', display: 'flex', alignItems: 'center', gap: 20, marginBottom: 'var(--p-space-5)' }}>
+      <div className="card glass-card" style={{ padding: 'var(--p-space-5)', display: 'flex', alignItems: 'center', gap: 20, marginBottom: 'var(--p-space-5)' }}>
         <div
           onClick={() => fileRef.current?.click()}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current?.click() } }}
@@ -119,9 +120,9 @@ export default function Profile() {
           style={{ cursor: 'pointer', position: 'relative', flexShrink: 0 }}
           title="Click to update avatar"
         >
-          {profile.avatar_url ? (
+          {avatarSrc(profile.avatar_url) ? (
             <img
-              src={profile.avatar_url}
+              src={avatarSrc(profile.avatar_url)}
               alt="Avatar"
               style={{ width: 68, height: 68, borderRadius: 'var(--radius-full)', objectFit: 'cover', border: '2px solid var(--color-border)' }}
             />
@@ -141,7 +142,7 @@ export default function Profile() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
+            color: 'var(--p-white)',
             border: '2px solid var(--card-bg)'
           }}>
             <Upload size={12} />
@@ -163,7 +164,7 @@ export default function Profile() {
       </div>
 
       {/* Profile Form */}
-      <form onSubmit={saveProfile} className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+      <form onSubmit={saveProfile} className="card glass-card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
         <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
           <User size={16} style={{ color: 'var(--color-primary)' }} /> Account Details
         </h3>
@@ -191,7 +192,7 @@ export default function Profile() {
 
       {/* Resume Data Summary */}
       {resumeData && (
-        <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+        <div className="card glass-card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
           <h3 style={{ margin: '0 0 12px 0', fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
             <FileText size={16} style={{ color: 'var(--color-primary)' }} /> Active Resume Metadata
           </h3>
@@ -217,7 +218,7 @@ export default function Profile() {
       )}
 
       {/* Password Change Card */}
-      <form onSubmit={changePassword} className="card" style={{ padding: 'var(--p-space-5)' }}>
+      <form onSubmit={changePassword} className="card glass-card" style={{ padding: 'var(--p-space-5)' }}>
         <h3 style={{ margin: '0 0 16px 0', fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
           <Lock size={16} style={{ color: 'var(--color-primary)' }} /> Security & Password
         </h3>

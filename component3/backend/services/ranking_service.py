@@ -66,7 +66,12 @@ class RankingService:
 
     def _build_features(self, c, job):
         if c.S_edu is not None and c.S_exp is not None and c.S_skill is not None:
-            s_edu, s_exp, s_skill = c.S_edu, c.S_exp, c.S_skill
+            # C1 emits 0–100; the engine works in 0–1. Normalize defensively
+            # so raw C1 scores can never blow through hard-filter thresholds.
+            def _unit(v):
+                v = float(v)
+                return round(v / 100.0, 4) if v > 1 else v
+            s_edu, s_exp, s_skill = _unit(c.S_edu), _unit(c.S_exp), _unit(c.S_skill)
         else:
             eng = CSSEngine(job)
             s_edu = eng.s_edu(c.edu_level, c.edu_relevance)

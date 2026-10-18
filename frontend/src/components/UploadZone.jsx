@@ -48,7 +48,7 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
             textAlign: 'center',
             transition: 'all var(--duration-normal) var(--ease)',
             cursor: 'pointer',
-            boxShadow: dragOver ? '0 0 24px rgba(99, 102, 241, 0.2)' : 'var(--shadow-sm)'
+            boxShadow: dragOver ? '0 0 24px rgba(10, 132, 255, 0.2)' : 'var(--shadow-sm)'
           }}
         >
           <div style={{
@@ -61,8 +61,8 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto var(--p-space-4)',
-            border: '1px solid rgba(99, 102, 241, 0.25)',
-            boxShadow: '0 4px 16px rgba(99, 102, 241, 0.2)'
+            border: '1px solid rgba(10, 132, 255, 0.25)',
+            boxShadow: '0 4px 16px rgba(10, 132, 255, 0.2)'
           }}>
             <Upload size={26} />
           </div>
@@ -101,7 +101,7 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: '1px solid rgba(99, 102, 241, 0.25)'
+              border: '1px solid rgba(10, 132, 255, 0.25)'
             }}>
               <FileText size={22} />
             </div>
@@ -121,7 +121,7 @@ export default function UploadZone({ onFileSelect, uploading, selectedFile, onRe
                 Parsing & Extracting...
               </span>
             ) : (
-              <span className="chip" style={{ fontSize: '11px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span className="chip" style={{ fontSize: '11px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(48, 209, 88, 0.3)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 <CheckCircle2 size={13} /> Uploaded
               </span>
             )}

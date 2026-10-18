@@ -279,7 +279,7 @@ export default function SkillGap() {
       {activeTab === 'applied' && (
         <div>
           {loadingApplied ? (
-            <div className="card" style={{ padding: 48, textAlign: 'center' }}>
+            <div className="card glass-card" style={{ padding: 48, textAlign: 'center' }}>
               <RefreshCw size={28} className="spin" style={{ color: 'var(--color-primary)', margin: '0 auto 12px' }} />
               <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 600, color: 'var(--color-fg)' }}>Analyzing applied jobs and interview scores...</div>
               <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 4 }}>Connecting resume qualifications with technical interview evaluations</div>
@@ -317,7 +317,7 @@ export default function SkillGap() {
                           fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: 'var(--radius-full)',
                           background: rep.interview_completed ? 'var(--color-success-muted)' : 'var(--color-warning-muted)',
                           color: rep.interview_completed ? 'var(--color-success)' : 'var(--color-warning)',
-                          border: `1px solid ${rep.interview_completed ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
+                          border: `1px solid ${rep.interview_completed ? 'rgba(48, 209, 88, 0.3)' : 'rgba(245, 158, 11, 0.3)'}`
                         }}>
                           {rep.interview_completed ? '✓ Interviewed' : 'Applied'}
                         </span>
@@ -341,7 +341,7 @@ export default function SkillGap() {
 
               {/* Selected Job Report */}
               {selectedReport && (
-                <div className="card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
+                <div className="card glass-card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
                   {/* Header & Scores */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16, paddingBottom: 18, borderBottom: '1px solid var(--color-border-subtle)', marginBottom: 20 }}>
                     <div>
@@ -394,7 +394,7 @@ export default function SkillGap() {
                                 {hasInt ? `${Math.round(Number(selectedReport.interview_score))}%` : 'Pending'}
                               </div>
                             </div>
-                            <div style={{ textAlign: 'center', padding: '8px 14px', background: (hasCV && hasInt) ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${(hasCV && hasInt) ? 'rgba(99, 102, 241, 0.4)' : 'var(--color-border)'}` }}>
+                            <div style={{ textAlign: 'center', padding: '8px 14px', background: (hasCV && hasInt) ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${(hasCV && hasInt) ? 'rgba(10, 132, 255, 0.4)' : 'var(--color-border)'}` }}>
                               <div style={{ fontSize: '10px', fontWeight: 700, color: (hasCV && hasInt) ? 'var(--color-primary)' : 'var(--color-fg-muted)', textTransform: 'uppercase' }}>
                                 {totalLabel}
                               </div>
@@ -429,7 +429,7 @@ export default function SkillGap() {
                           Your CV Match score is recorded! Complete the AI Technical Interview to unlock your full combined score and top ranking.
                         </span>
                       </div>
-                      <Link to={`/candidate/interview?role=${selectedReport.job_title}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: '#fff', fontWeight: 700, whiteSpace: 'nowrap' }}>
+                      <Link to={`/candidate/interview?role=${selectedReport.job_title}&jobId=${selectedReport.job_id}`} className="btn btn-sm" style={{ background: 'var(--color-warning)', color: 'var(--p-white)', fontWeight: 700, whiteSpace: 'nowrap' }}>
                         Start Technical Assessment
                       </Link>
                     </div>
@@ -440,8 +440,8 @@ export default function SkillGap() {
                       padding: '16px 20px',
                       borderRadius: 'var(--radius-lg)',
                       background: 'var(--color-primary-muted)',
-                      border: '1px solid rgba(99, 102, 241, 0.4)',
-                      boxShadow: '0 0 20px -4px rgba(99, 102, 241, 0.25)',
+                      border: '1px solid rgba(10, 132, 255, 0.4)',
+                      boxShadow: '0 0 20px -4px rgba(10, 132, 255, 0.25)',
                       marginBottom: 20,
                       display: 'flex',
                       justifyContent: 'space-between',
@@ -463,7 +463,7 @@ export default function SkillGap() {
 
                   {/* Strengths */}
                   {selectedReport.strengths?.length > 0 && (
-                    <div style={{ marginBottom: 20, padding: 16, background: 'var(--color-success-muted)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(16, 185, 129, 0.25)' }}>
+                    <div style={{ marginBottom: 20, padding: 16, background: 'var(--color-success-muted)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(48, 209, 88, 0.25)' }}>
                       <h3 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <CheckCircle2 size={16} /> Verified Strengths ({selectedReport.strengths.length})
                       </h3>
@@ -473,7 +473,7 @@ export default function SkillGap() {
                             padding: '10px 14px',
                             background: 'var(--color-bg-elevated)',
                             borderRadius: 'var(--radius-sm)',
-                            border: '1px solid rgba(16, 185, 129, 0.2)',
+                            border: '1px solid rgba(48, 209, 88, 0.2)',
                             borderLeft: '4px solid var(--color-success)'
                           }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -489,7 +489,7 @@ export default function SkillGap() {
 
                   {/* Weaknesses with Left Colored Border */}
                   {selectedReport.weaknesses?.length > 0 && (
-                    <div style={{ marginBottom: 20, padding: 16, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(244, 63, 94, 0.25)' }}>
+                    <div style={{ marginBottom: 20, padding: 16, background: 'var(--color-danger-muted)', borderRadius: 'var(--radius-lg)', border: '1px solid rgba(255, 69, 58, 0.25)' }}>
                       <h3 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                         <AlertCircle size={16} /> Identified Skill Deficits ({selectedReport.weaknesses.length})
                       </h3>
@@ -501,7 +501,7 @@ export default function SkillGap() {
                               padding: '10px 14px',
                               background: 'var(--color-bg-elevated)',
                               borderRadius: 'var(--radius-sm)',
-                              border: '1px solid rgba(244, 63, 94, 0.2)',
+                              border: '1px solid rgba(255, 69, 58, 0.2)',
                               borderLeft: `4px solid ${isCrit ? 'var(--color-danger)' : 'var(--color-warning)'}`
                             }}>
                               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -556,8 +556,8 @@ export default function SkillGap() {
       {/* TAB 2: EXPLORER & WHAT-IF SIMULATOR */}
       {activeTab === 'explorer' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div className="card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+          <div className="card glass-card" style={{ padding: 'var(--p-space-6)', borderRadius: 'var(--radius-xl)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
               <div>
                 <h3 style={{ fontSize: 'var(--p-text-base)', fontWeight: 800, color: 'var(--color-fg)', margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Building2 size={18} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
@@ -846,7 +846,7 @@ export default function SkillGap() {
                               fontSize: '11px', padding: '4px 10px',
                               background: isAdded ? 'var(--color-success-muted)' : 'var(--color-danger-muted)',
                               color: isAdded ? 'var(--color-success)' : 'var(--color-danger)',
-                              border: `1px solid ${isAdded ? 'rgba(16, 185, 129, 0.4)' : 'rgba(244, 63, 94, 0.3)'}`,
+                              border: `1px solid ${isAdded ? 'rgba(48, 209, 88, 0.4)' : 'rgba(255, 69, 58, 0.3)'}`,
 fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4,
                               transition: 'transform 0.15s ease, box-shadow 0.15s ease',
                             }}
@@ -865,25 +865,13 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
 
                 {/* Present Verified Skills + Add Input */}
                 <div style={{ padding: 16, background: 'var(--color-bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
-                    <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
-                      <CheckCircle2 size={15} /> Simulated Acquired Skills ({simulatedSkills.length})
-                    </h4>
-                    {simulatedSkills.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => setSimulatedSkills([])}
-                        className="btn btn-ghost btn-xs"
-                        style={{ fontSize: '10px', fontWeight: 600, color: 'var(--color-fg-muted)', padding: '2px 6px' }}
-                      >
-                        Clear All
-                      </button>
-                    )}
-                  </div>
-                  {simulatedSkills.length > 0 ? (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                      {[...new Set(simulatedSkills)].map((s, i) => (
-                        <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                  <h4 style={{ fontSize: 'var(--p-text-sm)', fontWeight: 700, marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-success)' }}>
+                    <CheckCircle2 size={15} /> Simulated Acquired Skills ({simulatedSkills.length})
+                  </h4>
+                    {simulatedSkills.length > 0 ? (
+                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+ {[...new Set(simulatedSkills)].map((s, i) => (
+                         <span key={`${s}-${i}`} className="chip" style={{ fontSize: '11px', padding: '4px 10px', background: 'var(--color-success-muted)', color: 'var(--color-success)', border: '1px solid rgba(48, 209, 88, 0.3)' }}>
                           {s}
                           <button onClick={() => removeSimSkill(s)} aria-label={`Remove ${s}`} style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: '0 0 0 4px', fontWeight: 800 }}>×</button>
                         </span>
@@ -922,11 +910,11 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                       <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Original Fit</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-fg)', fontFamily: 'var(--p-font-mono)' }}>{simulationResult.original_coverage}%</div>
                     </div>
-                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--color-success-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--color-success-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(48, 209, 88, 0.3)' }}>
                       <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase' }}>Simulated Fit</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-success)', fontFamily: 'var(--p-font-mono)' }}>{simulationResult.simulated_coverage}%</div>
                     </div>
-                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(99, 102, 241, 0.3)' }}>
+                    <div style={{ textAlign: 'center', padding: '12px 20px', background: 'var(--color-primary-muted)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(10, 132, 255, 0.3)' }}>
                       <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-primary)', textTransform: 'uppercase' }}>Net Gain</div>
                       <div style={{ fontSize: '1.5rem', fontWeight: 900, color: 'var(--color-primary)', fontFamily: 'var(--p-font-mono)' }}>+{simulationResult.coverage_improvement}%</div>
                     </div>
@@ -1007,8 +995,8 @@ fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center'
                       </h3>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                         {simulationResult.learning_plan.map((planItem, i) => (
-                          <div key={planItem.skill || i} style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 14 }}>
-                            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-full)', background: 'var(--color-primary)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
+<div key={planItem.skill || i} style={{ padding: 12, background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border-subtle)', display: 'flex', alignItems: 'center', gap: 14 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 'var(--radius-full)', background: 'var(--color-primary)', color: 'var(--p-white)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px', flexShrink: 0 }}>
                               {planItem.phase || i + 1}
                             </div>
                             <div>

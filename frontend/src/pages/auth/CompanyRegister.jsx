@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, Building2, ArrowLeft, Globe, Eye, EyeOff, Briefcase } from 'lucide-react'
-import { C0 } from '../../api'
+import { C0, clearApiCache } from '../../api'
+import { isValidEmail } from '../../utils'
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 
 const getErrorMessage = (err) => {
   const detail = err?.response?.data?.detail
@@ -36,9 +37,12 @@ export default function CompanyRegister() {
     if (!form.company_name.trim()) e.company_name = 'Company name is required'
     else if (form.company_name.trim().length < 2) e.company_name = 'Name must be at least 2 characters'
     if (!form.email.trim()) e.email = 'Email is required'
-    else if (!EMAIL_RE.test(form.email.trim())) e.email = 'Enter a valid email address'
+    else if (!isValidEmail(form.email.trim())) e.email = 'Enter a valid email address'
     if (!form.password) e.password = 'Password is required'
     else if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
+    if (form.website.trim() && !/^https?:\/\/[^\s/$.?#].[^\s]*$/i.test(form.website.trim())) {
+      e.website = 'Website must start with http:// or https://'
+    }
     setErrors(e)
     return Object.keys(e).length === 0
   }
@@ -57,6 +61,7 @@ export default function CompanyRegister() {
       }
       const r = await C0.post('/auth/register/company', payload)
       try { sessionStorage.clear() } catch {}
+      clearApiCache()
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'company')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -92,11 +97,11 @@ export default function CompanyRegister() {
             width: 48,
             height: 48,
             borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, var(--color-purple), #6366f1)',
+            background: 'linear-gradient(135deg, var(--color-purple), var(--color-primary))',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            color: '#fff',
+            color: 'var(--p-white)',
             boxShadow: 'var(--shadow-md)'
           }}>
             <Building2 size={24} />
@@ -120,11 +125,11 @@ export default function CompanyRegister() {
                 value={form.company_name}
                 onChange={set('company_name')}
                 placeholder="e.g. Acme Tech Inc."
-                style={{ paddingLeft: 36, borderColor: errors.company_name ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.company_name ? 'var(--color-danger)' : undefined }}
                 required
               />
             </div>
-            {errors.company_name && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.company_name}</p>}
+            {errors.company_name && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.company_name}</p>}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -137,11 +142,11 @@ export default function CompanyRegister() {
                 value={form.email}
                 onChange={set('email')}
                 placeholder="recruiter@acme.com"
-                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger)' : undefined }}
                 required
               />
             </div>
-            {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
+            {errors.email && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
           </div>
 
           <div style={{ marginBottom: 12 }}>
@@ -154,7 +159,7 @@ export default function CompanyRegister() {
                 value={form.password}
                 onChange={set('password')}
                 placeholder="Minimum 6 characters"
-                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger)' : undefined }}
                 required
               />
               <button
@@ -177,7 +182,7 @@ export default function CompanyRegister() {
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
+            {errors.password && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 20 }}>
@@ -203,9 +208,13 @@ export default function CompanyRegister() {
                   value={form.website}
                   onChange={set('website')}
                   placeholder="https://..."
-                  style={{ paddingLeft: 30 }}
+                  style={{
+                    paddingLeft: 30,
+                    borderColor: errors.website ? 'var(--color-danger)' : undefined
+                  }}
                 />
               </div>
+              {errors.website && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.website}</p>}
             </div>
           </div>
 

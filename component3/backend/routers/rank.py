@@ -7,10 +7,12 @@ import logging
 from datetime import datetime, timezone
 
 import requests
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from starlette.concurrency import run_in_threadpool
 from slowapi import Limiter
 from slowapi.util import get_remote_address
+
+from auth_guard import require_identity, require_owner_or_service
 
 from models.schemas import (RankRequest, RankWeightsRequest, RankedCandidate,
                             CandidateInput)
@@ -69,7 +71,7 @@ async def _fetch_skill_gap(c, job_role):
 
 @router.post("/rank/compute", summary="Compute CSS and rank candidates")
 @limiter.limit("20/minute")
-async def compute_rank(request: Request, payload: RankRequest):
+async def compute_rank(request: Request, payload: RankRequest, identity: dict = Depends(require_identity)):
     service = get_service()
     try:
         job, ranked = service.rank(
@@ -153,7 +155,7 @@ async def compute_rank(request: Request, payload: RankRequest):
 
 
 @router.get("/rank/results/{job_id}", summary="Fetch ranked list for a job")
-async def get_results(job_id: str, request: Request):
+async def get_results(job_id: str, request: Request, identity: dict = Depends(require_identity)):
     doc = await request.app.state.store.find_one("rankings", {"job_id": job_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Ranking not found")
@@ -162,7 +164,7 @@ async def get_results(job_id: str, request: Request):
 
 @router.post("/rank/weights", summary="Set employer scoring weights")
 @limiter.limit("20/minute")
-async def set_weights(payload: RankWeightsRequest, request: Request):
+async def set_weights(payload: RankWeightsRequest, request: Request, identity: dict = Depends(require_identity)):
     if payload.job_role not in get_service().roles():
         raise HTTPException(
             status_code=400,
@@ -180,7 +182,8 @@ async def set_weights(payload: RankWeightsRequest, request: Request):
 
 
 @router.get("/rank/explain/{candidate_id}", summary="Explain a candidate's ranking across jobs")
-async def explain_candidate(candidate_id: str, request: Request):
+async def explain_candidate(candidate_id: str, request: Request, identity: dict = Depends(require_identity)):
+    require_owner_or_service(identity, candidate_id)
     docs = await request.app.state.store.find_all("ranked_candidates", {"candidate_id": candidate_id})
     if not docs:
         raise HTTPException(status_code=404, detail="Candidate not ranked yet")
@@ -257,7 +260,7 @@ _PIPELINE_TTL = 15.0
 
 @router.get("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
 @router.post("/rank/pipeline/{job_id}", summary="Rank real applicants for a job")
-async def rank_pipeline(request: Request, job_id: str):
+async def rank_pipeline(request: Request, job_id: str, identity: dict = Depends(require_identity)):
     """Fetch real applicants from MongoDB, build candidate inputs, and rank them."""
     cached = _PIPELINE_CACHE.get(job_id)
     if cached and time.time() - cached[0] < _PIPELINE_TTL:
@@ -277,7 +280,7 @@ async def rank_pipeline(request: Request, job_id: str):
                 except Exception:
                     pass
                 client = motor.motor_asyncio.AsyncIOMotorClient(
-                    os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
+                    os.environ["MONGODB_URI"],
                     serverSelectionTimeoutMS=15000
                 )
                 db = client[os.getenv("DB_NAME", "HR")]
@@ -299,7 +302,7 @@ async def rank_pipeline(request: Request, job_id: str):
             job = await db.jobs.find_one({"_id": job_id})
             
         job_title = job.get("title", "Software Engineer") if job else "Software Engineer"
-        raw_role = job.get("job_role") or job_title
+        raw_role = (job.get("job_role") if job else None) or job_title
         job_role = _normalize_role_match(raw_role)
         service = get_service()
         supported_roles = service.roles()
@@ -516,6 +519,21 @@ async def rank_pipeline(request: Request, job_id: str):
             else:
                 css = 0.50
 
+            # Proctored-integrity discount, mirroring the C0 hiring signal:
+            # factor = 0.70 + 0.30 * (integrity / 100), so perfect integrity
+            # leaves the score untouched and missing data skips discounting.
+            integ_raw = (latest_score.get("integrity_score")
+                         if isinstance(latest_score, dict) else None)
+            if integ_raw is None and isinstance(latest_score, dict):
+                integ_raw = (latest_score.get("proctoring") or {}).get("integrity_score")
+            try:
+                integ_val = (round(max(0.0, min(100.0, float(integ_raw))), 1)
+                             if integ_raw is not None else None)
+            except (TypeError, ValueError):
+                integ_val = None
+            if integ_val is not None:
+                css = round(css * (0.70 + 0.30 * integ_val / 100.0), 4)
+
             # Hard Filter Validation
             passed_hard_filter = True
             filter_fail_reason = ""
@@ -586,11 +604,15 @@ async def rank_pipeline(request: Request, job_id: str):
                 badge_color = "#ef4444"
                 reasoning = f"Low score ({css*100:.0f}%). Significant deficits across technical requirements."
 
+            # Display value reuses the discounted computation above.
+            integ = integ_val
+
             scored_candidates.append({
                 "candidate_id": candidate_id,
                 "candidate_name": candidate_name,
                 "has_cv": cand_has_cv,
                 "interview_completed": cand_has_interview,
+                "integrity_score": integ,
                 "CSS": css,
                 "composite_fit_score": round(css * 100, 2),
                 "final_score": round(css * 100, 2),

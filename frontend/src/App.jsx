@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo, Suspense, lazy } from 'react'
-import { Routes, Route, NavLink, Navigate, useNavigate, useLocation } from 'react-router-dom'
+import { Routes, Route, NavLink, Navigate, Link, useNavigate, useLocation } from 'react-router-dom'
 import {
   LayoutDashboard, FileSearch, MessagesSquare, Trophy,
   Search, TrendingUp, ListOrdered, Brain, Sparkles, Layers,
@@ -7,6 +7,8 @@ import {
   Menu, X, User, LogOut, ChevronDown
 } from 'lucide-react'
 import { useTheme } from './context/ThemeContext'
+import { clearApiCache } from './api'
+import { avatarSrc } from './utils'
 import GlobalBackground from './components/GlobalBackground'
 import ErrorBoundary from './components/ErrorBoundary'
 
@@ -15,6 +17,8 @@ const CompanyLogin   = lazy(() => import('./pages/auth/CompanyLogin'))
 const CompanyRegister= lazy(() => import('./pages/auth/CompanyRegister'))
 const CandidateLogin = lazy(() => import('./pages/auth/CandidateLogin'))
 const CandidateRegister = lazy(() => import('./pages/auth/CandidateRegister'))
+const ForgotPassword = lazy(() => import('./pages/auth/ForgotPassword'))
+const ResetPassword = lazy(() => import('./pages/auth/ResetPassword'))
 const CandidateDashboard = lazy(() => import('./pages/CandidateDashboard'))
 const CompanyDashboard   = lazy(() => import('./pages/CompanyDashboard'))
 const ApplicantPipeline = lazy(() => import('./pages/ApplicantPipeline'))
@@ -39,6 +43,20 @@ const Loading = () => (
   </div>
 )
 
+const NotFound = () => {
+  const navigate = useNavigate()
+  const role = localStorage.getItem('recruitai.role')
+  const home = role === 'company' ? '/company/dashboard' : role === 'candidate' ? '/candidate/dashboard' : '/'
+  return (
+    <div style={{ padding: '80px 24px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
+      <div style={{ fontSize: '3rem', fontWeight: 800, letterSpacing: '-0.03em', color: 'var(--color-fg)' }}>404</div>
+      <h1 style={{ fontSize: 'var(--p-text-2xl)', fontWeight: 800, letterSpacing: '-0.02em', margin: '8px 0' }}>Page not found</h1>
+      <p className="muted" style={{ marginBottom: 24 }}>The page you're looking for doesn't exist or was moved.</p>
+      <button className="btn btn-primary" onClick={() => navigate(home)}>Go Home</button>
+    </div>
+  )
+}
+
 function PrivateRoute({ children, role }) {
   const token = localStorage.getItem('recruitai.token')
   const userRole = localStorage.getItem('recruitai.role')
@@ -48,6 +66,11 @@ function PrivateRoute({ children, role }) {
   }
   if (role && userRole && userRole !== role) {
     return <Navigate to={userRole === 'company' ? '/company/dashboard' : '/candidate/dashboard'} replace />
+  }
+  if (role && !userRole) {
+    // Token present but role unknown (e.g. cleared storage): force re-login
+    // instead of rendering a role-gated page for the wrong audience.
+    return <Navigate to={role === 'company' ? '/login/company' : '/login/candidate'} replace />
   }
   return children
 }
@@ -107,6 +130,7 @@ export default function App() {
     localStorage.removeItem('recruitai.name')
     localStorage.removeItem('recruitai.avatar')
     try { sessionStorage.clear() } catch {}
+    clearApiCache()
     setUserMenu(false)
     navigate('/')
   }, [navigate])
@@ -139,6 +163,7 @@ export default function App() {
     else if (path.includes('/progress')) title = 'Progress Tracking | RecruitAI'
     else if (path.includes('/profile')) title = 'Profile | RecruitAI'
     else if (path.includes('/login')) title = 'Login | RecruitAI'
+    else if (path.includes('/forgot-password') || path.includes('/reset-password')) title = 'Reset Password | RecruitAI'
     else if (path.includes('/register')) title = 'Register | RecruitAI'
     document.title = title
   }, [location.pathname])
@@ -163,14 +188,14 @@ export default function App() {
                   width: 32,
                   height: 32,
                   borderRadius: 'var(--radius-md)',
-                  background: 'linear-gradient(135deg, #2563eb, #6366f1)',
+                  background: 'linear-gradient(135deg, var(--color-primary-hover), var(--color-primary))',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)',
+                  boxShadow: '0 2px 8px var(--shadow-glow)',
                   flexShrink: 0
                 }}>
-                  <Brain size={19} color="#ffffff" strokeWidth={2.5} />
+                  <Brain size={19} color="var(--p-white)" strokeWidth={2.5} />
                 </div>
                 <span className="navbar-brand">RecruitAI</span>
                 <span style={{
@@ -182,7 +207,7 @@ export default function App() {
                   borderRadius: 'var(--radius-full)',
                   background: role === 'company' ? 'var(--color-purple-muted)' : 'var(--color-primary-muted)',
                   color: role === 'company' ? 'var(--color-purple)' : 'var(--color-primary)',
-                  border: `1px solid ${role === 'company' ? 'rgba(139, 92, 246, 0.25)' : 'rgba(59, 130, 246, 0.25)'}`,
+                  border: `1px solid ${role === 'company' ? 'var(--color-purple-muted)' : 'var(--color-primary-muted)'}`,
                 }}>
                   {role === 'company' ? 'Recruiter' : 'Candidate'}
                 </span>
@@ -229,8 +254,8 @@ export default function App() {
                   aria-expanded={userMenu}
                   aria-haspopup="true"
                 >
-                  {userAvatar ? (
-                    <img src={userAvatar} alt="User Avatar" className="navbar-avatar" />
+                  {avatarSrc(userAvatar) ? (
+                    <img src={avatarSrc(userAvatar)} alt="User Avatar" className="navbar-avatar" />
                   ) : (
                     <div className="navbar-avatar navbar-avatar-fallback">
                       {(userName || (role === 'company' ? 'C' : 'U'))[0].toUpperCase()}
@@ -310,7 +335,7 @@ export default function App() {
 
       {/* Main Content Shell */}
       <div className="app-shell">
-        <main className="main-content">
+        <main className="main-content route-enter" key={location.pathname}>
           <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>
@@ -319,6 +344,8 @@ export default function App() {
               <Route path="/register/company" element={<CompanyRegister />} />
               <Route path="/login/candidate" element={<CandidateLogin />} />
               <Route path="/register/candidate" element={<CandidateRegister />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
 
               <Route path="/candidate/dashboard" element={<PrivateRoute role="candidate"><CandidateDashboard /></PrivateRoute>} />
               <Route path="/candidate/jobs" element={<PrivateRoute role="candidate"><JobBoard /></PrivateRoute>} />
@@ -360,12 +387,57 @@ export default function App() {
               <Route path="/jobs" element={<PrivateRoute><JobBoard /></PrivateRoute>} />
               <Route path="/interview" element={<PrivateRoute><InterviewPage /></PrivateRoute>} />
 
-              <Route path="*" element={<Navigate to="/" />} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           </ErrorBoundary>
         </main>
       </div>
+
+      {/* Quiet site footer — never competes with the page (§26) */}
+      <footer className="site-footer">
+        <div className="site-footer-inner">
+          <div>
+            <div className="site-footer-brand">
+              <div style={{
+                width: 24, height: 24, borderRadius: 6,
+                background: 'linear-gradient(135deg, var(--color-primary-hover), var(--color-primary))',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--p-white)'
+              }}>
+                <Brain size={13} />
+              </div>
+              RecruitAI
+            </div>
+            <div className="site-footer-tag">
+              AI-driven recruitment ecosystem and predictive career development. SLIIT final-year research project R26-IT-148.
+            </div>
+          </div>
+          <div className="site-footer-col">
+            <h4>Product</h4>
+            <Link to="/jobs">Job Board</Link>
+            <Link to="/cv-match">CV Match</Link>
+            <Link to="/skill-gap">Skill Gap</Link>
+            <Link to="/leaderboard">Leaderboard</Link>
+          </div>
+          <div className="site-footer-col">
+            <h4>Account</h4>
+            <Link to="/login/candidate">Candidate Sign In</Link>
+            <Link to="/login/company">Employer Sign In</Link>
+            <Link to="/register/candidate">Create Account</Link>
+            <Link to="/forgot-password">Reset Password</Link>
+          </div>
+          <div className="site-footer-col">
+            <h4>Assess</h4>
+            <Link to="/interview">AI Interview</Link>
+            <Link to="/ranking">Candidate Ranking</Link>
+            <Link to="/progress">Progress Tracking</Link>
+          </div>
+        </div>
+        <div className="site-footer-fine">
+          <span>© 2026 RecruitAI · Academic research prototype — demo data only.</span>
+          <span>Demo logins — candidate: <code>candidate@demo.com</code> · recruiter: <code>recruiter@demo.com</code></span>
+        </div>
+      </footer>
     </div>
   )
 }

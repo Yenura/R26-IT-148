@@ -17,10 +17,8 @@ limiter = Limiter(key_func=get_remote_address)
 _JOBS_CACHE = {"data": None, "json": None, "expires_at": 0}
 _CACHE_TTL = 30.0  # 30 seconds
 
-def _invalidate_jobs_cache():
-    _JOBS_CACHE["data"] = None
-    _JOBS_CACHE["json"] = None
-    _JOBS_CACHE["expires_at"] = 0
+# NOTE: _invalidate_jobs_cache is defined once below (after the
+# sub-caches) so a single call clears every cache.
 
 # Canonical interview roles (component2 interview supports exactly these 10).
 _INTERVIEW_ROLES = [
@@ -121,8 +119,33 @@ def _app_out(doc: dict) -> ApplicationOut:
         cv_score=doc.get("cv_score") or doc.get("overall_score"),
         overall_score=doc.get("overall_score") or doc.get("cv_score"),
         hire_probability=doc.get("hire_probability"),
+        integrity_score=doc.get("integrity_score"),
+        integrity_adjusted=bool(doc.get("integrity_adjusted", False)),
         skills=doc.get("skills", []),
     )
+
+
+def _extract_integrity(score_doc: dict | None) -> float | None:
+    """Proctored integrity 0–100 from an interview_scores doc or a
+    results doc (nested under proctoring). None when not proctored."""
+    if not score_doc:
+        return None
+    v = score_doc.get("integrity_score")
+    if v is None:
+        v = (score_doc.get("proctoring") or {}).get("integrity_score")
+    try:
+        return max(0.0, min(100.0, float(v)))
+    except (TypeError, ValueError):
+        return None
+
+
+def _apply_integrity_discount(hire_prob, integrity):
+    """Scale hire probability by proctored integrity without cliffs:
+    factor = 0.70 + 0.30 * (integrity / 100), so perfect integrity (100)
+    leaves the score untouched and missing data skips discounting."""
+    if hire_prob is None or integrity is None:
+        return hire_prob, False
+    return round(hire_prob * (0.70 + 0.30 * integrity / 100.0), 1), True
 
 
 async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
@@ -136,9 +159,6 @@ async def _get_owned_job(db, job_id: str, company_id: str) -> dict:
     if ObjectId.is_valid(company_id):
         company_filters.append({"company_id": ObjectId(company_id)})
     doc = await db.jobs.find_one({**query_id, "$or": company_filters})
-    if not doc:
-        # Fallback: if job exists
-        doc = await db.jobs.find_one(query_id)
     if not doc:
         raise HTTPException(status_code=404, detail="Job not found")
     return doc
@@ -228,15 +248,11 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
 
     job_id_strings = [str(j["_id"]) for j in job_docs]
     job_id_oids = [j["_id"] for j in job_docs]
-    job_titles = [j.get("title", "") for j in job_docs if j.get("title")]
     job_map = {str(j["_id"]): j for j in job_docs}
 
-    # Query criteria matching any of this company's jobs
+    # Query criteria: this company's jobs, matched by _id only
+    # (title-based matching collides across companies).
     match_criteria = [{"job_id": {"$in": job_id_strings + job_id_oids}}]
-    if job_titles:
-        match_criteria.append({"job_id": {"$in": job_titles}})
-        match_criteria.append({"job_title": {"$in": job_titles}})
-        match_criteria.append({"job_role": {"$in": job_titles}})
 
     # Parallel fetch applications, predictions, interview_scores, results
     apps_task = db.applications.find({"$or": match_criteria}).sort("applied_at", -1).to_list(500)
@@ -400,6 +416,9 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
         else:
             hire_prob = None
 
+        integrity = _extract_integrity(s)
+        hire_prob, integrity_adjusted = _apply_integrity_discount(hire_prob, integrity)
+
         enriched_applicants.append({
             "id": str(doc.get("_id") or f"app_{c_id}"),
             "job_id": actual_jid,
@@ -414,6 +433,8 @@ async def get_all_company_applicants(request: Request, company: dict = Depends(r
             "cv_score": cv_score,
             "overall_score": cv_score,
             "hire_probability": hire_prob,
+            "integrity_score": integrity,
+            "integrity_adjusted": integrity_adjusted,
             "interview_completed": has_interview,
             "has_cv": has_cv,
             "skill_score": p.get("skill_score") if p else None,
@@ -462,7 +483,8 @@ async def list_jobs(request: Request, company: dict = Depends(require_company), 
 
 
 @router.get("/all", response_model=list[JobOut])
-async def list_all_jobs(request: Request):
+@limiter.limit("60/minute")
+async def list_all_jobs(request: Request, user: dict = Depends(get_current_user)):
     import json
     now = time.time()
     if _JOBS_CACHE["json"] is not None and now < _JOBS_CACHE["expires_at"]:
@@ -493,8 +515,10 @@ async def list_all_jobs(request: Request):
 
 
 @router.get("/public/{job_id}", response_model=JobOut)
+@limiter.limit("60/minute")
 async def get_job_public(job_id: str, request: Request):
-    """Public endpoint — no auth required, used by landing page."""
+    """Public endpoint — no auth required, used by landing page.
+    Interview configuration is stripped: candidates don't need it."""
     db = request.app.state.db
     try:
         oid = ObjectId(job_id)
@@ -503,10 +527,14 @@ async def get_job_public(job_id: str, request: Request):
     doc = await db.jobs.find_one({"_id": oid})
     if not doc:
         raise HTTPException(status_code=404, detail="Job not found")
+    for k in list(doc.keys()):
+        if k.startswith("interview_"):
+            doc.pop(k, None)
     return _job_out(doc)
 
 
 @router.get("/applications", response_model=list[ApplicationOut])
+@limiter.limit("60/minute")
 async def list_my_applications(request: Request, user: dict = Depends(get_current_user)):
     """Candidate's own applications (used by candidate dashboards)."""
     db = request.app.state.db
@@ -535,6 +563,8 @@ async def get_applicant_counts(request: Request, company: dict = Depends(require
     if not job_ids:
         _APPLICANT_COUNTS_CACHE[cid] = (now, {})
         return {}
+    # Match both ObjectId and string forms of job_id.
+    job_ids = job_ids + [str(j) for j in job_ids]
     # Count applicants per job in a single aggregation
     pipeline = [
         {"$match": {"job_id": {"$in": job_ids}}},
@@ -576,7 +606,7 @@ async def delete_job(job_id: str, request: Request, company: dict = Depends(requ
     db = request.app.state.db
     doc = await _get_owned_job(db, job_id, str(company["_id"]))
     await db.jobs.delete_one({"_id": doc["_id"]})
-    await db.applications.delete_many({"job_id": doc["_id"]})
+    await db.applications.delete_many({"$or": [{"job_id": doc["_id"]}, {"job_id": str(doc["_id"])}]})
     _invalidate_jobs_cache()
     return None
 
@@ -672,12 +702,9 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
         pass
 
     if job_doc:
-        j_title = job_doc.get("title")
-        j_role = job_doc.get("job_role")
-        if j_title:
-            job_filters.extend([{"job_id": j_title}, {"job_title": j_title}, {"job_role": j_title}])
-        if j_role:
-            job_filters.extend([{"job_id": j_role}, {"job_role": j_role}])
+        # Ownership enforced: a company sees only its own jobs' applicants.
+        if str(job_doc.get("company_id", "")) != str(company["_id"]):
+            raise HTTPException(status_code=404, detail="Job not found")
 
     seen_candidates = set()
     applicants = []
@@ -797,6 +824,9 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
         elif cv_score is not None:
             hire_prob = round(float(cv_score), 1)
 
+        integrity = _extract_integrity(s)
+        hire_prob, integrity_adjusted = _apply_integrity_discount(hire_prob, integrity)
+
         enriched.append({
             "_id": doc.get("_id") or f"app_{cid}",
             "job_id": str(job_id),
@@ -809,6 +839,8 @@ async def get_applicants(job_id: str, request: Request, company: dict = Depends(
             "interview_score": int_score,
             "cv_score": cv_score,
             "hire_probability": hire_prob,
+            "integrity_score": integrity,
+            "integrity_adjusted": integrity_adjusted,
             "skills": skills,
         })
 

@@ -65,6 +65,7 @@ class Predictor:
         candidate_dirs = [
             self.model_dir,
             Path(__file__).parent.parent / "models",
+            Path(__file__).parent.parent.parent / "models",
             Path(__file__).parent.parent.parent / "component1" / "models",
             Path.cwd() / "models",
             Path.cwd() / "component1" / "models",

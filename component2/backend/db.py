@@ -157,6 +157,28 @@ async def get_result(interview_id: str) -> Optional[Dict[str, Any]]:
     return await run_in_threadpool(_get_result_sync, interview_id)
 
 
+def _get_result_by_session_sync(session_id: str) -> Optional[Dict[str, Any]]:
+    """Latest result for a session (supports idempotent re-submit)."""
+    mongo_db = _get_mongo_db()
+    if mongo_db is not None:
+        docs = list(mongo_db["results"].find(
+            {"session_id": session_id}).sort("created_at", -1).limit(1))
+        if not docs:
+            return None
+        docs[0].pop("_id", None)
+        return docs[0]
+    matches = [r for r in _memory_store["results"].values()
+               if r.get("session_id") == session_id]
+    if not matches:
+        return None
+    matches.sort(key=lambda r: str(r.get("created_at", "")))
+    return deepcopy(matches[-1])
+
+
+async def get_result_by_session(session_id: str) -> Optional[Dict[str, Any]]:
+    return await run_in_threadpool(_get_result_by_session_sync, session_id)
+
+
 def _get_seen_question_ids_sync(candidate_id: str, limit: int = 1000) -> set:
     """Return question IDs the candidate has seen in past sessions."""
     mongo_db = _get_mongo_db()

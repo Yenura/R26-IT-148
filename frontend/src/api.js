@@ -27,6 +27,7 @@ const mk = (rawUrl) => {
   // Invalidate cache on mutations
   const originalPost = instance.post.bind(instance)
   const originalPut = instance.put.bind(instance)
+  const originalPatch = instance.patch.bind(instance)
   const originalDelete = instance.delete.bind(instance)
 
   const invalidatePrefix = (reqUrl) => {
@@ -46,15 +47,22 @@ const mk = (rawUrl) => {
     invalidatePrefix(reqUrl)
     return originalPut(reqUrl, ...args)
   }
+  instance.patch = (reqUrl, ...args) => {
+    invalidatePrefix(reqUrl)
+    return originalPatch(reqUrl, ...args)
+  }
   instance.delete = (reqUrl, ...args) => {
     invalidatePrefix(reqUrl)
     return originalDelete(reqUrl, ...args)
   }
 
-  // Fast Cached GET with SWR background revalidation
+  // Fast Cached GET with SWR background revalidation.
+  // Cache is namespaced by the active token so switching accounts
+  // in the same tab can never serve another user's data.
   const originalGet = instance.get.bind(instance)
   instance.get = (requestUrl, config = {}) => {
-    const key = `${url}:${requestUrl}:${JSON.stringify(config.params || {})}`
+    const token = localStorage.getItem('recruitai.token') || ''
+    const key = `${url}:${token}:${requestUrl}:${JSON.stringify(config.params || {})}`
     const now = Date.now()
 
     // 1. Check if cached response is present
@@ -99,18 +107,25 @@ const mk = (rawUrl) => {
 // ── Unified backend (auth, resume, jobs, export) ──────────────
 const _C0 = mk(import.meta.env.VITE_C0_URL || 'http://127.0.0.1:8000')
 
-// Response interceptor: redirect to login on 401
-_C0.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
-      localStorage.removeItem('recruitai.token')
-      localStorage.removeItem('recruitai.role')
-      window.location.href = '/'
-    }
-    return Promise.reject(err)
+// Response interceptor: on 401, wipe the whole client session and
+// send the user to the correct login. Attached to every backend client.
+const handleUnauthorized = (err) => {
+  if (err.response?.status === 401 && !err.config?.url?.includes('/auth/')) {
+    const role = localStorage.getItem('recruitai.role')
+    localStorage.removeItem('recruitai.token')
+    localStorage.removeItem('recruitai.role')
+    localStorage.removeItem('recruitai.user_id')
+    localStorage.removeItem('recruitai.name')
+    localStorage.removeItem('recruitai.avatar')
+    try { sessionStorage.clear() } catch {}
+    clearApiCache()
+    window.location.href = role === 'company' ? '/login/company' : '/login/candidate'
   }
-)
+  return Promise.reject(err)
+}
+
+const attachAuthHandler = (instance) =>
+  instance.interceptors.response.use((res) => res, handleUnauthorized)
 
 export const C0 = _C0
 
@@ -127,6 +142,12 @@ export const C4 = mk(
     ? (import.meta.env.VITE_C4_URL.endsWith('/api/v1') ? import.meta.env.VITE_C4_URL : `${import.meta.env.VITE_C4_URL}/api/v1`)
     : 'http://127.0.0.1:8004/api/v1'
 )
+
+attachAuthHandler(_C0)
+attachAuthHandler(C1)
+attachAuthHandler(C2)
+attachAuthHandler(C3)
+attachAuthHandler(C4)
 
 // ── Unified: Auth ─────────────────────────────────────────────
 export const authGetProfile         = ()        => C0.get('/auth/profile')
@@ -171,7 +192,6 @@ export const c0ExportPDF  = (type = 'predictions') => C0.get(`/export/pdf?type=$
 export const c1Analyze         = (payload)       => C1.post('/cv/analyze', payload)
 export const c1Roles           = ()              => C1.get('/roles')
 export const c1Classify        = (payload)       => C1.post('/cv/classify', payload)
-export const c1AnalyzeFile     = (formData)      => C1.post('/cv/analyze-file', formData)
 
 // ── Component 2: AI Interview ─────────────────────────────────
 export const c2Start       = (payload)      => C2.post('/interview/start', payload)
@@ -180,11 +200,8 @@ export const c2Jobs        = ()             => C2.get('/interview/jobs')
 export const c2RunCode     = (payload)      => C2.post('/interview/code/run', payload)
 
 // ── Component 3: Candidate Ranking ────────────────────────────
-export const c3Roles       = ()             => C3.get('/rank/jobs')
-export const c3Rank        = (payload)      => C3.post('/rank/compute', payload)
 export const c3Pipeline    = (jobId)        => C3.get(`/rank/pipeline/${jobId}`)
 export const c3Explain     = (candidateId)  => C3.get(`/rank/explain/${candidateId}`)
-export const c3Results     = (jobId)        => C3.get(`/rank/results/${jobId}`)
 
 // ── Component 4: Skill Gap & Career Development ───────────────
 export const c4Leaderboard     = (limit = 10) => C4.get(`/analytics/leaderboard?limit=${limit}`)
@@ -193,13 +210,7 @@ export const c4SkillGapRoles   = ()           => C4.get('/skill-gap/roles')
 export const c4SkillGapAnalyze = (payload)    => C4.post('/skill-gap/analyze', payload)
 export const c4SkillGapApplied = (candidateId)=> C4.get(`/skill-gap/applied-jobs/${candidateId}`)
 export const c4SkillGapSimulate= (payload)    => C4.post('/skill-gap/simulate', payload)
-export const c4SkillGapGraph   = ()           => C4.get('/skill-gap/graph')
-export const c4SkillGapReport  = (candidateId)=> C4.get(`/skill-gap/report/${candidateId}`)
-export const c4SkillGapReports = (skip = 0, limit = 50) => C4.get(`/skill-gap/reports?skip=${skip}&limit=${limit}`)
-export const c4SkillGapDeleteReport = (candidateId) => C4.delete(`/skill-gap/report/${candidateId}`)
 export const c4CareerRec       = (payload)    => C4.post('/career/recommendation', payload)
-export const c4CareerRoles     = ()           => C4.get('/career/roles')
-export const c4CareerPath      = (payload)    => C4.post('/career/path', payload)
 export const c4LearningPath    = (payload)    => C4.post('/career/learning-path', payload)
 export const c4Progress        = (candidateId)=> C4.get(`/progress/${candidateId}`)
 export const c4ProgressPopulate= (payload)    => C4.post('/progress/populate', payload)

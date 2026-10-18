@@ -25,7 +25,8 @@ def _load_model_and_tokenizer(model_dir: str):
     """Load the best available QG model and its tokenizer.
 
     Priority: T5 fine-tuned (t5_qg/) > v2 custom > v1 custom.
-    Returns (model, tokenizer, "t5"|"custom") or (None, None, None).
+    Returns (model, tokenizer, kind, loaded_path) where kind is "t5"|"custom",
+    or (None, None, None, None) when nothing could be loaded.
     """
     ml_dir = os.path.join(os.path.dirname(model_dir), "..", "ml")
     ml_dir = os.path.abspath(ml_dir)
@@ -48,7 +49,7 @@ def _load_model_and_tokenizer(model_dir: str):
             model.eval()
             param_count = sum(p.numel() for p in model.parameters())
             logger.info("T5 QG model loaded from %s (%s params)", t5_path, f"{param_count:,}")
-            return model, tokenizer, "t5"
+            return model, tokenizer, "t5", t5_path
         except Exception as e:
             logger.warning("Failed to load T5 QG model: %s", e)
 
@@ -63,7 +64,7 @@ def _load_model_and_tokenizer(model_dir: str):
             model, tokenizer = load_trained_model(v2_path, device="cpu")
             logger.info("QG v2 model loaded from %s (%s params)",
                         v2_path, sum(p.numel() for p in model.parameters()))
-            return model, tokenizer, "custom"
+            return model, tokenizer, "custom", v2_path
         except Exception as e:
             logger.warning("Failed to load QG v2 model: %s", e)
 
@@ -73,7 +74,7 @@ def _load_model_and_tokenizer(model_dir: str):
     tokenizer_path = os.path.join(v1_path, "tokenizer.json")
     if not os.path.isfile(model_path) or not os.path.isfile(tokenizer_path):
         logger.warning("QG model files not found in %s", v1_path)
-        return None, None, None
+        return None, None, None, None
 
     try:
         from train_qg_model import TinyQGModel, CharTokenizer
@@ -83,10 +84,10 @@ def _load_model_and_tokenizer(model_dir: str):
         model.load_state_dict(torch.load(model_path, map_location="cpu"))
         model.eval()
         logger.info("QG model loaded (%s params)", sum(p.numel() for p in model.parameters()))
-        return model, tokenizer, "custom"
+        return model, tokenizer, "custom", v1_path
     except Exception as e:
         logger.warning("Failed to load QG model: %s", e)
-        return None, None, None
+        return None, None, None, None
 
 
 def _parse_q(text: str) -> str:
@@ -186,16 +187,23 @@ class QuestionGenerator:
         self._model = None
         self._tokenizer = None
         self._model_type = None  # "t5" or "custom"
+        self._loaded_path = None  # path of the model that actually loaded
 
     def _load(self):
         if self._model is not None:
             return
-        self._model, self._tokenizer, self._model_type = _load_model_and_tokenizer(self.model_path)
+        (self._model, self._tokenizer,
+         self._model_type, self._loaded_path) = _load_model_and_tokenizer(self.model_path)
 
     @property
     def is_available(self) -> bool:
         self._load()
         return self._model is not None
+
+    @property
+    def backend(self) -> Dict[str, Optional[str]]:
+        """Which model actually loaded (type + path). Call after is_available."""
+        return {"type": self._model_type, "path": self._loaded_path}
 
     def _generate(self, input_text: str) -> str:
         self._load()

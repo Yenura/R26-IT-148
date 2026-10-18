@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import { Brain, Mail, Lock, User, ArrowLeft, Eye, EyeOff } from 'lucide-react'
-import { C0 } from '../../api'
+import { C0, clearApiCache } from '../../api'
+import { isValidEmail } from '../../utils'
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
 
 const getErrorMessage = (err) => {
   const detail = err?.response?.data?.detail
@@ -30,7 +31,7 @@ export default function CandidateRegister() {
     if (!form.full_name.trim()) e.full_name = 'Full name is required'
     else if (form.full_name.trim().length < 2) e.full_name = 'Name must be at least 2 characters'
     if (!form.email.trim()) e.email = 'Email is required'
-    else if (!EMAIL_RE.test(form.email.trim())) e.email = 'Enter a valid email address'
+    else if (!isValidEmail(form.email.trim())) e.email = 'Enter a valid email address'
     if (!form.password) e.password = 'Password is required'
     else if (form.password.length < 6) e.password = 'Password must be at least 6 characters'
     setErrors(e)
@@ -49,6 +50,7 @@ export default function CandidateRegister() {
       }
       const r = await C0.post('/auth/register/candidate', payload)
       try { sessionStorage.clear() } catch {}
+      clearApiCache()
       localStorage.setItem('recruitai.token', r.data.access_token)
       localStorage.setItem('recruitai.role', 'candidate')
       localStorage.setItem('recruitai.user_id', r.data.user_id || '')
@@ -84,7 +86,7 @@ export default function CandidateRegister() {
             width: 48,
             height: 48,
             borderRadius: 'var(--radius-md)',
-            background: 'linear-gradient(135deg, var(--color-primary), #4f46e5)',
+            background: 'linear-gradient(135deg, var(--color-primary), #0068d0)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -112,11 +114,11 @@ export default function CandidateRegister() {
                 value={form.full_name}
                 onChange={set('full_name')}
                 placeholder="e.g. Alex Morgan"
-                style={{ paddingLeft: 36, borderColor: errors.full_name ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.full_name ? 'var(--color-danger)' : undefined }}
                 required
               />
             </div>
-            {errors.full_name && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.full_name}</p>}
+            {errors.full_name && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.full_name}</p>}
           </div>
 
           <div style={{ marginBottom: 14 }}>
@@ -129,11 +131,11 @@ export default function CandidateRegister() {
                 value={form.email}
                 onChange={set('email')}
                 placeholder="alex@example.com"
-                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, borderColor: errors.email ? 'var(--color-danger)' : undefined }}
                 required
               />
             </div>
-            {errors.email && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
+            {errors.email && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.email}</p>}
           </div>
 
           <div style={{ marginBottom: 20 }}>
@@ -146,7 +148,7 @@ export default function CandidateRegister() {
                 value={form.password}
                 onChange={set('password')}
                 placeholder="Minimum 6 characters"
-                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger, #ef4444)' : undefined }}
+                style={{ paddingLeft: 36, paddingRight: 36, borderColor: errors.password ? 'var(--color-danger)' : undefined }}
                 required
               />
               <button
@@ -169,7 +171,7 @@ export default function CandidateRegister() {
                 {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
               </button>
             </div>
-            {errors.password && <p style={{ color: 'var(--color-danger, #ef4444)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
+            {errors.password && <p style={{ color: 'var(--color-danger)', fontSize: 11, margin: '4px 0 0' }}>{errors.password}</p>}
           </div>
 
           <button

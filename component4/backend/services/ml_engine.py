@@ -46,7 +46,16 @@ def _load_artifact(filename: str, required: bool = True):
             )
         logger.warning("[STARTUP] Optional model artifact missing: %s — using fallback", path)
         return None
-    artifact = joblib.load(path)
+    try:
+        artifact = joblib.load(path)
+    except Exception as exc:
+        # A present-but-unloadable artifact (e.g. numpy/sklearn version drift)
+        # must never take the whole service down when it is optional:
+        # all consumers are None-guarded and fall back to rules.
+        if required:
+            raise
+        logger.warning("[STARTUP] Optional model artifact %s failed to load (%s) — using fallback", path, exc)
+        return None
     logger.info("Loaded artifact: %s", filename)
     return artifact
 

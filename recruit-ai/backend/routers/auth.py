@@ -1,6 +1,8 @@
 """Authentication routes: company + candidate registration/login."""
+import hashlib
 import os
-from datetime import datetime, timezone
+import secrets
+from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File, status
 from fastapi.responses import FileResponse
@@ -8,11 +10,17 @@ from PIL import Image
 from slowapi import Limiter
 from slowapi.util import get_remote_address
 from security import hash_password, verify_password, create_access_token, decode_access_token
+from services.email import send_password_reset_email, smtp_configured
 
-from schemas import CompanyRegister, CandidateRegister, LoginRequest, Token, UserOut, ProfileUpdate, PasswordChange
+from schemas import CompanyRegister, CandidateRegister, LoginRequest, Token, UserOut, ProfileUpdate, PasswordChange, ForgotPasswordRequest, ResetPasswordRequest
 
 router = APIRouter()
 limiter = Limiter(key_func=get_remote_address)
+
+# Dev JWT default (see start_all.py). The forgot-password token is only
+# echoed back when running with this default, since no email is configured.
+_DEV_JWT_DEFAULT = "recruitai-dev-secret-key-change-in-prod"
+_RESET_TOKEN_TTL_MIN = 15
 
 
 def _user_out(doc: dict) -> UserOut:
@@ -42,7 +50,10 @@ async def get_current_user(request: Request, required_role: str | None = None) -
     if not data:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
     db = request.app.state.db
-    doc = await db.users.find_one({"_id": ObjectId(data["sub"])})
+    try:
+        doc = await db.users.find_one({"_id": ObjectId(data["sub"])})
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
     if not doc:
         raise HTTPException(status_code=401, detail="User not found")
     if required_role and doc.get("role") != required_role:
@@ -173,6 +184,52 @@ async def change_password(payload: PasswordChange, request: Request, user: dict 
     db = request.app.state.db
     await db.users.update_one({"_id": user["_id"]}, {"$set": {"password": hash_password(payload.new_password)}})
     return {"success": True, "message": "Password changed"}
+
+
+@router.post("/forgot-password")
+@limiter.limit("10/minute")
+async def forgot_password(request: Request, payload: ForgotPasswordRequest):
+    db = request.app.state.db
+    email = payload.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    token = None
+    if user:
+        token = secrets.token_urlsafe(32)
+        digest = hashlib.sha256(token.encode("utf-8")).hexdigest()
+        expires = datetime.now(timezone.utc) + timedelta(minutes=_RESET_TOKEN_TTL_MIN)
+        await db.users.update_one(
+            {"_id": user["_id"]},
+            {"$set": {"reset_token_hash": digest, "reset_token_expires": expires}},
+        )
+    # Generic response either way so emails can't be enumerated.
+    # Delivery preference: real email when SMTP is configured, dev-token
+    # echo only on the dev default secret, silent otherwise.
+    body = {"success": True, "message": "If an account exists for this email, a reset link is on its way."}
+    if token:
+        emailed = send_password_reset_email(email, token)
+        if not emailed and os.getenv("JWT_SECRET") == _DEV_JWT_DEFAULT:
+            body["dev_token"] = token
+            body["dev_note"] = "Dev mode (no email configured): this token is valid for 15 minutes."
+    return body
+
+
+@router.post("/reset-password")
+@limiter.limit("10/minute")
+async def reset_password(request: Request, payload: ResetPasswordRequest):
+    db = request.app.state.db
+    digest = hashlib.sha256(payload.token.strip().encode("utf-8")).hexdigest()
+    now = datetime.now(timezone.utc)
+    user = await db.users.find_one({"reset_token_hash": digest, "reset_token_expires": {"$gt": now}})
+    if not user:
+        raise HTTPException(status_code=400, detail="This reset link is invalid or has expired")
+    await db.users.update_one(
+        {"_id": user["_id"]},
+        {
+            "$set": {"password": hash_password(payload.new_password)},
+            "$unset": {"reset_token_hash": "", "reset_token_expires": ""},
+        },
+    )
+    return {"success": True, "message": "Password updated. Please sign in with your new password."}
 
 
 @router.post("/avatar")

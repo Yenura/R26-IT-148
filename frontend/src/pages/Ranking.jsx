@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import toast from 'react-hot-toast'
 import {
-  ListOrdered, Trophy, Briefcase, Award, Brain,
+  ListOrdered, Trophy, Briefcase, Award, Brain, Shield,
   CheckCircle2, Users, ArrowRight, Eye, ChevronRight, Plus
 } from 'lucide-react'
 import { uJobsMy, c3Pipeline, c0JobsAll } from '../api'
@@ -28,10 +28,9 @@ function getRecommendationInfo(cand) {
   if (cand.passed_hard_filter === false) {
     return {
       label: 'Disqualified',
-      color: '#ef4444',
-      bg: 'rgba(239, 68, 68, 0.15)',
-      border: 'rgba(239, 68, 68, 0.4)',
-      reason: cand.filter_fail_reason || 'Did not meet minimum technical prerequisites'
+      color: 'var(--color-danger)',
+      bg: 'rgba(255, 69, 58, 0.15)',
+      border: 'rgba(255, 69, 58, 0.4)'
     }
   }
 
@@ -41,36 +40,33 @@ function getRecommendationInfo(cand) {
   if (css >= 80) {
     return {
       label: 'Highly Qualified',
-      color: '#10b981',
-      bg: 'rgba(16, 185, 129, 0.15)',
-      border: 'rgba(16, 185, 129, 0.4)',
-      reason: cand.reasoning || 'Top-tier fit across all evaluations'
+      color: 'var(--color-success)',
+      bg: 'rgba(48, 209, 88, 0.15)',
+      border: 'rgba(48, 209, 88, 0.4)'
     }
   }
   if (css >= 65) {
     return {
       label: 'Recommended',
-      color: '#3b82f6',
-      bg: 'rgba(59, 130, 246, 0.15)',
-      border: 'rgba(59, 130, 246, 0.4)',
-      reason: cand.reasoning || 'Strong candidate with minor technical gaps'
+      color: 'var(--color-primary)',
+      bg: 'rgba(10, 132, 255, 0.15)',
+      border: 'rgba(10, 132, 255, 0.4)'
     }
   }
   if (css >= 50) {
     return {
       label: 'Qualified',
-      color: '#f59e0b',
+      color: 'var(--color-warning)',
       bg: 'rgba(245, 158, 11, 0.15)',
       border: 'rgba(245, 158, 11, 0.4)',
       reason: cand.reasoning || 'Meets core prerequisites'
     }
   }
   return {
-    label: 'Under Review',
-    color: '#94a3b8',
-    bg: 'rgba(148, 163, 184, 0.15)',
-    border: 'rgba(148, 163, 184, 0.4)',
-    reason: cand.reasoning || 'Low overall fit score'
+    label: 'Disqualified',
+    color: 'var(--color-danger)',
+    bg: 'rgba(255, 69, 58, 0.15)',
+    border: 'rgba(255, 69, 58, 0.4)'
   }
 }
 
@@ -214,7 +210,7 @@ export default function Ranking() {
       ) : (
         <>
           {/* Job Selection Card */}
-          <div className="card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
+          <div className="card glass-card" style={{ padding: 'var(--p-space-5)', marginBottom: 'var(--p-space-5)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 10 }}>
               <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Briefcase size={16} style={{ color: 'var(--color-primary)' }} /> Select Target Job Opening
@@ -271,8 +267,8 @@ export default function Ranking() {
           {busy ? (
             <SkeletonLoader type="table" rows={5} cols={6} />
           ) : result && candidatesList.length > 0 ? (
-            <div className="card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--p-space-6)', borderRadius: '12px', border: '1px solid rgba(255, 255, 255, 0.08)', boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', background: 'linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="card glass-card" style={{ padding: 0, overflow: 'hidden', marginBottom: 'var(--p-space-6)' }}>
+              <div style={{ padding: 'var(--p-space-4) var(--p-space-5)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h3 style={{ margin: 0, fontSize: 'var(--p-text-base)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <Trophy size={18} style={{ color: 'var(--color-primary)' }} />
@@ -332,33 +328,24 @@ export default function Ranking() {
                             transition: 'background 0.15s ease'
                           }}
                         >
-                          <td style={{ padding: '12px 10px', textAlign: 'center', verticalAlign: 'middle' }}>
-                            <div
-                              title={cand.passed_hard_filter ? `Rank #${rankNum}` : (cand.filter_fail_reason || 'Disqualified: Prerequisite not met')}
-                              style={{
-                                width: 30,
-                                height: 30,
-                                margin: '0 auto',
-                                borderRadius: '8px',
-                                background: cand.passed_hard_filter
-                                  ? (isTop3 ? 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)' : 'rgba(255, 255, 255, 0.05)')
-                                  : 'rgba(239, 68, 68, 0.12)',
-                                color: cand.passed_hard_filter
-                                  ? (isTop3 ? '#fff' : 'var(--color-fg)')
-                                  : 'var(--color-danger)',
-                                border: cand.passed_hard_filter
-                                  ? (isTop3 ? 'none' : '1px solid rgba(255, 255, 255, 0.08)')
-                                  : '1px solid rgba(239, 68, 68, 0.3)',
-                                boxShadow: isTop3 ? '0 2px 8px rgba(59, 130, 246, 0.3)' : 'none',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: 800,
-                                fontSize: '12px',
-                                cursor: cand.passed_hard_filter ? 'default' : 'help'
-                              }}
-                            >
-                              #{rankNum}
+                          <td>
+                            <div style={{
+                              width: 28,
+                              height: 28,
+                              borderRadius: 'var(--radius-sm)',
+                              background: cand.passed_hard_filter
+                                ? (isTop3 ? 'var(--color-primary)' : 'var(--color-border-subtle)')
+                                : 'var(--color-danger-muted)',
+                              color: cand.passed_hard_filter
+                                ? (isTop3 ? 'var(--p-white)' : 'var(--color-fg)')
+                                : 'var(--color-danger)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontWeight: 800,
+                              fontSize: '12px'
+                            }}>
+                              {cand.passed_hard_filter ? `#${cand.rank || idx + 1}` : '✗'}
                             </div>
                           </td>
                           <td style={{ padding: '12px 14px', verticalAlign: 'middle' }}>
@@ -420,55 +407,8 @@ export default function Ranking() {
                           </td>
                           <td style={{ padding: '12px 12px', verticalAlign: 'middle' }}>
                             {hasCV && sSkillVal != null ? (
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexWrap: 'nowrap' }}>
-                                <span
-                                  title={`Skill Match: ${Math.round(Number(sSkillVal))}%${sSkillVal < 38 ? ' (Below 38% prerequisite threshold)' : ''}`}
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    fontFamily: 'var(--p-font-mono)',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    background: sSkillVal < 38 ? 'rgba(239, 68, 68, 0.12)' : 'rgba(59, 130, 246, 0.12)',
-                                    color: sSkillVal < 38 ? '#ef4444' : '#3b82f6',
-                                    border: `1px solid ${sSkillVal < 38 ? 'rgba(239, 68, 68, 0.3)' : 'rgba(59, 130, 246, 0.25)'}`,
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  S: {Math.round(Number(sSkillVal))}%
-                                </span>
-                                <span
-                                  title={`Experience Match: ${Math.round(Number(sExpVal || 0))}%`}
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    fontFamily: 'var(--p-font-mono)',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    background: 'rgba(16, 185, 129, 0.12)',
-                                    color: '#10b981',
-                                    border: '1px solid rgba(16, 185, 129, 0.25)',
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  E: {Math.round(Number(sExpVal || 0))}%
-                                </span>
-                                <span
-                                  title={`Education Match: ${Math.round(Number(sEduVal || 0))}%`}
-                                  style={{
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    fontFamily: 'var(--p-font-mono)',
-                                    padding: '2px 6px',
-                                    borderRadius: '4px',
-                                    background: 'rgba(168, 85, 247, 0.12)',
-                                    color: '#a855f7',
-                                    border: '1px solid rgba(168, 85, 247, 0.25)',
-                                    whiteSpace: 'nowrap'
-                                  }}
-                                >
-                                  Ed: {Math.round(Number(sEduVal || 0))}%
-                                </span>
+                              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', fontFamily: 'var(--p-font-mono)' }}>
+                                <span title="Skills Match" style={{ color: 'var(--color-primary)' }}>{Number(sSkillVal).toFixed(0)}%</span> / <span title="Experience Match" style={{ color: 'var(--color-success)' }}>{Number(sExpVal || 0).toFixed(0)}%</span> / <span title="Education Match" style={{ color: 'var(--color-purple)' }}>{Number(sEduVal || 0).toFixed(0)}%</span>
                               </div>
                             ) : (
                               <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
@@ -541,12 +481,13 @@ export default function Ranking() {
                               <span style={{ color: 'var(--color-fg-muted)', fontSize: '12px' }}>—</span>
                             )}
                           </td>
-                          <td style={{ padding: '12px 18px', textAlign: 'right', verticalAlign: 'middle' }}>
-                            <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
-                              <span
-                                title={rec.reason}
-                                style={{
-                                  fontSize: '11px',
+                          <td>
+                            {(() => {
+                              const rec = getRecommendationInfo(cand)
+                              return (
+                                <>
+                                <span style={{
+                                  fontSize: '10.5px',
                                   fontWeight: 700,
                                   color: rec.color,
                                   background: rec.bg,
@@ -575,8 +516,14 @@ export default function Ranking() {
                                 >
                                   {cand.filter_fail_reason.includes('Skill') ? 'Low skills (<38%)' : (cand.filter_fail_reason.includes('coding') ? 'Low code (<25%)' : 'Prereq failed')}
                                 </span>
-                              )}
-                            </div>
+                                {cand.integrity_score != null && (
+                                  <span title={`Proctored integrity score: ${Math.round(cand.integrity_score)}%`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', whiteSpace: 'nowrap' }}>
+                                    <Shield size={11} /> {Math.round(cand.integrity_score)}%
+                                  </span>
+                                )}
+                                </>
+                              )
+                            })()}
                           </td>
                         </tr>
                       )
@@ -592,7 +539,7 @@ export default function Ranking() {
               icon={Users}
             />
           ) : (
-            <div className="card" style={{ textAlign: 'center', padding: 'var(--p-space-6)' }}>
+            <div className="card glass-card" style={{ textAlign: 'center', padding: 'var(--p-space-6)' }}>
               <p style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg-muted)', margin: 0 }}>
                 Select a job opening above and click <strong>Rank Applicants</strong> to evaluate candidates.
               </p>

@@ -6,11 +6,15 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from routers.auth import get_current_user
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 router = APIRouter()
+limiter = Limiter(key_func=get_remote_address)
 
 
 @router.get("/csv")
+@limiter.limit("10/minute")
 async def export_csv(
     request: Request,
     type: str = "predictions",
@@ -69,6 +73,7 @@ async def export_csv(
 
 
 @router.get("/excel")
+@limiter.limit("10/minute")
 async def export_excel(
     request: Request,
     type: str = "predictions",
@@ -122,6 +127,7 @@ async def export_excel(
 
 
 @router.get("/pdf")
+@limiter.limit("10/minute")
 async def export_pdf(
     request: Request,
     type: str = "predictions",
