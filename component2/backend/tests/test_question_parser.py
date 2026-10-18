@@ -97,3 +97,24 @@ def test_parse_other_fields():
     desc = "Q: Why? A: Because it matters. K: alpha, beta"
     assert _parse_a(desc).startswith("Because")
     assert _parse_k(desc) == ["alpha", "beta"]
+
+
+def test_skill_for_sends_exactly_one_skill():
+    """MCQ/Descriptive training prompts carry exactly ONE skill (2846/2846 and
+    482/482 rows have no comma in the skill slot). Joining a role's whole skill
+    list was out of distribution and made the model emit repeated filler."""
+    from question_generator import QuestionGenerator
+
+    skills = ["Java", "Python", "C++", "SQL", "React"]
+    for i in range(len(skills)):
+        s = QuestionGenerator._skill_for(skills, i)
+        assert s == skills[i]
+        assert "," not in s
+
+
+def test_skill_for_cycles_and_handles_no_skills():
+    from question_generator import QuestionGenerator
+
+    assert QuestionGenerator._skill_for(["a", "b"], 2) == "a"
+    assert QuestionGenerator._skill_for([], 0) == "General"
+    assert QuestionGenerator._skill_for(None, 3) == "General"
