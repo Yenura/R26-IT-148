@@ -20,7 +20,7 @@ role never receives coding questions.
 | 6 | Cybersecurity Analyst | none | – | – | – | 0.45 | 0.55 | 0.00 |
 | 7 | Data Engineer | full | Python, SQL, Scala | Python | executed | 0.25 | 0.30 | 0.45 |
 | 8 | Data Scientist | full | Python, R | Python | executed | 0.30 | 0.30 | 0.40 |
-| 9 | Database Administrator | sql | SQL, Python | Python | executed | 0.30 | 0.40 | 0.30 |
+| 9 | Database Administrator | sql | SQL, Python | SQL | non-executed | 0.30 | 0.40 | 0.30 |
 | 10 | DevOps Engineer | scripting | Python, Bash, Go | Python | executed | 0.40 | 0.40 | 0.20 |
 | 11 | Embedded Systems Engineer | full | C, C++ | C++ | non-executed | 0.25 | 0.35 | 0.40 |
 | 12 | Frontend Developer | full | JavaScript, TypeScript | JavaScript | non-executed | 0.25 | 0.35 | 0.40 |
@@ -33,9 +33,16 @@ role never receives coding questions.
 | 19 | Software Engineer | full | Python, Java, C#, C++, JavaScript, Go | Python | executed | 0.20 | 0.30 | 0.50 |
 | 20 | UI/UX Designer | none | – | – | – | 0.30 | 0.70 | 0.00 |
 
-Totals: **15 coding roles, 5 non-coding roles, 20 positions.** Of the 15, 10
-are graded by *executing* Python and 5 (Embedded, Frontend, Full Stack, Mobile,
-Blockchain) by a *non-executed* format in their own language.
+Totals: **15 coding roles, 5 non-coding roles, 20 positions.** Of the 15, 9
+are graded by *executing* Python and 6 (Embedded, Frontend, Full Stack, Mobile,
+Blockchain, Database Administrator) by a *non-executed* format in their own
+language.
+
+Database Administrator is worth calling out: it declares `["SQL", "Python"]`, so
+once SQL had a bank it became the role's language and stopped falling through to
+the executed Python path. Its questions are still Python-backed in no way at
+all — they are SQL, and they are graded by text match against a key that was
+proven with `sqlite3` when the bank was built.
 
 ## Declared vs. executable vs. supported languages
 

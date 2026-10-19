@@ -40,7 +40,7 @@ const NON_CODING_ROLES = ["Business/Systems Analyst","Cloud Solutions Architect"
    the rest are assessed with the non-executed formats below (predict-the-
    output / find-the-bug / complete-the-function), which is why a Frontend
    Developer is no longer asked Python.  Mirrors role_profiles.py. */
-const FALLBACK_SUPPORTED = ["Python","Java","C++","JavaScript","Go","Rust"]
+const FALLBACK_SUPPORTED = ["Python","Java","C++","JavaScript","Go","Rust","SQL"]
 
 /* Only these are actually executed by the sandbox. */
 const EXECUTABLE_LANGUAGES = ["Python"]

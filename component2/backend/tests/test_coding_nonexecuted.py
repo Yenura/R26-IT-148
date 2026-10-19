@@ -28,7 +28,29 @@ from routers.interview import _grade_non_executed, _normalize_code_answer  # noq
 from services import role_profiles  # noqa: E402
 
 MODELS_DIR = BACKEND.parent / "models"
-NON_EXEC_BANK = MODELS_DIR / "coding_bank_nonexecuted.json"
+
+#: Banks whose questions are graded without executing code.  SQL lives in its
+#: own file -- its answer keys are proven with ``sqlite3`` at build time, which
+#: is a different kind of evidence from the compiled-language banks -- so "the
+#: non-executed bank" is the union of these.
+NON_EXEC_BANKS = (
+    MODELS_DIR / "coding_bank_nonexecuted.json",
+    MODELS_DIR / "coding_bank_sql.json",
+)
+NON_EXEC_BANK = NON_EXEC_BANKS[0]
+
+
+def _non_executed_banks_present() -> bool:
+    return any(path.exists() for path in NON_EXEC_BANKS)
+
+
+def _load_non_executed():
+    """Every available non-executed question, across all bank files."""
+    questions = []
+    for path in NON_EXEC_BANKS:
+        if path.exists():
+            questions.extend(json.loads(path.read_text(encoding="utf-8")))
+    return questions
 
 
 # ---------------------------------------------------------------------------
@@ -140,9 +162,9 @@ def test_response_schema_does_not_leak_the_answer_key():
 # ---------------------------------------------------------------------------
 # Coverage: every language we claim must have questions
 # ---------------------------------------------------------------------------
-@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+@pytest.mark.skipif(not _non_executed_banks_present(), reason="non-executed bank not built")
 def test_non_executed_bank_is_well_formed():
-    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    questions = _load_non_executed()
     assert questions
 
     ids = [q["id"] for q in questions]
@@ -162,16 +184,16 @@ def test_non_executed_bank_is_well_formed():
             assert all(a.strip() for a in q["accepted_answers"]), q["id"]
 
 
-@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+@pytest.mark.skipif(not _non_executed_banks_present(), reason="non-executed bank not built")
 def test_every_supported_language_has_questions():
     """role_profiles.NON_EXECUTED_LANGUAGES is a promise -- hold it."""
-    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    questions = _load_non_executed()
     have = {q["language"] for q in questions}
     missing = [l for l in role_profiles.NON_EXECUTED_LANGUAGES if l not in have]
     assert not missing, f"declared as supported but has no questions: {missing}"
 
 
-@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+@pytest.mark.skipif(not _non_executed_banks_present(), reason="non-executed bank not built")
 def test_complete_function_accepts_equivalent_spellings():
     """A right answer must not score 0 for writing `x += 1` instead of `x = x + 1`.
 
@@ -179,7 +201,7 @@ def test_complete_function_accepts_equivalent_spellings():
     carry the equivalent spellings -- otherwise this becomes the same silent
     zero-scoring bug that was just fixed in the execution sandbox.
     """
-    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    questions = _load_non_executed()
     with_variants = 0
     for q in questions:
         if q["format"] != "Complete Function":
@@ -196,9 +218,9 @@ def test_complete_function_accepts_equivalent_spellings():
     )
 
 
-@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+@pytest.mark.skipif(not _non_executed_banks_present(), reason="non-executed bank not built")
 def test_whitespace_and_semicolons_never_change_a_complete_function_answer():
-    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    questions = _load_non_executed()
     cf = [q for q in questions if q["format"] == "Complete Function"]
     assert cf
     q = cf[0]
@@ -208,14 +230,14 @@ def test_whitespace_and_semicolons_never_change_a_complete_function_answer():
             f"{q['id']}: {typed!r} scored 0"
 
 
-@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+@pytest.mark.skipif(not _non_executed_banks_present(), reason="non-executed bank not built")
 def test_python_find_the_bug_correct_option_produces_valid_python():
     """The marked line must be a whole statement, not a fragment.
 
     This also catches a distractor that was accidentally *also* correct in a way
     that breaks the snippet -- the failure mode found by hand during review.
     """
-    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    questions = _load_non_executed()
     marker = re.compile(r"^(\s*)#\s*\?\?\?.*$", re.M)
     checked = 0
     for q in questions:
@@ -231,10 +253,10 @@ def test_python_find_the_bug_correct_option_produces_valid_python():
     assert checked > 0
 
 
-@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+@pytest.mark.skipif(not _non_executed_banks_present(), reason="non-executed bank not built")
 def test_every_role_language_can_actually_be_served():
     """A role's resolved language must have enough questions to fill a session."""
-    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    questions = _load_non_executed()
     per_language = {}
     for q in questions:
         per_language.setdefault(q["language"], []).append(q)

@@ -150,11 +150,17 @@ def test_a_crashing_program_scores_nothing_rather_than_raising(subprocess_backen
 # ---------------------------------------------------------------------------
 # The container really enforces the policy (skipped without Docker)
 # ---------------------------------------------------------------------------
-def _raw_container(script: str, timeout: float = 20.0):
+def _raw_container(script: str, timeout: float = 60.0):
     """Run a program in the *bare* container, bypassing the in-process guard.
 
     This is what proves the container is the boundary: it deliberately does not
     install the import guard, so it exercises the isolation on its own.
+
+    The timeout is deliberately generous.  These tests assert isolation, not
+    speed, and a container start on Docker Desktop can take tens of seconds when
+    the machine is busy -- a 20s budget made this flake under the full suite
+    while passing in isolation.  The timeout is only here so a genuinely hung
+    container fails instead of hanging the run.
     """
     return subprocess.run(
         code_sandbox.docker_command("code_sandbox_test")[:-1] + ["-c", script],

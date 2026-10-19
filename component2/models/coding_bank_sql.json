@@ -1,0 +1,834 @@
+[
+  {
+    "id": "NEX_SQL_001",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "basic SELECT and WHERE",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);\nINSERT INTO employees VALUES (1, 'Alice', 5000);\nINSERT INTO employees VALUES (2, 'Bob', 3000);\nINSERT INTO employees VALUES (3, 'Carol', 7000);\n\n-- predict the output of this query\nSELECT name FROM employees WHERE salary > 4000 ORDER BY name;\n",
+    "accepted_answers": [
+      "Alice \n Carol"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_002",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "AND / OR precedence",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE flags (id INTEGER, a INTEGER, b INTEGER);\nINSERT INTO flags VALUES (1, 1, 0);\nINSERT INTO flags VALUES (2, 0, 1);\nINSERT INTO flags VALUES (3, 1, 1);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM flags WHERE a = 1 OR b = 1 AND id = 1;\n",
+    "accepted_answers": [
+      "2"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_003",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "ORDER BY with LIMIT",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE products (id INTEGER, name TEXT, price INTEGER);\nINSERT INTO products VALUES (1, 'Pen', 10);\nINSERT INTO products VALUES (2, 'Book', 50);\nINSERT INTO products VALUES (3, 'Bag', 30);\nINSERT INTO products VALUES (4, 'Cup', 20);\n\n-- predict the output of this query\nSELECT name FROM products ORDER BY price DESC LIMIT 1;\n",
+    "accepted_answers": [
+      "Book"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_004",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "GROUP BY with ORDER BY",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE staff (dept TEXT, salary INTEGER);\nINSERT INTO staff VALUES ('Eng', 1000);\nINSERT INTO staff VALUES ('Eng', 2000);\nINSERT INTO staff VALUES ('Sales', 500);\nINSERT INTO staff VALUES ('Eng', 3000);\n\n-- predict the output of this query\nSELECT dept, COUNT(*) FROM staff GROUP BY dept ORDER BY dept;\n",
+    "accepted_answers": [
+      "Eng | 3 \n Sales | 1"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_005",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "DISTINCT count",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE visits (user_id INTEGER);\nINSERT INTO visits VALUES (1);\nINSERT INTO visits VALUES (1);\nINSERT INTO visits VALUES (2);\nINSERT INTO visits VALUES (3);\nINSERT INTO visits VALUES (3);\nINSERT INTO visits VALUES (3);\n\n-- predict the output of this query\nSELECT COUNT(DISTINCT user_id) FROM visits;\n",
+    "accepted_answers": [
+      "3"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_006",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "aggregate functions",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE sales (amount INTEGER);\nINSERT INTO sales VALUES (100);\nINSERT INTO sales VALUES (200);\nINSERT INTO sales VALUES (300);\n\n-- predict the output of this query\nSELECT SUM(amount), COUNT(amount) FROM sales;\n",
+    "accepted_answers": [
+      "600 | 3"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_007",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "HAVING filter on groups",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE staff2 (dept TEXT, salary INTEGER);\nINSERT INTO staff2 VALUES ('Eng', 6000);\nINSERT INTO staff2 VALUES ('Eng', 5000);\nINSERT INTO staff2 VALUES ('Sales', 1000);\nINSERT INTO staff2 VALUES ('Sales', 2000);\n\n-- predict the output of this query\nSELECT dept, SUM(salary) AS total FROM staff2 GROUP BY dept HAVING SUM(salary) > 5000 ORDER BY dept;\n",
+    "accepted_answers": [
+      "Eng | 11000"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_008",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "COUNT(*) versus COUNT(column)",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE notes (id INTEGER, note TEXT);\nINSERT INTO notes VALUES (1, 'a');\nINSERT INTO notes VALUES (2, NULL);\nINSERT INTO notes VALUES (3, 'b');\n\n-- predict the output of this query\nSELECT COUNT(*), COUNT(note) FROM notes;\n",
+    "accepted_answers": [
+      "3 | 2"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_009",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "AVG returns a decimal",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE scores2 (score INTEGER);\nINSERT INTO scores2 VALUES (10);\nINSERT INTO scores2 VALUES (20);\n\n-- predict the output of this query\nSELECT AVG(score) FROM scores2;\n",
+    "accepted_answers": [
+      "15.0"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_010",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "MIN and MAX on text",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE words (word TEXT);\nINSERT INTO words VALUES ('banana');\nINSERT INTO words VALUES ('apple');\nINSERT INTO words VALUES ('cherry');\n\n-- predict the output of this query\nSELECT MIN(word), MAX(word) FROM words;\n",
+    "accepted_answers": [
+      "apple | cherry"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_011",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "INNER JOIN with WHERE",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE customers (id INTEGER, name TEXT);\nINSERT INTO customers VALUES (1, 'Alice');\nINSERT INTO customers VALUES (2, 'Bob');\nINSERT INTO customers VALUES (3, 'Carol');\nCREATE TABLE orders (id INTEGER, customer_id INTEGER, amount INTEGER);\nINSERT INTO orders VALUES (10, 1, 150);\nINSERT INTO orders VALUES (11, 2, 50);\nINSERT INTO orders VALUES (12, 1, 200);\n\n-- predict the output of this query\nSELECT DISTINCT c.name FROM customers c JOIN orders o ON o.customer_id = c.id WHERE o.amount > 100 ORDER BY c.name;\n",
+    "accepted_answers": [
+      "Alice"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_012",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "LEFT JOIN finding unmatched rows",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE customers2 (id INTEGER, name TEXT);\nINSERT INTO customers2 VALUES (1, 'Alice');\nINSERT INTO customers2 VALUES (2, 'Bob');\nINSERT INTO customers2 VALUES (3, 'Carol');\nCREATE TABLE orders2 (id INTEGER, customer_id INTEGER);\nINSERT INTO orders2 VALUES (10, 1);\nINSERT INTO orders2 VALUES (11, 1);\nINSERT INTO orders2 VALUES (12, 2);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM customers2 c LEFT JOIN orders2 o ON o.customer_id = c.id WHERE o.id IS NULL;\n",
+    "accepted_answers": [
+      "1"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_013",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "subquery with IN",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE emp (id INTEGER, name TEXT, dept_id INTEGER);\nINSERT INTO emp VALUES (1, 'Alice', 1);\nINSERT INTO emp VALUES (2, 'Bob', 2);\nINSERT INTO emp VALUES (3, 'Carol', 1);\nCREATE TABLE dept (id INTEGER, dname TEXT);\nINSERT INTO dept VALUES (1, 'Eng');\nINSERT INTO dept VALUES (2, 'Sales');\n\n-- predict the output of this query\nSELECT name FROM emp WHERE dept_id IN (SELECT id FROM dept WHERE dname = 'Eng') ORDER BY name;\n",
+    "accepted_answers": [
+      "Alice \n Carol"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_014",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "scalar subquery",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE emp2 (id INTEGER, name TEXT, salary INTEGER);\nINSERT INTO emp2 VALUES (1, 'Alice', 5000);\nINSERT INTO emp2 VALUES (2, 'Bob', 9000);\nINSERT INTO emp2 VALUES (3, 'Carol', 9000);\n\n-- predict the output of this query\nSELECT name FROM emp2 WHERE salary = (SELECT MAX(salary) FROM emp2) ORDER BY name;\n",
+    "accepted_answers": [
+      "Bob \n Carol"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_015",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "second highest with a subquery",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE emp4 (id INTEGER, name TEXT, salary INTEGER);\nINSERT INTO emp4 VALUES (1, 'Alice', 5000);\nINSERT INTO emp4 VALUES (2, 'Bob', 9000);\nINSERT INTO emp4 VALUES (3, 'Carol', 7000);\n\n-- predict the output of this query\nSELECT MAX(salary) FROM emp4 WHERE salary < (SELECT MAX(salary) FROM emp4);\n",
+    "accepted_answers": [
+      "7000"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_016",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "CASE expression",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE emp3 (id INTEGER, name TEXT, salary INTEGER);\nINSERT INTO emp3 VALUES (1, 'Alice', 5000);\nINSERT INTO emp3 VALUES (2, 'Bob', 3000);\n\n-- predict the output of this query\nSELECT name, CASE WHEN salary >= 5000 THEN 'High' ELSE 'Low' END AS band FROM emp3 ORDER BY name;\n",
+    "accepted_answers": [
+      "Alice | High \n Bob | Low"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_017",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "string functions",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE users (id INTEGER, name TEXT);\nINSERT INTO users VALUES (1, 'Alice');\nINSERT INTO users VALUES (2, 'Bob');\n\n-- predict the output of this query\nSELECT UPPER(name) || ' has ' || LENGTH(name) || ' letters' FROM users WHERE id = 1;\n",
+    "accepted_answers": [
+      "ALICE has 5 letters"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_018",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "numeric functions",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE nums (x INTEGER);\nINSERT INTO nums VALUES (10);\nINSERT INTO nums VALUES (20);\nINSERT INTO nums VALUES (30);\n\n-- predict the output of this query\nSELECT ABS(-7) + ROUND(AVG(x)) FROM nums;\n",
+    "accepted_answers": [
+      "27.0"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_019",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "integer division and modulo",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE dummy (x INTEGER);\nINSERT INTO dummy VALUES (1);\n\n-- predict the output of this query\nSELECT 5 / 2 AS a, 5.0 / 2 AS b, 5 % 2 AS c FROM dummy;\n",
+    "accepted_answers": [
+      "2 | 2.5 | 1"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_020",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "COALESCE replacing NULL",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE acct (id INTEGER, balance INTEGER);\nINSERT INTO acct VALUES (1, 100);\nINSERT INTO acct VALUES (2, NULL);\n\n-- predict the output of this query\nSELECT COALESCE(balance, 0) FROM acct WHERE id = 2;\n",
+    "accepted_answers": [
+      "0"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_021",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "NOT IN with a NULL",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE a (id INTEGER);\nINSERT INTO a VALUES (1);\nINSERT INTO a VALUES (2);\nINSERT INTO a VALUES (3);\nCREATE TABLE b (id INTEGER);\nINSERT INTO b VALUES (1);\nINSERT INTO b VALUES (NULL);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM a WHERE id NOT IN (SELECT id FROM b);\n",
+    "accepted_answers": [
+      "0"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_022",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "BETWEEN is inclusive",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE items (id INTEGER, price INTEGER);\nINSERT INTO items VALUES (1, 5);\nINSERT INTO items VALUES (2, 10);\nINSERT INTO items VALUES (3, 15);\nINSERT INTO items VALUES (4, 20);\nINSERT INTO items VALUES (5, 25);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM items WHERE price BETWEEN 10 AND 20;\n",
+    "accepted_answers": [
+      "3"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_023",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "LIKE prefix match",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE people2 (id INTEGER, name TEXT);\nINSERT INTO people2 VALUES (1, 'Ann');\nINSERT INTO people2 VALUES (2, 'Ada');\nINSERT INTO people2 VALUES (3, 'Bob');\nINSERT INTO people2 VALUES (4, 'Amy');\n\n-- predict the output of this query\nSELECT COUNT(*) FROM people2 WHERE name LIKE 'A%';\n",
+    "accepted_answers": [
+      "3"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_024",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "UNION removes duplicates",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE t1 (c INTEGER);\nINSERT INTO t1 VALUES (1);\nINSERT INTO t1 VALUES (2);\nINSERT INTO t1 VALUES (2);\nCREATE TABLE t2 (c INTEGER);\nINSERT INTO t2 VALUES (2);\nINSERT INTO t2 VALUES (3);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM (SELECT c FROM t1 UNION SELECT c FROM t2) AS u;\n",
+    "accepted_answers": [
+      "3"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_025",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "UNION ALL keeps duplicates",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE t1 (c INTEGER);\nINSERT INTO t1 VALUES (1);\nINSERT INTO t1 VALUES (2);\nINSERT INTO t1 VALUES (2);\nCREATE TABLE t2 (c INTEGER);\nINSERT INTO t2 VALUES (2);\nINSERT INTO t2 VALUES (3);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM (SELECT c FROM t1 UNION ALL SELECT c FROM t2) AS u;\n",
+    "accepted_answers": [
+      "5"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_026",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "EXCEPT",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE t3 (c INTEGER);\nINSERT INTO t3 VALUES (1);\nINSERT INTO t3 VALUES (2);\nINSERT INTO t3 VALUES (3);\nCREATE TABLE t4 (c INTEGER);\nINSERT INTO t4 VALUES (2);\nINSERT INTO t4 VALUES (3);\nINSERT INTO t4 VALUES (4);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM (SELECT c FROM t3 EXCEPT SELECT c FROM t4) AS r;\n",
+    "accepted_answers": [
+      "1"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_027",
+    "question_type": "Coding",
+    "format": "Predict Output",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "INTERSECT",
+    "question_text": "What does this SQL query return? Give one value per column, joined with ' | '.",
+    "code": "CREATE TABLE t5 (c INTEGER);\nINSERT INTO t5 VALUES (1);\nINSERT INTO t5 VALUES (2);\nINSERT INTO t5 VALUES (3);\nCREATE TABLE t6 (c INTEGER);\nINSERT INTO t6 VALUES (2);\nINSERT INTO t6 VALUES (3);\nINSERT INTO t6 VALUES (4);\n\n-- predict the output of this query\nSELECT COUNT(*) FROM (SELECT c FROM t5 INTERSECT SELECT c FROM t6) AS r;\n",
+    "accepted_answers": [
+      "2"
+    ],
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_028",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "GROUP BY / HAVING",
+    "question_text": "Return the number of employees in each department that has more than one employee. The SQL query below is wrong: line 5 does not work. Which line should replace it to fix it?",
+    "code": "SELECT department, COUNT(*) AS n\nFROM employees\nGROUP BY department\n-- the marked line is wrong: WHERE COUNT(*) > 1\nWHERE COUNT(*) > 1\nORDER BY department;",
+    "options": [
+      {
+        "index": 0,
+        "text": "WHERE COUNT(*) > 1"
+      },
+      {
+        "index": 1,
+        "text": "HAVING COUNT(*) > 1"
+      },
+      {
+        "index": 2,
+        "text": "HAVING COUNT(*) = 1"
+      },
+      {
+        "index": 3,
+        "text": "HAVING SUM(salary) > 1000"
+      }
+    ],
+    "correct_answer_index": 1,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_029",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "comparison operator",
+    "question_text": "Return the number of orders that are not paid. The SQL query below is wrong: line 4 does not work. Which line should replace it to fix it?",
+    "code": "SELECT COUNT(*) AS n\nFROM orders\n-- the marked line is wrong: WHERE status = 'paid';\nWHERE status = 'paid';",
+    "options": [
+      {
+        "index": 0,
+        "text": "WHERE status <> 'paid'"
+      },
+      {
+        "index": 1,
+        "text": "WHERE status = 'paid'"
+      },
+      {
+        "index": 2,
+        "text": "WHERE status = 'cancelled'"
+      },
+      {
+        "index": 3,
+        "text": "WHERE status IS NULL"
+      }
+    ],
+    "correct_answer_index": 0,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_030",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "LEFT JOIN",
+    "question_text": "Return each customer name and their order count, including customers with no orders. The SQL query below is wrong: line 4 does not work. Which line should replace it to fix it?",
+    "code": "SELECT c.name, COUNT(o.id) AS n\nFROM customers c\n-- the marked line is wrong: JOIN orders o ON o.customer_id = c.id\nJOIN orders o ON o.customer_id = c.id\nGROUP BY c.name\nORDER BY c.name;",
+    "options": [
+      {
+        "index": 0,
+        "text": "INNER JOIN orders o ON o.customer_id = c.id"
+      },
+      {
+        "index": 1,
+        "text": "JOIN orders o ON o.id = c.id"
+      },
+      {
+        "index": 2,
+        "text": "JOIN orders o ON o.customer_id = c.id AND o.id > 1"
+      },
+      {
+        "index": 3,
+        "text": "LEFT JOIN orders o ON o.customer_id = c.id"
+      }
+    ],
+    "correct_answer_index": 3,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_031",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "DISTINCT",
+    "question_text": "Return each department name exactly once. The SQL query below is wrong: line 2 does not work. Which line should replace it to fix it?",
+    "code": "-- the marked line is wrong: SELECT department\nSELECT department\nFROM employees\nORDER BY department;",
+    "options": [
+      {
+        "index": 0,
+        "text": "SELECT department"
+      },
+      {
+        "index": 1,
+        "text": "SELECT COUNT(department)"
+      },
+      {
+        "index": 2,
+        "text": "SELECT DISTINCT department"
+      },
+      {
+        "index": 3,
+        "text": "SELECT UNIQUE department"
+      }
+    ],
+    "correct_answer_index": 2,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_032",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "aggregate choice",
+    "question_text": "Return the average score for each student. The SQL query below is wrong: line 2 does not work. Which line should replace it to fix it?",
+    "code": "-- the marked line is wrong: SELECT student, SUM(score) AS avg_score\nSELECT student, SUM(score) AS avg_score\nFROM scores\nGROUP BY student\nORDER BY student;",
+    "options": [
+      {
+        "index": 0,
+        "text": "SELECT student, SUM(score) AS avg_score"
+      },
+      {
+        "index": 1,
+        "text": "SELECT student, AVG(score) AS avg_score"
+      },
+      {
+        "index": 2,
+        "text": "SELECT student, COUNT(score) AS avg_score"
+      },
+      {
+        "index": 3,
+        "text": "SELECT student, MIN(score) AS avg_score"
+      }
+    ],
+    "correct_answer_index": 1,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_033",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "AND / OR precedence",
+    "question_text": "Return employees with a salary above 5000 who work in department 'Eng' or 'Sales'. The SQL query below is wrong: line 4 does not work. Which line should replace it to fix it?",
+    "code": "SELECT name\nFROM employees\n-- the marked line is wrong: WHERE salary > 5000 AND department = 'Eng' OR department = 'Sales'\nWHERE salary > 5000 AND department = 'Eng' OR department = 'Sales'\nORDER BY name;",
+    "options": [
+      {
+        "index": 0,
+        "text": "WHERE salary > 5000 AND (department = 'Eng' OR department = 'Sales')"
+      },
+      {
+        "index": 1,
+        "text": "WHERE salary > 5000 AND department = 'Eng' OR department = 'Sales'"
+      },
+      {
+        "index": 2,
+        "text": "WHERE salary >= 5000 AND (department = 'Eng' OR department = 'Sales')"
+      },
+      {
+        "index": 3,
+        "text": "WHERE salary > 5000 AND department IN ('Eng')"
+      }
+    ],
+    "correct_answer_index": 0,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_034",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "NULL comparison",
+    "question_text": "Return the names of employees whose manager is not set. The SQL query below is wrong: line 4 does not work. Which line should replace it to fix it?",
+    "code": "SELECT name\nFROM employees\n-- the marked line is wrong: WHERE manager_id = NULL\nWHERE manager_id = NULL\nORDER BY name;",
+    "options": [
+      {
+        "index": 0,
+        "text": "WHERE manager_id = NULL"
+      },
+      {
+        "index": 1,
+        "text": "WHERE manager_id IS NOT NULL"
+      },
+      {
+        "index": 2,
+        "text": "WHERE manager_id <> NULL"
+      },
+      {
+        "index": 3,
+        "text": "WHERE manager_id = 0"
+      },
+      {
+        "index": 4,
+        "text": "WHERE manager_id IS NULL"
+      }
+    ],
+    "correct_answer_index": 4,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_035",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "BETWEEN off-by-one",
+    "question_text": "Return products whose price is from 10 to 20 inclusive. The SQL query below is wrong: line 4 does not work. Which line should replace it to fix it?",
+    "code": "SELECT name\nFROM products\n-- the marked line is wrong: WHERE price BETWEEN 11 AND 20\nWHERE price BETWEEN 11 AND 20\nORDER BY name;",
+    "options": [
+      {
+        "index": 0,
+        "text": "WHERE price BETWEEN 11 AND 20"
+      },
+      {
+        "index": 1,
+        "text": "WHERE price BETWEEN 10 AND 19"
+      },
+      {
+        "index": 2,
+        "text": "WHERE price BETWEEN 10 AND 20"
+      },
+      {
+        "index": 3,
+        "text": "WHERE price > 10 AND price < 20"
+      },
+      {
+        "index": 4,
+        "text": "WHERE price BETWEEN 20 AND 10"
+      }
+    ],
+    "correct_answer_index": 2,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_036",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "LIMIT off-by-one",
+    "question_text": "Return the names of the two highest-paid employees. The SQL query below is wrong: line 5 does not work. Which line should replace it to fix it?",
+    "code": "SELECT name\nFROM employees\nORDER BY salary DESC\n-- the marked line is wrong: LIMIT 3;\nLIMIT 3;",
+    "options": [
+      {
+        "index": 0,
+        "text": "LIMIT 2;"
+      },
+      {
+        "index": 1,
+        "text": "LIMIT 3;"
+      },
+      {
+        "index": 2,
+        "text": "LIMIT 1;"
+      },
+      {
+        "index": 3,
+        "text": "LIMIT 4;"
+      },
+      {
+        "index": 4,
+        "text": "LIMIT 0;"
+      }
+    ],
+    "correct_answer_index": 0,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_037",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Medium",
+    "category": "SQL Queries",
+    "topic": "wrong join column",
+    "question_text": "Return each customer name with the amount of their order. The SQL query below is wrong: line 4 does not work. Which line should replace it to fix it?",
+    "code": "SELECT c.name, o.amount\nFROM customers c\n-- the marked line is wrong: JOIN orders o ON o.id = c.id\nJOIN orders o ON o.id = c.id\nORDER BY c.name;",
+    "options": [
+      {
+        "index": 0,
+        "text": "JOIN orders o ON o.id = c.id"
+      },
+      {
+        "index": 1,
+        "text": "JOIN orders o ON o.customer_id = o.id"
+      },
+      {
+        "index": 2,
+        "text": "JOIN orders o ON c.id = o.amount"
+      },
+      {
+        "index": 3,
+        "text": "JOIN orders o ON o.customer_id = c.id"
+      },
+      {
+        "index": 4,
+        "text": "JOIN orders o ON o.customer_id = c.id AND o.amount > 60"
+      }
+    ],
+    "correct_answer_index": 3,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_038",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "HAVING versus WHERE",
+    "question_text": "Return departments whose total salary is above 10000. The SQL query below is wrong: line 5 does not work. Which line should replace it to fix it?",
+    "code": "SELECT department, SUM(salary) AS total\nFROM employees\nGROUP BY department\n-- the marked line is wrong: WHERE SUM(salary) > 10000\nWHERE SUM(salary) > 10000\nORDER BY department;",
+    "options": [
+      {
+        "index": 0,
+        "text": "WHERE SUM(salary) > 10000"
+      },
+      {
+        "index": 1,
+        "text": "HAVING SUM(salary) > 10000"
+      },
+      {
+        "index": 2,
+        "text": "HAVING SUM(salary) >= 10000"
+      },
+      {
+        "index": 3,
+        "text": "HAVING COUNT(*) > 10000"
+      },
+      {
+        "index": 4,
+        "text": "HAVING SUM(salary) > 1000"
+      }
+    ],
+    "correct_answer_index": 1,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_039",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Hard",
+    "category": "SQL Queries",
+    "topic": "COUNT(DISTINCT ...)",
+    "question_text": "Return the number of distinct customers who placed an order. The SQL query below is wrong: line 2 does not work. Which line should replace it to fix it?",
+    "code": "-- the marked line is wrong: SELECT COUNT(customer_id) AS customers\nSELECT COUNT(customer_id) AS customers\nFROM orders;",
+    "options": [
+      {
+        "index": 0,
+        "text": "SELECT COUNT(customer_id) AS customers"
+      },
+      {
+        "index": 1,
+        "text": "SELECT COUNT(*) AS customers"
+      },
+      {
+        "index": 2,
+        "text": "SELECT COUNT(customer_id) + 1 AS customers"
+      },
+      {
+        "index": 3,
+        "text": "SELECT SUM(customer_id) AS customers"
+      },
+      {
+        "index": 4,
+        "text": "SELECT COUNT(DISTINCT customer_id) AS customers"
+      }
+    ],
+    "correct_answer_index": 4,
+    "time_limit": 300
+  },
+  {
+    "id": "NEX_SQL_040",
+    "question_type": "Coding",
+    "format": "Find the Bug",
+    "language": "SQL",
+    "difficulty": "Easy",
+    "category": "SQL Queries",
+    "topic": "LIKE pattern",
+    "question_text": "Return the names that start with the letter A. The SQL query below is wrong: line 4 does not work. Which line should replace it to fix it?",
+    "code": "SELECT name\nFROM people\n-- the marked line is wrong: WHERE name LIKE '%A'\nWHERE name LIKE '%A'\nORDER BY name;",
+    "options": [
+      {
+        "index": 0,
+        "text": "WHERE name LIKE '%A'"
+      },
+      {
+        "index": 1,
+        "text": "WHERE name LIKE 'A%'"
+      },
+      {
+        "index": 2,
+        "text": "WHERE name LIKE 'B%'"
+      },
+      {
+        "index": 3,
+        "text": "WHERE name = 'Ann'"
+      }
+    ],
+    "correct_answer_index": 1,
+    "time_limit": 300
+  }
+]

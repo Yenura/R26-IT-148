@@ -71,10 +71,17 @@ EXECUTABLE_LANGUAGES: tuple = ("Python",)
 # makes Embedded / Frontend / Mobile / Blockchain questions role-appropriate
 # instead of silently Python.
 #
-# Must stay in lock-step with ``models/coding_bank_nonexecuted.json``
-# (enforced by tests).
+# SQL is here too, but for a different reason: it is a query language with no
+# runner at all, and it is the *first* declared language of ``Database
+# Administrator``.  Without it that role fell through to Python -- the exact
+# silent default this policy exists to remove.
+#
+# Must stay in lock-step with ``models/coding_bank_nonexecuted.json`` and
+# ``models/coding_bank_sql.json`` (enforced by tests).
 # ---------------------------------------------------------------------------
-NON_EXECUTED_LANGUAGES: tuple = ("Python", "Java", "C++", "JavaScript", "Go", "Rust")
+NON_EXECUTED_LANGUAGES: tuple = (
+    "Python", "Java", "C++", "JavaScript", "Go", "Rust", "SQL",
+)
 
 # Question formats that are graded without running the candidate's code.
 NON_EXECUTED_FORMATS: tuple = ("Predict Output", "Find the Bug", "Complete Function")

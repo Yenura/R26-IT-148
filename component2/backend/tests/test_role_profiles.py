@@ -253,6 +253,30 @@ def test_coding_language_is_coerced_and_stamped(service):
     assert all(q.get("language") == "Rust" for q in coding)
 
 
+def test_database_administrator_is_served_sql_not_python(service):
+    """DBA declares ["SQL", "Python"], so SQL is its language once SQL exists.
+
+    Before SQL had a bank this role fell through to the executed Python path:
+    a database administrator was asked to write Python.  Now it must be served
+    SQL, and -- because there is no SQL runner -- in a format graded without
+    executing anything.
+    """
+    session = service.create_interview_session(
+        candidate_id="TEST", job_role="Database Administrator", num_questions=10,
+        mcq_count=4, desc_count=3, coding_count=3, is_practice=True,
+    )
+    assert session["coding_language"] == "SQL"
+
+    coding = [q for q in session["questions"] if q.get("question_type") == "Coding"]
+    assert coding, "a sql-profile role must still receive its coding section"
+    for q in coding:
+        assert q.get("language") == "SQL", f"{q.get('id')} is not SQL"
+        assert q.get("format") in role_profiles.NON_EXECUTED_FORMATS, (
+            f"{q.get('id')} has format {q.get('format')!r}, which the SQL path "
+            "cannot grade without a database engine"
+        )
+
+
 def test_role_language_policy_matches_the_roles_that_used_to_be_wrong():
     """The five roles the sandbox used to mis-serve, pinned explicitly."""
     # Non-Python roles now get their own declared language, not Python.
@@ -263,4 +287,8 @@ def test_role_language_policy_matches_the_roles_that_used_to_be_wrong():
     # Roles that genuinely declare Python keep the executed Python path.
     assert role_profiles.resolve_language("Backend Developer", None) == "Python"
     assert role_profiles.resolve_language("Software Engineer", None) == "Python"
+    # A role whose *first* declared language became supported gets that language
+    # rather than falling through to Python.  Database Administrator declares
+    # ["SQL", "Python"], so SQL is its language, not the default.
+    assert role_profiles.resolve_language("Database Administrator", None) == "SQL"
 
