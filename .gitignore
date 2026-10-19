@@ -182,6 +182,21 @@ ENV/
 env.bak/
 venv.bak/
 
+# Cloudflare Tunnel secrets.  The credentials file is root-equivalent for the
+# Cloudflare account and TUNNEL_TOKEN grants control of the tunnel, so neither
+# belongs in git.  (.env is already ignored above.)
+deploy/cloudflare/credentials.json
+deploy/cloudflare/*.pem
+.cloudflared/
+.wrangler/
+
+# Vite per-environment files.  The deployed API hostnames differ per
+# environment, so they are generated from the .example template rather than
+# committed.  See frontend/.env.production.example.
+frontend/.env.production
+frontend/.env.local
+frontend/.env.*.local
+
 # Node
 node_modules/
 

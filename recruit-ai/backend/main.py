@@ -94,7 +94,15 @@ app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
+    # A deployed site should trust exactly the origins in ALLOWED_ORIGINS.  The
+    # localhost regex exists so a dev server on whatever port Vite picked keeps
+    # working; ALLOW_LOCALHOST_ORIGINS=0 (set in production) removes it, so a
+    # deployed backend does not also accept requests from localhost.
+    allow_origin_regex=(
+        None
+        if os.getenv("ALLOW_LOCALHOST_ORIGINS", "1") == "0"
+        else r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$"
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

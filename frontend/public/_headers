@@ -1,0 +1,26 @@
+# Response headers for Cloudflare Pages.
+#
+# There is deliberately no Content-Security-Policy here.  The five API origins
+# are baked into the bundle at build time from VITE_C0_URL..VITE_C4_URL, so a
+# CSP written now would either be wrong or break the deployed app the moment a
+# hostname changes.  See deploy/cloudflare/README.md for the exact policy to
+# add once the hostnames are settled -- it matters, because the session JWT
+# lives in localStorage and a CSP is what limits the damage of any XSS.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+  Cross-Origin-Opener-Policy: same-origin
+
+# Vite fingerprints these filenames, so they can be cached forever.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# index.html must never be cached, or clients pin a stale bundle that points at
+# deleted asset hashes.
+/
+  Cache-Control: public, max-age=0, must-revalidate
+/index.html
+  Cache-Control: public, max-age=0, must-revalidate
