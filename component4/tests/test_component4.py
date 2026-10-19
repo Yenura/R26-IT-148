@@ -37,6 +37,20 @@ def client():
         yield test_client
 
 
+def _auth_headers(uid="test-candidate", role="candidate"):
+    """A signed token for endpoints that now require an authenticated caller."""
+    import os
+    from datetime import datetime, timedelta, timezone
+    from jose import jwt
+    secret = os.getenv("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod")
+    token = jwt.encode(
+        {"sub": uid, "role": role,
+         "exp": datetime.now(timezone.utc) + timedelta(hours=1)},
+        secret, algorithm="HS256",
+    )
+    return {"Authorization": f"Bearer {token}"}
+
+
 def test_1_skill_normalization():
     assert normalize_skill("py") == "Python"
     assert normalize_skill("js") == "JavaScript"
@@ -166,7 +180,7 @@ def test_13_api_skill_gap_simulation(client):
         "acquired_skills": ["Machine Learning", "Statistics"],
         "target_role": "Data Scientist"
     }
-    response = client.post("/api/v1/skill-gap/simulate", json=payload)
+    response = client.post("/api/v1/skill-gap/simulate", json=payload, headers=_auth_headers())
     assert response.status_code == 200
     data = response.json()
     assert data["simulated_coverage"] > data["original_coverage"]

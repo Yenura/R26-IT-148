@@ -173,10 +173,15 @@ async def simple_skill_gap(payload: SimpleSkillGapRequest):
 
 
 @router.post("/simulate", summary="Run 'What-If' skill acquisition simulation")
-async def simulate_skill_acquisition(payload: SimulateRequest, request: Request = None):
+async def simulate_skill_acquisition(payload: SimulateRequest, request: Request = None, identity: dict = Depends(require_identity)):
     db = getattr(request.app.state, "db", None) if request else None
 
     candidate_id = payload.candidate_id
+    # When current_skills is omitted this endpoint reads the candidate's stored
+    # CV skills, so it returns candidate data and needs the same ownership check
+    # as /analyze and /report.  Without it any caller could read another
+    # candidate's skills by passing their id.
+    require_owner_or_service(identity, candidate_id)
     target_role = payload.target_role or payload.job_role or payload.role or "Software Engineer"
     acquired_skills = payload.acquired_skills or payload.skills or payload.simulated_skills or []
     current_skills = payload.current_skills

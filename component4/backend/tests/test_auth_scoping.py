@@ -25,6 +25,7 @@ from slowapi.util import get_remote_address
 from routers import progress as progress_router
 from routers import skill_gap as skill_gap_router
 from routers import career as career_router
+from routers import analytics as analytics_router
 
 
 # ── Fake async Mongo ────────────────────────────────────────────────
@@ -142,6 +143,7 @@ def _make_app():
     app.include_router(progress_router.router, prefix="/api/v1/progress")
     app.include_router(skill_gap_router.router, prefix="/api/v1/skill-gap")
     app.include_router(career_router.router, prefix="/api/v1/career")
+    app.include_router(analytics_router.router, prefix="/api/v1/analytics")
     app.state.db = FakeDB()
     return app
 
@@ -258,3 +260,63 @@ class TestCareerRoadmap:
     def test_roadmap_cross_user_403(self, app):
         c = TestClient(app, raise_server_exceptions=False)
         assert c.get(f"/api/v1/career/roadmap/{B}", headers=_auth(A)).status_code == 403
+
+
+# ── analytics ───────────────────────────────────────────────────────
+class TestAnalyticsAuth:
+    """The dashboard endpoints read across every candidate, so a signed-in
+    session is the minimum bar.  They were previously reachable with no
+    credentials at all -- the UI hid them behind PrivateRoute, which protects
+    the page but not the API."""
+
+    def test_summary_anonymous_401(self, app):
+        c = TestClient(app, raise_server_exceptions=False)
+        assert c.get("/api/v1/analytics/summary").status_code == 401
+
+    def test_leaderboard_anonymous_401(self, app):
+        c = TestClient(app, raise_server_exceptions=False)
+        assert c.get("/api/v1/analytics/leaderboard").status_code == 401
+
+    def test_role_insights_anonymous_401(self, app):
+        c = TestClient(app, raise_server_exceptions=False)
+        assert c.get("/api/v1/analytics/role-insights/Software Engineer").status_code == 401
+
+    def test_leaderboard_authenticated_200(self, app):
+        # No candidate users in the fake DB, so this exercises auth + the empty
+        # result path without needing the LambdaMART model.
+        c = TestClient(app, raise_server_exceptions=False)
+        r = c.get("/api/v1/analytics/leaderboard", headers=_auth(A))
+        assert r.status_code == 200
+        assert r.json()["count"] == 0
+
+
+# ── skill-acquisition simulation ────────────────────────────────────
+class TestSkillGapSimulate:
+    """The simulation reads the candidate's stored CV skills when
+    current_skills is omitted, so it must enforce the same ownership rule as
+    /analyze.  It previously did not, which allowed reading another
+    candidate's skills by passing their id."""
+
+    def test_simulate_anonymous_401(self, app):
+        c = TestClient(app, raise_server_exceptions=False)
+        r = c.post("/api/v1/skill-gap/simulate",
+                   json={"candidate_id": B, "target_role": "Data Scientist",
+                         "current_skills": ["Python"]})
+        assert r.status_code == 401
+
+    def test_simulate_cross_user_403(self, app):
+        c = TestClient(app, raise_server_exceptions=False)
+        r = c.post("/api/v1/skill-gap/simulate",
+                   json={"candidate_id": B, "target_role": "Data Scientist",
+                         "current_skills": ["Python"]},
+                   headers=_auth(A))
+        assert r.status_code == 403
+
+    def test_simulate_own_200(self, app):
+        c = TestClient(app, raise_server_exceptions=False)
+        r = c.post("/api/v1/skill-gap/simulate",
+                   json={"candidate_id": B, "target_role": "Data Scientist",
+                         "current_skills": ["Python"]},
+                   headers=_auth(B))
+        assert r.status_code == 200
+        assert r.json()["target_role"] == "Data Scientist"

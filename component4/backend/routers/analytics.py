@@ -10,7 +10,8 @@ _BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _BACKEND_DIR not in sys.path:
     sys.path.insert(0, _BACKEND_DIR)
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
+from auth_guard import require_identity
 from starlette.concurrency import run_in_threadpool
 from services.ml_engine import run_skill_gap_analysis
 
@@ -99,7 +100,7 @@ def _round_avg(avg_data: dict, key: str, dec: int = 1) -> float:
 # ── Routes ─────────────────────────────────────────────────────────────────────
 
 @router.get("/summary", summary="Aggregate analytics across all candidates")
-async def analytics_summary(request: Request):
+async def analytics_summary(request: Request, identity: dict = Depends(require_identity)):
     db = request.app.state.db
     total = await db.skill_gap_reports.count_documents({})
 
@@ -160,7 +161,7 @@ def _get_cached_ltr_model():
 
 
 @router.get("/leaderboard", summary="Top unique candidates by real CV & Interview marks using LambdaMART LTR")
-async def leaderboard(request: Request, limit: int = 50):
+async def leaderboard(request: Request, limit: int = 50, identity: dict = Depends(require_identity)):
     """
     Real-Data Talent Leaderboard powered by LambdaMART LTR:
     Evaluates real candidates from MongoDB who have uploaded a CV and completed technical interviews.
@@ -366,7 +367,7 @@ async def leaderboard(request: Request, limit: int = 50):
 
 
 @router.get("/role-insights/{job_role}", summary="Analytics for a specific job role")
-async def role_insights(job_role: str, request: Request):
+async def role_insights(job_role: str, request: Request, identity: dict = Depends(require_identity)):
     db = request.app.state.db
     pipeline = [
         {"$match": {"job_role": job_role}},
