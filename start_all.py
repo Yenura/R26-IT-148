@@ -19,6 +19,16 @@ import webbrowser
 import urllib.request
 import urllib.error
 
+# Load .env before building COMMON_ENV.  The backend processes call
+# load_dotenv() themselves, but that never overrides a variable already present
+# in the environment -- so any MONGODB_URI/JWT_SECRET set here would silently
+# shadow .env.  Reading .env first makes it authoritative.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Ensure UTF-8 output on Windows consoles
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -87,12 +97,18 @@ if os.path.exists(_env_file):
 COMMON_ENV = {
     **os.environ,
     "PYTHONUNBUFFERED": "1",
-    "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR"),
+    # No credential defaults here.  This used to fall back to a hosted cluster
+    # whose password was committed to the repo, which meant a missing .env
+    # silently connected every launcher to a shared, public database.  The
+    # fallback is the local Mongo instead.
+    "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb://localhost:27017"),
     "DB_NAME": os.getenv("DB_NAME", "HR"),
     "JWT_SECRET": os.getenv("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod"),
     "HF_HUB_OFFLINE": "1",
     "TRANSFORMERS_OFFLINE": "1",
-    "INTERNAL_API_KEY": os.getenv("INTERNAL_API_KEY", "recruitai-internal-service-key-2026"),
+    # An empty value disables the X-Internal-Key bypass in auth_guard; set it
+    # explicitly when a deployment needs service-to-service calls.
+    "INTERNAL_API_KEY": os.getenv("INTERNAL_API_KEY", ""),
 }
 
 SERVICES = [

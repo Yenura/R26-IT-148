@@ -9,6 +9,15 @@ import time
 import pickle
 import numpy as np
 
+# See start_all.py: .env has to be read here, because load_dotenv() in the
+# backend processes will not override values this process puts in their
+# environment.  Without this the fallbacks below shadow .env.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
 # Ensure UTF-8 output on Windows consoles
 if hasattr(sys.stdout, "reconfigure"):
     try:
@@ -97,9 +106,12 @@ env = {
     "PYTHONUNBUFFERED": "1",
     "PYTHONIOENCODING": "utf-8",
     "PYTHONUTF8": "1",
-    "MONGODB_URI": "mongodb+srv://admin:PxUm8dLzq5jqlHYN@coordinator.ljarc.mongodb.net/HR",
-    "DB_NAME": "HR",
-    "JWT_SECRET": "recruitai-dev-secret-key-change-in-prod"
+    # Read from the environment like start_all.py.  Hardcoding the Atlas
+    # connection string here meant the launcher connected to a shared cluster
+    # even when .env had been changed.
+    "MONGODB_URI": os.getenv("MONGODB_URI", "mongodb://localhost:27017"),
+    "DB_NAME": os.getenv("DB_NAME", "HR"),
+    "JWT_SECRET": os.getenv("JWT_SECRET", "recruitai-dev-secret-key-change-in-prod")
 }
 
 def main():
