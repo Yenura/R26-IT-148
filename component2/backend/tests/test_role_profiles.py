@@ -111,33 +111,54 @@ def test_distribution_tracks_scoring_weights(service, weights):
 
 
 # ---------------------------------------------------------------------------
-# Executable-language guarantee
+# Language guarantee: executable, or supported by a non-executed format
 # ---------------------------------------------------------------------------
 
-def test_offered_languages_are_executable(roles):
-    executable = set(role_profiles.executable_languages())
+def test_offered_languages_are_supported(roles):
+    supported = set(role_profiles.supported_languages())
     for role in roles:
         for lang in role_profiles.available_languages(role):
-            assert lang in executable, f"{role} offers non-executable {lang}"
+            assert lang in supported, f"{role} offers unsupportable {lang}"
 
 
-def test_every_coding_role_offers_python(roles):
-    """Python is the only hardened runner, so it must always be offerable."""
+def test_every_coding_role_offers_a_language_it_declares(roles):
+    """Python is *not* appended as a silent default for every coding role.
+
+    A Frontend Developer used to be handed Python.  The offered language must
+    come from the role's own declared list (Python included, for the roles that
+    genuinely declare it); only a role with no declared list at all may fall
+    back to Python.
+    """
     for role in roles:
         langs = role_profiles.available_languages(role)
-        if role_profiles.is_coding_role(role):
-            assert "Python" in langs, f"{role} offers no runnable language: {langs}"
-        else:
+        if not role_profiles.is_coding_role(role):
             assert langs == [], f"non-coding {role} offers {langs}"
+            continue
+        declared = {l.lower() for l in role_profiles.declared_languages(role)}
+        if declared:
+            assert langs, f"{role} declares {sorted(declared)} but offers nothing"
+            assert all(l.lower() in declared for l in langs), \
+                f"{role} offers a language it does not declare: {langs}"
+
+
+def test_no_role_is_offered_python_without_declaring_it(roles):
+    """The regression this policy exists to kill: silent Python."""
+    for role in roles:
+        if not role_profiles.is_coding_role(role):
+            continue
+        declared = {l.lower() for l in role_profiles.declared_languages(role)}
+        offered = {l.lower() for l in role_profiles.available_languages(role)}
+        if declared:
+            assert not (offered - declared), f"{role} silently offered {offered - declared}"
 
 
 def test_resolve_language_never_returns_unsupported(roles):
-    executable = set(role_profiles.executable_languages())
+    supported = set(role_profiles.supported_languages())
     for role in roles:
         for requested in ("Java", "Kotlin", "Solidity", "TypeScript", "Auto", "", None, "Python"):
             resolved = role_profiles.resolve_language(role, requested)
             if role_profiles.is_coding_role(role):
-                assert resolved in executable, f"{role} + {requested!r} -> {resolved}"
+                assert resolved in supported, f"{role} + {requested!r} -> {resolved}"
             else:
                 assert resolved is None, f"non-coding {role} resolved {resolved}"
 
@@ -215,14 +236,31 @@ def test_non_coding_role_never_serves_a_coding_question(service, roles):
 
 
 def test_coding_language_is_coerced_and_stamped(service):
-    """An unexecutable choice must not survive into the session."""
+    """An unsupported choice must not survive into the session.
+
+    Kotlin is not supported; Blockchain Developer declares Rust, so the
+    candidate is moved to Rust (its first declared language we can ask in) and
+    every served coding question is stamped with that language.
+    """
     session = service.create_interview_session(
         candidate_id="TEST", job_role="Blockchain Developer", num_questions=10,
         mcq_count=4, desc_count=3, coding_count=3, is_practice=True,
         coding_language="Kotlin",
     )
-    assert session["coding_language"] == "Python"
+    assert session["coding_language"] == "Rust"
     coding = [q for q in session["questions"] if q.get("question_type") == "Coding"]
     assert len(coding) == 3
-    assert all(q.get("language") == "Python" for q in coding)
+    assert all(q.get("language") == "Rust" for q in coding)
+
+
+def test_role_language_policy_matches_the_roles_that_used_to_be_wrong():
+    """The five roles the sandbox used to mis-serve, pinned explicitly."""
+    # Non-Python roles now get their own declared language, not Python.
+    assert role_profiles.resolve_language("Frontend Developer", None) == "JavaScript"
+    assert role_profiles.resolve_language("Embedded Systems Engineer", None) == "C++"
+    assert role_profiles.resolve_language("Mobile App Developer", None) == "Java"
+    assert role_profiles.resolve_language("Blockchain Developer", None) == "Rust"
+    # Roles that genuinely declare Python keep the executed Python path.
+    assert role_profiles.resolve_language("Backend Developer", None) == "Python"
+    assert role_profiles.resolve_language("Software Engineer", None) == "Python"
 

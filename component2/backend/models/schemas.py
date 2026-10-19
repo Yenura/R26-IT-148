@@ -266,6 +266,13 @@ class InterviewQuestion(BaseModel):
     options: Optional[List[MCQOption]] = None
     test_cases: Optional[List[TestCase]] = None
     language: Optional[str] = None
+    # Coding only. "Write Code" (default) is executed in the sandbox; the other
+    # values are the non-executed formats, graded from an answer key. The
+    # answer key itself (`accepted_answers` / `correct_answer_index`) is
+    # deliberately NOT in this response model, so it is never sent to the
+    # candidate.
+    format: Optional[str] = None
+    code: Optional[str] = None
     time_limit_seconds: int = 900
 
 

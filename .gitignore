@@ -580,6 +580,7 @@ R26-IT-148_PLANNER_TASKS.json
 *.json
 # Curated data that must ship with the repo despite the *.json ignore above.
 !component2/models/coding_bank_external.json
+!component2/models/coding_bank_nonexecuted.json
 *.png
 *.png
 *.docx

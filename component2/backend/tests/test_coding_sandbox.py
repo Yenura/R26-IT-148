@@ -185,11 +185,19 @@ def test_loader_appends_external_questions_and_skips_duplicates():
     service.models_dir = str(MODELS_DIR)
     service.question_bank = [{"id": "LC_1", "question_type": "Coding"}]
 
-    external = json.loads(EXTERNAL_BANK.read_text(encoding="utf-8"))
-    service.question_bank.append({"id": external[0]["id"], "question_type": "Coding"})
+    # Pre-seed one id so the append has to skip it.
+    seeded = json.loads(EXTERNAL_BANK.read_text(encoding="utf-8"))[0]["id"]
+    service.question_bank.append({"id": seeded, "question_type": "Coding"})
 
     service._load_external_coding_bank()
 
     ids = [q["id"] for q in service.question_bank]
     assert len(ids) == len(set(ids)), "duplicates must not be appended"
-    assert len(service.question_bank) == 1 + len(external)
+
+    # Every question from every generated bank must now be present exactly once.
+    for name in InterviewService.EXTERNAL_BANK_FILES:
+        path = MODELS_DIR / name
+        if not path.exists():
+            continue
+        for q in json.loads(path.read_text(encoding="utf-8")):
+            assert q["id"] in ids, f"{q['id']} from {name} was not loaded"

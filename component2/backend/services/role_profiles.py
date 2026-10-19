@@ -23,19 +23,31 @@ The drift caused real, user-visible bugs:
 * ``Mobile App Developer`` declared Kotlin/Swift/Dart but was detected as
   JavaScript because ``React Native`` matched an over-broad ``react`` rule.
 
-Executable vs. declared languages
----------------------------------
+Executable vs. declared vs. supported languages
+-----------------------------------------------
 The sandbox that runs candidate code (``routers/interview.py``) is
 **Python-only**: it compiles with ``compile(code, "<string>", "exec")`` and
 runs ``sys.executable`` inside a wrapper that blocks ``os`` / ``subprocess`` /
-network imports.  Offering a language we cannot execute means every candidate
-who actually writes in that language is graded as a Python syntax error and
-scores 0 -- which is exactly what used to happen for Java / Kotlin / Solidity.
+network imports.  Offering a language we cannot execute *and then executing it
+anyway* means every candidate who actually writes in that language is graded
+as a Python syntax error and scores 0 -- which is exactly what used to happen
+for Java / Kotlin / Solidity.
 
-So the interview may only ever *offer* languages in
-:func:`executable_languages`.  :func:`declared_languages` keeps the full,
-aspirational role list for reporting and for future runtimes.  Add a runtime
-here only together with a hardened sandbox, or the guarantee is broken.
+There are therefore three sets:
+
+* :func:`executable_languages` -- what the sandbox can run (Python).
+* :func:`supported_languages` -- what we can *ask*, which also includes
+  languages we can only assess with a non-executed format
+  (:data:`NON_EXECUTED_FORMATS`): predict-the-output, find-the-bug and
+  complete-the-function are graded by comparing text or picking an option, so
+  they never need to run the candidate's code.
+* :func:`declared_languages` -- the full, aspirational role list.
+
+:func:`available_languages` is the role's declared list filtered to
+``supported``, in declared order.  Python is **not** appended as a silent
+default; a role whose declared languages are all unsupported offers nothing,
+and its coding weight shifts to Descriptive.  Add a runtime here only together
+with a hardened sandbox, or the guarantee is broken.
 """
 
 from typing import Dict, List, Optional
@@ -47,6 +59,28 @@ from typing import Dict, List, Optional
 # Python has a hardened runner today, so this is intentionally a single entry.
 # ---------------------------------------------------------------------------
 EXECUTABLE_LANGUAGES: tuple = ("Python",)
+
+# ---------------------------------------------------------------------------
+# Languages the interview can ask WITHOUT executing code.
+#
+# A candidate's code cannot be *run* in these languages (there is no hardened
+# runner), but it can still be assessed with the non-executed formats in
+# ``NON_EXECUTED_FORMATS`` (predict-the-output / find-the-bug /
+# complete-the-function), which are graded by comparing text or picking an
+# option rather than by running the candidate's code.  Offering them is what
+# makes Embedded / Frontend / Mobile / Blockchain questions role-appropriate
+# instead of silently Python.
+#
+# Must stay in lock-step with ``models/coding_bank_nonexecuted.json``
+# (enforced by tests).
+# ---------------------------------------------------------------------------
+NON_EXECUTED_LANGUAGES: tuple = ("Python", "Java", "C++", "JavaScript", "Go", "Rust")
+
+# Question formats that are graded without running the candidate's code.
+NON_EXECUTED_FORMATS: tuple = ("Predict Output", "Find the Bug", "Complete Function")
+
+# The format stamped on ordinary, executed Coding questions.
+EXECUTED_FORMAT = "Write Code"
 
 # Coding languages a role's questions *would* use, ordered by preference.
 # Only coding roles appear here (see ``NON_CODING_ROLES``).
@@ -157,19 +191,79 @@ def executable_languages() -> List[str]:
     return list(EXECUTABLE_LANGUAGES)
 
 
-def available_languages(job_role: str) -> List[str]:
-    """Languages the interview may offer for this role.
+def supported_languages() -> List[str]:
+    """Languages the interview may ask in at all.
 
-    The intersection of the role's declared languages with what the sandbox
-    can execute, plus Python as a universal fallback (the question bank is
-    Python and Python always runs).  Non-coding roles get an empty list.
+    Executable languages first, then the languages we can only assess with a
+    non-executed format.
+    """
+    langs = list(EXECUTABLE_LANGUAGES)
+    for lang in NON_EXECUTED_LANGUAGES:
+        if lang not in langs:
+            langs.append(lang)
+    return langs
+
+
+def available_languages(job_role: str) -> List[str]:
+    """Languages the interview may offer for this role, in declared order.
+
+    The role's own declared languages, filtered to what we can actually ask
+    (executable, or supported by a non-executed format).  Python is *not*
+    silently appended: that used to give a Frontend Developer Python questions.
+    It is used only for a role with no declared list at all (nothing to
+    respect), and a role whose declared languages are all unsupported offers
+    nothing, so its coding weight shifts to Descriptive instead.
     """
     if not is_coding_role(job_role):
         return []
-    langs = [lang for lang in declared_languages(job_role) if lang in EXECUTABLE_LANGUAGES]
-    if "Python" not in langs:
-        langs.append("Python")
-    return langs
+    supported = {lang.lower(): lang for lang in supported_languages()}
+    langs = [
+        supported[lang.lower()]
+        for lang in declared_languages(job_role)
+        if lang.lower() in supported
+    ]
+    if langs:
+        return langs
+    return ["Python"] if not declared_languages(job_role) else []
+
+
+def roles_with_language_fallback() -> Dict[str, List[str]]:
+    """Roles offered a language they do not declare (a fallback was applied).
+
+    Logged at startup: it means the interview would ask the candidate for a
+    language the role never uses.
+    """
+    fallback = {}
+    for role in ROLE_LANGUAGES:
+        declared = {lang.lower() for lang in declared_languages(role)}
+        offered = available_languages(role)
+        if offered and offered[0].lower() not in declared:
+            fallback[role] = offered
+    return fallback
+
+
+def roles_without_a_bank() -> List[str]:
+    """Coding roles whose declared languages are all unsupported.
+
+    These get no coding questions; their coding weight shifts to Descriptive.
+    """
+    return [role for role in ROLE_LANGUAGES if not available_languages(role)]
+
+
+def log_language_coverage(logger) -> None:
+    """Warn at startup about roles we cannot ask in their own language."""
+    fallback = roles_with_language_fallback()
+    if fallback:
+        logger.warning(
+            "⚠ Coding language fallback (offered language is not declared by the "
+            "role): %s", fallback,
+        )
+    missing = roles_without_a_bank()
+    if missing:
+        logger.warning(
+            "⚠ Coding roles with no bank for any declared language -- coding "
+            "weight shifts to Descriptive: %s", missing,
+        )
 
 
 def default_language(job_role: str) -> Optional[str]:
@@ -181,9 +275,9 @@ def default_language(job_role: str) -> Optional[str]:
 def resolve_language(job_role: str, requested: Optional[str]) -> Optional[str]:
     """Map a requested language to one we can actually offer.
 
-    Never returns a declared-but-unexecutable language: an unsupported choice
-    is coerced to the role default rather than silently promised and graded as
-    a syntax error.
+    Never returns an unsupported language: an unsupported choice is coerced to
+    the role default rather than silently promised and graded as a syntax
+    error.
     """
     if not is_coding_role(job_role):
         return None

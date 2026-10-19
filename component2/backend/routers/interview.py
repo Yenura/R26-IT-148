@@ -18,6 +18,7 @@ import subprocess
 import tempfile
 import os
 import ast
+import re
 import asyncio
 
 from models.schemas import (
@@ -116,6 +117,81 @@ def _output_matches(output: str, expected: str) -> bool:
     if output.lower() == expected.lower() and output.lower() in ("true", "false"):
         return True
     return False
+
+
+def _normalize_code_answer(text: str) -> str:
+    """Normalise a one-line code answer for exact-match grading.
+
+    Whitespace is insignificant and a trailing ``;`` is optional, so
+    ``i += 1`` / ``i+=1`` / ``i += 1;`` are the same answer.  Case is folded:
+    keyword casing is a style choice, not a correctness signal.
+    """
+    return re.sub(r"\s+", "", str(text)).lower().rstrip(";")
+
+
+def _grade_non_executed(question: Dict, answer: Dict, fmt: str) -> Dict:
+    """Grade a Coding question that is never executed.
+
+    The candidate's language (JavaScript / Java / C++ / Go / Rust) has no
+    hardened runner, so these formats are graded by picking an option or by
+    comparing text against an answer key that was fixed at build time -- never
+    by running the candidate's code.  The returned keys mirror the executed
+    path (``code_score``, ``syntax_valid``, ``test_pass_rate``, ...) so the
+    downstream scoring and reporting code is unchanged.
+    """
+    base = {
+        "format": fmt,
+        "language": question.get("language"),
+        "syntax_valid": True,
+        "test_pass_rate": None,
+        "tests_passed": 0,
+        "total_tests": 0,
+        "quality_score": 0.0,
+        "non_executed": True,
+    }
+
+    if fmt == "Find the Bug":
+        candidate = answer.get("selected_option")
+        if candidate is None:
+            candidate = answer.get("answer")
+        try:
+            candidate = int(candidate)
+        except (TypeError, ValueError):
+            candidate = -1
+        correct = question.get("correct_answer_index")
+        is_correct = candidate == correct
+        base.update({
+            "selected_option": candidate,
+            "correct_answer_index": correct,
+            "is_correct": is_correct,
+            "code_text": answer.get("code_text") or "",
+            "code_score": 100.0 if is_correct else 0.0,
+        })
+        return base
+
+    # "Predict Output" and "Complete Function": free text, exact match.
+    candidate = (
+        answer.get("answer_text") or answer.get("code_text")
+        or answer.get("answer") or answer.get("code") or ""
+    )
+    accepted = question.get("accepted_answers") or []
+    # A blank submission is never correct, even against a blank key.
+    if not str(candidate).strip():
+        matched = False
+    elif fmt == "Predict Output":
+        matched = any(
+            _output_matches(str(candidate), str(a)) for a in accepted if str(a).strip()
+        )
+    else:
+        normalised = _normalize_code_answer(candidate)
+        matched = normalised in {_normalize_code_answer(a) for a in accepted if a and str(a).strip()}
+    base.update({
+        "answer_text": str(candidate),
+        "accepted_answers": accepted,
+        "is_correct": bool(matched),
+        "code_score": 100.0 if matched else 0.0,
+    })
+    return base
 
 
 def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
@@ -326,6 +402,8 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
                 options=q.get("options"),
                 test_cases=q.get("test_cases"),
                 language=q.get("language"),
+                format=q.get("format"),
+                code=q.get("code"),
                 time_limit_seconds=q.get("time_limit", 900)
             )
             for q in session.get("questions", [])
@@ -471,6 +549,16 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 descriptive_indices.append(len(processed_answers))
 
             elif question_type == "Coding":
+                # Non-executed formats (predict-the-output / find-the-bug /
+                # complete-the-function) live in languages we cannot run.  They
+                # are graded from the answer key; the candidate's code is never
+                # executed, so it is never mistaken for a Python syntax error.
+                fmt = str(question.get("format") or role_profiles.EXECUTED_FORMAT)
+                if fmt in role_profiles.NON_EXECUTED_FORMATS:
+                    processed_answer.update(_grade_non_executed(question, answer, fmt))
+                    processed_answers.append(processed_answer)
+                    continue
+
                 code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
                 answer_language = str(answer.get("language") or "Python").strip() or "Python"
                 language_supported = answer_language in role_profiles.executable_languages()

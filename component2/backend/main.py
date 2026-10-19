@@ -83,7 +83,16 @@ async def lifespan(app: FastAPI):
         logger.info("✓ Interview service preloaded & warmed up")
     except Exception as e:
         logger.warning(f"Could not pre-warm interview service: {e}")
-    
+
+    # Coding-language coverage: warn about any role we cannot ask in one of its
+    # own declared languages, and any role whose coding weight will therefore
+    # shift to Descriptive.
+    try:
+        from services import role_profiles
+        role_profiles.log_language_coverage(logger)
+    except Exception as e:
+        logger.warning(f"Could not check coding-language coverage: {e}")
+
     logger.info("✓ Interview system ready on http://localhost:8002")
     logger.info("✓ API Documentation: http://localhost:8002/docs")
     
