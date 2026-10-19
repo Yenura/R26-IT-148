@@ -87,8 +87,71 @@ def test_coding_questions_are_not_relevance_gated():
     assert _is_good_question(q, "Software Engineer", ["Java", "Python"])
 
 
-# --- back-compat: the gate still works without role/skills -----------------
+def test_degenerate_answer_is_rejected():
+    """The corpus quotes identifiers ("the 'synchronized' keyword in Java"); the
+    model drops the identifier and then loops inside the answer."""
+    q = {
+        "question_type": "Descriptive",
+        "question_text": "What is the purpose of the ' keyword in Java?",
+        "answer_text": "The ' in Java is used to the ' in Java is used to the ' in Java is used to the code",
+    }
+    assert not _is_good_question(q, "Software Engineer", ["Java"])
 
+
+def test_degenerate_option_is_rejected():
+    q = _mcq(
+        "Which of the following best describes a SQL transaction?",
+        options=(
+            "a risk when a risk when a risk when a risk when a risk when",
+            "an index maintained by the planner",
+            "a lock held by the writer",
+            "a snapshot used for reads",
+        ),
+    )
+    assert not _is_good_question(q, "Software Engineer", ["SQL"])
+
+
+def test_healthy_descriptive_answer_is_accepted():
+    q = {
+        "question_type": "Descriptive",
+        "question_text": "How does exception handling work in Java?",
+        "answer_text": "Java uses try, catch, finally and throw; checked exceptions must be declared.",
+    }
+    assert _is_good_question(q, "Software Engineer", ["Java"])
+
+
+def test_dangling_quote_is_rejected():
+    """The corpus writes "the 'synchronized' keyword in Java"; the model drops
+    the identifier and leaves a bare quote, which reads as a broken question."""
+    assert not _is_good_question(
+        {
+            "question_type": "Descriptive",
+            "question_text": "What is the purpose of the ' keyword in Java?",
+            "answer_text": "The synchronized keyword controls access to a critical section of code.",
+        },
+        "Software Engineer",
+        ["Java"],
+    )
+
+
+def test_real_quoted_term_is_accepted():
+    q = {
+        "question_type": "Descriptive",
+        "question_text": "What is the purpose of the 'synchronized' keyword in Java?",
+        "answer_text": "It serialises access to a critical section so only one thread runs it.",
+    }
+    assert _is_good_question(q, "Software Engineer", ["Java"])
+
+
+def test_topical_word_overlap_is_accepted():
+    """The corpus and job_requirements phrase the same topic differently, so
+    relevance is word overlap, not substring equality."""
+    q = _mcq("Which of the following would a senior Data Scientist flag as a risk "
+             "when data pipelines is handled incorrectly?")
+    assert _is_good_question(q, "Data Scientist", ["Python", "data pipeline design", "statistics"])
+
+
+# --- back-compat: the gate still works without role/skills -----------------
 def test_gate_still_usable_without_role_or_skills():
     q = _mcq("Which of the following best describes a primary key in a relational database?")
     assert _is_good_question(q)

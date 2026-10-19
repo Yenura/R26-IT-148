@@ -48,16 +48,33 @@ def _is_good_question(q: Dict, job_role: str = "", skills: Optional[List[str]] =
     qtext = q.get("question_text") or ""
     if _is_degenerate(qtext):
         return False
+    # The model loops inside answers and options too, not just the question:
+    # "The ' class in Java is used to the ' in Java is used to the ' in Java ..."
+    answer_text = q.get("answer_text") or ""
+    option_texts = " ".join(
+        str(o.get("text", "")) for o in (q.get("options") or []) if isinstance(o, dict)
+    )
+    if _is_degenerate(answer_text) or _is_degenerate(option_texts):
+        return False
+    # The corpus quotes identifiers -- "the 'synchronized' keyword in Java" -- and
+    # the model frequently drops the identifier, leaving a bare quote: "the '
+    # keyword in Java". A quote surrounded by whitespace is that failure; a real
+    # quoted term ("the 'synchronized' keyword", "it's") is never shaped like it.
+    if re.search(r"\s'\s", qtext):
+        return False
     # Topical relevance. The generator fills category/topic straight from the
     # skill list, so testing those always "succeeds"; the question text itself
-    # has to name the role or one of its skills. Applied to MCQ/Descriptive only
-    # -- the corpus conditions those on the role, whereas coding prompts carry
-    # algorithm tags instead, so a coding question legitimately never names a
-    # role skill.
+    # has to name the role, or share a meaningful word with one of its skills.
+    # Word overlap rather than substring equality, because the corpus and
+    # job_requirements phrase the same topic differently ("data pipelines" vs
+    # "data pipeline design"). Applied to MCQ/Descriptive only -- the corpus
+    # conditions those on the role, whereas coding prompts carry algorithm tags
+    # instead, so a coding question legitimately never names a role skill.
     if skills and q.get("question_type") in ("MCQ", "Descriptive"):
         low = qtext.lower()
-        named = (bool(job_role) and job_role.lower() in low) or \
-            any(s and s.lower() in low for s in skills)
+        skill_words = {w for s in skills if s for w in re.findall(r"[a-z0-9+#]{3,}", s.lower())}
+        q_words = set(re.findall(r"[a-z0-9+#]{3,}", low))
+        named = (bool(job_role) and job_role.lower() in low) or bool(q_words & skill_words)
         if not named:
             return False
     if len(qtext) < 20:
