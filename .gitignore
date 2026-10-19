@@ -17,6 +17,7 @@ component2/models/t5_qg_latest/
 component2/models/_t5_qg_dead_checkpoint/
 component2/models/_t5_qg_run900/
 component2/models/_t5_qg_run2_best/
+component2/models/_t5_qg_run3_best/
 component2/models/qg_dataset_merged.json
 component2/models/qg_dataset_v3.json
 component2/train_t5.log

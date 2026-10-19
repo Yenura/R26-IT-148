@@ -39,13 +39,14 @@ def load_requirements(models_dir: Path):
     return out
 
 
-def relevance(qtext: str, skills) -> float:
-    """Fraction of the role's skills mentioned in the question text."""
-    if not skills:
-        return 0.0
+def named_skills(qtext: str, skills) -> list:
+    """Which of the role's skills the question names.
+
+    A generated question normally names exactly one -- the training prompts
+    carry a single skill -- so "1 of 8" is success, not 12%.
+    """
     low = qtext.lower()
-    hits = sum(1 for s in skills if s and s.lower() in low)
-    return 100.0 * hits / len(skills)
+    return [s for s in skills if s and s.lower() in low]
 
 
 def main():
@@ -103,7 +104,7 @@ def main():
                     "role": role,
                     "type": q.get("question_type"),
                     "question": qt,
-                    "relevance_pct": round(relevance(qt, skills), 1),
+                    "names_skill": ", ".join(named_skills(qt, skills)[:2]) or "-",
                 })
     except Exception as exc:  # pragma: no cover
         print("app-path probe failed:", exc, flush=True)
@@ -166,8 +167,9 @@ def main():
         L.append("| step | phase | ROUGE-L | BLEU-4 | field-valid % | exact % |")
         L.append("|---|---|---|---|---|---|")
         for h in rep.get("history", []):
+            em = h.get("exact_match")
             L.append(f"| {h.get('step')} | {h.get('phase')} | {h.get('rouge_l')} | {h.get('bleu4')} "
-                     f"| {h.get('field_valid')} | {h.get('exact_match')} |")
+                     f"| {h.get('field_valid')} | {'-' if em is None else em} |")
         L.append("")
         L.append(f"- best checkpoint: step {rep.get('best', {}).get('step')} "
                  f"(ROUGE-L {rep.get('best', {}).get('rouge_l')})")
@@ -187,11 +189,11 @@ def main():
 
     if probes:
         L.append("## App-path probes (real backend QuestionGenerator)\n")
-        L.append("| role | type | relevance to role skills % | question |")
+        L.append("| role | type | role skill named | question |")
         L.append("|---|---|---|---|")
         for p in probes:
             q = p["question"][:140].replace("|", "/")
-            L.append(f"| {p['role']} | {p['type']} | {p['relevance_pct']} | {q} |")
+            L.append(f"| {p['role']} | {p['type']} | {p['names_skill']} | {q} |")
         L.append("")
 
     L.append("## Why the previous checkpoint was unusable\n")
