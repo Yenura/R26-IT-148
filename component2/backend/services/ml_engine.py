@@ -16,6 +16,7 @@ from pathlib import Path
 import logging
 
 from services.qg_engine import generate_questions_qg, merge_skill_lists
+from services import role_profiles
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -285,29 +286,35 @@ class InterviewService:
             },
         ]
     
+    def _coding_weight(self, job_role: str) -> Optional[float]:
+        """Coding weight for a role from the scoring config (None if unknown).
+
+        The scoring config is the authority on whether a role has a coding
+        section; the skill list only fills gaps for roles we don't know.
+        """
+        weights = self.interview_configs.get("interview_weights", {})
+        entry = weights.get(job_role)
+        if isinstance(entry, dict) and "coding" in entry:
+            try:
+                return float(entry["coding"])
+            except (TypeError, ValueError):
+                return None
+        return None
+
     def _determine_coding_profile(self, job_role: str, required_skills: List[str]) -> str:
-        """Determine the coding profile based on job role and skill keywords."""
-        trigger_keywords = {
-            "Python", "Java", "JavaScript", "C++", "C#", "SQL", "Kotlin", "Swift",
-            "TypeScript", "React", "Vue", "Node.js", "Flutter", "React Native",
-            "TensorFlow", "PyTorch", "HTML", "CSS"
-        }
-        skill_text = " ".join(required_skills).lower()
+        """Determine the coding profile based on job role and skill keywords.
 
-        # Role-specific overrides for known edge cases
-        if job_role == "DevOps Engineer":
-            return "scripting"
-        if job_role in {"Cybersecurity Analyst", "Cloud Solutions Architect", "UI/UX Designer", "Business/Systems Analyst", "Network Engineer"}:
-            return "none"
-
-        has_language = any(keyword.lower() in skill_text for keyword in trigger_keywords if keyword != "SQL")
-        has_sql = any("sql" in skill.lower() for skill in required_skills)
-
-        if has_language:
-            return "full"
-        if has_sql:
-            return "sql"
-        return "none"
+        Delegates to :mod:`services.role_profiles`, which is the single source
+        of truth shared with the router, the question generator and the
+        frontend.  The scoring config's coding weight wins over skill keywords,
+        so a role with a 0 coding weight can never be profiled as coding (and
+        vice versa).
+        """
+        return role_profiles.determine_coding_profile(
+            job_role,
+            required_skills,
+            coding_weight=self._coding_weight(job_role),
+        )
 
     def _extract_skills_from_description(self, description: str) -> List[str]:
         """Extract technical skills mentioned in a job description text."""
@@ -346,25 +353,47 @@ class InterviewService:
         }
         mcq_pct, desc_pct, code_pct = distribution.get(job_role, (0.30, 0.40, 0.30))
 
+        # The scoring config is authoritative: the question mix must match how
+        # the section is actually graded, otherwise a role can be handed
+        # coding questions it is never scored on (or vice versa).
+        weights = self.interview_configs.get("interview_weights", {}).get(job_role)
+        if isinstance(weights, dict) and all(
+            k in weights for k in ("mcq", "descriptive", "coding")
+        ):
+            try:
+                mcq_pct = float(weights["mcq"])
+                desc_pct = float(weights["descriptive"])
+                code_pct = float(weights["coding"])
+            except (TypeError, ValueError):
+                pass
+
         if coding_profile == "none":
             code_pct = 0.0
-        if coding_profile == "scripting":
-            mcq_pct, desc_pct, code_pct = 0.40, 0.40, 0.20
-        if coding_profile == "sql" and job_role == "Database Administrator":
-            mcq_pct, desc_pct, code_pct = 0.30, 0.40, 0.30
 
-        mcq_count = int(num_questions * mcq_pct)
-        desc_count = int(num_questions * desc_pct)
-        code_count = int(num_questions * code_pct)
+        total = mcq_pct + desc_pct + code_pct
+        if total <= 0:
+            mcq_pct, desc_pct, code_pct, total = 0.30, 0.40, 0.30, 1.0
 
+        # Largest-remainder so the three counts always sum to num_questions.
+        scaled = [
+            num_questions * mcq_pct / total,
+            num_questions * desc_pct / total,
+            num_questions * code_pct / total,
+        ]
+        mcq_count, desc_count, code_count = (int(s) for s in scaled)
         remainder = num_questions - (mcq_count + desc_count + code_count)
-        for idx in range(remainder):
-            if code_pct >= desc_pct and code_pct >= mcq_pct:
-                code_count += 1
-            elif desc_pct >= mcq_pct:
+        order = sorted(
+            range(3),
+            key=lambda i: scaled[i] - int(scaled[i]),
+            reverse=True,
+        )
+        for idx in order[: max(0, remainder)]:
+            if idx == 0:
+                mcq_count += 1
+            elif idx == 1:
                 desc_count += 1
             else:
-                mcq_count += 1
+                code_count += 1
 
         return mcq_count, desc_count, code_count
 
@@ -423,6 +452,7 @@ class InterviewService:
         coding_count: Optional[int] = None,
         job_description: str = "",
         is_practice: bool = False,
+        coding_language: Optional[str] = None,
     ) -> Dict:
         """
         Create interview session with questions
@@ -434,6 +464,8 @@ class InterviewService:
             employer_skills: Optional skills from employer posting (merged with role defaults)
             job_level: Intern/Junior/Mid-Level/Senior/Staff level → difficulty filter
             exclude_ids: Question IDs to skip (seen in past sessions)
+            coding_language: Language the candidate wants to write in. Coerced
+                to a language the sandbox can execute (see role_profiles).
 
         Returns:
             Interview session dictionary
@@ -445,19 +477,24 @@ class InterviewService:
         required_skills = merge_skill_lists(self.job_requirements[job_role], employer_skills)
         coding_profile = self._determine_coding_profile(job_role, required_skills)
 
+        # Resolve the language the candidate asked for against what we can
+        # actually run.  Never offer a language the sandbox cannot execute.
+        resolved_language = role_profiles.resolve_language(job_role, coding_language)
+
+        # A non-coding role (profile "none") never receives coding questions,
+        # whatever the caller asked for.  This single invariant is what used to
+        # be violated for Blockchain Developer and Site Reliability Engineer.
+        role_is_coding = coding_profile != "none"
+
         # Use company-configured per-type counts if provided, otherwise auto-distribute
         if mcq_count is not None or desc_count is not None or coding_count is not None:
             num_mcq = mcq_count if mcq_count is not None else 0
             num_desc = desc_count if desc_count is not None else 0
             num_code = coding_count if coding_count is not None else 0
-            # Enforce scoring config: non-coding roles never get coding questions
-            try:
-                w = self.interview_configs.get("interview_weights", {}).get(job_role, {})
-                if w.get("coding", 1) == 0 and num_code > 0:
-                    num_desc += num_code
-                    num_code = 0
-            except:
-                pass
+            if not role_is_coding and num_code > 0:
+                # Redistribute a requested coding share into descriptive questions.
+                num_desc += num_code
+                num_code = 0
             # Ensure total matches: scale each type proportionally
             # (largest remainder) instead of only shrinking coding.
             total_specified = num_mcq + num_desc + num_code
@@ -475,22 +512,16 @@ class InterviewService:
                     num_mcq, num_desc, num_code = self._get_question_distribution(
                         job_role, coding_profile, num_questions
                     )
-            # Override coding profile based on actual coding count
-            if num_code == 0:
-                coding_profile = "none"
         else:
             num_mcq, num_desc, num_code = self._get_question_distribution(
                 job_role, coding_profile, num_questions
             )
-            # Also enforce for auto-distribute path
-            try:
-                w = self.interview_configs.get("interview_weights", {}).get(job_role, {})
-                if w.get("coding", 1) == 0 and num_code > 0:
-                    num_desc += num_code
-                    num_code = 0
-                    coding_profile = "none"
-            except:
-                pass
+
+        # Reconcile the profile with the final count so the session metadata
+        # can never claim a coding section it does not serve.
+        if num_code == 0:
+            coding_profile = "none"
+            resolved_language = None
         difficulty = self._difficulty_for_level(job_level)
 
         # Extract skills from job description if provided
@@ -510,6 +541,7 @@ class InterviewService:
                 num_desc=num_desc,
                 num_code=num_code,
                 coding_profile=coding_profile,
+                coding_language=resolved_language,
             )
 
         if qg_questions:
@@ -524,7 +556,8 @@ class InterviewService:
             want = num_mcq + num_desc + num_code
             if len(all_questions) < want:
                 all_questions = self._top_up_questions(
-                    all_questions, want, coding_profile=coding_profile, job_role=job_role
+                    all_questions, want, coding_profile=coding_profile,
+                    job_role=job_role, language=resolved_language,
                 )
         else:
             # Select questions by type from bank
@@ -536,7 +569,8 @@ class InterviewService:
             )
             code_questions = self._select_questions_by_type(
                 "Coding", num_code, required_skills,
-                coding_profile=coding_profile, difficulty=difficulty, exclude_ids=exclude_ids
+                coding_profile=coding_profile, difficulty=difficulty,
+                exclude_ids=exclude_ids, language=resolved_language,
             )
 
             # Combine all questions, drop any naming a different role,
@@ -544,7 +578,10 @@ class InterviewService:
             all_questions = mcq_questions + desc_questions + code_questions
             all_questions = self._prefer_role_consistent(all_questions, job_role)
             if len(all_questions) < num_questions:
-                all_questions = self._top_up_questions(all_questions, num_questions, coding_profile=coding_profile, job_role=job_role)
+                all_questions = self._top_up_questions(
+                    all_questions, num_questions, coding_profile=coding_profile,
+                    job_role=job_role, language=resolved_language,
+                )
         
         # Create session with high-entropy ID to avoid collisions.
         candidate_prefix = re.sub(r"[^A-Za-z0-9]", "", candidate_id or "CAND")[:4].upper() or "CAND"
@@ -559,12 +596,20 @@ class InterviewService:
         if not code_questions:
             missing_types.append("Coding")
         
+        # Every coding question is served in the resolved (executable) language
+        # so the client and the sandbox can never disagree.
+        if resolved_language:
+            for q in all_questions:
+                if q.get("question_type") == "Coding":
+                    q["language"] = resolved_language
+
         session = {
             "session_id": session_id,
             "candidate_id": candidate_id,
             "job_role": job_role,
             "required_skills": required_skills,
             "coding_profile": coding_profile,
+            "coding_language": resolved_language,
             "questions": all_questions,
             "question_count": {
                 "mcq": sum(1 for q in all_questions if q.get("question_type") == "MCQ"),
@@ -614,7 +659,7 @@ class InterviewService:
             return kept
         return questions
 
-    def _top_up_questions(self, selected_questions: List[Dict], target_count: int, coding_profile: str = "full", job_role: str = "") -> List[Dict]:
+    def _top_up_questions(self, selected_questions: List[Dict], target_count: int, coding_profile: str = "full", job_role: str = "", language: Optional[str] = None) -> List[Dict]:
         """Top up with unused unique questions first; only repeat as last resort."""
         if not selected_questions:
             return []
@@ -641,8 +686,11 @@ class InterviewService:
             ctext = candidate.get("question_text", "").strip().lower()
             if not ctext or cid in existing_ids:
                 continue
-            if candidate.get("question_type") == "Coding" and coding_profile in {"sql", "scripting"}:
-                if not self._filter_coding_questions_by_profile([candidate], coding_profile):
+            if candidate.get("question_type") == "Coding":
+                if coding_profile in {"sql", "scripting"}:
+                    if not self._filter_coding_questions_by_profile([candidate], coding_profile):
+                        continue
+                elif not self._language_matches(candidate, language):
                     continue
             topped_up.append(candidate)
             if cid:
@@ -678,7 +726,8 @@ class InterviewService:
                                   relevant_skills: List[str],
                                   coding_profile: str = "full",
                                   difficulty: str = "Medium",
-                                  exclude_ids: Optional[set] = None) -> List[Dict]:
+                                  exclude_ids: Optional[set] = None,
+                                  language: Optional[str] = None) -> List[Dict]:
         """
         Select questions by type with relevance filtering
         
@@ -689,6 +738,7 @@ class InterviewService:
             coding_profile: Coding profile for Coding questions
             difficulty: Preferred difficulty (Easy/Medium/Hard); prefers but does not require
             exclude_ids: Question IDs to skip (seen in past sessions)
+            language: Preferred coding language (must be executable)
 
         Returns:
             List of selected questions
@@ -708,7 +758,7 @@ class InterviewService:
 
         if question_type == "Coding":
             typed_questions = self._filter_coding_questions_by_profile(
-                typed_questions, coding_profile
+                typed_questions, coding_profile, language=language
             )
             if not typed_questions:
                 logger.warning(f"No coding questions found for profile: {coding_profile}. Falling back to generic coding questions.")
@@ -736,14 +786,16 @@ class InterviewService:
         if relevant_questions:
             return self._prefer_difficulty(relevant_questions, difficulty)[:count]
 
-        # No relevant questions found; fall back to typed pool but skip
-        # obviously-off-topic categories (e.g. Java for Data Scientist).
-        off_topic_cats = {"java", "javascript", "typescript", "ruby", "php", "swift", "kotlin", "go", "rust", "c++", "c#", "scala"}
-        safe = [q for q in typed_questions if q.get("category", "").lower() not in off_topic_cats]
-        logger.warning("FALLBACK: typed=%d, relevant=%d, safe=%d (off_topic_cats=%s, skill_cats=%s, categories=%s)",
-                       len(typed_questions), len(relevant_questions), len(safe), off_topic_cats,
+        # No relevant questions found; fall back to the typed pool but skip
+        # questions written in an unrelated language (e.g. a Java question for
+        # a role that only ever writes Python).  The bank stores the language in
+        # `language`; `category` holds the algorithm topic, not the language.
+        off_topic_langs = {"java", "javascript", "typescript", "ruby", "php", "swift", "kotlin", "go", "rust", "c++", "c#", "scala"}
+        safe = [q for q in typed_questions if q.get("language", "").lower() not in off_topic_langs]
+        logger.warning("FALLBACK: typed=%d, relevant=%d, safe=%d (off_topic_langs=%s, skill_cats=%s, langs=%s)",
+                       len(typed_questions), len(relevant_questions), len(safe), off_topic_langs,
                        [s.lower() for s in relevant_skills],
-                       [q.get("category", "") for q in typed_questions[:5]])
+                       [q.get("language", "") for q in typed_questions[:5]])
         return self._prefer_difficulty((safe if safe else typed_questions), difficulty)[:count]
 
     def _prefer_difficulty(self, questions: List[Dict], difficulty: str) -> List[Dict]:
@@ -758,17 +810,40 @@ class InterviewService:
         return matched + rest
 
     
-    def _filter_coding_questions_by_profile(self, coding_questions: List[Dict], profile: str) -> List[Dict]:
-        """Filter coding questions based on SQL, scripting, or full coding profiles."""
+    @staticmethod
+    def _language_matches(question: Dict, language: Optional[str]) -> bool:
+        """True if the question is (or may be) written in the wanted language.
+
+        Questions with no declared language are treated as compatible so a
+        sparse bank never silently loses every coding question.
+        """
+        if not language:
+            return True
+        declared = str(question.get("language", "")).strip()
+        if not declared:
+            return True
+        return declared.lower() == str(language).strip().lower()
+
+    def _filter_coding_questions_by_profile(self, coding_questions: List[Dict], profile: str, language: Optional[str] = None) -> List[Dict]:
+        """Filter coding questions by language, then by SQL/scripting profile.
+
+        ``language`` is applied first: a profile keyword match must never
+        widen the pool beyond the language we actually run.  A profile whose
+        keywords match nothing (the bank has no SQL/pipeline coding questions)
+        intentionally yields an empty list so the caller can fall back
+        explicitly instead of silently serving untested questions.
+        """
+        pool = [q for q in coding_questions if self._language_matches(q, language)]
+
         if profile == "sql":
             keywords = ["sql", "query", "database", "schema", "index", "join", "select"]
         elif profile == "scripting":
             keywords = ["docker", "kubernetes", "ci/cd", "pipeline", "yaml", "shell", "git", "terraform", "dockerfile", "github actions", "bash"]
         else:
-            return coding_questions
+            return pool
 
         filtered = []
-        for q in coding_questions:
+        for q in pool:
             text = " ".join([
                 str(q.get("category", "")),
                 str(q.get("topic", "")),

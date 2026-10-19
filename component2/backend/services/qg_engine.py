@@ -240,11 +240,14 @@ def generate_questions_qg(
     num_desc: int,
     num_code: int,
     coding_profile: str,
+    coding_language: Optional[str] = None,
 ) -> Optional[List[Dict]]:
     """
     Generate questions using QG model. Returns None if model unavailable.
     Caller falls back to static question bank.
     When coding_profile is 'none', num_code is 0 and no coding questions are requested.
+    ``coding_language`` is the executable language the candidate selected; it is
+    passed to the generator so emitted coding questions are labelled correctly.
     """
     # Enforce scoring config: non-coding roles never get coding questions
     try:
@@ -256,12 +259,18 @@ def generate_questions_qg(
                 num_desc += num_code
                 num_code = 0
                 coding_profile = "none"
-    except:
+    except Exception:
         pass
     generator = _get_qg_generator()
     if generator is None:
         return None
 
+    try:
+        from ml.question_generator import set_preferred_language
+    except Exception:  # pragma: no cover - generator already imported it
+        set_preferred_language = None
+    if set_preferred_language is not None:
+        set_preferred_language(coding_language)
     try:
         combined = generator.generate_for_session(
             job_role=job_role,
@@ -290,3 +299,6 @@ def generate_questions_qg(
     except Exception as exc:
         logger.warning("QG model generation failed: %s", exc)
         return None
+    finally:
+        if set_preferred_language is not None:
+            set_preferred_language(None)

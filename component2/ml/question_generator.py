@@ -171,29 +171,56 @@ def _parse_c(text: str) -> str:
     return m.group(1).strip() if m else "O(n)"
 
 
+# Language forced onto generated coding questions by the caller. The
+# interview sandbox is Python-only, so callers pass an executable language
+# (see services.role_profiles) rather than letting loose keyword matching
+# decide (which used to label every "React Native" role as JavaScript).
+_PREFERRED_LANGUAGE: Optional[str] = None
+
+
+def set_preferred_language(language: Optional[str]) -> None:
+    """Force the language used for generated coding questions (None resets)."""
+    global _PREFERRED_LANGUAGE
+    _PREFERRED_LANGUAGE = (language or None)
+
+
 def _detect_language(skills: List[str]) -> str:
+    """Best-effort language for a skill list.
+
+    Ordering matters: platform-specific languages (Kotlin/Swift/Dart for
+    mobile) are checked before the generic ``react``/``node`` bucket, otherwise
+    "React Native" masks Kotlin and Swift.
+    """
     if not skills:
         return "Python"
     joined = " ".join(s.lower() for s in skills)
     low_list = [s.lower().strip() for s in skills]
     if "c#" in joined or "c sharp" in joined or ".net" in joined or "asp.net" in joined:
         return "C#"
+    if "solidity" in joined:
+        return "Solidity"
+    if "kotlin" in low_list:
+        return "Kotlin"
+    if "swift" in low_list:
+        return "Swift"
+    if "dart" in low_list:
+        return "Dart"
     if "java" in low_list:
         return "Java"
     if any(x in joined for x in ["javascript", "typescript", "react", "vue", "angular", "node.js", "node"]):
         return "JavaScript"
-    if "kotlin" in joined:
-        return "Kotlin"
-    if "swift" in joined:
-        return "Swift"
-    if "dart" in joined or "flutter" in joined:
-        return "Dart"
-    if " go " in f" {joined} " or "golang" in joined:
+    if " go " in f" {joined} " or "golang" in low_list:
         return "Go"
-    if "rust" in joined:
+    if "rust" in low_list:
         return "Rust"
+    if "scala" in low_list:
+        return "Scala"
+    if "bash" in joined:
+        return "Bash"
     if "c++" in joined or "c plus plus" in joined:
         return "C++"
+    if " c " in f" {joined} ":
+        return "C"
     if "sql" in low_list and len(skills) <= 3:
         return "SQL"
     return "Python"
@@ -386,7 +413,7 @@ class QuestionGenerator:
 
     def _make_coding_from_qa(self, qtext: str, answer: str, diff: str, skills: List[str]) -> Dict:
         import random
-        lang = _detect_language(skills)
+        lang = _PREFERRED_LANGUAGE or _detect_language(skills)
         test_cases = []
         answer_lower = answer.lower().strip()
         if any(kw in answer_lower for kw in ["return ", "output:", "result:", "prints"]):
@@ -422,11 +449,10 @@ class QuestionGenerator:
             out = self._generate(f"[Coding] {job_role} | {skill_str} | {diff}")
             qtext = _parse_q(out)
             lang = _parse_l(out)
-            # Override with skill-driven language (C#, Java, etc.) if detected
-            detected = _detect_language(skills)
-            if detected != "Python" and lang == "Python":
-                lang = detected
-            elif detected != "Python":
+            # Prefer the caller-selected executable language; otherwise fall
+            # back to skill-driven detection.
+            detected = _PREFERRED_LANGUAGE or _detect_language(skills)
+            if detected:
                 lang = detected
             test_cases = _parse_t(out)
             complexity = _parse_c(out)

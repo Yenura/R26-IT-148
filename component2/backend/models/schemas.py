@@ -265,6 +265,7 @@ class InterviewQuestion(BaseModel):
     topic: str
     options: Optional[List[MCQOption]] = None
     test_cases: Optional[List[TestCase]] = None
+    language: Optional[str] = None
     time_limit_seconds: int = 900
 
 
@@ -278,6 +279,9 @@ class InterviewSession(BaseModel):
     
     question_count: Dict[str, int]
     total_questions: int
+
+    coding_profile: Optional[str] = None
+    coding_language: Optional[str] = None
     
     mcq_time: int = 60
     desc_time: int = 300
@@ -307,6 +311,9 @@ class InterviewRequest(BaseModel):
     job_description: Optional[str] = ""
     job_id: Optional[str] = ""
     is_practice: Optional[bool] = False
+    # Language the candidate wants to write coding answers in. Coerced
+    # server-side to a language the sandbox can execute.
+    coding_language: Optional[str] = None
 
 
 # ====================================================================

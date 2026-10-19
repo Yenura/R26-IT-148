@@ -752,6 +752,9 @@ export default function CompanyDashboard() {
                       onChange={(e) => setForm({ ...form, interview_coding_count: e.target.value })}
                       style={{ width: '100%', padding: '4px 8px', marginTop: 2 }}
                     />
+                    <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                      Non-coding roles (e.g. UI/UX Designer, Network Engineer) always receive 0 coding questions.
+                    </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -913,6 +916,9 @@ export default function CompanyDashboard() {
                   <div>
                     <label style={{ fontSize: '11px', margin: 0, color: 'var(--color-fg-muted)' }}>Coding Count</label>
                     <input type="number" min={0} max={30} value={form.interview_coding_count} onChange={(e) => setForm({ ...form, interview_coding_count: e.target.value })} style={{ width: '100%', padding: '4px 8px', marginTop: 2 }} />
+                    <div style={{ fontSize: '10px', color: 'var(--color-fg-muted)', marginTop: 2 }}>
+                      Non-coding roles always receive 0 coding questions.
+                    </div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

@@ -14,6 +14,9 @@ import ScoreMeter from '../components/ScoreMeter'
 import ScoreBadge from '../components/ScoreBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
 
+/* Mirrors backend `services/role_profiles.py`; used only as a fallback when
+   GET /interview/jobs is unavailable. The backend is the source of truth and
+   also tells us which languages the sandbox can actually execute. */
 const ROLE_LANGUAGES = {
   "Software Engineer": ["Python","Java","C#","C++","JavaScript","Go"],
   "Backend Developer": ["Python","Java","C#","Node.js","Go","JavaScript"],
@@ -30,9 +33,13 @@ const ROLE_LANGUAGES = {
   "Embedded Systems Engineer": ["C","C++"],
   "QA/Test Automation Engineer": ["Python","Java","JavaScript"],
   "Site Reliability Engineer": ["Python","Go","Bash"],
-  "Network Engineer": ["Python"],
 }
-const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst","Network Engineer"]
+const NON_CODING_ROLES = ["Business/Systems Analyst","Cloud Solutions Architect","Cybersecurity Analyst","Network Engineer","UI/UX Designer"]
+
+/* Only Python is executable by the sandbox today (see role_profiles.py).
+   Never offer a language we cannot run: doing so scored Java/Kotlin/Solidity
+   answers as Python syntax errors. */
+const FALLBACK_EXECUTABLE = ["Python"]
 
 export default function Interview() {
   useAuth('candidate')
@@ -95,8 +102,26 @@ export default function Interview() {
 
   const [step, setStep] = useState('setup')
   const [roles, setRoles] = useState({})
+  const [roleProfiles, setRoleProfiles] = useState({})
   const [selectedRole, setSelectedRole] = useState(jobRole)
-  const isNonCodingRole = NON_CODING_ROLES.includes(selectedRole) || !ROLE_LANGUAGES[selectedRole]
+
+  /* Coding capability + offerable languages come from the backend, which knows
+     what the execution sandbox can actually run. Fall back to the local mirror
+     if the request failed. */
+  const languagesFor = (role) => {
+    const fromServer = roleProfiles[role]?.languages
+    if (Array.isArray(fromServer) && fromServer.length) return fromServer
+    const declared = (ROLE_LANGUAGES[role] || []).filter((l) => FALLBACK_EXECUTABLE.includes(l))
+    if (declared.length) return declared
+    return ROLE_LANGUAGES[role] ? [...FALLBACK_EXECUTABLE] : []
+  }
+  const isCodingRole = (role) => {
+    if (roleProfiles[role]) return !!roleProfiles[role].is_coding
+    return !!ROLE_LANGUAGES[role] && !NON_CODING_ROLES.includes(role)
+  }
+  const defaultLanguage = (role) => languagesFor(role)[0] || 'Python'
+
+  const isNonCodingRole = !isCodingRole(selectedRole)
   const effectiveCodingCount = isNonCodingRole ? 0 : numParam('codingCount', 3)
   const [selectedLevel, setSelectedLevel] = useState(jobLevel)
   const [selectedLanguage, setSelectedLanguage] = useState('Auto')
@@ -192,6 +217,7 @@ export default function Interview() {
     try {
       const r = await c2Jobs()
       setRoles(r?.data?.jobs || {})
+      setRoleProfiles(r?.data?.role_profiles || {})
     } catch {
       toast.error('Failed to load roles')
     }
@@ -205,10 +231,10 @@ export default function Interview() {
         ? jobSkills.split(',').filter(Boolean)
         : (Object.keys(roles).length > 0 ? (roles[selectedRole] || []).slice(0, 5) : [])
       // If practice mode and user chose a language for coding role, prioritize it
-      if (isPracticeMode && selectedLanguage !== 'Auto' && !NON_CODING_ROLES.includes(selectedRole)) {
+      if (isPracticeMode && selectedLanguage !== 'Auto' && isCodingRole(selectedRole)) {
         skills = [selectedLanguage, ...skills.filter((s) => s.toLowerCase() !== selectedLanguage.toLowerCase())]
       }
-      const codingLanguage = selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage
+      const codingLanguage = selectedLanguage === 'Auto' ? defaultLanguage(selectedRole) : selectedLanguage
       const r = await c2Start({
         candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
         job_role: selectedRole,
@@ -250,7 +276,7 @@ export default function Interview() {
     setRunning(true)
     setRunResults(null)
     try {
-      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [] })
+      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [], language: q.language || defaultLanguage(selectedRole) })
       setRunResults(r.data)
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Execution failed')
@@ -277,7 +303,7 @@ export default function Interview() {
               const a = answers[q.id]
               if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
               if (q.question_type === 'Descriptive') return { question_id: q.id, answer_text: a || '' }
-              if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage }
+              if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: q.language || defaultLanguage(selectedRole) }
               return { question_id: q.id, answer_text: a || '' }
             }),
           }
@@ -441,20 +467,30 @@ export default function Interview() {
             </select>
           </div>
 
-          {selectedRole && ROLE_LANGUAGES[selectedRole] && !NON_CODING_ROLES.includes(selectedRole) && (
+          {selectedRole && isCodingRole(selectedRole) && (
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: '12px', marginTop: 0 }}>Programming Language (for coding questions)</label>
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
-              >
-                <option value="Auto">Auto (from role)</option>
-                {ROLE_LANGUAGES[selectedRole].map((lang) => (
-                  <option key={lang} value={lang}>{lang}</option>
-                ))}
-              </select>
-              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4 }}>Coding questions will be generated in {selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage}</div>
+              {languagesFor(selectedRole).length > 1 ? (
+                <>
+                  <label style={{ fontSize: '12px', marginTop: 0 }}>Programming Language (for coding questions)</label>
+                  <select
+                    value={selectedLanguage}
+                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                    style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+                  >
+                    <option value="Auto">Auto (from role)</option>
+                    {languagesFor(selectedRole).map((lang) => (
+                      <option key={lang} value={lang}>{lang}</option>
+                    ))}
+                  </select>
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+                    Coding questions will be run in {selectedLanguage === 'Auto' ? defaultLanguage(selectedRole) : selectedLanguage}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                  Coding questions are written and executed in <strong>{defaultLanguage(selectedRole)}</strong>.
+                </div>
+              )}
             </div>
           )}
 
@@ -671,7 +707,7 @@ export default function Interview() {
 
               <div style={{ marginBottom: 12 }}>
                 <textarea
-                  placeholder="# Write your Python solution here...&#10;def solution():&#10;    pass"
+                  placeholder={`# Write your ${q.language || defaultLanguage(selectedRole)} solution here...\ndef solution():\n    pass`}
                   value={answers[q.id] || ''}
                   onChange={(e) => answerQuestion(q.id, e.target.value)}
                   onKeyDown={(e) => {

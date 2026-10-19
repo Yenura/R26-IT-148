@@ -27,6 +27,7 @@ from models.schemas import (
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
 from services.qg_engine import describe_qg_backend
+from services import role_profiles
 from db import save_session, get_session, save_result, get_result, get_result_by_session, update_session_status, get_seen_question_ids, link_candidate_application
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
@@ -53,6 +54,7 @@ class InterviewSubmitRequest(BaseModel):
 class CodeRunRequest(BaseModel):
     code_text: str = Field(default="", max_length=50000)
     test_cases: List[Dict] = Field(default_factory=list)
+    language: str = Field(default="Python", max_length=40)
 
     @field_validator("test_cases")
     @classmethod
@@ -248,6 +250,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             coding_count=interview_request.coding_count,
             job_description=interview_request.job_description or "",
             is_practice=interview_request.is_practice or False,
+            coding_language=interview_request.coding_language,
         )
         
         # Store time limits from employer config
@@ -274,6 +277,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
                 topic=q.get("topic", ""),
                 options=q.get("options"),
                 test_cases=q.get("test_cases"),
+                language=q.get("language"),
                 time_limit_seconds=q.get("time_limit", 900)
             )
             for q in session.get("questions", [])
@@ -287,6 +291,8 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             questions=questions,
             question_count=session["question_count"],
             total_questions=session["total_questions"],
+            coding_profile=session.get("coding_profile"),
+            coding_language=session.get("coding_language"),
             mcq_time=session["mcq_time"],
             desc_time=session["desc_time"],
             coding_time=session["coding_time"],
@@ -418,12 +424,21 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
             elif question_type == "Coding":
                 code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
+                answer_language = str(answer.get("language") or "Python").strip() or "Python"
+                language_supported = answer_language in role_profiles.executable_languages()
                 test_cases = question.get("test_cases", []) or []
-                syntax_valid = True
-                try:
-                    compile(code_text, "<string>", "exec")
-                except SyntaxError:
-                    syntax_valid = False
+                syntax_valid = False
+                if language_supported:
+                    try:
+                        compile(code_text, "<string>", "exec")
+                        syntax_valid = True
+                    except SyntaxError:
+                        syntax_valid = False
+                else:
+                    logger.warning(
+                        "Answer for %s declared unsupported language %r; not executed",
+                        question.get("id"), answer_language,
+                    )
                 # Only test cases with a real expected output AND Python-literal input
                 # are verifiable. Placeholders ("result", "See answer", etc.) must not
                 # silently fail correct code.
@@ -474,7 +489,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                     code_score = round((0.7 * test_pass_rate + 0.3 * quality_score) * 100, 2)
                 processed_answer.update({
                     "code_text": code_text,
-                    "language": answer.get("language", "Python"),
+                    "language": answer_language,
                     "code_score": code_score,
                     "syntax_valid": syntax_valid,
                     "test_pass_rate": round(test_pass_rate, 4) if test_pass_rate is not None else None,
@@ -620,6 +635,17 @@ async def run_candidate_code(request: Request, payload: CodeRunRequest, identity
     """
     code_text = payload.code_text
     test_cases = payload.test_cases
+    language = (payload.language or "Python").strip() or "Python"
+    # Refuse to grade a language we cannot execute: silently running Java as
+    # Python is how candidates ended up with a syntax-error score of 0.
+    if language not in role_profiles.executable_languages():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported language '{language}'. This sandbox executes: "
+                f"{', '.join(role_profiles.executable_languages())}."
+            ),
+        )
     syntax_valid = True
     try:
         compile(code_text, "<string>", "exec")
@@ -819,13 +845,22 @@ async def get_available_jobs(services: Dict = Depends(get_services)):
         interview_service = services["interview_service"]
         
         jobs = {}
+        role_profiles_map = {}
+        weights = interview_service.interview_configs.get("interview_weights", {})
         for job_role in interview_service.get_available_jobs():
             skills = interview_service.get_job_skills(job_role)
             jobs[job_role] = skills
+            entry = weights.get(job_role) if isinstance(weights.get(job_role), dict) else {}
+            coding_weight = entry.get("coding") if isinstance(entry, dict) else None
+            role_profiles_map[job_role] = role_profiles.role_profile(
+                job_role, coding_weight=coding_weight
+            )
         
         return {
             "success": True,
             "jobs": jobs,
+            "role_profiles": role_profiles_map,
+            "executable_languages": role_profiles.executable_languages(),
             "total_jobs": len(jobs)
         }
         
