@@ -32,6 +32,12 @@ router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
 logger = logging.getLogger(__name__)
 limiter = Limiter(key_func=get_remote_address)
 
+# asyncio keeps only a weak reference to a running task, so a fire-and-forget
+# task can be garbage collected before it finishes.  Holding a strong reference
+# until the task completes is the documented way to keep it alive; without this
+# the best-effort score sync to C0 could be silently dropped.
+_BACKGROUND_TASKS: set = set()
+
 
 class InterviewSubmitRequest(BaseModel):
     session_id: str = Field(..., min_length=1, max_length=200)
@@ -695,7 +701,9 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                     urllib.request.urlopen(req, timeout=2)
                 except:
                     pass
-            asyncio.create_task(run_in_threadpool(_send_c0))
+            task = asyncio.create_task(run_in_threadpool(_send_c0))
+            _BACKGROUND_TASKS.add(task)
+            task.add_done_callback(_BACKGROUND_TASKS.discard)
         except Exception as e:
             logger.warning(f"Failed to send scores to C0: {e}")
 
