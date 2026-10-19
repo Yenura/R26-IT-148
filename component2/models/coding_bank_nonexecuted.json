@@ -25,7 +25,8 @@
     "question_text": "Input to this function is a string containing multiple groups of nested parentheses. Your goal is to\nseparate those group into separate strings and return the list of those.\nSeparate groups are balanced (each open brace is properly closed) and not nested within each other\nIgnore any spaces in the input string.\n>>> separate_paren_groups('( ) (( )) (( )( ))')\n['()', '(())', '(()())']\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "from typing import List\n\n\ndef separate_paren_groups(paren_string: str) -> List[str]:\n    \"\"\" Input to this function is a string containing multiple groups of nested parentheses. Your goal is to\n    separate those group into separate strings and return the list of those.\n    Separate groups are balanced (each open brace is properly closed) and not nested within each other\n    Ignore any spaces in the input string.\n    >>> separate_paren_groups('( ) (( )) (( )( ))')\n    ['()', '(())', '(()())']\n    \"\"\"\n    result = []\n    current_string = []\n    current_depth = 0\n\n    for c in paren_string:\n        if c == '(':\n            current_depth += 1\n            current_string.append(c)\n        elif c == ')':\n            # ??? MISSING LINE ???\n            current_string.append(c)\n\n            if current_depth == 0:\n                result.append(''.join(current_string))\n                current_string.clear()\n\n    return result",
     "accepted_answers": [
-      "            current_depth -= 1"
+      "            current_depth -= 1",
+      "            current_depth = current_depth - 1"
     ],
     "time_limit": 300
   },
@@ -55,7 +56,8 @@
     "question_text": "You're given a list of deposit and withdrawal operations on a bank account that starts with\nzero balance. Your task is to detect if at any point the balance of account fallls below zero, and\nat that point function should return True. Otherwise it should return False.\n>>> below_zero([1, 2, 3])\nFalse\n>>> below_zero([1, 2, -4, 5])\nTrue\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "from typing import List\n\n\ndef below_zero(operations: List[int]) -> bool:\n    \"\"\" You're given a list of deposit and withdrawal operations on a bank account that starts with\n    zero balance. Your task is to detect if at any point the balance of account fallls below zero, and\n    at that point function should return True. Otherwise it should return False.\n    >>> below_zero([1, 2, 3])\n    False\n    >>> below_zero([1, 2, -4, 5])\n    True\n    \"\"\"\n    balance = 0\n\n    for op in operations:\n        # ??? MISSING LINE ???\n        if balance < 0:\n            return True\n\n    return False",
     "accepted_answers": [
-      "        balance += op"
+      "        balance += op",
+      "        balance = balance + op"
     ],
     "time_limit": 300
   },
@@ -130,7 +132,8 @@
     "question_text": "For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\nEmpty sum should be equal to 0 and empty product should be equal to 1.\n>>> sum_product([])\n(0, 1)\n>>> sum_product([1, 2, 3, 4])\n(10, 24)\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "from typing import List, Tuple\n\n\ndef sum_product(numbers: List[int]) -> Tuple[int, int]:\n    \"\"\" For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\n    Empty sum should be equal to 0 and empty product should be equal to 1.\n    >>> sum_product([])\n    (0, 1)\n    >>> sum_product([1, 2, 3, 4])\n    (10, 24)\n    \"\"\"\n    sum_value = 0\n    prod_value = 1\n\n    for n in numbers:\n        # ??? MISSING LINE ???\n        prod_value *= n\n    return sum_value, prod_value",
     "accepted_answers": [
-      "        sum_value += n"
+      "        sum_value += n",
+      "        sum_value = sum_value + n"
     ],
     "time_limit": 300
   },
@@ -280,7 +283,8 @@
     "question_text": "Find how many times a given substring can be found in the original string. Count overlaping cases.\n>>> how_many_times('', 'a')\n0\n>>> how_many_times('aaa', 'a')\n3\n>>> how_many_times('aaaa', 'aa')\n3\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "\n\ndef how_many_times(string: str, substring: str) -> int:\n    \"\"\" Find how many times a given substring can be found in the original string. Count overlaping cases.\n    >>> how_many_times('', 'a')\n    0\n    >>> how_many_times('aaa', 'a')\n    3\n    >>> how_many_times('aaaa', 'aa')\n    3\n    \"\"\"\n    times = 0\n\n    for i in range(len(string) - len(substring) + 1):\n        if string[i:i+len(substring)] == substring:\n            # ??? MISSING LINE ???\n\n    return times",
     "accepted_answers": [
-      "            times += 1"
+      "            times += 1",
+      "            times = times + 1"
     ],
     "time_limit": 300
   },
@@ -535,7 +539,8 @@
     "question_text": "Return the number of times the digit 7 appears in integers less than n which are divisible by 11 or 13.\n>>> fizz_buzz(50)\n0\n>>> fizz_buzz(78)\n2\n>>> fizz_buzz(79)\n3\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "\n\ndef fizz_buzz(n: int):\n    \"\"\"Return the number of times the digit 7 appears in integers less than n which are divisible by 11 or 13.\n    >>> fizz_buzz(50)\n    0\n    >>> fizz_buzz(78)\n    2\n    >>> fizz_buzz(79)\n    3\n    \"\"\"\n    ns = []\n    for i in range(n):\n        if i % 11 == 0 or i % 13 == 0:\n            ns.append(i)\n    s = ''.join(list(map(str, ns)))\n    ans = 0\n    for c in s:\n        # ??? MISSING LINE ???\n    return ans",
     "accepted_answers": [
-      "        ans += (c == '7')"
+      "        ans += (c == '7')",
+      "        ans = ans + (c == '7')"
     ],
     "time_limit": 300
   },
@@ -805,7 +810,8 @@
     "question_text": "You're given a list of deposit and withdrawal operations on a bank account that starts with\nzero balance. Your task is to detect if at any point the balance of account fallls below zero, and\nat that point function should return True. Otherwise it should return False.\n>>> belowZero(Arrays.asList(1, 2, 3))\nfalse\n>>> belowZero(Arrays.asList(1, 2, -4, 5))\ntrue\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import java.util.*;\nimport java.lang.*;\n\nclass Solution {\n    /**\n    You're given a list of deposit and withdrawal operations on a bank account that starts with\n    zero balance. Your task is to detect if at any point the balance of account fallls below zero, and\n    at that point function should return True. Otherwise it should return False.\n    >>> belowZero(Arrays.asList(1, 2, 3))\n    false\n    >>> belowZero(Arrays.asList(1, 2, -4, 5))\n    true\n     */\n    public boolean belowZero(List<Integer> operations) {\n        int balance = 0;\n\n        for (int op : operations) {\n            // ??? MISSING LINE ???\n            if (balance < 0) {\n                return true;\n            }\n        }\n\n        return false;\n    }\n}",
     "accepted_answers": [
-      "            balance += op;"
+      "            balance += op;",
+      "            balance = balance + op;"
     ],
     "time_limit": 300
   },
@@ -820,7 +826,8 @@
     "question_text": "For a given list of input numbers, calculate Mean Absolute Deviation\naround the mean of this dataset.\nMean Absolute Deviation is the average absolute difference between each\nelement and a centerpoint (mean in this case):\nMAD = average | x - x_mean |\n>>> meanAbsoluteDeviation(Arrays.asList(1.0, 2.0, 3.0, 4.0))\n1.0\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import java.util.*;\nimport java.lang.*;\n\nclass Solution {\n    /**\n    For a given list of input numbers, calculate Mean Absolute Deviation\n    around the mean of this dataset.\n    Mean Absolute Deviation is the average absolute difference between each\n    element and a centerpoint (mean in this case):\n    MAD = average | x - x_mean |\n    >>> meanAbsoluteDeviation(Arrays.asList(1.0, 2.0, 3.0, 4.0))\n    1.0\n     */\n    public double meanAbsoluteDeviation(List<Double> numbers) {\n        double sum = 0.0;\n        for (double num : numbers) {\n            sum += num;\n        }\n        double mean = sum / numbers.size();\n        double sum_abs_diff = 0.0;\n        for (double num : numbers) {\n            // ??? MISSING LINE ???\n        }\n        return sum_abs_diff / numbers.size();\n    }\n}",
     "accepted_answers": [
-      "            sum_abs_diff += Math.abs(num - mean);"
+      "            sum_abs_diff += Math.abs(num - mean);",
+      "            sum_abs_diff = sum_abs_diff + Math.abs(num - mean);"
     ],
     "time_limit": 300
   },
@@ -880,7 +887,8 @@
     "question_text": "For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\nEmpty sum should be equal to 0 and empty product should be equal to 1.\n>>> sumProduct(List.of())\n[0, 1]\n>>> sumProduct(Arrays.asList(1, 2, 3, 4))\n[10, 24]\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import java.util.*;\nimport java.lang.*;\n\nclass Solution {\n    /**\n    For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\n    Empty sum should be equal to 0 and empty product should be equal to 1.\n    >>> sumProduct(List.of())\n    [0, 1]\n    >>> sumProduct(Arrays.asList(1, 2, 3, 4))\n    [10, 24]\n     */\n    public List<Integer> sumProduct(List<Integer> numbers) {\n        int sum = 0;\n        int product = 1;\n\n        for (int n : numbers) {\n            sum += n;\n            // ??? MISSING LINE ???\n        }\n        return Arrays.asList(sum, product);\n    }\n}",
     "accepted_answers": [
-      "            product *= n;"
+      "            product *= n;",
+      "            product = product * n;"
     ],
     "time_limit": 300
   },
@@ -1030,7 +1038,9 @@
     "question_text": "Find how many times a given substring can be found in the original string. Count overlaping cases.\n>>> howManyTimes(\"\", \"a\")\n0\n>>> howManyTimes(\"aaa\", \"a\")\n3\n>>> howManyTimes(\"aaaa\", \"aa\")\n3\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import java.util.*;\nimport java.lang.*;\n\nclass Solution {\n    /**\n    Find how many times a given substring can be found in the original string. Count overlaping cases.\n    >>> howManyTimes(\"\", \"a\")\n    0\n    >>> howManyTimes(\"aaa\", \"a\")\n    3\n    >>> howManyTimes(\"aaaa\", \"aa\")\n    3\n     */\n    public int howManyTimes(String string, String substring) {\n        int times = 0;\n\n        for (int i = 0; i < string.length() - substring.length() + 1; i++) {\n            if (string.substring(i, i + substring.length()).equals(substring)) {\n                // ??? MISSING LINE ???\n            }\n        }\n\n        return times;\n    }\n}",
     "accepted_answers": [
-      "                times += 1;"
+      "                times += 1;",
+      "                times++;",
+      "                times = times + 1;"
     ],
     "time_limit": 300
   },
@@ -1285,7 +1295,9 @@
     "question_text": "Return the number of times the digit 7 appears in integers less than n which are divisible by 11 or 13.\n>>> fizzBuzz(50)\n0\n>>> fizzBuzz(78)\n2\n>>> fizzBuzz(79)\n3\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import java.util.*;\nimport java.lang.*;\n\nclass Solution {\n    /**\n    Return the number of times the digit 7 appears in integers less than n which are divisible by 11 or 13.\n    >>> fizzBuzz(50)\n    0\n    >>> fizzBuzz(78)\n    2\n    >>> fizzBuzz(79)\n    3\n     */\n    public int fizzBuzz(int n) {\n        int result = 0;\n        for (int i = 1; i < n; i++) {\n            if (i % 11 == 0 || i % 13 == 0) {\n                char[] digits = String.valueOf(i).toCharArray();\n                for (char c : digits) {\n                    if (c == '7') {\n                        // ??? MISSING LINE ???\n                    }\n                }\n            }\n        }\n        return result;\n    }\n}",
     "accepted_answers": [
-      "                        result += 1;"
+      "                        result += 1;",
+      "                        result++;",
+      "                        result = result + 1;"
     ],
     "time_limit": 300
   },
@@ -1405,7 +1417,8 @@
     "question_text": "Change numerical base of input number x to base.\nreturn string representation after the conversion.\nbase numbers are less than 10.\n>>> changeBase(8, 3)\n\"22\"\n>>> changeBase(8, 2)\n\"1000\"\n>>> changeBase(7, 2)\n\"111\"\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import java.util.*;\nimport java.lang.*;\n\nclass Solution {\n    /**\n    Change numerical base of input number x to base.\n    return string representation after the conversion.\n    base numbers are less than 10.\n    >>> changeBase(8, 3)\n    \"22\"\n    >>> changeBase(8, 2)\n    \"1000\"\n    >>> changeBase(7, 2)\n    \"111\"\n     */\n    public String changeBase(int x, int base) {\n        StringBuilder ret = new StringBuilder();\n        while (x > 0) {\n            ret.append(String.valueOf(x % base));\n            // ??? MISSING LINE ???\n        }\n        return ret.reverse().toString();\n    }\n}",
     "accepted_answers": [
-      "            x /= base;"
+      "            x /= base;",
+      "            x = x / base;"
     ],
     "time_limit": 300
   },
@@ -1630,7 +1643,9 @@
     "question_text": "For a given vector of integers, return a vector consisting of a sum and a product of all the integers in a vector.\nEmpty sum should be equal to 0 and empty product should be equal to 1.\n>>> sum_product({})\n(0, 1)\n>>> sum_product({1, 2, 3, 4})\n(10, 24)\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "/*\nFor a given vector of integers, return a vector consisting of a sum and a product of all the integers in a vector.\nEmpty sum should be equal to 0 and empty product should be equal to 1.\n>>> sum_product({})\n(0, 1)\n>>> sum_product({1, 2, 3, 4})\n(10, 24)\n*/\n#include<stdio.h>\n#include<vector>\nusing namespace std;\nvector<int> sum_product(vector<int> numbers){\n    int sum=0,product=1;\n    for (int i=0;i<numbers.size();i++)\n    {\n        sum+=numbers[i];\n        // ??? MISSING LINE ???\n    }\n    return {sum,product};\n}",
     "accepted_answers": [
-      "        product*=numbers[i];"
+      "        product*=numbers[i];",
+      "        product = product * numbers[i];",
+      "        product *= numbers[i];"
     ],
     "time_limit": 300
   },
@@ -1720,7 +1735,9 @@
     "question_text": "Return vector of all prefixes from shortest to longest of the input string\n>>> all_prefixes(\"abc\")\n{\"a\", \"ab\", \"abc\"}\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "/*\nReturn vector of all prefixes from shortest to longest of the input string\n>>> all_prefixes(\"abc\")\n{\"a\", \"ab\", \"abc\"}\n*/\n#include<stdio.h>\n#include<vector>\n#include<string>\nusing namespace std;\nvector<string> all_prefixes(string str){\n    vector<string> out;\n    string current=\"\";\n    for (int i=0;i<str.length();i++)\n    {\n        // ??? MISSING LINE ???\n        out.push_back(current);\n    }\n    return out;\n}",
     "accepted_answers": [
-      "        current=current+str[i];"
+      "        current=current+str[i];",
+      "        current += str[i];",
+      "        current = current + str[i];"
     ],
     "time_limit": 300
   },
@@ -1990,7 +2007,9 @@
     "question_text": "Evaluates polynomial with coefficients xs at point x. return xs[0] + xs[1] * x + xs[1] * x^2 + .... xs[n] * x^n\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "#include<stdio.h>\n#include<math.h>\n#include<vector>\nusing namespace std;\ndouble poly(vector<double> xs, double x){\n    /* \n    Evaluates polynomial with coefficients xs at point x. return xs[0] + xs[1] * x + xs[1] * x^2 + .... xs[n] * x^n \n    */\n    double sum=0;\n    int i;\n    for (i=0;i<xs.size();i++)\n    {\n        sum+=xs[i]*pow(x,i);\n    }\n    return sum;\n}\n\ndouble find_zero(vector<double> xs){\n    /*\n    xs are coefficients of a polynomial. find_zero find x such that poly(x) = 0. find_zero returns only only zero point, even if there are many. \n    Moreover, find_zero only takes list xs having even number of coefficients and largest non zero coefficient as it guarantees a solution.\n    >>> round(find_zero([1, 2]), 2) #f(x) = 1 + 2x \n    -0.5 \n    >>> round(find_zero([-6, 11, -6, 1]), 2) # (x - 1) * (x - 2) * (x - 3) = -6 + 11x - 6x^2 + x^3 \n    1.0\n    */\n    double ans=0;\n    double value;\n    value=poly(xs,ans);\n    while (abs(value)>1e-6)\n    {\n        double driv=0;\n        for (int i=1;i<xs.size();i++)\n        {\n            // ??? MISSING LINE ???\n        }\n        ans=ans-value/driv;\n        value=poly(xs,ans);\n    }\n    return ans;\n\n}",
     "accepted_answers": [
-      "            driv+=xs[i]*pow(ans,i-1)*i;"
+      "            driv+=xs[i]*pow(ans,i-1)*i;",
+      "            driv = driv + xs[i]*pow(ans,i-1)*i;",
+      "            driv += xs[i]*pow(ans,i-1)*i;"
     ],
     "time_limit": 300
   },
@@ -2170,7 +2189,9 @@
     "question_text": "Change numerical base of input number x to base.\nreturn string representation after the conversion.\nbase numbers are less than 10.\n>>> change_base(8, 3)\n\"22\"\n>>> change_base(8, 2)\n\"1000\"\n>>> change_base(7, 2)\n\"111\"\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "/*\nChange numerical base of input number x to base.\nreturn string representation after the conversion.\nbase numbers are less than 10.\n>>> change_base(8, 3)\n\"22\"\n>>> change_base(8, 2)\n\"1000\"\n>>> change_base(7, 2)\n\"111\"\n*/\n#include<stdio.h>\n#include<string>\nusing namespace std;\nstring change_base(int x,int base){\n    string out=\"\";\n    while (x>0)\n    {\n        out=to_string(x%base)+out;\n        // ??? MISSING LINE ???\n    }\n    return out;\n}",
     "accepted_answers": [
-      "        x=x/base;"
+      "        x=x/base;",
+      "        x /= base;",
+      "        x = x / base;"
     ],
     "time_limit": 300
   },
@@ -2275,7 +2296,9 @@
     "question_text": "Input to this function is a string containing multiple groups of nested parentheses. Your goal is to\nseparate those group into separate strings and return the list of those.\nSeparate groups are balanced (each open brace is properly closed) and not nested within each other\nIgnore any spaces in the input string.\n>>> separateParenGroups('( ) (( )) (( )( ))')\n['()', '(())', '(()())']\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "/* Input to this function is a string containing multiple groups of nested parentheses. Your goal is to\n  separate those group into separate strings and return the list of those.\n  Separate groups are balanced (each open brace is properly closed) and not nested within each other\n  Ignore any spaces in the input string.\n  >>> separateParenGroups('( ) (( )) (( )( ))')\n  ['()', '(())', '(()())']\n  */\nconst separateParenGroups = (paren_string) => {\n  var result = [];\n  var current_string = [];\n  var current_depth = 0;\n\n  for (const c of paren_string) {\n    if (c == '(') {\n      current_depth += 1;\n      current_string.push(c);\n    } else if (c == ')') {\n      // ??? MISSING LINE ???\n      current_string.push(c);\n      if (current_depth == 0) {\n        result.push(current_string.join(''));\n        current_string = [];\n      }\n    }\n  }\n\n  return result;\n}",
     "accepted_answers": [
-      "      current_depth -= 1;"
+      "      current_depth -= 1;",
+      "      current_depth--;",
+      "      current_depth = current_depth - 1;"
     ],
     "time_limit": 300
   },
@@ -2305,7 +2328,8 @@
     "question_text": "You're given a list of deposit and withdrawal operations on a bank account that starts with\nzero balance. Your task is to detect if at any point the balance of account fallls below zero, and\nat that point function should return true. Otherwise it should return false.\n>>> belowZero([1, 2, 3])\nfalse\n>>> belowZero([1, 2, -4, 5])\ntrue\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "/* You're given a list of deposit and withdrawal operations on a bank account that starts with\n  zero balance. Your task is to detect if at any point the balance of account fallls below zero, and\n  at that point function should return true. Otherwise it should return false.\n  >>> belowZero([1, 2, 3])\n  false\n  >>> belowZero([1, 2, -4, 5])\n  true\n  */\nconst belowZero = (operations) => {\n  var balance = 0;\n  for (const op of operations) {\n    // ??? MISSING LINE ???\n    if (balance < 0) {\n      return true;\n    }\n  }\n  return false;\n}",
     "accepted_answers": [
-      "    balance += op;"
+      "    balance += op;",
+      "    balance = balance + op;"
     ],
     "time_limit": 300
   },
@@ -2380,7 +2404,8 @@
     "question_text": "For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\nEmpty sum should be equal to 0 and empty product should be equal to 1.\n>>> sumProduct([])\n(0, 1)\n>>> sumProduct([1, 2, 3, 4])\n(10, 24)\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "/* For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\n  Empty sum should be equal to 0 and empty product should be equal to 1.\n  >>> sumProduct([])\n  (0, 1)\n  >>> sumProduct([1, 2, 3, 4])\n  (10, 24)\n  */\nconst sumProduct = (numbers, int) => {\n  var sum_value = 0, prod_value = 1;\n  for (const n of numbers) {\n    sum_value += n;\n    // ??? MISSING LINE ???\n  }\n  return [sum_value, prod_value];\n}",
     "accepted_answers": [
-      "    prod_value *= n;"
+      "    prod_value *= n;",
+      "    prod_value = prod_value * n;"
     ],
     "time_limit": 300
   },
@@ -2515,7 +2540,9 @@
     "question_text": "Find how many times a given substring can be found in the original string. Count overlaping cases.\n>>> howManyTimes('', 'a')\n0\n>>> howManyTimes('aaa', 'a')\n3\n>>> howManyTimes('aaaa', 'aa')\n3\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "/* Find how many times a given substring can be found in the original string. Count overlaping cases.\n  >>> howManyTimes('', 'a')\n  0\n  >>> howManyTimes('aaa', 'a')\n  3\n  >>> howManyTimes('aaaa', 'aa')\n  3\n  */\nconst howManyTimes = (string, substring) => {\n  var times = 0;\n  for (let i = 0; i < string.length - substring.length + 1; i++) {\n    if (string.slice(i, i+substring.length) == substring) {\n      // ??? MISSING LINE ???\n    }\n  }\n  return times;\n}",
     "accepted_answers": [
-      "      times += 1;"
+      "      times += 1;",
+      "      times++;",
+      "      times = times + 1;"
     ],
     "time_limit": 300
   },
@@ -3055,7 +3082,8 @@
     "question_text": "You're given a list of deposit and withdrawal operations on a bank account that starts with\nzero balance. Your task is to detect if at any point the balance of account fallls below zero, and\nat that point function should return true. Otherwise it should return false.\n>>> BelowZero([1, 2, 3])\nfalse\n>>> BelowZero([1, 2, -4, 5])\ntrue\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "\n// You're given a list of deposit and withdrawal operations on a bank account that starts with\n// zero balance. Your task is to detect if at any point the balance of account fallls below zero, and\n// at that point function should return true. Otherwise it should return false.\n// >>> BelowZero([1, 2, 3])\n// false\n// >>> BelowZero([1, 2, -4, 5])\n// true\nfunc BelowZero(operations []int) bool {\n    balance := 0\n    for _, op := range operations {\n        // ??? MISSING LINE ???\n        if balance < 0 {\n            return true\n        }\n    }\n    return false\n}",
     "accepted_answers": [
-      "        balance += op"
+      "        balance += op",
+      "        balance = balance + op"
     ],
     "time_limit": 300
   },
@@ -3130,7 +3158,8 @@
     "question_text": "For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\nEmpty sum should be equal to 0 and empty product should be equal to 1.\n>>> SumProduct([])\n(0, 1)\n>>> SumProduct([1, 2, 3, 4])\n(10, 24)\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "\n// For a given list of integers, return a tuple consisting of a sum and a product of all the integers in a list.\n// Empty sum should be equal to 0 and empty product should be equal to 1.\n// >>> SumProduct([])\n// (0, 1)\n// >>> SumProduct([1, 2, 3, 4])\n// (10, 24)\nfunc SumProduct(numbers []int) [2]int {\n    sum_value := 0\n    prod_value := 1\n\n    for _, n := range numbers {\n        sum_value += n\n        // ??? MISSING LINE ???\n    }\n    return [2]int{sum_value, prod_value}\n}",
     "accepted_answers": [
-      "        prod_value *= n"
+      "        prod_value *= n",
+      "        prod_value = prod_value * n"
     ],
     "time_limit": 300
   },
@@ -3235,7 +3264,8 @@
     "question_text": "Return a string containing space-delimited numbers starting from 0 upto n inclusive.\n>>> StringSequence(0)\n'0'\n>>> StringSequence(5)\n'0 1 2 3 4 5'\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import (\n    \"strconv\"\n)\n\n// Return a string containing space-delimited numbers starting from 0 upto n inclusive.\n// >>> StringSequence(0)\n// '0'\n// >>> StringSequence(5)\n// '0 1 2 3 4 5'\nfunc StringSequence(n int) string{\n    var seq string\n    for i := 0; i <= n; i++ {\n        seq += strconv.Itoa(i)\n        if i != n {\n            // ??? MISSING LINE ???\n        }\n    }\n    return seq\n}",
     "accepted_answers": [
-      "            seq += \" \""
+      "            seq += \" \"",
+      "            seq = seq + \" \""
     ],
     "time_limit": 300
   },
@@ -3250,7 +3280,9 @@
     "question_text": "Given a string, find out how many distinct characters (regardless of case) does it consist of\n>>> CountDistinctCharacters('xyzXYZ')\n3\n>>> CountDistinctCharacters('Jerry')\n4\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "import (\n    \"strings\"\n)\n\n// Given a string, find out how many distinct characters (regardless of case) does it consist of\n// >>> CountDistinctCharacters('xyzXYZ')\n// 3\n// >>> CountDistinctCharacters('Jerry')\n// 4\nfunc CountDistinctCharacters(str string) int{\n    lower := strings.ToLower(str)\n\tcount := 0\n\tset := make(map[rune]bool)\n\tfor _, i := range lower {\n\t\tif set[i] == true {\n\t\t\tcontinue\n\t\t} else {\n\t\t\tset[i] = true\n\t\t\t// ??? MISSING LINE ???\n\t\t}\n\t}\n\treturn count\n}",
     "accepted_answers": [
-      "\t\t\tcount++"
+      "\t\t\tcount++",
+      "\t\t\tcount += 1",
+      "\t\t\tcount = count + 1"
     ],
     "time_limit": 300
   },
@@ -3280,7 +3312,9 @@
     "question_text": "Find how many times a given substring can be found in the original string. Count overlaping cases.\n>>> HowManyTimes('', 'a')\n0\n>>> HowManyTimes('aaa', 'a')\n3\n>>> HowManyTimes('aaaa', 'aa')\n3\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "\n// Find how many times a given substring can be found in the original string. Count overlaping cases.\n// >>> HowManyTimes('', 'a')\n// 0\n// >>> HowManyTimes('aaa', 'a')\n// 3\n// >>> HowManyTimes('aaaa', 'aa')\n// 3\nfunc HowManyTimes(str string,substring string) int{\n    times := 0\n\tfor i := 0; i < (len(str) - len(substring) + 1); i++ {\n\t\tif str[i:i+len(substring)] == substring {\n\t\t\t// ??? MISSING LINE ???\n\t\t}\n\t}\n\treturn times\n}",
     "accepted_answers": [
-      "\t\t\ttimes += 1"
+      "\t\t\ttimes += 1",
+      "\t\t\ttimes++",
+      "\t\t\ttimes = times + 1"
     ],
     "time_limit": 300
   },
@@ -3625,7 +3659,9 @@
     "question_text": "Return list with elements incremented by 1.\n>>> IncrList([1, 2, 3])\n[2, 3, 4]\n>>> IncrList([5, 3, 5, 2, 3, 3, 9, 0, 123])\n[6, 4, 6, 3, 4, 4, 10, 1, 124]\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "\n// Return list with elements incremented by 1.\n// >>> IncrList([1, 2, 3])\n// [2, 3, 4]\n// >>> IncrList([5, 3, 5, 2, 3, 3, 9, 0, 123])\n// [6, 4, 6, 3, 4, 4, 10, 1, 124]\nfunc IncrList(l []int) []int {\n    n := len(l)\n\tfor i := 0; i < n; i++ {\n\t\t// ??? MISSING LINE ???\n\t}\n\treturn l\n}",
     "accepted_answers": [
-      "\t\tl[i]++"
+      "\t\tl[i]++",
+      "\t\tl[i] += 1",
+      "\t\tl[i] = l[i] + 1"
     ],
     "time_limit": 300
   },
@@ -3775,7 +3811,8 @@
     "question_text": "Given a list of unique words each of size k and an n sized word, w, where n is a multiple of k,\nwrite a program in Rust to determine the number of unique combinations of words in the list that can be concatenated to form an anagram of the word w.\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "use std::collections::{BTreeSet, HashSet};\n\nfn is_anagram(s1: &str, s2: &str) -> bool {\n    let mut count = [0; 26];\n    for (c1, c2) in s1.chars().zip(s2.chars()) {\n        count[c1 as usize - 'a' as usize] += 1;\n        // ??? MISSING LINE ???\n    }\n    count.iter().all(|&x| x == 0)\n}\n\nfn backtrack<'a>(\n    sub_words: &[&'a str],\n    whole_word: &str,\n    nk: usize,\n    start: usize,\n    current: &mut BTreeSet<&'a str>,\n    result: &mut HashSet<BTreeSet<&'a str>>,\n) {\n    if current.len() == nk {\n        if is_anagram(whole_word, &current.iter().copied().collect::<String>()) {\n            result.insert(current.clone());\n        }\n        return;\n    }\n    for i in start..sub_words.len() {\n        current.insert(sub_words[i]);\n        backtrack(sub_words, whole_word, nk, i + 1, current, result);\n        current.remove(sub_words[i]);\n        backtrack(sub_words, whole_word, nk, i + 1, current, result);\n    }\n}\n\npub fn anagram_combos(sub_words: &[&str], whole_word: &str) -> usize {\n    let mut result = HashSet::new();\n    backtrack(\n        sub_words,\n        whole_word,\n        whole_word.len() / sub_words.first().unwrap().len(),\n        0,\n        &mut BTreeSet::new(),\n        &mut result,\n    );\n    result.len()\n}",
     "accepted_answers": [
-      "        count[c2 as usize - 'a' as usize] -= 1;"
+      "        count[c2 as usize - 'a' as usize] -= 1;",
+      "        count[c2 as usize - 'a' as usize] = count[c2 as usize - 'a' as usize] - 1;"
     ],
     "time_limit": 300
   },
@@ -4120,7 +4157,8 @@
     "question_text": "Given two positive integers x and y, write a Rust program to compute the output of x modulo y, using only the addition, subtraction and shifting operators. The type i64 should be used for integers, to prevent overflow.\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "pub fn compute_modulo(mut x: i64, y: i64) -> i64 {\n    let mut _quotient = 0;\n    let mut power = 32;\n    let mut y_power = y << power;\n    while x >= y {\n        while y_power > x {\n            y_power >>= 1;\n            power -= 1;\n        }\n\n        // ??? MISSING LINE ???\n        x -= y_power;\n    }\n\n    x\n}",
     "accepted_answers": [
-      "        _quotient += 1 << power;"
+      "        _quotient += 1 << power;",
+      "        _quotient = _quotient + 1 << power;"
     ],
     "time_limit": 300
   },
@@ -4135,7 +4173,8 @@
     "question_text": "Given an amount of income and a sorted array of tax brackets (tuples of threshold and percentage),\nwrite a rust function to compute the amount of taxes as percentage of income that has to be paid. Output should be a float number. A max_percentage is given\nfor income amounts greater than the highest threshold in the tax bracket. Return the result as a percentage between 0 and 100 rounded to 2 decimal places.\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "pub fn compute_tax_rate(income: i32, tax_brackets: &[(i32, i32)], max_percentage: i32) -> f64 {\n    let mut total_tax = 0.;\n    let mut previous_threshold = 0;\n\n    for &(threshold, percentage) in tax_brackets {\n        if income >= threshold {\n            total_tax += (threshold - previous_threshold) as f64 * (percentage as f64 / 100.0);\n        } else {\n            // ??? MISSING LINE ???\n            break;\n        }\n\n        previous_threshold = threshold;\n    }\n\n    if let Some((last_threshold, _)) = tax_brackets.last() {\n        if income > *last_threshold {\n            total_tax += (income - last_threshold) as f64 * (max_percentage as f64 / 100.0);\n        }\n    }\n\n    let tax_rate = (total_tax / income as f64) * 100.;\n    (tax_rate * 100.0).round() / 100.0\n}",
     "accepted_answers": [
-      "            total_tax += (income - previous_threshold) as f64 * (percentage as f64 / 100.0);"
+      "            total_tax += (income - previous_threshold) as f64 * (percentage as f64 / 100.0);",
+      "            total_tax = total_tax + (income - previous_threshold) as f64 * (percentage as f64 / 100.0);"
     ],
     "time_limit": 300
   },
@@ -4165,7 +4204,8 @@
     "question_text": "You are given a word `s` and a dictionary `part_to_n_meanings` that maps parts of words to the number of meanings that they could possibly have. Write a rust program to count the total number of meanings that `s` could have.\nFor instance, given the string `s = \"microbiology\"` and the dictionary `part_to_n_meanings = hash_map! { String::new(\"micro\") => 1, String::new(\"bio\") => 2, String::new(\"logy\") => 1, String::new(\"microbio\") => 3 }`, the output would be 5. This is because the string `s` can be broken down into the words `micro`, `bio`, and `logy`, which have 1, 2, and 1 meanings respectively, which means 2 (1 * 2 * 1) different meanings for the whole word. The string `s` can also be broken down into the words `microbio` and `logy`, which have 3 and 1 meanings respectively which means 3 (3 * 1) different meanings for the whole word. Therefore, the total number of meanings that `s` could have is 5.\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "use std::collections::HashMap;\n\npub fn count_meanings(s: &str, part_to_n_meanings: &HashMap<String, u32>) -> u32 {\n    let mut dp = vec![0; s.len() + 1];\n    dp[0] = 1;\n\n    for i in 1..=s.len() {\n        for (word, meanings) in part_to_n_meanings.iter() {\n            if i >= word.len() && s[i - word.len()..].starts_with(word) {\n                // ??? MISSING LINE ???\n            }\n        }\n    }\n\n    *dp.last().unwrap()\n}",
     "accepted_answers": [
-      "                dp[i] += dp[i - word.len()] * meanings;"
+      "                dp[i] += dp[i - word.len()] * meanings;",
+      "                dp[i] = dp[i] + dp[i - word.len()] * meanings;"
     ],
     "time_limit": 300
   },
@@ -4225,7 +4265,8 @@
     "question_text": "You are a data analyst at cohere working for the sales team. You are working with a large spreadsheet that contains numerical data\nrepresenting weekly sales figures for various products across multiple stores. The data however, is noisy due to, irregular sales\npatterns, promotional activities, and data entry errors. You need a method to smooth out these irregularities to identify underlying\ntrends and patterns.\nGiven a 2d grid that represents a simplified abstraction of a spreadsheet, where each cell contains a sales figure for a specific product,\nin a specific store for a given week, write a rust function that applies a \"data convolution\" operation to smooth out the numerical data in\nthe grid. The data convolution operation applies to each cell a given 3 x 3 matrix 'weights' that transforms the value of the\ncell. The new value of each cell in the grid is calculated by overlaying the matrix 'weights' on top of the sheet and performing an element-wise\nmultiplication between the overlapping entries of the matrix 'weights' and the sheet.\nSpecifically, for each position of the matrix, 'weights' is overlaid on the sheet such that the center of the matrix 'weights' is aligned with the position p that is to be recalculated.\nThen it multiplies each element of the matrix 'weights' with the element that it overlaps with.\nThen it sums up all the results of these multiplications.\nThe sum is then placed into the corresponding element of the output matrix (ie, position p of the output matrix).\nAfter the operation is performed for one position, the kernel slides over to the next position on the sheet, one cell at a time.\nThis process is repeated across the entire sheet.\nThe output matrix should be the same size as the given input sheet.\n\nThe function below is missing one line, marked with a comment. Write the missing line.",
     "code": "pub fn data_convolution(sheet: &[&[i32]], weights: &[&[i32]]) -> Vec<Vec<i32>> {\n    let n = sheet.len();\n    let m = sheet[0].len();\n    let mut output = vec![vec![0; m]; n];\n\n    for i in 0..n {\n        for j in 0..m {\n            for k in 0..weights.len() {\n                for l in 0..weights[0].len() {\n                    if i + k > 0 && j + l > 0 && i + k <= n && j + l <= m {\n                        // ??? MISSING LINE ???\n                    }\n                }\n            }\n        }\n    }\n\n    output\n}",
     "accepted_answers": [
-      "                        output[i][j] += sheet[i + k - 1][j + l - 1] * weights[k][l];"
+      "                        output[i][j] += sheet[i + k - 1][j + l - 1] * weights[k][l];",
+      "                        output[i][j] = output[i][j] + sheet[i + k - 1][j + l - 1] * weights[k][l];"
     ],
     "time_limit": 300
   },

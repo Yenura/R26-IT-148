@@ -370,14 +370,70 @@ def _python_candidates(code: str, body_start: int) -> list[int]:
     return sorted(out)
 
 
-def _python_equivalent(line: str) -> list[str]:
-    """Genuinely equivalent spellings of a python statement."""
-    extra: list[str] = []
+# Languages where `x++` / `x--` are valid *statements*.
+_INCREMENT_LANGUAGES = {"Java", "C++", "JavaScript", "Go"}
+
+_LHS = r"([A-Za-z_]\w*(?:\[[^\]]+\]|\.\w+)*)"
+
+
+def _equivalent_spellings(line: str, language: str) -> list[str]:
+    """Semantically identical spellings of a statement, for exact-match grading.
+
+    Complete-the-function is graded by comparing text, so `total += i` and
+    `total = total + i` are the same answer and must both count; otherwise this
+    becomes the same silent-zero-scoring bug that was fixed in the sandbox.
+
+    Only rewrites that are *provably* equivalent are generated -- the
+    assignment/compound-assignment pair (both directions), and `x++` / `x--`
+    where the language has them.  A wrong variant is worse than a missed one,
+    so the rules stay deliberately narrow.  Grading already ignores whitespace,
+    case and a trailing semicolon (``_normalize_code_answer``).
+
+    Rules are applied to a fixpoint (at most 3 rounds) so `count++` also yields
+    `count = count + 1`.
+    """
+    generated: list[str] = []
+    frontier = [line]
+    seen = {line}
+    for _ in range(3):
+        nxt: list[str] = []
+        for current in frontier:
+            for variant in _one_step_equivalents(current, language):
+                if variant not in seen:
+                    seen.add(variant)
+                    nxt.append(variant)
+                    generated.append(variant)
+        if not nxt:
+            break
+        frontier = nxt
+    return generated
+
+
+def _one_step_equivalents(line: str, language: str) -> list[str]:
     ws = leading_ws(line)
-    body = line.strip()
-    m = re.match(r"^([A-Za-z_]\w*(?:\[[^\]]+\]|\.\w+)*)\s*=\s*\1\s*([+-])\s*(.+)$", body)
+    body = line[len(ws):]
+    extra: list[str] = []
+
+    if language in _INCREMENT_LANGUAGES:
+        # x++ / x--  ->  x += 1 / x -= 1   (statement position)
+        m = re.match(rf"^{_LHS}(\+\+|--)(\s*;?)$", body)
+        if m:
+            op = "+=" if m.group(2) == "++" else "-="
+            extra.append(f"{ws}{m.group(1)} {op} 1{m.group(3)}")
+        # x += 1 / x -= 1  ->  x++ / x--
+        m = re.match(rf"^{_LHS}\s*([+-])=\s*1(\s*;?)$", body)
+        if m:
+            extra.append(f"{ws}{m.group(1)}{m.group(2)}{m.group(2)}{m.group(3)}")
+
+    # x = x <op> y   ->   x <op>= y
+    m = re.match(rf"^{_LHS}\s*=\s*\1\s*([+\-*/])\s*(.+?)(\s*;?)$", body)
     if m:
-        extra.append(f"{ws}{m.group(1)} {m.group(2)}= {m.group(3)}")
+        extra.append(f"{ws}{m.group(1)} {m.group(2)}= {m.group(3)}{m.group(4)}")
+    # x <op>= y   ->   x = x <op> y
+    m = re.match(rf"^{_LHS}\s*([+\-*/])=\s*(.+?)(\s*;?)$", body)
+    if m:
+        extra.append(f"{ws}{m.group(1)} = {m.group(1)} {m.group(2)} {m.group(3)}{m.group(4)}")
+
     return extra
 
 
@@ -483,7 +539,7 @@ def build_complete_function(
             new_lines.pop()
         new_code = "\n".join(new_lines)
 
-        answers = [answer] + (_python_equivalent(answer) if language == "Python" else [])
+        answers = [answer] + _equivalent_spellings(answer, language)
         # de-duplicate while keeping order
         seen = set()
         answers = [a for a in answers if not (a in seen or seen.add(a))]

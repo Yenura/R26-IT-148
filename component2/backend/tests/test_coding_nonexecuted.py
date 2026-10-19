@@ -13,6 +13,7 @@ using one of three formats.  What must hold:
 Run via pytest: python -m pytest tests/test_coding_nonexecuted.py -v
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -168,6 +169,66 @@ def test_every_supported_language_has_questions():
     have = {q["language"] for q in questions}
     missing = [l for l in role_profiles.NON_EXECUTED_LANGUAGES if l not in have]
     assert not missing, f"declared as supported but has no questions: {missing}"
+
+
+@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+def test_complete_function_accepts_equivalent_spellings():
+    """A right answer must not score 0 for writing `x += 1` instead of `x = x + 1`.
+
+    Complete-the-function is graded by exact match, so the accepted list has to
+    carry the equivalent spellings -- otherwise this becomes the same silent
+    zero-scoring bug that was just fixed in the execution sandbox.
+    """
+    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    with_variants = 0
+    for q in questions:
+        if q["format"] != "Complete Function":
+            continue
+        if len(q["accepted_answers"]) > 1:
+            with_variants += 1
+        for spelling in q["accepted_answers"]:
+            result = _grade_non_executed(q, {"answer_text": spelling}, "Complete Function")
+            assert result["code_score"] == 100.0, f"{q['id']}: {spelling!r} scored 0"
+
+    assert with_variants >= 10, (
+        "the equivalent-spelling expansion looks switched off "
+        f"(only {with_variants} questions carry more than one answer)"
+    )
+
+
+@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+def test_whitespace_and_semicolons_never_change_a_complete_function_answer():
+    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    cf = [q for q in questions if q["format"] == "Complete Function"]
+    assert cf
+    q = cf[0]
+    answer = q["accepted_answers"][0]
+    for typed in (answer, answer.strip(), f"   {answer}  ", answer.rstrip(";"), answer + ";"):
+        assert _grade_non_executed(q, {"answer_text": typed}, "Complete Function")["code_score"] == 100.0, \
+            f"{q['id']}: {typed!r} scored 0"
+
+
+@pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
+def test_python_find_the_bug_correct_option_produces_valid_python():
+    """The marked line must be a whole statement, not a fragment.
+
+    This also catches a distractor that was accidentally *also* correct in a way
+    that breaks the snippet -- the failure mode found by hand during review.
+    """
+    questions = json.loads(NON_EXEC_BANK.read_text(encoding="utf-8"))
+    marker = re.compile(r"^(\s*)#\s*\?\?\?.*$", re.M)
+    checked = 0
+    for q in questions:
+        if q["format"] != "Find the Bug" or q["language"] != "Python":
+            continue
+        correct = q["options"][q["correct_answer_index"]]["text"]
+        filled = marker.sub(lambda m: m.group(1) + correct.strip(), q["code"], count=1)
+        try:
+            compile(filled, "<question>", "exec")
+        except SyntaxError as e:  # pragma: no cover - failure detail
+            raise AssertionError(f"{q['id']}: correct option does not yield valid Python: {e}")
+        checked += 1
+    assert checked > 0
 
 
 @pytest.mark.skipif(not NON_EXEC_BANK.exists(), reason="non-executed bank not built")
