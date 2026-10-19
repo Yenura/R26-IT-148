@@ -530,60 +530,68 @@ class InterviewService:
             if desc_skills:
                 required_skills = merge_skill_lists(required_skills, desc_skills)
 
-        # Fast path for practice (is_practice): skip slow T5, use bank directly
-        if is_practice:
-            qg_questions = None
-        else:
-            qg_questions = generate_questions_qg(
+        # ── Question sourcing ────────────────────────────────────────────────
+        # MCQ + Descriptive: try the QG model first and gate every question
+        # individually (per-question gate).  Coding: never generated -- the
+        # tiny model cannot emit runnable test cases (models/t5_coding_
+        # diagnosis.md) -- so it always comes from the curated bank.  Each
+        # rejected/absent slot is then filled from that type's own bank slice,
+        # so the model is used where it works without ever serving filler.
+        model_questions: List[Dict] = []
+        if not is_practice:
+            model_questions = generate_questions_qg(
                 job_role=job_role,
                 skills=required_skills,
                 num_mcq=num_mcq,
                 num_desc=num_desc,
-                num_code=num_code,
+                num_code=0,
                 coding_profile=coding_profile,
                 coding_language=resolved_language,
-            )
+            ) or []
+            model_questions = self._prefer_role_consistent(model_questions, job_role)
+            for q in model_questions:
+                q["_qg_model"] = True
 
-        if qg_questions:
-            # Drop generated questions that name a different role, then
-            # top each type up from its own bank slice so the mix holds.
-            qg_questions = self._prefer_role_consistent(qg_questions, job_role)
-            mcq_questions = [q for q in qg_questions if q.get("question_type") == "MCQ"]
-            desc_questions = [q for q in qg_questions if q.get("question_type") == "Descriptive"]
-            code_questions = [q for q in qg_questions if q.get("question_type") == "Coding"]
-            logger.info("Interview session using QG model generated questions (%s items)", len(qg_questions))
-        else:
-            # Select questions by type from bank
-            mcq_questions = self._select_questions_by_type(
-                "MCQ", num_mcq, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
-            )
-            desc_questions = self._select_questions_by_type(
-                "Descriptive", num_desc, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
-            )
-            code_questions = self._select_questions_by_type(
-                "Coding", num_code, required_skills,
-                coding_profile=coding_profile, difficulty=difficulty,
-                exclude_ids=exclude_ids, language=resolved_language,
-            )
-            mcq_questions = self._prefer_role_consistent(mcq_questions, job_role)
-            desc_questions = self._prefer_role_consistent(desc_questions, job_role)
-            code_questions = self._prefer_role_consistent(code_questions, job_role)
+        # Bank slices for every type: the fill for any shortfall, and the only
+        # source of coding questions.
+        bank_mcq = self._prefer_role_consistent(self._select_questions_by_type(
+            "MCQ", num_mcq, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
+        ), job_role)
+        bank_desc = self._prefer_role_consistent(self._select_questions_by_type(
+            "Descriptive", num_desc, required_skills, difficulty=difficulty, exclude_ids=exclude_ids
+        ), job_role)
+        bank_code = self._prefer_role_consistent(self._select_questions_by_type(
+            "Coding", num_code, required_skills,
+            coding_profile=coding_profile, difficulty=difficulty,
+            exclude_ids=exclude_ids, language=resolved_language,
+        ), job_role)
 
-        # Top each type up to its requested count using only that type's pool.
-        # Filling the *total* from the whole bank used to inflate descriptive
-        # questions and could even slip a coding question into a non-coding
-        # role's session.
+        # Model questions first (preferred), bank questions fill each type to
+        # its requested count.  Filling the *total* from the whole bank used to
+        # inflate descriptive questions and could even slip a coding question
+        # into a non-coding role's session.
+        mcq_pool = self._dedupe_questions(
+            [q for q in model_questions if q.get("question_type") == "MCQ"] + bank_mcq
+        )
+        desc_pool = self._dedupe_questions(
+            [q for q in model_questions if q.get("question_type") == "Descriptive"] + bank_desc
+        )
+        code_pool = self._dedupe_questions(bank_code)
+
         mcq_questions = self._top_up_by_type(
-            mcq_questions, "MCQ", num_mcq, job_role=job_role, exclude_ids=exclude_ids
+            mcq_pool, "MCQ", num_mcq, job_role=job_role, exclude_ids=exclude_ids
         )
         desc_questions = self._top_up_by_type(
-            desc_questions, "Descriptive", num_desc, job_role=job_role, exclude_ids=exclude_ids
+            desc_pool, "Descriptive", num_desc, job_role=job_role, exclude_ids=exclude_ids
         )
         code_questions = self._top_up_by_type(
-            code_questions, "Coding", num_code, job_role=job_role, exclude_ids=exclude_ids,
+            code_pool, "Coding", num_code, job_role=job_role, exclude_ids=exclude_ids,
             coding_profile=coding_profile, language=resolved_language,
         )
         all_questions = mcq_questions + desc_questions + code_questions
+        # Share of the served questions the QG model actually produced (0 when
+        # practice/fallback).  Pops the private tag set above as it counts.
+        model_served = sum(1 for q in all_questions if q.pop("_qg_model", False))
         
         # Create session with high-entropy ID to avoid collisions.
         candidate_prefix = re.sub(r"[^A-Za-z0-9]", "", candidate_id or "CAND")[:4].upper() or "CAND"
@@ -612,6 +620,10 @@ class InterviewService:
             "required_skills": required_skills,
             "coding_profile": coding_profile,
             "coding_language": resolved_language,
+            "question_source": {
+                "model": model_served,
+                "bank": len(all_questions) - model_served,
+            },
             "questions": all_questions,
             "question_count": {
                 "mcq": sum(1 for q in all_questions if q.get("question_type") == "MCQ"),
@@ -627,6 +639,12 @@ class InterviewService:
             logger.warning(f"⚠ Created interview session {session_id} with missing question types: {', '.join(missing_types)}. Weights will be redistributed during evaluation.")
         else:
             logger.info(f"Created interview session {session_id} for {candidate_id}")
+        if not is_practice:
+            logger.info(
+                "Session %s question source: %d/%d from QG model, %d from bank",
+                session_id, model_served, len(all_questions),
+                len(all_questions) - model_served,
+            )
         
         return session
 
@@ -660,6 +678,24 @@ class InterviewService:
                 logger.info("Role filter dropped %d off-role questions for %s", dropped, job_role)
             return kept
         return questions
+
+    @staticmethod
+    def _dedupe_questions(questions: List[Dict]) -> List[Dict]:
+        """Drop later questions whose text duplicates an earlier one.
+
+        Model questions are listed before bank questions, so on a tie the
+        model's question is the one kept.
+        """
+        seen = set()
+        out: List[Dict] = []
+        for q in questions:
+            key = str(q.get("question_text", "")).strip().lower()
+            if key and key in seen:
+                continue
+            if key:
+                seen.add(key)
+            out.append(q)
+        return out
 
     def _top_up_by_type(self, selected_questions: List[Dict], question_type: str, count: int,
                         job_role: str = "", exclude_ids: Optional[set] = None,
@@ -761,6 +797,9 @@ class InterviewService:
             List of selected questions
         """
         exclude = exclude_ids or set()
+
+        if count <= 0:
+            return []
 
         # Filter by type
         typed_questions = [

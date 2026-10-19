@@ -111,6 +111,23 @@ def test_degenerate_option_is_rejected():
     assert not _is_good_question(q, "Software Engineer", ["SQL"])
 
 
+def test_shared_boilerplate_across_options_is_not_degenerate():
+    """Regression: gate checked degeneracy on the *joined* options, so the
+    standard distractors "All of the above" and "None of the above" collided on
+    the 3-gram "of the above" and a perfectly good MCQ was rejected."""
+    q = _mcq(
+        "Which of the following would a senior Data Scientist flag as a risk "
+        "when data pipelines is handled incorrectly?",
+        options=(
+            "All of the above",
+            "Cannot be determined from the given information",
+            "None of the above",
+            "3",
+        ),
+    )
+    assert _is_good_question(q, "Data Scientist", ["Python", "data pipeline design"])
+
+
 def test_healthy_descriptive_answer_is_accepted():
     q = {
         "question_type": "Descriptive",

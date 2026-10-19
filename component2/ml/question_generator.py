@@ -277,7 +277,9 @@ class QuestionGenerator:
         small corpus, and sampling (temperature/top_p) sends it into repetition
         loops -- "The ' in Java is ' in Java is ' in Java is ...". Beam decoding
         is markedly more coherent, and no_repeat_ngram_size guards the loops
-        beam search can still fall into.
+        beam search can still fall into.  repetition_penalty adds a second guard
+        for the "senior senior senior" / "in Java is in Java is" loops that slip
+        past the n-gram block.
         """
         inputs = self._tokenizer(
             input_text,
@@ -294,6 +296,7 @@ class QuestionGenerator:
                 early_stopping=True,
                 do_sample=False,
                 no_repeat_ngram_size=3,
+                repetition_penalty=1.2,
             )
         return self._tokenizer.decode(output_ids[0], skip_special_tokens=True)
 

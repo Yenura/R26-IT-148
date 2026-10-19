@@ -50,11 +50,19 @@ def _is_good_question(q: Dict, job_role: str = "", skills: Optional[List[str]] =
         return False
     # The model loops inside answers and options too, not just the question:
     # "The ' class in Java is used to the ' in Java is used to the ' in Java ..."
-    answer_text = q.get("answer_text") or ""
-    option_texts = " ".join(
-        str(o.get("text", "")) for o in (q.get("options") or []) if isinstance(o, dict)
-    )
-    if _is_degenerate(answer_text) or _is_degenerate(option_texts):
+    if _is_degenerate(q.get("answer_text") or ""):
+        return False
+    # Checked per option, NOT on the concatenation: legitimate distractor sets
+    # ("All of the above" / "None of the above") share the 3-gram "of the
+    # above", which made the joined string look like a repetition loop and
+    # rejected perfectly good MCQs. A real loop still shows up inside a single
+    # option ("CSS CSS CSS preprocessors").
+    options = q.get("options") or []
+    if any(
+        _is_degenerate(str(o.get("text", "")))
+        for o in options
+        if isinstance(o, dict)
+    ):
         return False
     # The corpus quotes identifiers -- "the 'synchronized' keyword in Java" -- and
     # the model frequently drops the identifier, leaving a bare quote: "the '
@@ -243,24 +251,27 @@ def generate_questions_qg(
     coding_language: Optional[str] = None,
 ) -> Optional[List[Dict]]:
     """
-    Generate questions using QG model. Returns None if model unavailable.
-    Caller falls back to static question bank.
-    When coding_profile is 'none', num_code is 0 and no coding questions are requested.
+    Generate MCQ/Descriptive questions with the QG model.
+
+    Returns the questions that pass the *per-question* quality gate -- possibly
+    fewer than requested -- or ``None`` when the model is unavailable or
+    produced nothing usable.  The caller keeps the passing questions and fills
+    every shortfall from the curated static bank, so a partially-good batch is
+    still useful instead of being discarded wholesale.
+
+    Coding is deliberately never generated: the tiny model cannot emit runnable
+    test cases (see models/t5_coding_diagnosis.md), so coding questions always
+    come from the curated bank.  ``num_code`` is accepted for call-site
+    compatibility and ignored.
+
     ``coding_language`` is the executable language the candidate selected; it is
-    passed to the generator so emitted coding questions are labelled correctly.
+    passed to the generator so any emitted question is labelled consistently.
     """
-    # Enforce scoring config: non-coding roles never get coding questions
-    try:
-        cfg_path = Path(__file__).parent.parent.parent / "models" / "interview_scoring_config.json"
-        if cfg_path.exists():
-            cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-            w = cfg.get("interview_weights", {}).get(job_role, {})
-            if w.get("coding", 1) == 0 and num_code > 0:
-                num_desc += num_code
-                num_code = 0
-                coding_profile = "none"
-    except Exception:
-        pass
+    _ = coding_profile  # coding is bank-sourced; the caller owns the profile
+    if num_code:
+        logger.info(
+            "QG model: coding is bank-sourced; ignoring requested num_code=%d", num_code
+        )
     generator = _get_qg_generator()
     if generator is None:
         return None
@@ -277,25 +288,31 @@ def generate_questions_qg(
             skills=skills,
             num_mcq=num_mcq,
             num_desc=num_desc,
-            num_code=num_code,
+            num_code=0,
         )
-        total = num_mcq + num_desc + num_code
         if not combined:
-            logger.info("QG model returned no questions; falling back to static bank")
+            logger.info("QG model returned no questions; using the static bank")
             return None
 
-        # All-or-nothing: a batch is used only if EVERY question passes the
-        # quality gate. The neural QG model is weak, so a partly-bad batch is
-        # discarded and the caller falls back to the curated static bank.
+        # Per-question gate: keep every question that passes, drop the rest.
+        # The caller tops each type back up from the bank, so a rejected slot
+        # is filled individually instead of rejecting the whole role's batch.
         good = [q for q in combined if _is_good_question(q, job_role, skills)]
-        if len(good) == total:
-            logger.info("QG model generated %d valid questions", len(good))
-            return good
-        logger.warning(
-            "QG model: %d/%d questions failed the quality gate; falling back to static bank",
-            total - len(good), total,
+        if not good:
+            logger.info(
+                "QG gate rejected all %d generated questions; using the static bank",
+                len(combined),
+            )
+            return None
+        by_type: Dict[str, int] = {}
+        for q in good:
+            k = q.get("question_type") or "?"
+            by_type[k] = by_type.get(k, 0) + 1
+        logger.info(
+            "QG gate: %d/%d generated questions passed (requested %d MCQ+Descriptive) %s",
+            len(good), len(combined), num_mcq + num_desc, by_type,
         )
-        return None
+        return good
     except Exception as exc:
         logger.warning("QG model generation failed: %s", exc)
         return None
