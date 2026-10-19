@@ -105,17 +105,36 @@ to map to our Descriptive schema. Caveat: our Descriptive **bank is already 14,3
 the T5 model still cannot serve Descriptive reliably (it memorises a Java template), so
 more Descriptive rows help the *bank*, not the model.
 
-### Gap 5 — Per-role skills / job descriptions
-* Kaggle `ravindrasinghrana/job-description-dataset`: **CC0** (cleanest licence), 1.74 GB,
-  23 columns incl. Job Title / Role / Job Description / Skills / Responsibilities — but it
-  is **synthetic** (Faker + ChatGPT) and the author states it *"is not suitable for
-  real-world applications and should only be used within the scope of research."*
-* Kaggle `asaniczka/*` LinkedIn sets: **ODC-By** (open, attribution, commercial OK) and
-  **real** postings — the best fit for `skills`/`requirements`. Best sizes:
-  `data-science-job-postings-and-skills` (20 MB),
-  `linkedin-data-engineer-job-postings` (6.8 MB),
-  `1-3m-linkedin-jobs-and-skills-2024` (2–6 GB). **All need Kaggle credentials**, which are
-  not configured in this environment.
+### Gap 5 — Per-role skills / job descriptions — **done, with a measured negative result**
+* **Downloaded:** `asaniczka/data-science-job-postings-and-skills` (ODC-By-1.0: attribution,
+  commercial use OK) — 12,217 postings with a machine-extracted `skills` column, plus
+  `asaniczka/upwork-job-postings-dataset-2024-50k-records`.
+* **Not available:** `asaniczka/1-3m-linkedin-jobs-and-skills-2024` returns **403** with these
+  credentials. `linkedin-job-postings` and `updated-linkedin-data-science-job-postings` do too.
+  So the broad multi-role corpus is still out of reach; what we have is data/ML-only.
+* **Rejected:** the Upwork set has **no skills column** (title + free-text description only).
+  Mining skills from prose would need the vocabulary we are trying to learn, so it was dropped.
+* **What the data says** (`component2/ml/build_role_skills.py` → `models/role_skills_report.md`):
+  4,201 postings (34%) map onto our role taxonomy, but only **4 roles** reach a usable sample —
+  Data Engineer (1,648), Data Scientist (830), Machine Learning Engineer (645),
+  Database Administrator (465). The other 16 get "no signal" rather than invented skills.
+* **The finding that matters:** the bank covers only **44–60%** of the top skills those four
+  roles are actually asked for. Every tool skill is at **zero questions** — Spark, Kafka,
+  Snowflake, Airflow, Hadoop, Hive, Redshift, EMR, TensorFlow, PyTorch, Azure, GCP, Tableau,
+  MySQL, MongoDB, PostgreSQL, SQL Server, PL/SQL, Linux. The bank is a
+  *fundamentals-and-concepts* bank (`Array`, `Tree`, `Dynamic Programming`, `capacity planning`,
+  `attention mechanisms`, `big data tools`); the market asks for *products*.
+* **Decision — do not apply it to `job_requirements.json`.** The relevance filter matches a
+  skill as a substring of a question's category/topic/text, so a skill with no matching question
+  cannot improve selection; adding one only widens the role profile an employer sees. The
+  measurement says the actionable work is **adding bank topics**, not widening skill lists, so
+  `job_requirements.json` is deliberately unchanged. The evidence is kept in
+  `models/role_skills_external.json`.
+* **Pre-existing dead weight surfaced:** the curated lists already contain skills the bank cannot
+  assess (Airflow, Spark, Hadoop, TensorFlow, PyTorch, MongoDB, PostgreSQL, Linux, Azure), so
+  those entries have never contributed to relevance filtering.
+* **Caveat:** the corpus is data/ML-focused. Its silence on the other 16 roles is *absence of
+  evidence*, not evidence that those roles lack skills.
 
 ---
 
@@ -134,7 +153,8 @@ more Descriptive rows help the *bank*, not the model.
 | `Vineeshsuiii` | ❌ none | n/a | ~ | Reject |
 | `Spider` | ⚠️ cc-by-sa-4.0 | ✗ needs DB engine | ✗ | Descriptive-only, at best |
 | Kaggle job-description | ✅ cc0 | needs creds | ~ synthetic | Low value (synthetic) |
-| Kaggle asaniczka | ✅ odc-by | needs creds | ✅ skills | **Needs Kaggle creds** |
+| Kaggle asaniczka DS set | ✅ odc-by | ✅ done | ✅ skills | **Used** — evidence + coverage report; not applied (see Gap 5) |
+| Kaggle asaniczka 1-3m / Upwork | ✅ odc-by | ❌ 403 / no skills column | – | Not usable with these credentials |
 | IEEE DataPort | ? paywalled | n/a | ? | Inaccessible |
 
 ---
