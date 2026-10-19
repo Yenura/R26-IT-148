@@ -3,6 +3,8 @@ import os
 import re
 import uuid
 from datetime import datetime, timezone
+from typing import Optional
+from pydantic import BaseModel
 
 from fastapi import APIRouter, Depends, HTTPException, Request, UploadFile, File
 from slowapi import Limiter
@@ -366,31 +368,24 @@ async def match_resume(
     except (ValueError, TypeError):
         exp_years = 2.5
 
-    if required_years > 0:
-        experience_score = min(exp_years / required_years * 100, 100)
-    elif exp_years > 0:
-        experience_score = min(50 + exp_years * 5, 100)
+    if required_years <= 0 or exp_years >= required_years:
+        experience_score = 100.0
+    elif required_years > 0:
+        experience_score = min(round((exp_years / required_years) * 100, 1), 100.0)
     else:
         experience_score = 75.0
 
     # Education: detect level + field relevance
     edu = str(resume_doc.get("education", "")).lower()
-    if "phd" in edu or "doctorate" in edu or "ph.d" in edu:
-        edu_level = 100
-    elif "master" in edu or "m.sc" in edu or "m.sc." in edu or "mba" in edu or "mtech" in edu or "m.tech" in edu:
-        edu_level = 85
-    elif "bachelor" in edu or "b.sc" in edu or "b.sc." in edu or "b.tech" in edu or "btech" in edu or "b.e." in edu or "degree" in edu:
-        edu_level = 75
-    elif "diploma" in edu or "associate" in edu:
-        edu_level = 60
+    if any(k in edu for k in ["phd", "doctorate", "ph.d", "master", "m.sc", "msc", "mba", "mtech", "bachelor", "b.sc", "bsc", "btech", "degree", "institute", "university", "college", "informatics", "lecturer"]) or (resume_doc.get("education") and len(str(resume_doc.get("education")).strip()) > 3):
+        education_score = 100.0
     elif edu.strip():
-        edu_level = 50
+        education_score = 80.0
     else:
-        edu_level = 70
-    education_score = float(edu_level)
+        education_score = 70.0
 
     # Weighted overall: 3-pillar formula 50% Skills + 30% Experience + 20% Education
-    overall_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 2)
+    overall_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
 
     classifier = _get_classifier()
     predicted_role, confidence = classifier.predict(resume_text, cand_skills_raw)
@@ -656,3 +651,62 @@ async def get_interview_detail(candidate_id: str, request: Request, user: dict =
         doc["_id"] = str(doc["_id"])
         results.append(doc)
     return results
+
+
+class MatchSyncPayload(BaseModel):
+    candidate_id: Optional[str] = None
+    job_id: Optional[str] = None
+    role: Optional[str] = None
+    cv_score: float
+    skill_score: Optional[float] = None
+    experience_score: Optional[float] = None
+    education_score: Optional[float] = None
+
+
+@router.post("/sync-match")
+async def sync_match_score(payload: MatchSyncPayload, request: Request, user: dict = Depends(get_current_user)):
+    db = request.app.state.db
+    from bson import ObjectId
+    cand_id = payload.candidate_id or str(user.get("_id", ""))
+    job_id = payload.job_id or ""
+
+    update_data = {
+        "cv_score": round(payload.cv_score, 1),
+        "overall_score": round(payload.cv_score, 1),
+    }
+    if payload.skill_score is not None:
+        update_data["skill_score"] = round(payload.skill_score, 1)
+    if payload.experience_score is not None:
+        update_data["experience_score"] = round(payload.experience_score, 1)
+    if payload.education_score is not None:
+        update_data["education_score"] = round(payload.education_score, 1)
+
+    cand_filters = [{"candidate_id": cand_id}]
+    if ObjectId.is_valid(cand_id):
+        cand_filters.append({"candidate_id": ObjectId(cand_id)})
+
+    if job_id:
+        job_filters = [{"job_id": job_id}, {"job_id": str(job_id)}]
+        if ObjectId.is_valid(job_id):
+            job_filters.append({"job_id": ObjectId(job_id)})
+
+        filter_q = {
+            "$and": [
+                {"$or": cand_filters},
+                {"$or": job_filters}
+            ]
+        }
+        await db.applications.update_many(filter_q, {"$set": update_data})
+        await db.predictions.update_many(filter_q, {"$set": update_data})
+    elif payload.role:
+        await db.applications.update_many(
+            {"$and": [{"$or": cand_filters}, {"$or": [{"job_title": payload.role}, {"job_role": payload.role}]}]},
+            {"$set": update_data}
+        )
+        await db.predictions.update_many(
+            {"$and": [{"$or": cand_filters}, {"$or": [{"predicted_role": payload.role}, {"job_role": payload.role}]}]},
+            {"$set": update_data}
+        )
+
+    return {"success": True, "cv_score": payload.cv_score}
+
