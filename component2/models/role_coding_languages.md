@@ -86,6 +86,12 @@ and matching test cases for the new language.
    off-topic fallback compared the *algorithm topic* (`category`) against
    language names, so it never matched anything. Filtering is now by the
    `language` field first, then by profile keywords.
+10. **The served session mix did not match the requested mix.** A single
+    whole-bank top-up padded the *total* rather than each type, so a role that
+    asked for `4/3/3` could be served `1/8/11`, and a **non-coding role could
+    receive a coding question** it was never scored on. Top-up is now
+    per-type (`_top_up_by_type`), so every session contains exactly its
+    advertised counts and a non-coding role can never leak a coding question.
 
 ## Invariants (enforced by `backend/tests/test_role_profiles.py`)
 
@@ -95,3 +101,5 @@ and matching test cases for the new language.
 * `resolve_language` never returns a declared-but-unexecutable language
 * the per-type distribution sums to the requested count and gives 0 coding
   questions to non-coding roles
+* a served session contains exactly its advertised per-type counts, and a
+  non-coding session contains zero coding questions

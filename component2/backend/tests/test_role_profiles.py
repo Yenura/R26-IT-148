@@ -176,3 +176,53 @@ def test_scoring_config_weight_overrides_skill_keywords():
     assert role_profiles.determine_coding_profile(
         "Blockchain Developer", ["Solidity"], coding_weight=0.45
     ) == "full"
+
+
+# ---------------------------------------------------------------------------
+# Served session composition
+# ---------------------------------------------------------------------------
+
+def test_served_composition_matches_requested_mix(service, roles):
+    """A session must contain exactly the per-type counts it advertises.
+
+    The old whole-bank top-up padded the total with whatever was left, so the
+    served mix diverged from the requested (and graded) mix.
+    """
+    for role in roles:
+        profile = service._determine_coding_profile(role, [])
+        expected = service._get_question_distribution(role, profile, 20)
+        session = service.create_interview_session(
+            candidate_id="TEST", job_role=role, num_questions=20, is_practice=True
+        )
+        qc = session["question_count"]
+        served = (qc["mcq"], qc["descriptive"], qc["coding"])
+        assert served == expected, f"{role}: served {served}, expected {expected}"
+
+
+def test_non_coding_role_never_serves_a_coding_question(service, roles):
+    for role in roles:
+        if role_profiles.is_coding_role(role):
+            continue
+        session = service.create_interview_session(
+            candidate_id="TEST", job_role=role, num_questions=10,
+            mcq_count=4, desc_count=3, coding_count=3, is_practice=True,
+        )
+        coding = [q for q in session["questions"] if q.get("question_type") == "Coding"]
+        assert coding == [], f"{role}: leaked {len(coding)} coding questions"
+        assert session["question_count"]["coding"] == 0
+        assert session["coding_profile"] == "none"
+        assert session["coding_language"] is None
+
+
+def test_coding_language_is_coerced_and_stamped(service):
+    """An unexecutable choice must not survive into the session."""
+    session = service.create_interview_session(
+        candidate_id="TEST", job_role="Blockchain Developer", num_questions=10,
+        mcq_count=4, desc_count=3, coding_count=3, is_practice=True,
+        coding_language="Kotlin",
+    )
+    assert session["coding_language"] == "Python"
+    coding = [q for q in session["questions"] if q.get("question_type") == "Coding"]
+    assert len(coding) == 3
+    assert all(q.get("language") == "Python" for q in coding)
+

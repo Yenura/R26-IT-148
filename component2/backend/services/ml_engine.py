@@ -546,19 +546,12 @@ class InterviewService:
 
         if qg_questions:
             # Drop generated questions that name a different role, then
-            # top up from the bank so the requested total still holds.
+            # top each type up from its own bank slice so the mix holds.
             qg_questions = self._prefer_role_consistent(qg_questions, job_role)
             mcq_questions = [q for q in qg_questions if q.get("question_type") == "MCQ"]
             desc_questions = [q for q in qg_questions if q.get("question_type") == "Descriptive"]
             code_questions = [q for q in qg_questions if q.get("question_type") == "Coding"]
             logger.info("Interview session using QG model generated questions (%s items)", len(qg_questions))
-            all_questions = mcq_questions + desc_questions + code_questions
-            want = num_mcq + num_desc + num_code
-            if len(all_questions) < want:
-                all_questions = self._top_up_questions(
-                    all_questions, want, coding_profile=coding_profile,
-                    job_role=job_role, language=resolved_language,
-                )
         else:
             # Select questions by type from bank
             mcq_questions = self._select_questions_by_type(
@@ -572,16 +565,25 @@ class InterviewService:
                 coding_profile=coding_profile, difficulty=difficulty,
                 exclude_ids=exclude_ids, language=resolved_language,
             )
+            mcq_questions = self._prefer_role_consistent(mcq_questions, job_role)
+            desc_questions = self._prefer_role_consistent(desc_questions, job_role)
+            code_questions = self._prefer_role_consistent(code_questions, job_role)
 
-            # Combine all questions, drop any naming a different role,
-            # and top up if the bank is smaller than requested count.
-            all_questions = mcq_questions + desc_questions + code_questions
-            all_questions = self._prefer_role_consistent(all_questions, job_role)
-            if len(all_questions) < num_questions:
-                all_questions = self._top_up_questions(
-                    all_questions, num_questions, coding_profile=coding_profile,
-                    job_role=job_role, language=resolved_language,
-                )
+        # Top each type up to its requested count using only that type's pool.
+        # Filling the *total* from the whole bank used to inflate descriptive
+        # questions and could even slip a coding question into a non-coding
+        # role's session.
+        mcq_questions = self._top_up_by_type(
+            mcq_questions, "MCQ", num_mcq, job_role=job_role, exclude_ids=exclude_ids
+        )
+        desc_questions = self._top_up_by_type(
+            desc_questions, "Descriptive", num_desc, job_role=job_role, exclude_ids=exclude_ids
+        )
+        code_questions = self._top_up_by_type(
+            code_questions, "Coding", num_code, job_role=job_role, exclude_ids=exclude_ids,
+            coding_profile=coding_profile, language=resolved_language,
+        )
+        all_questions = mcq_questions + desc_questions + code_questions
         
         # Create session with high-entropy ID to avoid collisions.
         candidate_prefix = re.sub(r"[^A-Za-z0-9]", "", candidate_id or "CAND")[:4].upper() or "CAND"
@@ -659,54 +661,69 @@ class InterviewService:
             return kept
         return questions
 
-    def _top_up_questions(self, selected_questions: List[Dict], target_count: int, coding_profile: str = "full", job_role: str = "", language: Optional[str] = None) -> List[Dict]:
-        """Top up with unused unique questions first; only repeat as last resort."""
-        if not selected_questions:
+    def _top_up_by_type(self, selected_questions: List[Dict], question_type: str, count: int,
+                        job_role: str = "", exclude_ids: Optional[set] = None,
+                        coding_profile: str = "full", language: Optional[str] = None) -> List[Dict]:
+        """Return up to ``count`` questions of a single type.
+
+        Filling each type from its own pool keeps the served mix equal to the
+        requested mix: the old whole-bank top-up padded the *total* with
+        whatever was left, inflating descriptive questions and even slipping a
+        coding question into a non-coding role's session.  A ``count`` of 0
+        always returns nothing, which is what keeps non-coding roles clean.
+        """
+        if count <= 0:
+            return []
+        if question_type == "Coding" and coding_profile == "none":
             return []
 
-        topped_up = list(selected_questions)
-        existing_ids = {q.get("id") for q in topped_up if q.get("id")}
-        existing_texts = {q.get("question_text", "").strip().lower() for q in topped_up if q.get("question_text")}
+        selected = list(selected_questions)[:count]
+        if len(selected) >= count:
+            return selected
 
-        # 1) Fill from remaining bank with unseen question text (shuffled for randomness).
-        # Role-consistent questions first so top-ups don't reintroduce leaks.
-        remaining = [c for c in self.question_bank if c.get("question_text", "").strip().lower() not in existing_texts]
-        if job_role:
-            consistent = [c for c in remaining if not self._mentions_other_role(c, job_role)]
-            rest = [c for c in remaining if self._mentions_other_role(c, job_role)]
-            random.shuffle(consistent)
-            random.shuffle(rest)
-            remaining = consistent + rest
-        else:
-            random.shuffle(remaining)
-        for candidate in remaining:
-            if len(topped_up) >= target_count:
-                break
-            cid = candidate.get("id")
-            ctext = candidate.get("question_text", "").strip().lower()
-            if not ctext or cid in existing_ids:
-                continue
-            if candidate.get("question_type") == "Coding":
-                if coding_profile in {"sql", "scripting"}:
-                    if not self._filter_coding_questions_by_profile([candidate], coding_profile):
-                        continue
-                elif not self._language_matches(candidate, language):
-                    continue
-            topped_up.append(candidate)
-            if cid:
-                existing_ids.add(cid)
-            existing_texts.add(ctext)
+        exclude = set(exclude_ids or set())
+        have_ids = {q.get("id") for q in selected if q.get("id")}
+        have_texts = {
+            str(q.get("question_text", "")).strip().lower() for q in selected
+        }
 
-        # 2) If still short, repeat selected pool with unique IDs (shuffled order).
-        idx = 1
-        pool = list(selected_questions)
+        pool = [
+            q for q in self.question_bank
+            if q.get("question_type") == question_type
+            and q.get("id") not in exclude
+            and q.get("id") not in have_ids
+            and str(q.get("question_text", "")).strip().lower() not in have_texts
+        ]
+        if question_type == "Coding":
+            filtered = self._filter_coding_questions_by_profile(
+                pool, coding_profile, language=language
+            )
+            if filtered:
+                pool = filtered
+
+        # Shuffle first, then stable-sort so preferences hold but order stays random.
         random.shuffle(pool)
-        while len(topped_up) < target_count and pool:
-            source = pool[(idx - 1) % len(pool)].copy()
+        if job_role or (question_type == "Coding" and language):
+            pool.sort(key=lambda q: (
+                1 if (job_role and self._mentions_other_role(q, job_role)) else 0,
+                0 if self._language_matches(q, language) else 1,
+            ))
+
+        for candidate in pool:
+            if len(selected) >= count:
+                break
+            selected.append(candidate)
+
+        # Last resort for a tiny pool: repeat with unique IDs rather than
+        # returning fewer questions than requested.
+        idx = 1
+        base = list(selected)
+        while len(selected) < count and base:
+            source = base[(idx - 1) % len(base)].copy()
             source["id"] = f"{source.get('id', 'Q')}_R{idx}"
-            topped_up.append(source)
+            selected.append(source)
             idx += 1
-        return topped_up
+        return selected[:count]
     
     def _difficulty_for_level(self, job_level: str) -> str:
         """Map job level to a preferred question difficulty."""
