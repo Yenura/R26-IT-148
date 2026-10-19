@@ -578,6 +578,8 @@ nfr_test_report.json
 R26-IT-148_PLANNER_TASKS.json
 *.yml
 *.json
+# Curated data that must ship with the repo despite the *.json ignore above.
+!component2/models/coding_bank_external.json
 *.png
 *.png
 *.docx

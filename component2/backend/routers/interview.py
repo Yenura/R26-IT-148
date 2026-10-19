@@ -75,10 +75,35 @@ def _is_py_literal(value) -> bool:
     return False
 
 
+def _py_source(value) -> str:
+    """Render a test-case input as Python source for the sandbox.
+
+    The question bank stores inputs as Python-literal *source* strings
+    (e.g. ``"[2, 7]"``, ``"9"``, ``"'abc'"``).  Injecting those with ``repr``
+    quotes them, so ``nums = "[2,7,11,15]"`` becomes a *string* and every
+    correct solution fails.  Native JSON values (int/list/dict/...) must
+    likewise be emitted as source.  So: interpret a string as its literal when
+    it parses, and quote it otherwise (a genuine string such as ``"hello"``).
+    """
+    if isinstance(value, str):
+        try:
+            value = ast.literal_eval(value)
+        except (ValueError, SyntaxError):
+            pass
+    return repr(value)
+
+
 def _output_matches(output: str, expected: str) -> bool:
     """Compare sandbox stdout to expected. Handles float/int, bool case, collections."""
     if output == expected:
         return True
+    # Compare as Python literals when both sides are literal source.  This
+    # makes a printed set/dict match regardless of element order (set iteration
+    # order is arbitrary), while still keeping list order significant.
+    try:
+        return ast.literal_eval(output) == ast.literal_eval(expected)
+    except (ValueError, SyntaxError):
+        pass
     if expected[:1] in "[{(":
         return output.replace(" ", "") == expected.replace(" ", "")
     # Normalize float/int: "5.0" == "5", "5.00" == "5"
@@ -100,11 +125,27 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
     Injection mirrors scoring: inputs become variables the code reads,
     candidates print() the result.
     """
-    inject = "".join(f"{k} = {repr(v) if isinstance(v, str) else v}\n" for k, v in inp.items())
+    inject = "".join(f"{k} = {_py_source(v)}\n" for k, v in inp.items())
     sandbox_wrapper = (
         "import sys as _sys\n"
         "from io import StringIO\n"
         "_sys.setrecursionlimit(100000)\n"
+        "# Pre-load common, capability-free stdlib modules while the real\n"
+        "# __import__ is still installed.  Their own internal `import sys` must\n"
+        "# succeed, and candidates routinely use re / collections / heapq / ... .\n"
+        "# None of these grant filesystem or network access; the guard below\n"
+        "# still blocks os / subprocess / socket / sys for candidate code.\n"
+        "for _m in ('math', 're', 'collections', 'collections.abc', 'itertools',\n"
+        "           'functools', 'heapq', 'bisect', 'string', 'decimal',\n"
+        "           'fractions', 'statistics', 'random', 'hashlib', 'textwrap',\n"
+        "           'copy', 'operator', 'enum', 'dataclasses', 'json', 'array',\n"
+        "           'base64', 'binascii', 'struct', 'datetime', 'zlib', 'csv',\n"
+        "           'abc', 'numbers', 'types', 'unicodedata', 'difflib', 'cmath',\n"
+        "           'typing'):\n"
+        "    try:\n"
+        "        __import__(_m)\n"
+        "    except Exception:\n"
+        "        pass\n"
         "_blocked = {\n"
         "    'os','subprocess','shutil','socket','pathlib','ctypes',\n"
         "    'multiprocessing','threading','signal','inspect','importlib',\n"
@@ -142,11 +183,18 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
     )
     tmp = None
     try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
+        with tempfile.NamedTemporaryFile(
+            mode='w', suffix='.py', delete=False, encoding='utf-8'
+        ) as f:
             f.write(sandbox_wrapper)
             tmp = f.name
+        # A non-ASCII docstring/comment used to raise UnicodeEncodeError on the
+        # write under the Windows default codec, silently scoring the candidate
+        # 0.  Run the child as UTF-8 end to end.
+        child_env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
         result = subprocess.run(
-            [sys.executable, tmp], capture_output=True, text=True, timeout=5
+            [sys.executable, tmp], capture_output=True, text=True, timeout=5,
+            encoding="utf-8", errors="replace", env=child_env,
         )
         return result.stdout.strip()
     except Exception:
