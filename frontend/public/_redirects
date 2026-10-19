@@ -1,0 +1,7 @@
+# SPA fallback for Cloudflare Pages.
+#
+# The app uses BrowserRouter, so deep links like /login/company or
+# /interview/<id> are real URLs that have no file on disk.  Without this they
+# 404 on refresh or when opened directly.  Static assets are served before this
+# rule is applied, so /assets/* is unaffected.
+/*    /index.html   200

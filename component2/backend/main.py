@@ -83,7 +83,31 @@ async def lifespan(app: FastAPI):
         logger.info("✓ Interview service preloaded & warmed up")
     except Exception as e:
         logger.warning(f"Could not pre-warm interview service: {e}")
-    
+
+    # Coding-language coverage: warn about any role we cannot ask in one of its
+    # own declared languages, and any role whose coding weight will therefore
+    # shift to Descriptive.
+    try:
+        from services import role_profiles
+        role_profiles.log_language_coverage(logger)
+    except Exception as e:
+        logger.warning(f"Could not check coding-language coverage: {e}")
+
+    # Resolve the candidate-code sandbox now, so the active backend (docker or
+    # the development-only subprocess fallback) is stated at startup rather than
+    # discovered on the first submission.
+    try:
+        from services import code_sandbox
+        info = code_sandbox.describe()
+        if info["backend"] != "docker":
+            logger.warning(
+                "⚠ Candidate code will run WITHOUT container isolation "
+                "(CODE_SANDBOX=%s). Set CODE_SANDBOX=docker before a public launch.",
+                info["setting"],
+            )
+    except Exception as e:
+        logger.warning(f"Could not resolve the code sandbox: {e}")
+
     logger.info("✓ Interview system ready on http://localhost:8002")
     logger.info("✓ API Documentation: http://localhost:8002/docs")
     
@@ -128,7 +152,15 @@ ALLOWED_ORIGINS = os.getenv(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$",
+    # A deployed site should trust exactly the origins in ALLOWED_ORIGINS.  The
+    # localhost regex exists so a dev server on whatever port Vite picked keeps
+    # working; ALLOW_LOCALHOST_ORIGINS=0 (set in production) removes it, so a
+    # deployed backend does not also accept requests from localhost.
+    allow_origin_regex=(
+        None
+        if os.getenv("ALLOW_LOCALHOST_ORIGINS", "1") == "0"
+        else r"^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$"
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

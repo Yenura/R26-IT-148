@@ -6,6 +6,7 @@ Replaces the RAG+LLM system with direct QG model + static bank fallback.
 import json
 import logging
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -17,17 +18,73 @@ _qg_generator = None
 _question_bank = None
 
 
-def _is_good_question(q: Dict) -> bool:
+def _is_degenerate(text: str) -> bool:
+    """True when the model has fallen into a repetition loop.
+
+    Weak seq2seq models lock onto a phrase and repeat it --
+    "senior senior senior", "a risk when a risk when a risk when ...".
+    """
+    words = re.findall(r"[a-z']+", text.lower())
+    for i in range(len(words) - 2):
+        if words[i] == words[i + 1] == words[i + 2]:
+            return True
+    if len(words) >= 10:
+        grams = [tuple(words[i:i + 3]) for i in range(len(words) - 2)]
+        if len(grams) != len(set(grams)):
+            return True
+    return False
+
+
+def _is_good_question(q: Dict, job_role: str = "", skills: Optional[List[str]] = None) -> bool:
     """True if a generated question is usable.
 
     The tiny QG model can emit fragment/noise questions (``<unk>`` tokens,
-    placeholder test cases, missing answer keys). Broken questions make
-    scoring garbage no matter how good the scorer is.
+    repeated filler, placeholder test cases, missing answer keys). Broken
+    questions make scoring garbage no matter how good the scorer is.
     """
     text = json.dumps(q, ensure_ascii=False)
     if "<unk>" in text or "<pad>" in text:
         return False
     qtext = q.get("question_text") or ""
+    if _is_degenerate(qtext):
+        return False
+    # The model loops inside answers and options too, not just the question:
+    # "The ' class in Java is used to the ' in Java is used to the ' in Java ..."
+    if _is_degenerate(q.get("answer_text") or ""):
+        return False
+    # Checked per option, NOT on the concatenation: legitimate distractor sets
+    # ("All of the above" / "None of the above") share the 3-gram "of the
+    # above", which made the joined string look like a repetition loop and
+    # rejected perfectly good MCQs. A real loop still shows up inside a single
+    # option ("CSS CSS CSS preprocessors").
+    options = q.get("options") or []
+    if any(
+        _is_degenerate(str(o.get("text", "")))
+        for o in options
+        if isinstance(o, dict)
+    ):
+        return False
+    # The corpus quotes identifiers -- "the 'synchronized' keyword in Java" -- and
+    # the model frequently drops the identifier, leaving a bare quote: "the '
+    # keyword in Java". A quote surrounded by whitespace is that failure; a real
+    # quoted term ("the 'synchronized' keyword", "it's") is never shaped like it.
+    if re.search(r"\s'\s", qtext):
+        return False
+    # Topical relevance. The generator fills category/topic straight from the
+    # skill list, so testing those always "succeeds"; the question text itself
+    # has to name the role, or share a meaningful word with one of its skills.
+    # Word overlap rather than substring equality, because the corpus and
+    # job_requirements phrase the same topic differently ("data pipelines" vs
+    # "data pipeline design"). Applied to MCQ/Descriptive only -- the corpus
+    # conditions those on the role, whereas coding prompts carry algorithm tags
+    # instead, so a coding question legitimately never names a role skill.
+    if skills and q.get("question_type") in ("MCQ", "Descriptive"):
+        low = qtext.lower()
+        skill_words = {w for s in skills if s for w in re.findall(r"[a-z0-9+#]{3,}", s.lower())}
+        q_words = set(re.findall(r"[a-z0-9+#]{3,}", low))
+        named = (bool(job_role) and job_role.lower() in low) or bool(q_words & skill_words)
+        if not named:
+            return False
     if len(qtext) < 20:
         return False
     t = q.get("question_type")
@@ -191,59 +248,74 @@ def generate_questions_qg(
     num_desc: int,
     num_code: int,
     coding_profile: str,
+    coding_language: Optional[str] = None,
 ) -> Optional[List[Dict]]:
     """
-    Generate questions using QG model. Returns None if model unavailable.
-    Caller falls back to static question bank.
-    When coding_profile is 'none', num_code is 0 and no coding questions are requested.
+    Generate MCQ/Descriptive questions with the QG model.
+
+    Returns the questions that pass the *per-question* quality gate -- possibly
+    fewer than requested -- or ``None`` when the model is unavailable or
+    produced nothing usable.  The caller keeps the passing questions and fills
+    every shortfall from the curated static bank, so a partially-good batch is
+    still useful instead of being discarded wholesale.
+
+    Coding is deliberately never generated: the tiny model cannot emit runnable
+    test cases (see models/t5_coding_diagnosis.md), so coding questions always
+    come from the curated bank.  ``num_code`` is accepted for call-site
+    compatibility and ignored.
+
+    ``coding_language`` is the executable language the candidate selected; it is
+    passed to the generator so any emitted question is labelled consistently.
     """
-    # Enforce scoring config: non-coding roles never get coding questions
-    try:
-        cfg_path = Path(__file__).parent.parent.parent / "models" / "interview_scoring_config.json"
-        if cfg_path.exists():
-            cfg = json.loads(cfg_path.read_text(encoding="utf-8"))
-            w = cfg.get("interview_weights", {}).get(job_role, {})
-            if w.get("coding", 1) == 0 and num_code > 0:
-                num_desc += num_code
-                num_code = 0
-                coding_profile = "none"
-    except:
-        pass
+    _ = coding_profile  # coding is bank-sourced; the caller owns the profile
+    if num_code:
+        logger.info(
+            "QG model: coding is bank-sourced; ignoring requested num_code=%d", num_code
+        )
     generator = _get_qg_generator()
     if generator is None:
         return None
 
+    try:
+        from ml.question_generator import set_preferred_language
+    except Exception:  # pragma: no cover - generator already imported it
+        set_preferred_language = None
+    if set_preferred_language is not None:
+        set_preferred_language(coding_language)
     try:
         combined = generator.generate_for_session(
             job_role=job_role,
             skills=skills,
             num_mcq=num_mcq,
             num_desc=num_desc,
-            num_code=num_code,
+            num_code=0,
         )
-        total = num_mcq + num_desc + num_code
         if not combined:
-            logger.info("QG model returned no questions; falling back to static bank")
+            logger.info("QG model returned no questions; using the static bank")
             return None
 
-        # Never discard a whole batch over one bad item. Keep every question
-        # that passes the quality gate; the caller tops up any shortfall from
-        # the static bank (InterviewService._top_up_questions).
-        good = [q for q in combined if _is_good_question(q)]
+        # Per-question gate: keep every question that passes, drop the rest.
+        # The caller tops each type back up from the bank, so a rejected slot
+        # is filled individually instead of rejecting the whole role's batch.
+        good = [q for q in combined if _is_good_question(q, job_role, skills)]
         if not good:
-            logger.warning(
-                "QG model: 0/%d questions passed the quality gate; falling back to static bank",
-                total,
+            logger.info(
+                "QG gate rejected all %d generated questions; using the static bank",
+                len(combined),
             )
             return None
-        if len(good) < total:
-            logger.info(
-                "QG model: %d/%d questions passed the quality gate; caller tops up "
-                "%d from the static bank", len(good), total, total - len(good),
-            )
-        else:
-            logger.info("QG model generated %d valid questions", len(good))
-        return good[:total]
+        by_type: Dict[str, int] = {}
+        for q in good:
+            k = q.get("question_type") or "?"
+            by_type[k] = by_type.get(k, 0) + 1
+        logger.info(
+            "QG gate: %d/%d generated questions passed (requested %d MCQ+Descriptive) %s",
+            len(good), len(combined), num_mcq + num_desc, by_type,
+        )
+        return good
     except Exception as exc:
         logger.warning("QG model generation failed: %s", exc)
         return None
+    finally:
+        if set_preferred_language is not None:
+            set_preferred_language(None)

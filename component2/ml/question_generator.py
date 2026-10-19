@@ -122,15 +122,44 @@ def _parse_l(text: str) -> str:
     return m.group(1).strip() if m else "Python"
 
 
+def _normalize_test_case(tc: Dict) -> Dict:
+    """Convert the trained coding shape into the shape the interviewer expects.
+
+    The fine-tuned model emits test cases as ``{"input": {"raw": "x = <literal>"},
+    "expected_output": <literal>}``. The interview router can only execute a test
+    when ``input`` is a dict of Python literals, so unwrap ``raw`` into
+    ``{"x": <literal>}`` when that is exactly what it holds.
+    """
+    inp = tc.get("input")
+    if not (isinstance(inp, dict) and set(inp) == {"raw"} and isinstance(inp.get("raw"), str)):
+        return tc
+    try:
+        import ast
+
+        node = ast.parse(inp["raw"].strip(), mode="exec")
+        if len(node.body) == 1 and isinstance(node.body[0], ast.Assign):
+            target = node.body[0].targets[0]
+            if isinstance(target, ast.Name):
+                out = dict(tc)
+                out["input"] = {target.id: ast.literal_eval(node.body[0].value)}
+                return out
+    except Exception:
+        pass
+    return tc
+
+
 def _parse_t(text: str) -> List[Dict]:
-    m = re.search(r"[Tt]:\s*(\[.*?\])", text, re.DOTALL)
+    # NB: a non-greedy ``\[.*?\]`` truncates at the first ``]``, which breaks
+    # test cases whose inputs contain lists (e.g. "stones = [2,7,4,1]"). Decode
+    # the first JSON value instead so nesting is handled.
+    m = re.search(r"[Tt]:\s*", text)
     if m:
         try:
-            parsed = json.loads(m.group(1))
+            parsed, _ = json.JSONDecoder().raw_decode(text[m.end():].lstrip())
             if isinstance(parsed, list):
-                # LLM output is a trust boundary: keep only well-formed test
+                # Model output is a trust boundary: keep only well-formed test
                 # cases, or the Pydantic response model 500s the whole session.
-                return [t for t in parsed if isinstance(t, dict)]
+                return [_normalize_test_case(t) for t in parsed if isinstance(t, dict)]
             return []
         except (json.JSONDecodeError, ValueError):
             pass
@@ -142,29 +171,56 @@ def _parse_c(text: str) -> str:
     return m.group(1).strip() if m else "O(n)"
 
 
+# Language forced onto generated coding questions by the caller. The
+# interview sandbox is Python-only, so callers pass an executable language
+# (see services.role_profiles) rather than letting loose keyword matching
+# decide (which used to label every "React Native" role as JavaScript).
+_PREFERRED_LANGUAGE: Optional[str] = None
+
+
+def set_preferred_language(language: Optional[str]) -> None:
+    """Force the language used for generated coding questions (None resets)."""
+    global _PREFERRED_LANGUAGE
+    _PREFERRED_LANGUAGE = (language or None)
+
+
 def _detect_language(skills: List[str]) -> str:
+    """Best-effort language for a skill list.
+
+    Ordering matters: platform-specific languages (Kotlin/Swift/Dart for
+    mobile) are checked before the generic ``react``/``node`` bucket, otherwise
+    "React Native" masks Kotlin and Swift.
+    """
     if not skills:
         return "Python"
     joined = " ".join(s.lower() for s in skills)
     low_list = [s.lower().strip() for s in skills]
     if "c#" in joined or "c sharp" in joined or ".net" in joined or "asp.net" in joined:
         return "C#"
+    if "solidity" in joined:
+        return "Solidity"
+    if "kotlin" in low_list:
+        return "Kotlin"
+    if "swift" in low_list:
+        return "Swift"
+    if "dart" in low_list:
+        return "Dart"
     if "java" in low_list:
         return "Java"
     if any(x in joined for x in ["javascript", "typescript", "react", "vue", "angular", "node.js", "node"]):
         return "JavaScript"
-    if "kotlin" in joined:
-        return "Kotlin"
-    if "swift" in joined:
-        return "Swift"
-    if "dart" in joined or "flutter" in joined:
-        return "Dart"
-    if " go " in f" {joined} " or "golang" in joined:
+    if " go " in f" {joined} " or "golang" in low_list:
         return "Go"
-    if "rust" in joined:
+    if "rust" in low_list:
         return "Rust"
+    if "scala" in low_list:
+        return "Scala"
+    if "bash" in joined:
+        return "Bash"
     if "c++" in joined or "c plus plus" in joined:
         return "C++"
+    if " c " in f" {joined} ":
+        return "C"
     if "sql" in low_list and len(skills) <= 3:
         return "SQL"
     return "Python"
@@ -215,7 +271,16 @@ class QuestionGenerator:
         return self._generate_custom(input_text)
 
     def _generate_t5(self, input_text: str) -> str:
-        """Generate using T5 model."""
+        """Generate using T5 model.
+
+        Beam search, deterministically. This model is trained from scratch on a
+        small corpus, and sampling (temperature/top_p) sends it into repetition
+        loops -- "The ' in Java is ' in Java is ' in Java is ...". Beam decoding
+        is markedly more coherent, and no_repeat_ngram_size guards the loops
+        beam search can still fall into.  repetition_penalty adds a second guard
+        for the "senior senior senior" / "in Java is in Java is" loops that slip
+        past the n-gram block.
+        """
         inputs = self._tokenizer(
             input_text,
             return_tensors="pt",
@@ -229,9 +294,9 @@ class QuestionGenerator:
                 max_length=self.max_length,
                 num_beams=4,
                 early_stopping=True,
-                temperature=self.temperature,
-                do_sample=self.temperature > 0,
-                top_p=0.95,
+                do_sample=False,
+                no_repeat_ngram_size=3,
+                repetition_penalty=1.2,
             )
         return self._tokenizer.decode(output_ids[0], skip_special_tokens=True)
 
@@ -281,14 +346,26 @@ class QuestionGenerator:
             "keywords": skills[:3],
         }
 
+    @staticmethod
+    def _skill_for(skills: List[str], i: int) -> str:
+        """Pick ONE skill, the way the training corpus is written.
+
+        The MCQ/Descriptive training rows carry exactly one skill in the prompt
+        (2846/2846 and 482/482 have no comma in the skill slot). Sending a role's
+        whole skill list at once is out of distribution and makes the model emit
+        repeated filler ("a risk when a risk when ..."), so cycle instead.
+        """
+        if not skills:
+            return "General"
+        return skills[i % len(skills)]
+
     def generate_mcq(self, job_role: str, skills: List[str], count: int = 3) -> List[Dict]:
         questions = []
         difficulties = ["Easy", "Medium", "Hard"]
-        skill_str = ", ".join(skills[:8]) if skills else "General"
 
         for i in range(count):
             diff = difficulties[i % len(difficulties)]
-            out = self._generate(f"[MCQ] {job_role} | {skill_str} | {diff}")
+            out = self._generate(f"[MCQ] {job_role} | {self._skill_for(skills, i)} | {diff}")
             qtext = _parse_q(out)
             answer = _parse_a(out)
             options, answer_idx = _parse_o(out)
@@ -315,11 +392,10 @@ class QuestionGenerator:
     def generate_descriptive(self, job_role: str, skills: List[str], count: int = 3) -> List[Dict]:
         questions = []
         difficulties = ["Easy", "Medium", "Hard"]
-        skill_str = ", ".join(skills[:8]) if skills else "General"
 
         for i in range(count):
             diff = difficulties[i % len(difficulties)]
-            out = self._generate(f"[Descriptive] {job_role} | {skill_str} | {diff}")
+            out = self._generate(f"[Descriptive] {job_role} | {self._skill_for(skills, i)} | {diff}")
             qtext = _parse_q(out)
             answer = _parse_a(out)
             keywords = _parse_k(out) or skills[:3]
@@ -340,7 +416,7 @@ class QuestionGenerator:
 
     def _make_coding_from_qa(self, qtext: str, answer: str, diff: str, skills: List[str]) -> Dict:
         import random
-        lang = _detect_language(skills)
+        lang = _PREFERRED_LANGUAGE or _detect_language(skills)
         test_cases = []
         answer_lower = answer.lower().strip()
         if any(kw in answer_lower for kw in ["return ", "output:", "result:", "prints"]):
@@ -367,18 +443,19 @@ class QuestionGenerator:
     def generate_coding(self, job_role: str, skills: List[str], count: int = 2) -> List[Dict]:
         questions = []
         difficulties = ["Easy", "Medium", "Hard"]
-        skill_str = ", ".join(skills[:8]) if skills else "General"
+        # Coding prompts in the corpus carry up to four comma-joined topic tags,
+        # so joining is in-distribution here (unlike MCQ/Descriptive, which never do).
+        skill_str = ", ".join(skills[:4]) if skills else "General"
 
         for i in range(count):
             diff = difficulties[i % len(difficulties)]
             out = self._generate(f"[Coding] {job_role} | {skill_str} | {diff}")
             qtext = _parse_q(out)
             lang = _parse_l(out)
-            # Override with skill-driven language (C#, Java, etc.) if detected
-            detected = _detect_language(skills)
-            if detected != "Python" and lang == "Python":
-                lang = detected
-            elif detected != "Python":
+            # Prefer the caller-selected executable language; otherwise fall
+            # back to skill-driven detection.
+            detected = _PREFERRED_LANGUAGE or _detect_language(skills)
+            if detected:
                 lang = detected
             test_cases = _parse_t(out)
             complexity = _parse_c(out)

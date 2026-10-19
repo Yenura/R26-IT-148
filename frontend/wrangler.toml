@@ -1,0 +1,14 @@
+# Cloudflare Pages project configuration.
+#
+#   npm run build          # emits dist/
+#   npx wrangler pages deploy
+#
+# `pages_build_output_dir` is what lets `wrangler pages deploy` run without
+# being told the output directory on the command line.
+#
+# The build must be given the five API origins, or `api.js` falls back to
+# http://127.0.0.1:8000-8004 and the deployed site calls the visitor's own
+# machine.  See deploy/cloudflare/README.md.
+name = "r26-it-148"
+pages_build_output_dir = "dist"
+compatibility_date = "2026-10-19"

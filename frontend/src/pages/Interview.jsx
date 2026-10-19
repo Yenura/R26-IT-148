@@ -14,6 +14,9 @@ import ScoreMeter from '../components/ScoreMeter'
 import ScoreBadge from '../components/ScoreBadge'
 import ConfirmDialog from '../components/ConfirmDialog'
 
+/* Mirrors backend `services/role_profiles.py`; used only as a fallback when
+   GET /interview/jobs is unavailable. The backend is the source of truth and
+   also tells us which languages the sandbox can actually execute. */
 const ROLE_LANGUAGES = {
   "Software Engineer": ["Python","Java","C#","C++","JavaScript","Go"],
   "Backend Developer": ["Python","Java","C#","Node.js","Go","JavaScript"],
@@ -30,9 +33,20 @@ const ROLE_LANGUAGES = {
   "Embedded Systems Engineer": ["C","C++"],
   "QA/Test Automation Engineer": ["Python","Java","JavaScript"],
   "Site Reliability Engineer": ["Python","Go","Bash"],
-  "Network Engineer": ["Python"],
 }
-const NON_CODING_ROLES = ["Cloud Solutions Architect","Cybersecurity Analyst","UI/UX Designer","Business/Systems Analyst","Network Engineer"]
+const NON_CODING_ROLES = ["Business/Systems Analyst","Cloud Solutions Architect","Cybersecurity Analyst","Network Engineer","UI/UX Designer"]
+
+/* Languages the interview can ask in: Python is executable in the sandbox,
+   the rest are assessed with the non-executed formats below (predict-the-
+   output / find-the-bug / complete-the-function), which is why a Frontend
+   Developer is no longer asked Python.  Mirrors role_profiles.py. */
+const FALLBACK_SUPPORTED = ["Python","Java","C++","JavaScript","Go","Rust","SQL"]
+
+/* Only these are actually executed by the sandbox. */
+const EXECUTABLE_LANGUAGES = ["Python"]
+
+/* Coding formats graded WITHOUT executing the candidate's code. */
+const NON_EXEC_FORMATS = ['Predict Output', 'Find the Bug', 'Complete Function']
 
 export default function Interview() {
   useAuth('candidate')
@@ -95,8 +109,25 @@ export default function Interview() {
 
   const [step, setStep] = useState('setup')
   const [roles, setRoles] = useState({})
+  const [roleProfiles, setRoleProfiles] = useState({})
   const [selectedRole, setSelectedRole] = useState(jobRole)
-  const isNonCodingRole = NON_CODING_ROLES.includes(selectedRole) || !ROLE_LANGUAGES[selectedRole]
+
+  /* Coding capability + offerable languages come from the backend, which knows
+     what we can actually ask in (executed, or via a non-executed format).
+     Fall back to the local mirror if the request failed. */
+  const languagesFor = (role) => {
+    const fromServer = roleProfiles[role]?.languages
+    if (Array.isArray(fromServer) && fromServer.length) return fromServer
+    const declared = (ROLE_LANGUAGES[role] || []).filter((l) => FALLBACK_SUPPORTED.includes(l))
+    return declared
+  }
+  const isCodingRole = (role) => {
+    if (roleProfiles[role]) return !!roleProfiles[role].is_coding
+    return !!ROLE_LANGUAGES[role] && !NON_CODING_ROLES.includes(role)
+  }
+  const defaultLanguage = (role) => languagesFor(role)[0] || 'Python'
+
+  const isNonCodingRole = !isCodingRole(selectedRole)
   const effectiveCodingCount = isNonCodingRole ? 0 : numParam('codingCount', 3)
   const [selectedLevel, setSelectedLevel] = useState(jobLevel)
   const [selectedLanguage, setSelectedLanguage] = useState('Auto')
@@ -192,6 +223,7 @@ export default function Interview() {
     try {
       const r = await c2Jobs()
       setRoles(r?.data?.jobs || {})
+      setRoleProfiles(r?.data?.role_profiles || {})
     } catch {
       toast.error('Failed to load roles')
     }
@@ -205,10 +237,10 @@ export default function Interview() {
         ? jobSkills.split(',').filter(Boolean)
         : (Object.keys(roles).length > 0 ? (roles[selectedRole] || []).slice(0, 5) : [])
       // If practice mode and user chose a language for coding role, prioritize it
-      if (isPracticeMode && selectedLanguage !== 'Auto' && !NON_CODING_ROLES.includes(selectedRole)) {
+      if (isPracticeMode && selectedLanguage !== 'Auto' && isCodingRole(selectedRole)) {
         skills = [selectedLanguage, ...skills.filter((s) => s.toLowerCase() !== selectedLanguage.toLowerCase())]
       }
-      const codingLanguage = selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage
+      const codingLanguage = selectedLanguage === 'Auto' ? defaultLanguage(selectedRole) : selectedLanguage
       const r = await c2Start({
         candidate_id: localStorage.getItem('recruitai.user_id') || 'candidate-user',
         job_role: selectedRole,
@@ -250,7 +282,7 @@ export default function Interview() {
     setRunning(true)
     setRunResults(null)
     try {
-      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [] })
+      const r = await c2RunCode({ code_text: code, test_cases: q.test_cases || [], language: q.language || defaultLanguage(selectedRole) })
       setRunResults(r.data)
     } catch (err) {
       toast.error(err?.response?.data?.detail || 'Execution failed')
@@ -277,7 +309,12 @@ export default function Interview() {
               const a = answers[q.id]
               if (q.question_type === 'MCQ') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
               if (q.question_type === 'Descriptive') return { question_id: q.id, answer_text: a || '' }
-              if (q.question_type === 'Coding') return { question_id: q.id, code_text: a || '', language: selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage }
+              if (q.question_type === 'Coding') {
+                // Non-executed formats carry a text answer or an option, never code.
+                if (q.format === 'Find the Bug') return { question_id: q.id, selected_option: a != null ? parseInt(a) : null }
+                if (q.format === 'Predict Output' || q.format === 'Complete Function') return { question_id: q.id, answer_text: a || '' }
+                return { question_id: q.id, code_text: a || '', language: q.language || defaultLanguage(selectedRole) }
+              }
               return { question_id: q.id, answer_text: a || '' }
             }),
           }
@@ -441,20 +478,43 @@ export default function Interview() {
             </select>
           </div>
 
-          {selectedRole && ROLE_LANGUAGES[selectedRole] && !NON_CODING_ROLES.includes(selectedRole) && (
+          {selectedRole && isCodingRole(selectedRole) && (
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: '12px', marginTop: 0 }}>Programming Language (for coding questions)</label>
-              <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value)}
-                style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
-              >
-                <option value="Auto">Auto (from role)</option>
-                {ROLE_LANGUAGES[selectedRole].map((lang) => (
-                  <option key={lang} value={lang}>{lang}</option>
-                ))}
-              </select>
-              <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4 }}>Coding questions will be generated in {selectedLanguage === 'Auto' ? (ROLE_LANGUAGES[selectedRole]?.[0] || 'Python') : selectedLanguage}</div>
+              {languagesFor(selectedRole).length === 0 ? (
+                <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                  This role has no coding section: we have no questions in a language it
+                  declares, so that weight goes to the written questions instead.
+                </div>
+              ) : languagesFor(selectedRole).length > 1 ? (
+                <>
+                  <label style={{ fontSize: '12px', marginTop: 0 }}>Programming Language (for coding questions)</label>
+                  <select
+                    value={selectedLanguage}
+                    onChange={(e) => setSelectedLanguage(e.target.value)}
+                    style={{ fontSize: 'var(--p-text-base)', padding: '10px 12px' }}
+                  >
+                    <option value="Auto">Auto (from role)</option>
+                    {languagesFor(selectedRole).map((lang) => (
+                      <option key={lang} value={lang}>{lang}</option>
+                    ))}
+                  </select>
+                  <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', marginTop: 4 }}>
+                    {(() => {
+                      const lang = selectedLanguage === 'Auto' ? defaultLanguage(selectedRole) : selectedLanguage
+                      return EXECUTABLE_LANGUAGES.includes(lang)
+                        ? `Coding questions in ${lang} are run and auto-graded.`
+                        : `Coding questions in ${lang} are auto-graded without running code.`
+                    })()}
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)' }}>
+                  Coding questions are in <strong>{defaultLanguage(selectedRole)}</strong>
+                  {EXECUTABLE_LANGUAGES.includes(defaultLanguage(selectedRole))
+                    ? ' and are run and auto-graded.'
+                    : ' and are auto-graded without running code.'}
+                </div>
+              )}
             </div>
           )}
 
@@ -641,8 +701,80 @@ export default function Interview() {
             </div>
           )}
 
+          {/* Coding, non-executed formats: no Run button, graded from an answer
+              key (find-the-bug by option, the others by text). */}
+          {q.question_type === 'Coding' && NON_EXEC_FORMATS.includes(q.format) && (
+            <div>
+              <div style={{
+                marginBottom: 14, padding: 14, background: 'var(--color-bg)',
+                borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border-subtle)',
+                fontFamily: 'var(--p-font-mono)', fontSize: '12.5px', lineHeight: 1.6,
+                whiteSpace: 'pre', overflowX: 'auto', color: 'var(--color-fg)'
+              }}>
+                {q.code || ''}
+              </div>
+
+              {q.format === 'Find the Bug' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {(q.options || []).map((opt, idx) => {
+                    const isSelected = answers[q.id] === idx
+                    return (
+                      <button
+                        key={String.fromCharCode(65 + idx)}
+                        type="button"
+                        onClick={() => answerQuestion(q.id, idx)}
+                        aria-pressed={isSelected}
+                        style={{
+                          padding: '12px 16px',
+                          borderRadius: 'var(--radius-md)',
+                          border: `1.5px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border-subtle)'}`,
+                          background: isSelected ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          transition: 'all 0.15s ease',
+                          textAlign: 'left',
+                          width: '100%',
+                          fontSize: 'inherit',
+                          fontFamily: 'var(--p-font-mono)'
+                        }}
+                      >
+                        <div style={{
+                          width: 24, height: 24, borderRadius: '50%',
+                          border: `2px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          color: 'var(--color-primary)', fontSize: '12px', fontWeight: 800, flexShrink: 0
+                        }}>
+                          {String.fromCharCode(65 + idx)}
+                        </div>
+                        <span style={{ fontSize: 'var(--p-text-sm)', color: 'var(--color-fg)', whiteSpace: 'pre' }}>
+                          {typeof opt === 'string' ? opt : opt.text}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <input
+                  type="text"
+                  placeholder={q.format === 'Complete Function' ? 'Type the missing line...' : 'What does this code print?'}
+                  value={answers[q.id] || ''}
+                  onChange={(e) => answerQuestion(q.id, e.target.value)}
+                  spellCheck={false}
+                  autoComplete="off"
+                  style={{ width: '100%', fontFamily: 'var(--p-font-mono)', fontSize: 13 }}
+                />
+              )}
+
+              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-fg-muted)' }}>
+                Graded without running code.
+              </div>
+            </div>
+          )}
+
           {/* Coding Sandbox Mode */}
-          {q.question_type === 'Coding' && (
+          {q.question_type === 'Coding' && !NON_EXEC_FORMATS.includes(q.format) && (
             <div>
               {/* Test Cases / Examples */}
               {q.test_cases?.length > 0 && (
@@ -671,7 +803,7 @@ export default function Interview() {
 
               <div style={{ marginBottom: 12 }}>
                 <textarea
-                  placeholder="# Write your Python solution here...&#10;def solution():&#10;    pass"
+                  placeholder={`# Write your ${q.language || defaultLanguage(selectedRole)} solution here...\ndef solution():\n    pass`}
                   value={answers[q.id] || ''}
                   onChange={(e) => answerQuestion(q.id, e.target.value)}
                   onKeyDown={(e) => {

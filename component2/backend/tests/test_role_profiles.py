@@ -1,0 +1,294 @@
+"""
+Component 2: Role / language / coding-profile consistency.
+
+Guards the invariants that used to be violated in production:
+
+* A role with a non-zero coding weight MUST get a coding profile and an
+  offerable language (Blockchain Developer and Site Reliability Engineer had a
+  coding weight but a ``none`` profile).
+* A role with a zero coding weight MUST NOT be treated as a coding role
+  (Network Engineer was listed as both a language role and a non-coding role).
+* The interview may only offer languages the execution sandbox can run; the
+  sandbox is Python-only, so declaring Java/Kotlin/Solidity and then grading
+  the answer as Python is exactly the bug this test prevents.
+* The per-type question distribution must match the scoring weights it is
+  graded with.
+
+Run directly:   python tests/test_role_profiles.py
+Run via pytest: python -m pytest tests/test_role_profiles.py -v
+"""
+
+import json
+import sys
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from services import role_profiles  # noqa: E402
+from services.ml_engine import InterviewService  # noqa: E402
+
+MODELS_DIR = str(Path(__file__).parent.parent.parent / "models")
+EXPECTED_JOB_COUNT = 20
+
+
+def _load(path: str) -> dict:
+    return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
+def service() -> InterviewService:
+    return InterviewService(MODELS_DIR)
+
+
+@pytest.fixture(scope="module")
+def weights() -> dict:
+    cfg = _load(Path(MODELS_DIR) / "interview_scoring_config.json")
+    return cfg["interview_weights"]
+
+
+@pytest.fixture(scope="module")
+def roles() -> list:
+    return list(_load(Path(MODELS_DIR) / "job_requirements.json").keys())
+
+
+# ---------------------------------------------------------------------------
+# Static map integrity
+# ---------------------------------------------------------------------------
+
+def test_maps_cover_exactly_the_configured_roles(roles):
+    covered = set(role_profiles.ROLE_LANGUAGES) | set(role_profiles.NON_CODING_ROLES)
+    assert covered == set(roles), f"role maps disagree with config: {covered ^ set(roles)}"
+    assert len(roles) == EXPECTED_JOB_COUNT
+
+
+def test_coding_and_non_coding_roles_do_not_overlap():
+    overlap = set(role_profiles.ROLE_LANGUAGES) & set(role_profiles.NON_CODING_ROLES)
+    assert not overlap, f"roles are both coding and non-coding: {overlap}"
+
+
+def test_every_declared_language_list_is_non_empty():
+    for role, langs in role_profiles.ROLE_LANGUAGES.items():
+        assert langs, f"{role} is a coding role with no declared language"
+
+
+# ---------------------------------------------------------------------------
+# Weight <-> profile <-> language agreement
+# ---------------------------------------------------------------------------
+
+def test_coding_weight_matches_coding_role(service, roles, weights):
+    for role in roles:
+        weight = weights[role]["coding"]
+        profile = service._determine_coding_profile(role, [])
+        if weight > 0:
+            assert profile != "none", f"{role}: weight {weight} but profile is none"
+            assert role_profiles.is_coding_role(role), f"{role} has weight but no languages"
+        else:
+            assert profile == "none", f"{role}: weight 0 but profile is {profile}"
+            assert not role_profiles.is_coding_role(role), f"{role} has no weight but languages"
+
+
+def test_only_coding_roles_get_distribution_coding(service, roles):
+    for role in roles:
+        profile = service._determine_coding_profile(role, [])
+        for total in (5, 10, 20):
+            mcq, desc, code = service._get_question_distribution(role, profile, total)
+            assert mcq + desc + code == total, f"{role}@{total}: {mcq}+{desc}+{code}"
+            if profile == "none":
+                assert code == 0, f"{role}@{total}: non-coding role got {code} coding questions"
+
+
+def test_distribution_tracks_scoring_weights(service, weights):
+    """The question mix must follow the same weights used to grade it."""
+    for role, w in weights.items():
+        profile = service._determine_coding_profile(role, [])
+        _, _, code = service._get_question_distribution(role, profile, 20)
+        if w["coding"] <= 0:
+            assert code == 0, f"{role}: zero coding weight but {code} coding questions"
+        else:
+            assert code > 0, f"{role}: coding weight {w['coding']} but no coding questions"
+
+
+# ---------------------------------------------------------------------------
+# Language guarantee: executable, or supported by a non-executed format
+# ---------------------------------------------------------------------------
+
+def test_offered_languages_are_supported(roles):
+    supported = set(role_profiles.supported_languages())
+    for role in roles:
+        for lang in role_profiles.available_languages(role):
+            assert lang in supported, f"{role} offers unsupportable {lang}"
+
+
+def test_every_coding_role_offers_a_language_it_declares(roles):
+    """Python is *not* appended as a silent default for every coding role.
+
+    A Frontend Developer used to be handed Python.  The offered language must
+    come from the role's own declared list (Python included, for the roles that
+    genuinely declare it); only a role with no declared list at all may fall
+    back to Python.
+    """
+    for role in roles:
+        langs = role_profiles.available_languages(role)
+        if not role_profiles.is_coding_role(role):
+            assert langs == [], f"non-coding {role} offers {langs}"
+            continue
+        declared = {l.lower() for l in role_profiles.declared_languages(role)}
+        if declared:
+            assert langs, f"{role} declares {sorted(declared)} but offers nothing"
+            assert all(l.lower() in declared for l in langs), \
+                f"{role} offers a language it does not declare: {langs}"
+
+
+def test_no_role_is_offered_python_without_declaring_it(roles):
+    """The regression this policy exists to kill: silent Python."""
+    for role in roles:
+        if not role_profiles.is_coding_role(role):
+            continue
+        declared = {l.lower() for l in role_profiles.declared_languages(role)}
+        offered = {l.lower() for l in role_profiles.available_languages(role)}
+        if declared:
+            assert not (offered - declared), f"{role} silently offered {offered - declared}"
+
+
+def test_resolve_language_never_returns_unsupported(roles):
+    supported = set(role_profiles.supported_languages())
+    for role in roles:
+        for requested in ("Java", "Kotlin", "Solidity", "TypeScript", "Auto", "", None, "Python"):
+            resolved = role_profiles.resolve_language(role, requested)
+            if role_profiles.is_coding_role(role):
+                assert resolved in supported, f"{role} + {requested!r} -> {resolved}"
+            else:
+                assert resolved is None, f"non-coding {role} resolved {resolved}"
+
+
+# ---------------------------------------------------------------------------
+# Language detection for the roles that used to be wrong
+# ---------------------------------------------------------------------------
+
+def test_detected_language_is_role_appropriate():
+    assert role_profiles.detect_language("Blockchain Developer", []) == "Solidity"
+    assert role_profiles.detect_language("Mobile App Developer", []) == "Kotlin"
+    assert role_profiles.detect_language("Frontend Developer", []) == "JavaScript"
+    assert role_profiles.detect_language("Data Engineer", []) == "Python"
+
+
+def test_unknown_role_falls_back_to_skill_inference():
+    # Solidity/Ethereum role we don't have an entry for.
+    assert role_profiles.detect_language(
+        "Smart Contract Auditor", ["Solidity", "Ethereum", "Web3.js"]
+    ) == "Solidity"
+    # Unknown role with only SQL-ish skills.
+    assert role_profiles.determine_coding_profile(
+        "Report Writer", ["SQL", "Reporting"]
+    ) == "sql"
+    # Unknown role with test-automation skills must be treated as coding, not SQL.
+    assert role_profiles.determine_coding_profile(
+        "Automation Tester", ["Selenium", "pytest", "CI/CD"]
+    ) == "full"
+
+
+def test_scoring_config_weight_overrides_skill_keywords():
+    """A zero coding weight wins even when the skills look like a coding role."""
+    assert role_profiles.determine_coding_profile(
+        "Network Engineer", ["Python", "TCP/IP"], coding_weight=0.0
+    ) == "none"
+    assert role_profiles.determine_coding_profile(
+        "Blockchain Developer", ["Solidity"], coding_weight=0.45
+    ) == "full"
+
+
+# ---------------------------------------------------------------------------
+# Served session composition
+# ---------------------------------------------------------------------------
+
+def test_served_composition_matches_requested_mix(service, roles):
+    """A session must contain exactly the per-type counts it advertises.
+
+    The old whole-bank top-up padded the total with whatever was left, so the
+    served mix diverged from the requested (and graded) mix.
+    """
+    for role in roles:
+        profile = service._determine_coding_profile(role, [])
+        expected = service._get_question_distribution(role, profile, 20)
+        session = service.create_interview_session(
+            candidate_id="TEST", job_role=role, num_questions=20, is_practice=True
+        )
+        qc = session["question_count"]
+        served = (qc["mcq"], qc["descriptive"], qc["coding"])
+        assert served == expected, f"{role}: served {served}, expected {expected}"
+
+
+def test_non_coding_role_never_serves_a_coding_question(service, roles):
+    for role in roles:
+        if role_profiles.is_coding_role(role):
+            continue
+        session = service.create_interview_session(
+            candidate_id="TEST", job_role=role, num_questions=10,
+            mcq_count=4, desc_count=3, coding_count=3, is_practice=True,
+        )
+        coding = [q for q in session["questions"] if q.get("question_type") == "Coding"]
+        assert coding == [], f"{role}: leaked {len(coding)} coding questions"
+        assert session["question_count"]["coding"] == 0
+        assert session["coding_profile"] == "none"
+        assert session["coding_language"] is None
+
+
+def test_coding_language_is_coerced_and_stamped(service):
+    """An unsupported choice must not survive into the session.
+
+    Kotlin is not supported; Blockchain Developer declares Rust, so the
+    candidate is moved to Rust (its first declared language we can ask in) and
+    every served coding question is stamped with that language.
+    """
+    session = service.create_interview_session(
+        candidate_id="TEST", job_role="Blockchain Developer", num_questions=10,
+        mcq_count=4, desc_count=3, coding_count=3, is_practice=True,
+        coding_language="Kotlin",
+    )
+    assert session["coding_language"] == "Rust"
+    coding = [q for q in session["questions"] if q.get("question_type") == "Coding"]
+    assert len(coding) == 3
+    assert all(q.get("language") == "Rust" for q in coding)
+
+
+def test_database_administrator_is_served_sql_not_python(service):
+    """DBA declares ["SQL", "Python"], so SQL is its language once SQL exists.
+
+    Before SQL had a bank this role fell through to the executed Python path:
+    a database administrator was asked to write Python.  Now it must be served
+    SQL, and -- because there is no SQL runner -- in a format graded without
+    executing anything.
+    """
+    session = service.create_interview_session(
+        candidate_id="TEST", job_role="Database Administrator", num_questions=10,
+        mcq_count=4, desc_count=3, coding_count=3, is_practice=True,
+    )
+    assert session["coding_language"] == "SQL"
+
+    coding = [q for q in session["questions"] if q.get("question_type") == "Coding"]
+    assert coding, "a sql-profile role must still receive its coding section"
+    for q in coding:
+        assert q.get("language") == "SQL", f"{q.get('id')} is not SQL"
+        assert q.get("format") in role_profiles.NON_EXECUTED_FORMATS, (
+            f"{q.get('id')} has format {q.get('format')!r}, which the SQL path "
+            "cannot grade without a database engine"
+        )
+
+
+def test_role_language_policy_matches_the_roles_that_used_to_be_wrong():
+    """The five roles the sandbox used to mis-serve, pinned explicitly."""
+    # Non-Python roles now get their own declared language, not Python.
+    assert role_profiles.resolve_language("Frontend Developer", None) == "JavaScript"
+    assert role_profiles.resolve_language("Embedded Systems Engineer", None) == "C++"
+    assert role_profiles.resolve_language("Mobile App Developer", None) == "Java"
+    assert role_profiles.resolve_language("Blockchain Developer", None) == "Rust"
+    # Roles that genuinely declare Python keep the executed Python path.
+    assert role_profiles.resolve_language("Backend Developer", None) == "Python"
+    assert role_profiles.resolve_language("Software Engineer", None) == "Python"
+    # A role whose *first* declared language became supported gets that language
+    # rather than falling through to Python.  Database Administrator declares
+    # ["SQL", "Python"], so SQL is its language, not the default.
+    assert role_profiles.resolve_language("Database Administrator", None) == "SQL"
+

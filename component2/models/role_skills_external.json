@@ -1,0 +1,1770 @@
+{
+  "_provenance": {
+    "source": "asaniczka/data-science-job-postings-and-skills",
+    "url": "https://www.kaggle.com/datasets/asaniczka/data-science-job-postings-and-skills",
+    "licence": "ODC-By-1.0 (Open Data Commons Attribution License)",
+    "attribution": "Skills profiles derived from the Kaggle dataset 'asaniczka/data-science-job-postings-and-skills' by asaniczka, licensed ODC-By-1.0 (Open Data Commons Attribution License).",
+    "method": "job_title classified into the role taxonomy by regex; skills counted once per posting from the dataset's machine-extracted skills column; generic soft skills removed",
+    "min_postings_for_use": 300,
+    "rows_read": 12217,
+    "rows_assigned": 4201
+  },
+  "roles": {
+    "AI/NLP Engineer": {
+      "postings": 34,
+      "confidence": "none",
+      "observed": [
+        "Machine Learning",
+        "Python",
+        "PyTorch",
+        "TensorFlow",
+        "Deep Learning",
+        "NLP",
+        "Computer Vision",
+        "C++",
+        "Java",
+        "Cloud Computing",
+        "AWS",
+        "Azure",
+        "Software Engineering",
+        "Statistics",
+        "Robotics",
+        "Scikit-learn",
+        "Data Analysis",
+        "Image Processing",
+        "Keras",
+        "GCP",
+        "SQL",
+        "Video Processing",
+        "Large Language Models",
+        "Data Science",
+        "Data structures"
+      ],
+      "evidence": {
+        "Machine Learning": 26,
+        "Python": 24,
+        "PyTorch": 22,
+        "TensorFlow": 18,
+        "Deep Learning": 18,
+        "NLP": 17,
+        "Computer Vision": 14,
+        "C++": 11,
+        "Java": 10,
+        "Cloud Computing": 9,
+        "AWS": 9,
+        "Azure": 8,
+        "Software Engineering": 7,
+        "Statistics": 7,
+        "Robotics": 6,
+        "Scikit-learn": 6,
+        "Data Analysis": 6,
+        "Image Processing": 6,
+        "Keras": 6,
+        "GCP": 6,
+        "SQL": 5,
+        "Video Processing": 5,
+        "Large Language Models": 5,
+        "Data Science": 5,
+        "Data structures": 4
+      },
+      "share": {
+        "Machine Learning": 0.765,
+        "Python": 0.706,
+        "PyTorch": 0.647,
+        "TensorFlow": 0.529,
+        "Deep Learning": 0.529,
+        "NLP": 0.5,
+        "Computer Vision": 0.412,
+        "C++": 0.324,
+        "Java": 0.294,
+        "Cloud Computing": 0.265,
+        "AWS": 0.265,
+        "Azure": 0.235,
+        "Software Engineering": 0.206,
+        "Statistics": 0.206,
+        "Robotics": 0.176,
+        "Scikit-learn": 0.176,
+        "Data Analysis": 0.176,
+        "Image Processing": 0.176,
+        "Keras": 0.176,
+        "GCP": 0.176,
+        "SQL": 0.147,
+        "Video Processing": 0.147,
+        "Large Language Models": 0.147,
+        "Data Science": 0.147,
+        "Data structures": 0.118
+      },
+      "usable": false
+    },
+    "Backend Developer": {
+      "postings": 4,
+      "confidence": "none",
+      "observed": [],
+      "evidence": {},
+      "share": {},
+      "usable": false
+    },
+    "Blockchain Developer": {
+      "postings": 1,
+      "confidence": "none",
+      "observed": [],
+      "evidence": {},
+      "share": {},
+      "usable": false
+    },
+    "Business/Systems Analyst": {
+      "postings": 113,
+      "confidence": "medium",
+      "observed": [
+        "Data Analysis",
+        "SQL",
+        "Business Analysis",
+        "Power BI",
+        "Data Visualization",
+        "Tableau",
+        "Stakeholder Management",
+        "Data Analytics",
+        "Requirements Gathering",
+        "Data Governance",
+        "Data Warehousing",
+        "Python",
+        "Data Management",
+        "Business Intelligence",
+        "Business Analyst",
+        "Data Quality",
+        "Data Mining",
+        "Data Modeling",
+        "User Stories",
+        "Problemsolving",
+        "Reporting",
+        "JIRA",
+        "Software Development",
+        "Data Integration",
+        "Data Reporting"
+      ],
+      "evidence": {
+        "Data Analysis": 57,
+        "SQL": 49,
+        "Business Analysis": 37,
+        "Power BI": 31,
+        "Data Visualization": 22,
+        "Tableau": 20,
+        "Stakeholder Management": 19,
+        "Data Analytics": 18,
+        "Requirements Gathering": 18,
+        "Data Governance": 15,
+        "Data Warehousing": 15,
+        "Python": 15,
+        "Data Management": 14,
+        "Business Intelligence": 13,
+        "Business Analyst": 13,
+        "Data Quality": 13,
+        "Data Mining": 12,
+        "Data Modeling": 11,
+        "User Stories": 11,
+        "Problemsolving": 10,
+        "Reporting": 9,
+        "JIRA": 9,
+        "Software Development": 9,
+        "Data Integration": 8,
+        "Data Reporting": 8
+      },
+      "share": {
+        "Data Analysis": 0.504,
+        "SQL": 0.434,
+        "Business Analysis": 0.327,
+        "Power BI": 0.274,
+        "Data Visualization": 0.195,
+        "Tableau": 0.177,
+        "Stakeholder Management": 0.168,
+        "Data Analytics": 0.159,
+        "Requirements Gathering": 0.159,
+        "Data Governance": 0.133,
+        "Data Warehousing": 0.133,
+        "Python": 0.133,
+        "Data Management": 0.124,
+        "Business Intelligence": 0.115,
+        "Business Analyst": 0.115,
+        "Data Quality": 0.115,
+        "Data Mining": 0.106,
+        "Data Modeling": 0.097,
+        "User Stories": 0.097,
+        "Problemsolving": 0.088,
+        "Reporting": 0.08,
+        "JIRA": 0.08,
+        "Software Development": 0.08,
+        "Data Integration": 0.071,
+        "Data Reporting": 0.071
+      },
+      "usable": false
+    },
+    "Cloud Solutions Architect": {
+      "postings": 95,
+      "confidence": "low",
+      "observed": [
+        "Python",
+        "AWS",
+        "SQL",
+        "GCP",
+        "Azure",
+        "Spark",
+        "Hadoop",
+        "Data Pipelines",
+        "Kafka",
+        "Machine Learning",
+        "Data Engineering",
+        "Scala",
+        "REST API",
+        "Data Modeling",
+        "CI/CD",
+        "Cloud Computing",
+        "Data Governance",
+        "BI Tools",
+        "Data Analytics",
+        "Data Architecture",
+        "Kubernetes",
+        "Databases",
+        "NoSQL",
+        "Django",
+        "PostgreSQL"
+      ],
+      "evidence": {
+        "Python": 58,
+        "AWS": 45,
+        "SQL": 41,
+        "GCP": 38,
+        "Azure": 33,
+        "Spark": 31,
+        "Hadoop": 30,
+        "Data Pipelines": 29,
+        "Kafka": 29,
+        "Machine Learning": 29,
+        "Data Engineering": 28,
+        "Scala": 27,
+        "REST API": 19,
+        "Data Modeling": 19,
+        "CI/CD": 18,
+        "Cloud Computing": 18,
+        "Data Governance": 17,
+        "BI Tools": 16,
+        "Data Analytics": 16,
+        "Data Architecture": 16,
+        "Kubernetes": 16,
+        "Databases": 16,
+        "NoSQL": 15,
+        "Django": 15,
+        "PostgreSQL": 15
+      },
+      "share": {
+        "Python": 0.611,
+        "AWS": 0.474,
+        "SQL": 0.432,
+        "GCP": 0.4,
+        "Azure": 0.347,
+        "Spark": 0.326,
+        "Hadoop": 0.316,
+        "Data Pipelines": 0.305,
+        "Kafka": 0.305,
+        "Machine Learning": 0.305,
+        "Data Engineering": 0.295,
+        "Scala": 0.284,
+        "REST API": 0.2,
+        "Data Modeling": 0.2,
+        "CI/CD": 0.189,
+        "Cloud Computing": 0.189,
+        "Data Governance": 0.179,
+        "BI Tools": 0.168,
+        "Data Analytics": 0.168,
+        "Data Architecture": 0.168,
+        "Kubernetes": 0.168,
+        "Databases": 0.168,
+        "NoSQL": 0.158,
+        "Django": 0.158,
+        "PostgreSQL": 0.158
+      },
+      "usable": false
+    },
+    "Cybersecurity Analyst": {
+      "postings": 44,
+      "confidence": "none",
+      "observed": [
+        "Network Security",
+        "Cyber Security",
+        "Incident Response",
+        "Data Protection",
+        "Information Technology",
+        "Risk Management",
+        "Data Security",
+        "Data privacy",
+        "Power BI",
+        "Cybersecurity",
+        "Data Encryption",
+        "Vulnerability Management",
+        "CEH",
+        "SIEM",
+        "Compliance",
+        "Python",
+        "PowerShell",
+        "Vulnerability Assessment",
+        "Encryption",
+        "ProblemSolving Skills",
+        "Endpoint Security",
+        "Security Policies",
+        "Information Security",
+        "Power Automate",
+        "Data analysis"
+      ],
+      "evidence": {
+        "Network Security": 10,
+        "Cyber Security": 10,
+        "Incident Response": 10,
+        "Data Protection": 10,
+        "Information Technology": 9,
+        "Risk Management": 8,
+        "Data Security": 8,
+        "Data privacy": 7,
+        "Power BI": 7,
+        "Cybersecurity": 7,
+        "Data Encryption": 7,
+        "Vulnerability Management": 6,
+        "CEH": 6,
+        "SIEM": 6,
+        "Compliance": 6,
+        "Python": 5,
+        "PowerShell": 5,
+        "Vulnerability Assessment": 5,
+        "Encryption": 5,
+        "ProblemSolving Skills": 5,
+        "Endpoint Security": 5,
+        "Security Policies": 5,
+        "Information Security": 5,
+        "Power Automate": 4,
+        "Data analysis": 4
+      },
+      "share": {
+        "Network Security": 0.227,
+        "Cyber Security": 0.227,
+        "Incident Response": 0.227,
+        "Data Protection": 0.227,
+        "Information Technology": 0.205,
+        "Risk Management": 0.182,
+        "Data Security": 0.182,
+        "Data privacy": 0.159,
+        "Power BI": 0.159,
+        "Cybersecurity": 0.159,
+        "Data Encryption": 0.159,
+        "Vulnerability Management": 0.136,
+        "CEH": 0.136,
+        "SIEM": 0.136,
+        "Compliance": 0.136,
+        "Python": 0.114,
+        "PowerShell": 0.114,
+        "Vulnerability Assessment": 0.114,
+        "Encryption": 0.114,
+        "ProblemSolving Skills": 0.114,
+        "Endpoint Security": 0.114,
+        "Security Policies": 0.114,
+        "Information Security": 0.114,
+        "Power Automate": 0.091,
+        "Data analysis": 0.091
+      },
+      "usable": false
+    },
+    "Data Engineer": {
+      "postings": 1648,
+      "confidence": "high",
+      "observed": [
+        "Python",
+        "SQL",
+        "Data Engineering",
+        "Spark",
+        "Java",
+        "AWS",
+        "Snowflake",
+        "Data Warehousing",
+        "Scala",
+        "Kafka",
+        "Hadoop",
+        "Data Modeling",
+        "Machine Learning",
+        "ETL",
+        "Redshift",
+        "Hive",
+        "NoSQL",
+        "Cloud Computing",
+        "Data Pipelines",
+        "Airflow",
+        "MySQL",
+        "MongoDB",
+        "Data Analysis",
+        "EMR",
+        "Data Analytics"
+      ],
+      "evidence": {
+        "Python": 1136,
+        "SQL": 1030,
+        "Data Engineering": 770,
+        "Spark": 696,
+        "Java": 590,
+        "AWS": 537,
+        "Snowflake": 536,
+        "Data Warehousing": 525,
+        "Scala": 513,
+        "Kafka": 464,
+        "Hadoop": 448,
+        "Data Modeling": 415,
+        "Machine Learning": 379,
+        "ETL": 373,
+        "Redshift": 335,
+        "Hive": 318,
+        "NoSQL": 312,
+        "Cloud Computing": 310,
+        "Data Pipelines": 306,
+        "Airflow": 273,
+        "MySQL": 262,
+        "MongoDB": 248,
+        "Data Analysis": 241,
+        "EMR": 238,
+        "Data Analytics": 226
+      },
+      "share": {
+        "Python": 0.689,
+        "SQL": 0.625,
+        "Data Engineering": 0.467,
+        "Spark": 0.422,
+        "Java": 0.358,
+        "AWS": 0.326,
+        "Snowflake": 0.325,
+        "Data Warehousing": 0.319,
+        "Scala": 0.311,
+        "Kafka": 0.282,
+        "Hadoop": 0.272,
+        "Data Modeling": 0.252,
+        "Machine Learning": 0.23,
+        "ETL": 0.226,
+        "Redshift": 0.203,
+        "Hive": 0.193,
+        "NoSQL": 0.189,
+        "Cloud Computing": 0.188,
+        "Data Pipelines": 0.186,
+        "Airflow": 0.166,
+        "MySQL": 0.159,
+        "MongoDB": 0.15,
+        "Data Analysis": 0.146,
+        "EMR": 0.144,
+        "Data Analytics": 0.137
+      },
+      "usable": true
+    },
+    "Data Scientist": {
+      "postings": 830,
+      "confidence": "high",
+      "observed": [
+        "Python",
+        "Machine Learning",
+        "Data Science",
+        "SQL",
+        "R",
+        "Data Visualization",
+        "Statistics",
+        "Data Analysis",
+        "Spark",
+        "NLP",
+        "Data Mining",
+        "Tableau",
+        "TensorFlow",
+        "PyTorch",
+        "AWS",
+        "Artificial Intelligence",
+        "Data Analytics",
+        "Deep Learning",
+        "Statistical Analysis",
+        "Hadoop",
+        "Statistical Modeling",
+        "Java",
+        "Data Engineering",
+        "Predictive Modeling",
+        "Scikit-learn"
+      ],
+      "evidence": {
+        "Python": 697,
+        "Machine Learning": 618,
+        "Data Science": 549,
+        "SQL": 477,
+        "R": 393,
+        "Data Visualization": 308,
+        "Statistics": 299,
+        "Data Analysis": 265,
+        "Spark": 197,
+        "NLP": 186,
+        "Data Mining": 180,
+        "Tableau": 176,
+        "TensorFlow": 157,
+        "PyTorch": 147,
+        "AWS": 146,
+        "Artificial Intelligence": 142,
+        "Data Analytics": 137,
+        "Deep Learning": 136,
+        "Statistical Analysis": 135,
+        "Hadoop": 125,
+        "Statistical Modeling": 112,
+        "Java": 107,
+        "Data Engineering": 105,
+        "Predictive Modeling": 101,
+        "Scikit-learn": 99
+      },
+      "share": {
+        "Python": 0.84,
+        "Machine Learning": 0.745,
+        "Data Science": 0.661,
+        "SQL": 0.575,
+        "R": 0.473,
+        "Data Visualization": 0.371,
+        "Statistics": 0.36,
+        "Data Analysis": 0.319,
+        "Spark": 0.237,
+        "NLP": 0.224,
+        "Data Mining": 0.217,
+        "Tableau": 0.212,
+        "TensorFlow": 0.189,
+        "PyTorch": 0.177,
+        "AWS": 0.176,
+        "Artificial Intelligence": 0.171,
+        "Data Analytics": 0.165,
+        "Deep Learning": 0.164,
+        "Statistical Analysis": 0.163,
+        "Hadoop": 0.151,
+        "Statistical Modeling": 0.135,
+        "Java": 0.129,
+        "Data Engineering": 0.127,
+        "Predictive Modeling": 0.122,
+        "Scikit-learn": 0.119
+      },
+      "usable": true
+    },
+    "Database Administrator": {
+      "postings": 465,
+      "confidence": "high",
+      "observed": [
+        "SQL",
+        "Database Administration",
+        "SQL Server",
+        "Oracle",
+        "Database Design",
+        "Data Modeling",
+        "Python",
+        "Performance Tuning",
+        "PostgreSQL",
+        "Linux",
+        "AWS",
+        "Troubleshooting",
+        "Disaster Recovery",
+        "Data Warehousing",
+        "Database Security",
+        "PL/SQL",
+        "MySQL",
+        "Data analysis",
+        "ETL",
+        "SSIS",
+        "MongoDB",
+        "Database Development",
+        "Stored Procedures",
+        "Data Security",
+        "Data Integrity"
+      ],
+      "evidence": {
+        "SQL": 210,
+        "Database Administration": 152,
+        "SQL Server": 123,
+        "Oracle": 106,
+        "Database Design": 100,
+        "Data Modeling": 98,
+        "Python": 88,
+        "Performance Tuning": 77,
+        "PostgreSQL": 76,
+        "Linux": 75,
+        "AWS": 70,
+        "Troubleshooting": 68,
+        "Disaster Recovery": 62,
+        "Data Warehousing": 60,
+        "Database Security": 59,
+        "PL/SQL": 53,
+        "MySQL": 53,
+        "Data analysis": 51,
+        "ETL": 50,
+        "SSIS": 48,
+        "MongoDB": 47,
+        "Database Development": 46,
+        "Stored Procedures": 46,
+        "Data Security": 42,
+        "Data Integrity": 40
+      },
+      "share": {
+        "SQL": 0.452,
+        "Database Administration": 0.327,
+        "SQL Server": 0.265,
+        "Oracle": 0.228,
+        "Database Design": 0.215,
+        "Data Modeling": 0.211,
+        "Python": 0.189,
+        "Performance Tuning": 0.166,
+        "PostgreSQL": 0.163,
+        "Linux": 0.161,
+        "AWS": 0.151,
+        "Troubleshooting": 0.146,
+        "Disaster Recovery": 0.133,
+        "Data Warehousing": 0.129,
+        "Database Security": 0.127,
+        "PL/SQL": 0.114,
+        "MySQL": 0.114,
+        "Data analysis": 0.11,
+        "ETL": 0.108,
+        "SSIS": 0.103,
+        "MongoDB": 0.101,
+        "Database Development": 0.099,
+        "Stored Procedures": 0.099,
+        "Data Security": 0.09,
+        "Data Integrity": 0.086
+      },
+      "usable": true
+    },
+    "DevOps Engineer": {
+      "postings": 27,
+      "confidence": "none",
+      "observed": [
+        "Python",
+        "Machine Learning",
+        "DevOps",
+        "Kubernetes",
+        "Docker",
+        "Software Engineering",
+        "Data Management",
+        "Distributed Systems",
+        "PyTorch",
+        "Terraform",
+        "AWS",
+        "C++",
+        "Infrastructure Design",
+        "Git",
+        "System Design",
+        "Go",
+        "PostgreSQL",
+        "Deep Learning",
+        "Infrastructure Engineer",
+        "SQL",
+        "Ansible",
+        "Troubleshooting",
+        "Data engineering",
+        "DevSecOps",
+        "ProblemSolving"
+      ],
+      "evidence": {
+        "Python": 16,
+        "Machine Learning": 12,
+        "DevOps": 12,
+        "Kubernetes": 11,
+        "Docker": 10,
+        "Software Engineering": 8,
+        "Data Management": 6,
+        "Distributed Systems": 6,
+        "PyTorch": 6,
+        "Terraform": 6,
+        "AWS": 6,
+        "C++": 5,
+        "Infrastructure Design": 5,
+        "Git": 5,
+        "System Design": 4,
+        "Go": 4,
+        "PostgreSQL": 4,
+        "Deep Learning": 4,
+        "Infrastructure Engineer": 4,
+        "SQL": 4,
+        "Ansible": 4,
+        "Troubleshooting": 4,
+        "Data engineering": 4,
+        "DevSecOps": 4,
+        "ProblemSolving": 4
+      },
+      "share": {
+        "Python": 0.593,
+        "Machine Learning": 0.444,
+        "DevOps": 0.444,
+        "Kubernetes": 0.407,
+        "Docker": 0.37,
+        "Software Engineering": 0.296,
+        "Data Management": 0.222,
+        "Distributed Systems": 0.222,
+        "PyTorch": 0.222,
+        "Terraform": 0.222,
+        "AWS": 0.222,
+        "C++": 0.185,
+        "Infrastructure Design": 0.185,
+        "Git": 0.185,
+        "System Design": 0.148,
+        "Go": 0.148,
+        "PostgreSQL": 0.148,
+        "Deep Learning": 0.148,
+        "Infrastructure Engineer": 0.148,
+        "SQL": 0.148,
+        "Ansible": 0.148,
+        "Troubleshooting": 0.148,
+        "Data engineering": 0.148,
+        "DevSecOps": 0.148,
+        "ProblemSolving": 0.148
+      },
+      "usable": false
+    },
+    "Embedded Systems Engineer": {
+      "postings": 2,
+      "confidence": "none",
+      "observed": [],
+      "evidence": {},
+      "share": {},
+      "usable": false
+    },
+    "Frontend Developer": {
+      "postings": 3,
+      "confidence": "none",
+      "observed": [
+        "React"
+      ],
+      "evidence": {
+        "React": 3
+      },
+      "share": {
+        "React": 1.0
+      },
+      "usable": false
+    },
+    "Full Stack Developer": {
+      "postings": 32,
+      "confidence": "none",
+      "observed": [
+        "Python",
+        "AWS",
+        "Spark",
+        "Airflow",
+        "Go",
+        "Cloud Computing",
+        "Docker",
+        "Software Engineering",
+        "PostgreSQL",
+        "Kubernetes",
+        "People Management",
+        "Agile Practices",
+        "Presto SQL",
+        "Snowflake SQL",
+        "Confluence",
+        "Google Sheets",
+        "Data Management",
+        "NoSQL",
+        "Machine Learning",
+        "Open Source Frameworks",
+        "Distributed Microservices",
+        "Full Stack Systems",
+        "React",
+        "RDBMS",
+        "Open Source RDBMS"
+      ],
+      "evidence": {
+        "Python": 28,
+        "AWS": 24,
+        "Spark": 22,
+        "Airflow": 19,
+        "Go": 18,
+        "Cloud Computing": 18,
+        "Docker": 18,
+        "Software Engineering": 17,
+        "PostgreSQL": 17,
+        "Kubernetes": 17,
+        "People Management": 16,
+        "Agile Practices": 13,
+        "Presto SQL": 13,
+        "Snowflake SQL": 13,
+        "Confluence": 13,
+        "Google Sheets": 13,
+        "Data Management": 11,
+        "NoSQL": 10,
+        "Machine Learning": 9,
+        "Open Source Frameworks": 9,
+        "Distributed Microservices": 8,
+        "Full Stack Systems": 8,
+        "React": 7,
+        "RDBMS": 7,
+        "Open Source RDBMS": 7
+      },
+      "share": {
+        "Python": 0.875,
+        "AWS": 0.75,
+        "Spark": 0.688,
+        "Airflow": 0.594,
+        "Go": 0.562,
+        "Cloud Computing": 0.562,
+        "Docker": 0.562,
+        "Software Engineering": 0.531,
+        "PostgreSQL": 0.531,
+        "Kubernetes": 0.531,
+        "People Management": 0.5,
+        "Agile Practices": 0.406,
+        "Presto SQL": 0.406,
+        "Snowflake SQL": 0.406,
+        "Confluence": 0.406,
+        "Google Sheets": 0.406,
+        "Data Management": 0.344,
+        "NoSQL": 0.312,
+        "Machine Learning": 0.281,
+        "Open Source Frameworks": 0.281,
+        "Distributed Microservices": 0.25,
+        "Full Stack Systems": 0.25,
+        "React": 0.219,
+        "RDBMS": 0.219,
+        "Open Source RDBMS": 0.219
+      },
+      "usable": false
+    },
+    "Machine Learning Engineer": {
+      "postings": 645,
+      "confidence": "high",
+      "observed": [
+        "Machine Learning",
+        "Python",
+        "TensorFlow",
+        "Deep Learning",
+        "PyTorch",
+        "NLP",
+        "Data Engineering",
+        "AWS",
+        "Reinforcement Learning",
+        "Azure",
+        "Monitoring",
+        "GCP",
+        "Java",
+        "Probabilistic Graphs",
+        "Spark",
+        "LLMs",
+        "Scala",
+        "Data Preparation",
+        "Scikit-learn",
+        "Workflow orchestration",
+        "Cloud Computing",
+        "Data Pipelines",
+        "A/B testing",
+        "Experimentation",
+        "Numpy"
+      ],
+      "evidence": {
+        "Machine Learning": 439,
+        "Python": 436,
+        "TensorFlow": 334,
+        "Deep Learning": 295,
+        "PyTorch": 264,
+        "NLP": 239,
+        "Data Engineering": 200,
+        "AWS": 183,
+        "Reinforcement Learning": 155,
+        "Azure": 151,
+        "Monitoring": 149,
+        "GCP": 148,
+        "Java": 142,
+        "Probabilistic Graphs": 133,
+        "Spark": 127,
+        "LLMs": 126,
+        "Scala": 122,
+        "Data Preparation": 119,
+        "Scikit-learn": 118,
+        "Workflow orchestration": 117,
+        "Cloud Computing": 114,
+        "Data Pipelines": 107,
+        "A/B testing": 106,
+        "Experimentation": 103,
+        "Numpy": 102
+      },
+      "share": {
+        "Machine Learning": 0.681,
+        "Python": 0.676,
+        "TensorFlow": 0.518,
+        "Deep Learning": 0.457,
+        "PyTorch": 0.409,
+        "NLP": 0.371,
+        "Data Engineering": 0.31,
+        "AWS": 0.284,
+        "Reinforcement Learning": 0.24,
+        "Azure": 0.234,
+        "Monitoring": 0.231,
+        "GCP": 0.229,
+        "Java": 0.22,
+        "Probabilistic Graphs": 0.206,
+        "Spark": 0.197,
+        "LLMs": 0.195,
+        "Scala": 0.189,
+        "Data Preparation": 0.184,
+        "Scikit-learn": 0.183,
+        "Workflow orchestration": 0.181,
+        "Cloud Computing": 0.177,
+        "Data Pipelines": 0.166,
+        "A/B testing": 0.164,
+        "Experimentation": 0.16,
+        "Numpy": 0.158
+      },
+      "usable": true
+    },
+    "Network Engineer": {
+      "postings": 13,
+      "confidence": "none",
+      "observed": [
+        "Python",
+        "Network Engineering",
+        "EVPN",
+        "Ansible",
+        "BGP",
+        "OSPF",
+        "Troubleshooting",
+        "Network Security",
+        "DNS/Domain Services",
+        "Network architecture",
+        "Cisco ACI",
+        "VXLAN",
+        "MPLS",
+        "Cisco switches"
+      ],
+      "evidence": {
+        "Python": 5,
+        "Network Engineering": 4,
+        "EVPN": 4,
+        "Ansible": 4,
+        "BGP": 4,
+        "OSPF": 4,
+        "Troubleshooting": 4,
+        "Network Security": 3,
+        "DNS/Domain Services": 3,
+        "Network architecture": 3,
+        "Cisco ACI": 3,
+        "VXLAN": 3,
+        "MPLS": 3,
+        "Cisco switches": 3
+      },
+      "share": {
+        "Python": 0.385,
+        "Network Engineering": 0.308,
+        "EVPN": 0.308,
+        "Ansible": 0.308,
+        "BGP": 0.308,
+        "OSPF": 0.308,
+        "Troubleshooting": 0.308,
+        "Network Security": 0.231,
+        "DNS/Domain Services": 0.231,
+        "Network architecture": 0.231,
+        "Cisco ACI": 0.231,
+        "VXLAN": 0.231,
+        "MPLS": 0.231,
+        "Cisco switches": 0.231
+      },
+      "usable": false
+    },
+    "QA/Test Automation Engineer": {
+      "postings": 41,
+      "confidence": "none",
+      "observed": [
+        "SQL",
+        "Python",
+        "Data Analysis",
+        "Selenium",
+        "JIRA",
+        "Cypress",
+        "Quality Assurance",
+        "Power BI",
+        "Data Governance",
+        "Azure Portal",
+        "Function Apps",
+        "Databricks",
+        "Windows",
+        "Web Applications",
+        "HP ALM",
+        "ReadyAPI",
+        "SOAP UI",
+        "Data Management",
+        "Snowflake",
+        "HP LoadRunner",
+        "Azure SQL",
+        "HP Unified Functional Testing (UFT)",
+        "API Testing",
+        "Root cause analysis",
+        "Data Visualization"
+      ],
+      "evidence": {
+        "SQL": 23,
+        "Python": 19,
+        "Data Analysis": 15,
+        "Selenium": 12,
+        "JIRA": 8,
+        "Cypress": 7,
+        "Quality Assurance": 7,
+        "Power BI": 7,
+        "Data Governance": 7,
+        "Azure Portal": 6,
+        "Function Apps": 6,
+        "Databricks": 6,
+        "Windows": 6,
+        "Web Applications": 6,
+        "HP ALM": 6,
+        "ReadyAPI": 6,
+        "SOAP UI": 6,
+        "Data Management": 6,
+        "Snowflake": 6,
+        "HP LoadRunner": 5,
+        "Azure SQL": 5,
+        "HP Unified Functional Testing (UFT)": 5,
+        "API Testing": 5,
+        "Root cause analysis": 5,
+        "Data Visualization": 4
+      },
+      "share": {
+        "SQL": 0.561,
+        "Python": 0.463,
+        "Data Analysis": 0.366,
+        "Selenium": 0.293,
+        "JIRA": 0.195,
+        "Cypress": 0.171,
+        "Quality Assurance": 0.171,
+        "Power BI": 0.171,
+        "Data Governance": 0.171,
+        "Azure Portal": 0.146,
+        "Function Apps": 0.146,
+        "Databricks": 0.146,
+        "Windows": 0.146,
+        "Web Applications": 0.146,
+        "HP ALM": 0.146,
+        "ReadyAPI": 0.146,
+        "SOAP UI": 0.146,
+        "Data Management": 0.146,
+        "Snowflake": 0.146,
+        "HP LoadRunner": 0.122,
+        "Azure SQL": 0.122,
+        "HP Unified Functional Testing (UFT)": 0.122,
+        "API Testing": 0.122,
+        "Root cause analysis": 0.122,
+        "Data Visualization": 0.098
+      },
+      "usable": false
+    },
+    "Site Reliability Engineer": {
+      "postings": 15,
+      "confidence": "none",
+      "observed": [
+        "Python",
+        "Kubernetes",
+        "Automation",
+        "Go",
+        "Java",
+        "Kafka",
+        "MySQL",
+        "Distributed Systems",
+        "Monitoring",
+        "Data analysis",
+        "Golang",
+        "AWS",
+        "Docker",
+        "Site Reliability Engineering",
+        "Software development",
+        "Linux",
+        "SQL",
+        "GCP",
+        "System Engineering"
+      ],
+      "evidence": {
+        "Python": 11,
+        "Kubernetes": 7,
+        "Automation": 6,
+        "Go": 6,
+        "Java": 6,
+        "Kafka": 4,
+        "MySQL": 4,
+        "Distributed Systems": 4,
+        "Monitoring": 3,
+        "Data analysis": 3,
+        "Golang": 3,
+        "AWS": 3,
+        "Docker": 3,
+        "Site Reliability Engineering": 3,
+        "Software development": 3,
+        "Linux": 3,
+        "SQL": 3,
+        "GCP": 3,
+        "System Engineering": 3
+      },
+      "share": {
+        "Python": 0.733,
+        "Kubernetes": 0.467,
+        "Automation": 0.4,
+        "Go": 0.4,
+        "Java": 0.4,
+        "Kafka": 0.267,
+        "MySQL": 0.267,
+        "Distributed Systems": 0.267,
+        "Monitoring": 0.2,
+        "Data analysis": 0.2,
+        "Golang": 0.2,
+        "AWS": 0.2,
+        "Docker": 0.2,
+        "Site Reliability Engineering": 0.2,
+        "Software development": 0.2,
+        "Linux": 0.2,
+        "SQL": 0.2,
+        "GCP": 0.2,
+        "System Engineering": 0.2
+      },
+      "usable": false
+    },
+    "Software Engineer": {
+      "postings": 185,
+      "confidence": "medium",
+      "observed": [
+        "Python",
+        "Java",
+        "Software Engineering",
+        "Machine Learning",
+        "SQL",
+        "AWS",
+        "Spark",
+        "C++",
+        "Distributed systems",
+        "Software Development",
+        "Kafka",
+        "Data Engineering",
+        "Kubernetes",
+        "Data Pipelines",
+        "Data Science",
+        "Docker",
+        "Data Structures",
+        "Algorithms",
+        "Problemsolving",
+        "Cloud Computing",
+        "Testing",
+        "Artificial Intelligence",
+        "Linux",
+        "Data Analysis",
+        "NoSQL"
+      ],
+      "evidence": {
+        "Python": 96,
+        "Java": 65,
+        "Software Engineering": 65,
+        "Machine Learning": 55,
+        "SQL": 51,
+        "AWS": 45,
+        "Spark": 40,
+        "C++": 38,
+        "Distributed systems": 37,
+        "Software Development": 33,
+        "Kafka": 33,
+        "Data Engineering": 32,
+        "Kubernetes": 28,
+        "Data Pipelines": 26,
+        "Data Science": 25,
+        "Docker": 22,
+        "Data Structures": 22,
+        "Algorithms": 22,
+        "Problemsolving": 20,
+        "Cloud Computing": 20,
+        "Testing": 20,
+        "Artificial Intelligence": 19,
+        "Linux": 19,
+        "Data Analysis": 19,
+        "NoSQL": 18
+      },
+      "share": {
+        "Python": 0.519,
+        "Java": 0.351,
+        "Software Engineering": 0.351,
+        "Machine Learning": 0.297,
+        "SQL": 0.276,
+        "AWS": 0.243,
+        "Spark": 0.216,
+        "C++": 0.205,
+        "Distributed systems": 0.2,
+        "Software Development": 0.178,
+        "Kafka": 0.178,
+        "Data Engineering": 0.173,
+        "Kubernetes": 0.151,
+        "Data Pipelines": 0.141,
+        "Data Science": 0.135,
+        "Docker": 0.119,
+        "Data Structures": 0.119,
+        "Algorithms": 0.119,
+        "Problemsolving": 0.108,
+        "Cloud Computing": 0.108,
+        "Testing": 0.108,
+        "Artificial Intelligence": 0.103,
+        "Linux": 0.103,
+        "Data Analysis": 0.103,
+        "NoSQL": 0.097
+      },
+      "usable": false
+    },
+    "UI/UX Designer": {
+      "postings": 4,
+      "confidence": "none",
+      "observed": [
+        "Product Design"
+      ],
+      "evidence": {
+        "Product Design": 3
+      },
+      "share": {
+        "Product Design": 0.75
+      },
+      "usable": false
+    }
+  },
+  "_comparison": {
+    "Data Engineer": {
+      "market_only": [
+        "Data Engineering",
+        "Java",
+        "Snowflake",
+        "Scala",
+        "Kafka",
+        "Hadoop",
+        "Data Modeling",
+        "Machine Learning",
+        "Redshift",
+        "Hive",
+        "NoSQL",
+        "Cloud Computing",
+        "Data Pipelines",
+        "MySQL",
+        "MongoDB",
+        "Data Analysis",
+        "EMR",
+        "Data Analytics"
+      ],
+      "curated_only": [
+        "Big Data"
+      ],
+      "postings": 1648
+    },
+    "Data Scientist": {
+      "market_only": [
+        "Data Science",
+        "R",
+        "Data Visualization",
+        "Spark",
+        "NLP",
+        "Data Mining",
+        "Tableau",
+        "TensorFlow",
+        "PyTorch",
+        "AWS",
+        "Artificial Intelligence",
+        "Data Analytics",
+        "Statistical Analysis",
+        "Hadoop",
+        "Statistical Modeling",
+        "Java",
+        "Data Engineering",
+        "Predictive Modeling",
+        "Scikit-learn"
+      ],
+      "curated_only": [
+        "Pandas",
+        "NumPy"
+      ],
+      "postings": 830
+    },
+    "Database Administrator": {
+      "market_only": [
+        "Database Administration",
+        "SQL Server",
+        "Oracle",
+        "Database Design",
+        "Data Modeling",
+        "Python",
+        "Performance Tuning",
+        "Linux",
+        "AWS",
+        "Troubleshooting",
+        "Disaster Recovery",
+        "Data Warehousing",
+        "Database Security",
+        "PL/SQL",
+        "MySQL",
+        "Data analysis",
+        "ETL",
+        "SSIS",
+        "Database Development",
+        "Stored Procedures",
+        "Data Security",
+        "Data Integrity"
+      ],
+      "curated_only": [
+        "NoSQL",
+        "Database Optimization",
+        "Backup and Recovery",
+        "Indexing",
+        "Replication"
+      ],
+      "postings": 465
+    },
+    "Machine Learning Engineer": {
+      "market_only": [
+        "Machine Learning",
+        "Deep Learning",
+        "NLP",
+        "Data Engineering",
+        "AWS",
+        "Reinforcement Learning",
+        "Azure",
+        "Monitoring",
+        "GCP",
+        "Java",
+        "Probabilistic Graphs",
+        "Spark",
+        "LLMs",
+        "Scala",
+        "Data Preparation",
+        "Workflow orchestration",
+        "Cloud Computing",
+        "Data Pipelines",
+        "A/B testing",
+        "Experimentation",
+        "Numpy"
+      ],
+      "curated_only": [
+        "MLOps",
+        "Model Training",
+        "Data Pipeline"
+      ],
+      "postings": 645
+    }
+  },
+  "_bank_coverage": {
+    "Data Engineer": {
+      "covered": [
+        {
+          "skill": "Python",
+          "questions": 1307
+        },
+        {
+          "skill": "SQL",
+          "questions": 78
+        },
+        {
+          "skill": "Java",
+          "questions": 2
+        },
+        {
+          "skill": "AWS",
+          "questions": 2
+        },
+        {
+          "skill": "Data Warehousing",
+          "questions": 50
+        },
+        {
+          "skill": "Scala",
+          "questions": 176
+        },
+        {
+          "skill": "Data Modeling",
+          "questions": 29
+        },
+        {
+          "skill": "Machine Learning",
+          "questions": 46
+        },
+        {
+          "skill": "ETL",
+          "questions": 31
+        },
+        {
+          "skill": "NoSQL",
+          "questions": 31
+        },
+        {
+          "skill": "Data Pipelines",
+          "questions": 62
+        },
+        {
+          "skill": "Data Analysis",
+          "questions": 27
+        }
+      ],
+      "blind_spots": [
+        {
+          "skill": "Data Engineering",
+          "questions": 0
+        },
+        {
+          "skill": "Spark",
+          "questions": 0
+        },
+        {
+          "skill": "Snowflake",
+          "questions": 0
+        },
+        {
+          "skill": "Kafka",
+          "questions": 0
+        },
+        {
+          "skill": "Hadoop",
+          "questions": 0
+        },
+        {
+          "skill": "Redshift",
+          "questions": 0
+        },
+        {
+          "skill": "Hive",
+          "questions": 0
+        },
+        {
+          "skill": "Cloud Computing",
+          "questions": 0
+        },
+        {
+          "skill": "Airflow",
+          "questions": 0
+        },
+        {
+          "skill": "MySQL",
+          "questions": 0
+        },
+        {
+          "skill": "MongoDB",
+          "questions": 0
+        },
+        {
+          "skill": "EMR",
+          "questions": 0
+        },
+        {
+          "skill": "Data Analytics",
+          "questions": 0
+        }
+      ],
+      "coverage": 0.48
+    },
+    "Data Scientist": {
+      "covered": [
+        {
+          "skill": "Python",
+          "questions": 1307
+        },
+        {
+          "skill": "Machine Learning",
+          "questions": 46
+        },
+        {
+          "skill": "SQL",
+          "questions": 78
+        },
+        {
+          "skill": "R",
+          "questions": 18694
+        },
+        {
+          "skill": "Data Visualization",
+          "questions": 28
+        },
+        {
+          "skill": "Statistics",
+          "questions": 1
+        },
+        {
+          "skill": "Data Analysis",
+          "questions": 27
+        },
+        {
+          "skill": "NLP",
+          "questions": 233
+        },
+        {
+          "skill": "AWS",
+          "questions": 2
+        },
+        {
+          "skill": "Java",
+          "questions": 2
+        },
+        {
+          "skill": "Predictive Modeling",
+          "questions": 27
+        }
+      ],
+      "blind_spots": [
+        {
+          "skill": "Data Science",
+          "questions": 0
+        },
+        {
+          "skill": "Spark",
+          "questions": 0
+        },
+        {
+          "skill": "Data Mining",
+          "questions": 0
+        },
+        {
+          "skill": "Tableau",
+          "questions": 0
+        },
+        {
+          "skill": "TensorFlow",
+          "questions": 0
+        },
+        {
+          "skill": "PyTorch",
+          "questions": 0
+        },
+        {
+          "skill": "Artificial Intelligence",
+          "questions": 0
+        },
+        {
+          "skill": "Data Analytics",
+          "questions": 0
+        },
+        {
+          "skill": "Deep Learning",
+          "questions": 0
+        },
+        {
+          "skill": "Statistical Analysis",
+          "questions": 0
+        },
+        {
+          "skill": "Hadoop",
+          "questions": 0
+        },
+        {
+          "skill": "Statistical Modeling",
+          "questions": 0
+        },
+        {
+          "skill": "Data Engineering",
+          "questions": 0
+        },
+        {
+          "skill": "Scikit-learn",
+          "questions": 0
+        }
+      ],
+      "coverage": 0.44
+    },
+    "Database Administrator": {
+      "covered": [
+        {
+          "skill": "SQL",
+          "questions": 78
+        },
+        {
+          "skill": "Oracle",
+          "questions": 24
+        },
+        {
+          "skill": "Database Design",
+          "questions": 31
+        },
+        {
+          "skill": "Data Modeling",
+          "questions": 29
+        },
+        {
+          "skill": "Python",
+          "questions": 1307
+        },
+        {
+          "skill": "Performance Tuning",
+          "questions": 49
+        },
+        {
+          "skill": "AWS",
+          "questions": 2
+        },
+        {
+          "skill": "Troubleshooting",
+          "questions": 93
+        },
+        {
+          "skill": "Disaster Recovery",
+          "questions": 118
+        },
+        {
+          "skill": "Data Warehousing",
+          "questions": 50
+        },
+        {
+          "skill": "Database Security",
+          "questions": 30
+        },
+        {
+          "skill": "Data analysis",
+          "questions": 27
+        },
+        {
+          "skill": "ETL",
+          "questions": 31
+        },
+        {
+          "skill": "SSIS",
+          "questions": 1
+        },
+        {
+          "skill": "Stored Procedures",
+          "questions": 30
+        }
+      ],
+      "blind_spots": [
+        {
+          "skill": "Database Administration",
+          "questions": 0
+        },
+        {
+          "skill": "SQL Server",
+          "questions": 0
+        },
+        {
+          "skill": "PostgreSQL",
+          "questions": 0
+        },
+        {
+          "skill": "Linux",
+          "questions": 0
+        },
+        {
+          "skill": "PL/SQL",
+          "questions": 0
+        },
+        {
+          "skill": "MySQL",
+          "questions": 0
+        },
+        {
+          "skill": "MongoDB",
+          "questions": 0
+        },
+        {
+          "skill": "Database Development",
+          "questions": 0
+        },
+        {
+          "skill": "Data Security",
+          "questions": 0
+        },
+        {
+          "skill": "Data Integrity",
+          "questions": 0
+        }
+      ],
+      "coverage": 0.6
+    },
+    "Machine Learning Engineer": {
+      "covered": [
+        {
+          "skill": "Machine Learning",
+          "questions": 46
+        },
+        {
+          "skill": "Python",
+          "questions": 1307
+        },
+        {
+          "skill": "NLP",
+          "questions": 233
+        },
+        {
+          "skill": "AWS",
+          "questions": 2
+        },
+        {
+          "skill": "Reinforcement Learning",
+          "questions": 20
+        },
+        {
+          "skill": "Monitoring",
+          "questions": 258
+        },
+        {
+          "skill": "Java",
+          "questions": 2
+        },
+        {
+          "skill": "Scala",
+          "questions": 176
+        },
+        {
+          "skill": "Workflow orchestration",
+          "questions": 35
+        },
+        {
+          "skill": "Data Pipelines",
+          "questions": 62
+        },
+        {
+          "skill": "A/B testing",
+          "questions": 101
+        }
+      ],
+      "blind_spots": [
+        {
+          "skill": "TensorFlow",
+          "questions": 0
+        },
+        {
+          "skill": "Deep Learning",
+          "questions": 0
+        },
+        {
+          "skill": "PyTorch",
+          "questions": 0
+        },
+        {
+          "skill": "Data Engineering",
+          "questions": 0
+        },
+        {
+          "skill": "Azure",
+          "questions": 0
+        },
+        {
+          "skill": "GCP",
+          "questions": 0
+        },
+        {
+          "skill": "Probabilistic Graphs",
+          "questions": 0
+        },
+        {
+          "skill": "Spark",
+          "questions": 0
+        },
+        {
+          "skill": "LLMs",
+          "questions": 0
+        },
+        {
+          "skill": "Data Preparation",
+          "questions": 0
+        },
+        {
+          "skill": "Scikit-learn",
+          "questions": 0
+        },
+        {
+          "skill": "Cloud Computing",
+          "questions": 0
+        },
+        {
+          "skill": "Experimentation",
+          "questions": 0
+        },
+        {
+          "skill": "Numpy",
+          "questions": 0
+        }
+      ],
+      "coverage": 0.44
+    }
+  }
+}

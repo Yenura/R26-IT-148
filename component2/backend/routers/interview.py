@@ -11,13 +11,11 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from pydantic import BaseModel, Field, field_validator
 import logging
-import sys
 import json
 import textwrap
-import subprocess
-import tempfile
 import os
 import ast
+import re
 import asyncio
 
 from models.schemas import (
@@ -27,6 +25,7 @@ from models.schemas import (
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
 from services.qg_engine import describe_qg_backend
+from services import code_sandbox, role_profiles
 from db import save_session, get_session, save_result, get_result, get_result_by_session, update_session_status, get_seen_question_ids, link_candidate_application
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
@@ -53,6 +52,7 @@ class InterviewSubmitRequest(BaseModel):
 class CodeRunRequest(BaseModel):
     code_text: str = Field(default="", max_length=50000)
     test_cases: List[Dict] = Field(default_factory=list)
+    language: str = Field(default="Python", max_length=40)
 
     @field_validator("test_cases")
     @classmethod
@@ -73,10 +73,35 @@ def _is_py_literal(value) -> bool:
     return False
 
 
+def _py_source(value) -> str:
+    """Render a test-case input as Python source for the sandbox.
+
+    The question bank stores inputs as Python-literal *source* strings
+    (e.g. ``"[2, 7]"``, ``"9"``, ``"'abc'"``).  Injecting those with ``repr``
+    quotes them, so ``nums = "[2,7,11,15]"`` becomes a *string* and every
+    correct solution fails.  Native JSON values (int/list/dict/...) must
+    likewise be emitted as source.  So: interpret a string as its literal when
+    it parses, and quote it otherwise (a genuine string such as ``"hello"``).
+    """
+    if isinstance(value, str):
+        try:
+            value = ast.literal_eval(value)
+        except (ValueError, SyntaxError):
+            pass
+    return repr(value)
+
+
 def _output_matches(output: str, expected: str) -> bool:
     """Compare sandbox stdout to expected. Handles float/int, bool case, collections."""
     if output == expected:
         return True
+    # Compare as Python literals when both sides are literal source.  This
+    # makes a printed set/dict match regardless of element order (set iteration
+    # order is arbitrary), while still keeping list order significant.
+    try:
+        return ast.literal_eval(output) == ast.literal_eval(expected)
+    except (ValueError, SyntaxError):
+        pass
     if expected[:1] in "[{(":
         return output.replace(" ", "") == expected.replace(" ", "")
     # Normalize float/int: "5.0" == "5", "5.00" == "5"
@@ -91,18 +116,116 @@ def _output_matches(output: str, expected: str) -> bool:
     return False
 
 
+def _normalize_code_answer(text: str) -> str:
+    """Normalise a one-line code answer for exact-match grading.
+
+    Whitespace is insignificant and a trailing ``;`` is optional, so
+    ``i += 1`` / ``i+=1`` / ``i += 1;`` are the same answer.  Case is folded:
+    keyword casing is a style choice, not a correctness signal.
+    """
+    return re.sub(r"\s+", "", str(text)).lower().rstrip(";")
+
+
+def _grade_non_executed(question: Dict, answer: Dict, fmt: str) -> Dict:
+    """Grade a Coding question that is never executed.
+
+    The candidate's language (JavaScript / Java / C++ / Go / Rust) has no
+    hardened runner, so these formats are graded by picking an option or by
+    comparing text against an answer key that was fixed at build time -- never
+    by running the candidate's code.  The returned keys mirror the executed
+    path (``code_score``, ``syntax_valid``, ``test_pass_rate``, ...) so the
+    downstream scoring and reporting code is unchanged.
+    """
+    base = {
+        "format": fmt,
+        "language": question.get("language"),
+        "syntax_valid": True,
+        "test_pass_rate": None,
+        "tests_passed": 0,
+        "total_tests": 0,
+        "quality_score": 0.0,
+        "non_executed": True,
+    }
+
+    if fmt == "Find the Bug":
+        candidate = answer.get("selected_option")
+        if candidate is None:
+            candidate = answer.get("answer")
+        try:
+            candidate = int(candidate)
+        except (TypeError, ValueError):
+            candidate = -1
+        correct = question.get("correct_answer_index")
+        is_correct = candidate == correct
+        base.update({
+            "selected_option": candidate,
+            "correct_answer_index": correct,
+            "is_correct": is_correct,
+            "code_text": answer.get("code_text") or "",
+            "code_score": 100.0 if is_correct else 0.0,
+        })
+        return base
+
+    # "Predict Output" and "Complete Function": free text, exact match.
+    candidate = (
+        answer.get("answer_text") or answer.get("code_text")
+        or answer.get("answer") or answer.get("code") or ""
+    )
+    accepted = question.get("accepted_answers") or []
+    # A blank submission is never correct, even against a blank key.
+    if not str(candidate).strip():
+        matched = False
+    elif fmt == "Predict Output":
+        matched = any(
+            _output_matches(str(candidate), str(a)) for a in accepted if str(a).strip()
+        )
+    else:
+        normalised = _normalize_code_answer(candidate)
+        matched = normalised in {_normalize_code_answer(a) for a in accepted if a and str(a).strip()}
+    base.update({
+        "answer_text": str(candidate),
+        "accepted_answers": accepted,
+        "is_correct": bool(matched),
+        "code_score": 100.0 if matched else 0.0,
+    })
+    return base
+
+
 def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
-    """Execute candidate code with injected inputs in a subprocess sandbox.
+    """Execute candidate code with injected inputs, inside the sandbox.
 
     Returns the stripped stdout of the run ("" on syntax/fatal errors).
     Injection mirrors scoring: inputs become variables the code reads,
     candidates print() the result.
+
+    The guard below is defence in depth, not the boundary: the real boundary is
+    ``services/code_sandbox`` (a hardened container with no network, a read-only
+    filesystem, a non-root user and hard resource limits).  It is kept because
+    it also runs in the development ``subprocess`` backend, and because a
+    candidate who defeats it still only reaches the hostile environment of the
+    container.
     """
-    inject = "".join(f"{k} = {repr(v) if isinstance(v, str) else v}\n" for k, v in inp.items())
+    inject = "".join(f"{k} = {_py_source(v)}\n" for k, v in inp.items())
     sandbox_wrapper = (
         "import sys as _sys\n"
         "from io import StringIO\n"
         "_sys.setrecursionlimit(100000)\n"
+        "# Pre-load common, capability-free stdlib modules while the real\n"
+        "# __import__ is still installed.  Their own internal `import sys` must\n"
+        "# succeed, and candidates routinely use re / collections / heapq / ... .\n"
+        "# None of these grant filesystem or network access; the guard below\n"
+        "# still blocks os / subprocess / socket / sys for candidate code.\n"
+        "for _m in ('math', 're', 'collections', 'collections.abc', 'itertools',\n"
+        "           'functools', 'heapq', 'bisect', 'string', 'decimal',\n"
+        "           'fractions', 'statistics', 'random', 'hashlib', 'textwrap',\n"
+        "           'copy', 'operator', 'enum', 'dataclasses', 'json', 'array',\n"
+        "           'base64', 'binascii', 'struct', 'datetime', 'zlib', 'csv',\n"
+        "           'abc', 'numbers', 'types', 'unicodedata', 'difflib', 'cmath',\n"
+        "           'typing'):\n"
+        "    try:\n"
+        "        __import__(_m)\n"
+        "    except Exception:\n"
+        "        pass\n"
         "_blocked = {\n"
         "    'os','subprocess','shutil','socket','pathlib','ctypes',\n"
         "    'multiprocessing','threading','signal','inspect','importlib',\n"
@@ -138,23 +261,7 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
         "    _sys.stdout = _stdout\n"
         "print(_output)\n"
     )
-    tmp = None
-    try:
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
-            f.write(sandbox_wrapper)
-            tmp = f.name
-        result = subprocess.run(
-            [sys.executable, tmp], capture_output=True, text=True, timeout=5
-        )
-        return result.stdout.strip()
-    except Exception:
-        return ""
-    finally:
-        if tmp:
-            try:
-                os.unlink(tmp)
-            except Exception:
-                pass
+    return code_sandbox.run_python(sandbox_wrapper)
 
 
 # ====================================================================
@@ -248,6 +355,7 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             coding_count=interview_request.coding_count,
             job_description=interview_request.job_description or "",
             is_practice=interview_request.is_practice or False,
+            coding_language=interview_request.coding_language,
         )
         
         # Store time limits from employer config
@@ -274,6 +382,9 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
                 topic=q.get("topic", ""),
                 options=q.get("options"),
                 test_cases=q.get("test_cases"),
+                language=q.get("language"),
+                format=q.get("format"),
+                code=q.get("code"),
                 time_limit_seconds=q.get("time_limit", 900)
             )
             for q in session.get("questions", [])
@@ -287,6 +398,8 @@ async def start_interview(request: Request, interview_request: InterviewRequest,
             questions=questions,
             question_count=session["question_count"],
             total_questions=session["total_questions"],
+            coding_profile=session.get("coding_profile"),
+            coding_language=session.get("coding_language"),
             mcq_time=session["mcq_time"],
             desc_time=session["desc_time"],
             coding_time=session["coding_time"],
@@ -417,13 +530,32 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                 descriptive_indices.append(len(processed_answers))
 
             elif question_type == "Coding":
+                # Non-executed formats (predict-the-output / find-the-bug /
+                # complete-the-function) live in languages we cannot run.  They
+                # are graded from the answer key; the candidate's code is never
+                # executed, so it is never mistaken for a Python syntax error.
+                fmt = str(question.get("format") or role_profiles.EXECUTED_FORMAT)
+                if fmt in role_profiles.NON_EXECUTED_FORMATS:
+                    processed_answer.update(_grade_non_executed(question, answer, fmt))
+                    processed_answers.append(processed_answer)
+                    continue
+
                 code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
+                answer_language = str(answer.get("language") or "Python").strip() or "Python"
+                language_supported = answer_language in role_profiles.executable_languages()
                 test_cases = question.get("test_cases", []) or []
-                syntax_valid = True
-                try:
-                    compile(code_text, "<string>", "exec")
-                except SyntaxError:
-                    syntax_valid = False
+                syntax_valid = False
+                if language_supported:
+                    try:
+                        compile(code_text, "<string>", "exec")
+                        syntax_valid = True
+                    except SyntaxError:
+                        syntax_valid = False
+                else:
+                    logger.warning(
+                        "Answer for %s declared unsupported language %r; not executed",
+                        question.get("id"), answer_language,
+                    )
                 # Only test cases with a real expected output AND Python-literal input
                 # are verifiable. Placeholders ("result", "See answer", etc.) must not
                 # silently fail correct code.
@@ -474,7 +606,7 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
                     code_score = round((0.7 * test_pass_rate + 0.3 * quality_score) * 100, 2)
                 processed_answer.update({
                     "code_text": code_text,
-                    "language": answer.get("language", "Python"),
+                    "language": answer_language,
                     "code_score": code_score,
                     "syntax_valid": syntax_valid,
                     "test_pass_rate": round(test_pass_rate, 4) if test_pass_rate is not None else None,
@@ -620,6 +752,17 @@ async def run_candidate_code(request: Request, payload: CodeRunRequest, identity
     """
     code_text = payload.code_text
     test_cases = payload.test_cases
+    language = (payload.language or "Python").strip() or "Python"
+    # Refuse to grade a language we cannot execute: silently running Java as
+    # Python is how candidates ended up with a syntax-error score of 0.
+    if language not in role_profiles.executable_languages():
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                f"Unsupported language '{language}'. This sandbox executes: "
+                f"{', '.join(role_profiles.executable_languages())}."
+            ),
+        )
     syntax_valid = True
     try:
         compile(code_text, "<string>", "exec")
@@ -819,13 +962,22 @@ async def get_available_jobs(services: Dict = Depends(get_services)):
         interview_service = services["interview_service"]
         
         jobs = {}
+        role_profiles_map = {}
+        weights = interview_service.interview_configs.get("interview_weights", {})
         for job_role in interview_service.get_available_jobs():
             skills = interview_service.get_job_skills(job_role)
             jobs[job_role] = skills
+            entry = weights.get(job_role) if isinstance(weights.get(job_role), dict) else {}
+            coding_weight = entry.get("coding") if isinstance(entry, dict) else None
+            role_profiles_map[job_role] = role_profiles.role_profile(
+                job_role, coding_weight=coding_weight
+            )
         
         return {
             "success": True,
             "jobs": jobs,
+            "role_profiles": role_profiles_map,
+            "executable_languages": role_profiles.executable_languages(),
             "total_jobs": len(jobs)
         }
         
@@ -852,6 +1004,7 @@ async def health_check(services: Dict = Depends(get_services)):
             "available_jobs": available_jobs,
             "questions_in_bank": question_count,
             "qg_backend": describe_qg_backend(),
+            "code_sandbox": code_sandbox.describe(),
             "component": "Component 2: AI Interview System",
             "port": 8002
         }

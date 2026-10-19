@@ -516,6 +516,7 @@ export default function Ranking() {
                                 >
                                   {cand.filter_fail_reason.includes('Skill') ? 'Low skills (<38%)' : (cand.filter_fail_reason.includes('coding') ? 'Low code (<25%)' : 'Prereq failed')}
                                 </span>
+                                )}
                                 {cand.integrity_score != null && (
                                   <span title={`Proctored integrity score: ${Math.round(cand.integrity_score)}%`} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, marginLeft: 6, fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', whiteSpace: 'nowrap' }}>
                                     <Shield size={11} /> {Math.round(cand.integrity_score)}%
