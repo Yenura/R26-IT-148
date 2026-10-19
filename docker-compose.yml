@@ -52,12 +52,26 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        # c2 runs candidate-authored code; give it the Docker CLI it needs to
+        # launch the hardened runner container.
+        WITH_DOCKER_CLI: "1"
     ports:
       - "8002:8002"
     environment:
       MONGODB_URI: "${MONGODB_URI}"
       DB_NAME: "HR"
       PORT: "8002"
+      # Candidate code is graded inside a network-less, read-only, non-root
+      # container (component2/backend/sandbox).  "docker" makes the service
+      # refuse to start rather than silently grade code unisolated.
+      CODE_SANDBOX: "${CODE_SANDBOX:-docker}"
+      CODE_SANDBOX_IMAGE: "${CODE_SANDBOX_IMAGE:-recruitai-py-sandbox:1}"
+    volumes:
+      # Lets c2 start the runner container.  The socket is root-equivalent to
+      # the host, so c2 itself must stay trusted -- the candidate's code is what
+      # runs in the sandbox, and that container never sees this socket.
+      - /var/run/docker.sock:/var/run/docker.sock
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8002"]
     working_dir: /app/component2/backend
     depends_on:

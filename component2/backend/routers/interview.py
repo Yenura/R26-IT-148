@@ -11,11 +11,8 @@ from slowapi import Limiter
 from slowapi.util import get_remote_address
 from pydantic import BaseModel, Field, field_validator
 import logging
-import sys
 import json
 import textwrap
-import subprocess
-import tempfile
 import os
 import ast
 import re
@@ -28,7 +25,7 @@ from models.schemas import (
 )
 from services.ml_engine import get_interview_service, get_evaluation_service
 from services.qg_engine import describe_qg_backend
-from services import role_profiles
+from services import code_sandbox, role_profiles
 from db import save_session, get_session, save_result, get_result, get_result_by_session, update_session_status, get_seen_question_ids, link_candidate_application
 
 router = APIRouter(prefix="/api/v1/interview", tags=["interview"])
@@ -195,11 +192,18 @@ def _grade_non_executed(question: Dict, answer: Dict, fmt: str) -> Dict:
 
 
 def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
-    """Execute candidate code with injected inputs in a subprocess sandbox.
+    """Execute candidate code with injected inputs, inside the sandbox.
 
     Returns the stripped stdout of the run ("" on syntax/fatal errors).
     Injection mirrors scoring: inputs become variables the code reads,
     candidates print() the result.
+
+    The guard below is defence in depth, not the boundary: the real boundary is
+    ``services/code_sandbox`` (a hardened container with no network, a read-only
+    filesystem, a non-root user and hard resource limits).  It is kept because
+    it also runs in the development ``subprocess`` backend, and because a
+    candidate who defeats it still only reaches the hostile environment of the
+    container.
     """
     inject = "".join(f"{k} = {_py_source(v)}\n" for k, v in inp.items())
     sandbox_wrapper = (
@@ -257,30 +261,7 @@ def _run_code_in_sandbox(code_text: str, inp: dict) -> str:
         "    _sys.stdout = _stdout\n"
         "print(_output)\n"
     )
-    tmp = None
-    try:
-        with tempfile.NamedTemporaryFile(
-            mode='w', suffix='.py', delete=False, encoding='utf-8'
-        ) as f:
-            f.write(sandbox_wrapper)
-            tmp = f.name
-        # A non-ASCII docstring/comment used to raise UnicodeEncodeError on the
-        # write under the Windows default codec, silently scoring the candidate
-        # 0.  Run the child as UTF-8 end to end.
-        child_env = {**os.environ, "PYTHONUTF8": "1", "PYTHONIOENCODING": "utf-8"}
-        result = subprocess.run(
-            [sys.executable, tmp], capture_output=True, text=True, timeout=5,
-            encoding="utf-8", errors="replace", env=child_env,
-        )
-        return result.stdout.strip()
-    except Exception:
-        return ""
-    finally:
-        if tmp:
-            try:
-                os.unlink(tmp)
-            except Exception:
-                pass
+    return code_sandbox.run_python(sandbox_wrapper)
 
 
 # ====================================================================
@@ -1023,6 +1004,7 @@ async def health_check(services: Dict = Depends(get_services)):
             "available_jobs": available_jobs,
             "questions_in_bank": question_count,
             "qg_backend": describe_qg_backend(),
+            "code_sandbox": code_sandbox.describe(),
             "component": "Component 2: AI Interview System",
             "port": 8002
         }

@@ -19,6 +19,21 @@ FROM python:3.12-slim AS runtime
 RUN apt-get update && apt-get install -y --no-install-recommends \
     poppler-utils && rm -rf /var/lib/apt/lists/*
 
+# Optional: the candidate-code sandbox launches its hardened runner container
+# with the Docker CLI (component2/backend/services/code_sandbox.py).  Off by
+# default so the other services do not carry it; the interview service opts in
+# through a build arg (see the c2 service in docker-compose.yml).
+#
+# `docker-cli` is the client only -- `docker.io` would also install dockerd,
+# containerd and iptables inside the app image, which is precisely what a
+# container that only talks to the host's socket does not need.
+ARG WITH_DOCKER_CLI=0
+RUN if [ "$WITH_DOCKER_CLI" = "1" ]; then \
+        apt-get update && apt-get install -y --no-install-recommends docker-cli \
+        && rm -rf /var/lib/apt/lists/* \
+        && docker --version; \
+    fi
+
 WORKDIR /app
 
 # Copy installed Python packages

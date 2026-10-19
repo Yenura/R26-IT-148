@@ -93,6 +93,21 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"Could not check coding-language coverage: {e}")
 
+    # Resolve the candidate-code sandbox now, so the active backend (docker or
+    # the development-only subprocess fallback) is stated at startup rather than
+    # discovered on the first submission.
+    try:
+        from services import code_sandbox
+        info = code_sandbox.describe()
+        if info["backend"] != "docker":
+            logger.warning(
+                "⚠ Candidate code will run WITHOUT container isolation "
+                "(CODE_SANDBOX=%s). Set CODE_SANDBOX=docker before a public launch.",
+                info["setting"],
+            )
+    except Exception as e:
+        logger.warning(f"Could not resolve the code sandbox: {e}")
+
     logger.info("✓ Interview system ready on http://localhost:8002")
     logger.info("✓ API Documentation: http://localhost:8002/docs")
     

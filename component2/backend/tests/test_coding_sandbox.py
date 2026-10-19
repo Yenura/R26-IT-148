@@ -35,6 +35,20 @@ MODELS_DIR = BACKEND.parent / "models"
 EXTERNAL_BANK = MODELS_DIR / "coding_bank_external.json"
 
 
+@pytest.fixture(autouse=True)
+def _use_subprocess_backend(monkeypatch):
+    """Exercise the in-process import guard directly, not the container.
+
+    The guard is defence in depth and runs in both backends, but pinning it here
+    keeps these tests fast and deterministic on a machine with Docker running.
+    """
+    from services import code_sandbox
+    monkeypatch.setenv("CODE_SANDBOX", "subprocess")
+    code_sandbox.reset_cache()
+    yield
+    code_sandbox.reset_cache()
+
+
 # ---------------------------------------------------------------------------
 # Input injection
 # ---------------------------------------------------------------------------
