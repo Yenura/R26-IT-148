@@ -203,7 +203,7 @@ export default function Profile() {
             </div>
             <div>
               <div style={{ color: 'var(--color-fg-muted)', marginBottom: 2 }}>Verified Experience:</div>
-              <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{resumeData.experience_years || 0} Years</div>
+              <div style={{ fontWeight: 700, color: 'var(--color-fg)' }}>{resumeData.experience_years ? `${resumeData.experience_years} Years` : '0 Years (Entry Level)'}</div>
             </div>
             <div style={{ gridColumn: 'span 2' }}>
               <div style={{ color: 'var(--color-fg-muted)', marginBottom: 4 }}>Extracted Skills:</div>

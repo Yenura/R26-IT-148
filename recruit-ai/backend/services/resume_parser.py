@@ -6,16 +6,49 @@ import sys
 from datetime import datetime
 from typing import Any
 
-# Import Component 1 high-precision skill extraction engine
+# Import Component 1 high-precision skill and experience extraction engine
 try:
     _cur_dir = os.path.dirname(os.path.abspath(__file__))
     _root_dir = os.path.dirname(os.path.dirname(os.path.dirname(_cur_dir)))
     _c1_path = os.path.join(_root_dir, "component1")
     if os.path.exists(_c1_path) and _c1_path not in sys.path:
         sys.path.insert(0, _c1_path)
-    from ml.extractor import extract_skills_and_certifications as c1_extract_skills
+    from ml.extractor import (
+        extract_skills_and_certifications as c1_extract_skills,
+        extract_experience_years as c1_extract_experience_years,
+        extract_deep_cv_profile as c1_extract_deep_cv_profile,
+    )
 except Exception as _e:
     c1_extract_skills = None
+    c1_extract_experience_years = None
+    c1_extract_deep_cv_profile = None
+
+
+def unsquish_text(text: str) -> str:
+    """Normalize whitespace and separate words/digits that were squished together during PDF extraction."""
+    if not text:
+        return ""
+    # Normalize unicode hyphens/dashes
+    t = re.sub(r'[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uff0d\x96\x97]', ' - ', text)
+    # Fix parentheses jammed against letters/numbers (e.g. "BSc(Hons)" -> "BSc (Hons)")
+    t = re.sub(r'([a-zA-Z0-9])\(', r'\1 (', t)
+    t = re.sub(r'\)([a-zA-Z0-9])', r') \1', t)
+    # Fix jammed punctuation like commas, colons
+    t = re.sub(r',([a-zA-Z0-9])', r', \1', t)
+    t = re.sub(r':([a-zA-Z0-9])', r': \1', t)
+    # Fix letter-digit and digit-letter (e.g. "ExpectedMay2026" -> "Expected May 2026", "June2025" -> "June 2025")
+    t = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', t)
+    t = re.sub(r'(\d)([a-zA-Z])', r'\1 \2', t)
+    # Fix "UniversityofMoratuwa" (lowercase word + of/in/at/for/and/with + Uppercase word)
+    t = re.sub(r'([a-z])(of|in|at|for|to|and|with)([A-Z])', r'\1 \2 \3', t)
+    # Fix lowercase word glued to uppercase word (e.g. "inInformation" -> "in Information")
+    t = re.sub(r'\b(of|in|at|for|to|and|with)([A-Z])', r'\1 \2', t)
+    # Fix generic camelCase transitions: lowercase followed by uppercase
+    t = re.sub(r'([a-z])([A-Z])', r'\1 \2', t)
+    # Fix common degree acronyms if joined with words like "BScHons" -> "BSc Hons"
+    t = re.sub(r'\b(BSc|MSc|BTech|MTech|PhD|MBA|BA|MA|BEng|MEng)([A-Z][a-z])', r'\1 \2', t)
+    # Collapse multiple spaces and trim
+    return re.sub(r'[ \t]+', ' ', t).strip()
 
 
 def parse_resume_file(content: bytes, filename: str) -> str:
@@ -41,7 +74,10 @@ def parse_resume_file(content: bytes, filename: str) -> str:
             except Exception:
                 continue
 
-    if not text.strip():
+    if text.strip():
+        lines = [unsquish_text(l) for l in text.splitlines()]
+        text = "\n".join(l for l in lines if l).strip()
+    else:
         text = f"Resume file {filename} submitted by candidate."
 
     return text.strip()
@@ -236,10 +272,10 @@ MONTH_MAP = {
 DATE_RANGE_RE = re.compile(
     r"((?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|"
     r"aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
-    r"\s+\d{4})\s*[-–—to]+\s*"
+    r"\s*\d{4})\s*[-–—to\x96\x97]+\s*"
     r"((?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|"
     r"aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
-    r"\s+\d{4}|present|current|now)",
+    r"\s*\d{4}|present|current|now)",
     re.I
 )
 # Also match "2022 - 2023" or "2022 - Present"
@@ -642,79 +678,96 @@ def extract_entities(text: str) -> dict[str, Any]:
             break
 
     if edu_lines:
-        entities["education"] = " | ".join(edu_lines[:2])
+        entities["education"] = unsquish_text(" | ".join(edu_lines[:2]))
     else:
         for current_text in target_edu_texts:
             edu_match = EDU_RE.search(current_text)
             if edu_match:
-                entities["education"] = edu_match.group(0).title()
+                entities["education"] = unsquish_text(edu_match.group(0).title())
                 break
 
-    # Experience: Extract from work experience section and non-education lines
-    has_exp_section = any(k == "experience" for k, _ in segments)
-    exp_text = _segment_text(segments, "experience") if has_exp_section else ""
+    # Experience: Extract from Component 1 or work experience section
+    used_c1_exp = False
+    if c1_extract_experience_years:
+        try:
+            c1_exp = c1_extract_experience_years(text)
+            entities["experience_years"] = min(round(float(c1_exp), 1), 40.0)
+            used_c1_exp = True
+        except Exception:
+            used_c1_exp = False
 
-    explicit_years = []
-    for pattern in [
-        r'(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience|work|industry|field|background)',
-        r'(?:experience|worked|working)\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)',
-        r'(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\s+in\b',
-        r'over\s+(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)',
-    ]:
-        for m in re.findall(pattern, exp_text or text, re.I):
-            try:
-                v = float(m)
-                if 0.5 <= v <= 40.0:
-                    explicit_years.append(v)
-            except ValueError:
-                pass
+    if not used_c1_exp:
+        has_exp_section = any(k == "experience" for k, _ in segments)
+        exp_text = _segment_text(segments, "experience") if has_exp_section else ""
 
-    # Extract date ranges from experience section (or lines not in education)
-    target_exp_lines = exp_text.split('\n') if exp_text else [
-        l for l in text.split('\n')
-        if not EDUCATION_LINE_RE.search(l) and not any(k in l.lower() for k in ['university', 'college', 'bachelor', 'master', 'phd', 'degree', 'passed finalist', 'gce', 'advance level', 'ordinary level', 'diploma'])
-    ]
+        explicit_years = []
+        for pattern in [
+            r'(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\s+(?:of\s+)?(?:experience|work|industry|field|background)',
+            r'(?:experience|worked|working)\s+(?:for\s+)?(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)',
+            r'(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)\s+in\b',
+            r'over\s+(\d+(?:\.\d+)?)\s*\+?\s*(?:years?|yrs?)',
+        ]:
+            for m in re.findall(pattern, exp_text or text, re.I):
+                try:
+                    v = float(m)
+                    if 0.5 <= v <= 40.0:
+                        explicit_years.append(v)
+                except ValueError:
+                    pass
 
-    exp_intervals = []
-    for line in target_exp_lines:
-        line_clean = line.strip()
-        if not line_clean:
-            continue
-        # Check date range or year range
-        for dm in (DATE_RANGE_RE.finditer(line_clean), YEAR_RANGE_RE.finditer(line_clean)):
-            for match in dm:
-                g = match.groups()
-                if len(g) >= 2:
-                    st = _parse_date(g[0])
-                    en = _parse_date(g[1])
-                    if st and en:
-                        st_yr = st.year + (st.month - 1) / 12.0
-                        en_yr = en.year + (en.month - 1) / 12.0
-                        if 1980 <= st_yr <= 2030 and st_yr <= en_yr and (en_yr - st_yr) <= 35:
-                            exp_intervals.append((st_yr, en_yr))
+        # Extract date ranges from experience section
+        non_work_kinds = {"education", "projects", "activities", "interests", "references", "skills", "certifications", "languages", "awards"}
+        has_structured_sections = any(k in non_work_kinds for k, _ in segments)
+        if not has_exp_section and has_structured_sections:
+            target_exp_lines = []
+        else:
+            target_exp_lines = exp_text.split('\n') if exp_text else [
+                l for l in text.split('\n')
+                if not EDUCATION_LINE_RE.search(l) and not any(k in l.lower() for k in ['university', 'college', 'bachelor', 'master', 'phd', 'degree', 'passed finalist', 'gce', 'advance level', 'ordinary level', 'diploma'])
+            ]
 
-    calc_work_years = 0.0
-    if exp_intervals:
-        exp_intervals.sort(key=lambda x: x[0])
-        merged = []
-        for st, en in exp_intervals:
-            if not merged:
-                merged.append([st, en])
-            else:
-                prev = merged[-1]
-                if st <= prev[1]:
-                    prev[1] = max(prev[1], en)
-                else:
+        exp_intervals = []
+        for line in target_exp_lines:
+            line_clean = unsquish_text(line)
+            if not line_clean:
+                continue
+            if not has_exp_section and any(act in line_clean.lower() for act in ['club', 'society', 'volunteer', 'rotaract', 'leos', 'ieee', 'ambassador', 'committee', 'logistics', 'marketing lead']):
+                continue
+            # Check date range or year range
+            for dm in (DATE_RANGE_RE.finditer(line_clean), YEAR_RANGE_RE.finditer(line_clean)):
+                for match in dm:
+                    g = match.groups()
+                    if len(g) >= 2:
+                        st = _parse_date(g[0])
+                        en = _parse_date(g[1])
+                        if st and en:
+                            st_yr = st.year + (st.month - 1) / 12.0
+                            en_yr = en.year + (en.month - 1) / 12.0
+                            if 1980 <= st_yr <= 2030 and st_yr <= en_yr and (en_yr - st_yr) <= 35:
+                                exp_intervals.append((st_yr, en_yr))
+
+        calc_work_years = 0.0
+        if exp_intervals:
+            exp_intervals.sort(key=lambda x: x[0])
+            merged = []
+            for st, en in exp_intervals:
+                if not merged:
                     merged.append([st, en])
-        total_span = sum(en - st for st, en in merged)
-        if total_span > 0:
-            calc_work_years = round(total_span, 1)
+                else:
+                    prev = merged[-1]
+                    if st <= prev[1]:
+                        prev[1] = max(prev[1], en)
+                    else:
+                        merged.append([st, en])
+            total_span = sum(en - st for st, en in merged)
+            if total_span > 0:
+                calc_work_years = round(total_span, 1)
 
-    final_exp = calc_work_years
-    if explicit_years:
-        final_exp = max(max(explicit_years), calc_work_years)
+        final_exp = calc_work_years
+        if explicit_years:
+            final_exp = max(max(explicit_years), calc_work_years)
 
-    entities["experience_years"] = min(final_exp, 40.0)
+        entities["experience_years"] = min(final_exp, 40.0)
 
     # Projects: only look inside the PROJECTS section
     proj_text = _segment_text(segments, "projects") or text
@@ -729,10 +782,6 @@ def extract_entities(text: str) -> dict[str, Any]:
     # Calculate total project experience in years
     total_months = sum(p["duration_months"] for p in academic_projects + personal_projects)
     entities["project_experience_years"] = round(total_months / 12, 1) if total_months > 0 else 0
-
-    # Add project experience to experience_years if no work experience found
-    if entities["experience_years"] == 0 and entities["project_experience_years"] > 0:
-        entities["experience_years"] = entities["project_experience_years"]
 
     certs = CERT_RE.findall(text)
     entities["certifications"] = [c.strip() for c in certs[:5]]

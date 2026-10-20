@@ -61,21 +61,49 @@ def extract_job_requirements(
     target_role: Optional[str] = None,
 ) -> JobRequirements:
     """Extract or resolve job requirements from raw text, structured spec, or target role fallback."""
-    # 1. If explicit structured spec provided
+    # 1. If explicit structured company job spec provided
     if job_spec and isinstance(job_spec, dict):
-        role = job_spec.get("role") or job_spec.get("canonical_role") or target_role or "Software Engineer"
-        if role not in ALL_ROLES:
-            role = map_title_to_canonical_role(role)
+        role_candidate = job_spec.get("role") or job_spec.get("canonical_role") or job_spec.get("job_role") or job_spec.get("title") or target_role or "Software Engineer"
+        role = role_candidate if role_candidate in ALL_ROLES else map_title_to_canonical_role(role_candidate)
 
-        req_skills = job_spec.get("required_skills") or REQUIRED_SKILLS.get(role, [])
-        pref_skills = job_spec.get("preferred_skills") or []
-        req_yrs = float(job_spec.get("required_experience_years") or REQUIRED_YEARS.get(role, 3.0))
+        raw_req = job_spec.get("required_skills")
+        if isinstance(raw_req, str):
+            req_skills = [s.strip() for s in raw_req.split(",") if s.strip()]
+        elif isinstance(raw_req, list):
+            req_skills = [str(s).strip() for s in raw_req if str(s).strip()]
+        else:
+            req_skills = []
+
+        if not req_skills:
+            req_skills = REQUIRED_SKILLS.get(role, ["Python", "SQL", "Git"])
+
+        raw_pref = job_spec.get("preferred_skills")
+        if isinstance(raw_pref, str):
+            pref_skills = [s.strip() for s in raw_pref.split(",") if s.strip()]
+        elif isinstance(raw_pref, list):
+            pref_skills = [str(s).strip() for s in raw_pref if str(s).strip()]
+        else:
+            pref_skills = []
+
+        try:
+            req_yrs = float(job_spec.get("required_experience_years") or job_spec.get("experience_required") or REQUIRED_YEARS.get(role, 3.0))
+        except (ValueError, TypeError):
+            req_yrs = float(REQUIRED_YEARS.get(role, 3.0))
         pref_yrs = float(job_spec.get("preferred_experience_years") or (req_yrs + 2.0))
-        req_edu = job_spec.get("required_education") or ["BSc in Computer Science or related field"]
-        sen = job_spec.get("required_seniority") or ("Senior" if req_yrs >= 5.0 else ("Junior" if req_yrs < 2.0 else "Mid"))
+
+        raw_edu = job_spec.get("required_education") or job_spec.get("education_required")
+        if isinstance(raw_edu, str) and raw_edu.strip():
+            req_edu = [raw_edu.strip()]
+        elif isinstance(raw_edu, list):
+            req_edu = [str(e).strip() for e in raw_edu if str(e).strip()]
+        else:
+            req_edu = ["BSc in Computer Science or related field"]
+
+        sen = job_spec.get("required_seniority") or job_spec.get("job_level") or ("Senior" if req_yrs >= 5.0 else ("Junior" if req_yrs < 2.0 else "Mid"))
+        title = job_spec.get("title") or job_spec.get("job_title") or role
 
         return JobRequirements(
-            job_title=job_spec.get("title") or job_spec.get("job_title") or role,
+            job_title=title,
             canonical_role=role,
             required_skills=req_skills,
             preferred_skills=pref_skills,
@@ -84,15 +112,20 @@ def extract_job_requirements(
             required_education=req_edu,
             required_seniority=sen,
             preferred_certifications=job_spec.get("preferred_certifications", []),
-            responsibilities=job_spec.get("responsibilities", [])
+            responsibilities=job_spec.get("responsibilities", []) if isinstance(job_spec.get("responsibilities"), list) else ([job_spec.get("responsibilities")] if job_spec.get("responsibilities") else [])
         )
 
     # 2. If raw JD text provided, parse it dynamically
     if job_description and job_description.strip():
-        return _parse_raw_job_description(job_description, target_role=target_role)
+        resolved_target = target_role if (target_role and target_role in ALL_ROLES) else (
+            map_title_to_canonical_role(target_role) if target_role else None
+        )
+        return _parse_raw_job_description(job_description, target_role=resolved_target)
 
     # 3. Default fallback to canonical role requirements
-    resolved_role = target_role if (target_role and target_role in ALL_ROLES) else "Software Engineer"
+    resolved_role = target_role if (target_role and target_role in ALL_ROLES) else (
+        map_title_to_canonical_role(target_role) if target_role else "Software Engineer"
+    )
     req_skills = REQUIRED_SKILLS.get(resolved_role, ["python", "git", "rest apis", "sql"])
     req_years = REQUIRED_YEARS.get(resolved_role, 3.0)
 
