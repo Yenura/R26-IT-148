@@ -95,7 +95,7 @@ def main():
     # 3. Component 3 APIs
     print("\n[3] Component 3 API Benchmarks:", flush=True)
     c3_tests = [
-        ("C3 Target Roles", "http://127.0.0.1:8003/api/v1/rank/jobs", "GET", None),
+        ("C3 Target Roles", "http://127.0.0.1:8003/api/v1/rank/roles", "GET", None),
         ("C3 CSS & LTR Ranking", "http://127.0.0.1:8003/api/v1/rank/compute", "POST", {
             "job_role": "Software_Engineer",
             "candidates": [

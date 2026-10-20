@@ -113,9 +113,9 @@ def app():
 
 
 class TestRankGuards:
-    def test_jobs_open_metadata_200(self, app):
+    def test_roles_open_metadata_200(self, app):
         c = TestClient(app, raise_server_exceptions=False)
-        assert c.get("/api/v1/rank/jobs").status_code == 200
+        assert c.get("/api/v1/rank/roles").status_code == 200
 
     def test_results_anonymous_401(self, app):
         c = TestClient(app, raise_server_exceptions=False)

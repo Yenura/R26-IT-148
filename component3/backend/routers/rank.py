@@ -222,7 +222,7 @@ async def explain_candidate(candidate_id: str, request: Request, identity: dict 
     return {"success": True, "candidate_id": candidate_id, "explanations": explanations}
 
 
-@router.get("/rank/jobs", summary="List supported roles")
+@router.get("/rank/roles", summary="List supported roles")
 async def list_roles():
     return {"success": True, "roles": get_service().roles(), "count": len(get_service().roles())}
 
