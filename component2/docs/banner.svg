@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="300" viewBox="0 0 1280 300" role="img" aria-label="Component 02: AI Interview Generation and Evaluation">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0A1322"/>
+      <stop offset="0.6" stop-color="#0D1A2E"/>
+      <stop offset="1" stop-color="#12233D"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1280" height="300" rx="18" fill="url(#bg)"/>
+
+  <rect x="56" y="48" width="46" height="46" rx="12" fill="#2DD4BF"/>
+  <path d="M69 61h20a5 5 0 0 1 5 5v9a5 5 0 0 1-5 5h-8l-7 6v-6h-5a5 5 0 0 1-5-5v-9a5 5 0 0 1 5-5z" fill="#0A1322"/>
+
+  <text x="120" y="80" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" letter-spacing="4" fill="#2DD4BF">COMPONENT 02</text>
+
+  <text x="56" y="162" font-family="Georgia, 'Times New Roman', serif" font-size="46" font-weight="700" fill="#F8FAFC">AI Interview Generation &amp; Evaluation</text>
+
+  <text x="56" y="206" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="19" font-style="italic" fill="#B9C6DA">Generating, administering and grading role-specific interviews &#8212; not a single isolated question.</text>
+
+  <rect x="56" y="238" width="84" height="3" rx="1.5" fill="#2DD4BF"/>
+</svg>
