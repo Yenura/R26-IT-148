@@ -182,6 +182,7 @@ export const c0ResumeMatch     = (resumeId, params = {}) => {
   const qs = new URLSearchParams({ resume_id: resumeId, ...params }).toString()
   return C0.get(`/resume/match?${qs}`)
 }
+export const c0SyncMatch       = (payload)       => C0.post('/resume/sync-match', payload)
 
 // ── Unified: Export ──────────────────────────────────────────
 export const c0ExportCSV  = (type = 'predictions') => C0.get(`/export/csv?type=${type}`, { responseType: 'blob' })

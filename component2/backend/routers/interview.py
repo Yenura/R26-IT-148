@@ -542,8 +542,24 @@ async def submit_answers(request: Request, submission: InterviewSubmitRequest, s
 
                 code_text = answer.get("code_text") or answer.get("answer") or answer.get("code") or ""
                 answer_language = str(answer.get("language") or "Python").strip() or "Python"
-                language_supported = answer_language in role_profiles.executable_languages()
                 test_cases = question.get("test_cases", []) or []
+
+                # If no code was written or submitted, strictly assign 0
+                if not code_text or not code_text.strip():
+                    processed_answer.update({
+                        "code_text": "",
+                        "language": answer_language,
+                        "code_score": 0.0,
+                        "syntax_valid": False,
+                        "test_pass_rate": 0.0,
+                        "tests_passed": 0,
+                        "total_tests": len(test_cases),
+                        "quality_score": 0.0
+                    })
+                    processed_answers.append(processed_answer)
+                    continue
+
+                language_supported = answer_language in role_profiles.executable_languages()
                 syntax_valid = False
                 if language_supported:
                     try:
