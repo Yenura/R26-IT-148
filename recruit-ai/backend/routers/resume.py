@@ -763,7 +763,17 @@ async def sync_match_score(payload: MatchSyncPayload, request: Request, user: di
             ]
         }
         await db.applications.update_many(filter_q, {"$set": update_data})
-        await db.predictions.update_many(filter_q, {"$set": update_data})
+        res_pred = await db.predictions.update_many(filter_q, {"$set": update_data})
+        if res_pred.matched_count == 0:
+            pred_doc = {
+                "candidate_id": cand_id,
+                "job_id": job_id,
+                "role": payload.role or "Software Engineer",
+                "predicted_role": payload.role or "Software Engineer",
+                **update_data,
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.predictions.insert_one(pred_doc)
         cva_data = {
             "cv_matching_score": round(payload.cv_score, 1),
             "optional_legacy_score": round(payload.cv_score, 1),
@@ -780,10 +790,19 @@ async def sync_match_score(payload: MatchSyncPayload, request: Request, user: di
             {"$and": [{"$or": cand_filters}, {"$or": [{"job_title": payload.role}, {"job_role": payload.role}]}]},
             {"$set": update_data}
         )
-        await db.predictions.update_many(
+        res_pred = await db.predictions.update_many(
             {"$and": [{"$or": cand_filters}, {"$or": [{"predicted_role": payload.role}, {"job_role": payload.role}]}]},
             {"$set": update_data}
         )
+        if res_pred.matched_count == 0:
+            pred_doc = {
+                "candidate_id": cand_id,
+                "role": payload.role,
+                "predicted_role": payload.role,
+                **update_data,
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.predictions.insert_one(pred_doc)
         cva_data = {
             "cv_matching_score": round(payload.cv_score, 1),
             "optional_legacy_score": round(payload.cv_score, 1),

@@ -46,9 +46,9 @@ export default function SkillGap() {
     }
   })
   const [selectedOpeningId, setSelectedOpeningId] = useState('')
-  const [simulatorMode, setSimulatorMode] = useState('company') // 'company' | 'position'
+  const [simulatorMode, setSimulatorMode] = useState(paramRole ? 'position' : 'company') // 'company' | 'position'
   const [selectedSimCompany, setSelectedSimCompany] = useState('')
-  const [selectedSimPosition, setSelectedSimPosition] = useState('')
+  const [selectedSimPosition, setSelectedSimPosition] = useState(paramRole || '')
   const [roles, setRoles] = useState([])
   const [simulatedSkills, setSimulatedSkills] = useState([])
   const [customSimSkill, setCustomSimSkill] = useState('')
@@ -102,6 +102,9 @@ export default function SkillGap() {
         setSelectedJobId(null)
       } else if (paramJobId && arr.some((a) => a.job_id === paramJobId)) {
         setSelectedJobId(paramJobId)
+      } else if (paramRole && arr.some((a) => a.job_title?.toLowerCase() === paramRole.toLowerCase())) {
+        const matching = arr.find((a) => a.job_title?.toLowerCase() === paramRole.toLowerCase())
+        setSelectedJobId(matching.job_id)
       } else if (!selectedJobId || !arr.some((a) => a.job_id === selectedJobId)) {
         setSelectedJobId(arr[0].job_id)
       }
