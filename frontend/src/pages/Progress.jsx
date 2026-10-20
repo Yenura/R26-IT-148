@@ -61,19 +61,22 @@ export default function Progress() {
     if (!data) setLoading(true)
     try {
       const uId = await resolveCandidateId()
-      let r = await c4Progress(uId)
-      if (!r?.data?.skills || r.data.skills.length === 0) {
-        try {
-          r = await c4ProgressSync(uId)
-        } catch {
-          // ignore fallback
-        }
-      }
+      const r = await c4Progress(uId)
       if (r?.data) {
         setData(r.data)
         try {
           sessionStorage.setItem(`recruitai.progress.${uId}`, JSON.stringify(r.data))
         } catch {}
+
+        // Non-blocking background sync if empty
+        if (!r.data.skills || r.data.skills.length === 0) {
+          c4ProgressSync(uId).then((sr) => {
+            if (sr?.data) {
+              setData(sr.data)
+              try { sessionStorage.setItem(`recruitai.progress.${uId}`, JSON.stringify(sr.data)) } catch {}
+            }
+          }).catch(() => {})
+        }
       }
     } catch {
       toast.error('Failed to load progress data')

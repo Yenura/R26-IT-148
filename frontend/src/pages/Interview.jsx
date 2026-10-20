@@ -1018,7 +1018,7 @@ export default function Interview() {
             Blended Interview Score (P_int)
           </div>
           <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--color-primary)', lineHeight: 1, fontFamily: 'var(--p-font-mono)', marginBottom: 8 }}>
-            {overallScore.toFixed(1)}%
+            {Math.round(overallScore)}%
           </div>
           <div style={{ display: 'inline-flex', marginBottom: 16 }}>
             <ScoreBadge score={overallScore} />

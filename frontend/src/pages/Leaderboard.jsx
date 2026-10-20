@@ -5,7 +5,7 @@ import {
   Award, Trophy, Search, RefreshCw,
   ShieldCheck, UserCheck, Briefcase
 } from 'lucide-react'
-import { c4Leaderboard, uJobsMy, c3Pipeline } from '../api'
+import { c4Leaderboard, uJobsMy, c3Pipeline, c3PipelineBatch } from '../api'
 import PageHeader from '../components/PageHeader'
 import StatCard from '../components/StatCard'
 import ScoreBadge from '../components/ScoreBadge'
@@ -71,22 +71,35 @@ export default function Leaderboard() {
         const aggregated = []
         const seenCandidates = new Set()
 
+        // Fast high-performance batch pipeline fetch
+        const jobIds = jobs.map((job) => String(job.id || job._id)).filter(Boolean)
+        let batchMap = {}
+        try {
+          const batchRes = await c3PipelineBatch(jobIds)
+          batchMap = batchRes?.data?.data || {}
+        } catch {
+          batchMap = {}
+        }
+
         const pipelineResults = await Promise.all(
           jobs.map(async (job) => {
-            const jid = job.id || job._id
-            try {
-              const res = await c3Pipeline(jid)
-              const list = res?.data?.data || res?.data?.rankings || []
-              return list.map((cand) => ({
-                ...cand,
-                job_id: jid,
-                job_title: job.title,
-                job_role: job.title || cand.job_role || 'Software Engineer',
-                company_name: job.company_name || 'Your Company',
-              }))
-            } catch {
-              return []
+            const jid = String(job.id || job._id)
+            let list = batchMap[jid]
+            if (!list || list.length === 0) {
+              try {
+                const res = await c3Pipeline(jid)
+                list = res?.data?.data || res?.data?.rankings || []
+              } catch {
+                list = []
+              }
             }
+            return (list || []).map((cand) => ({
+              ...cand,
+              job_id: jid,
+              job_title: job.title,
+              job_role: job.title || cand.job_role || 'Software Engineer',
+              company_name: job.company_name || 'Your Company',
+            }))
           })
         )
 

@@ -50,6 +50,14 @@ export default function Ranking() {
       navigate('/login/company')
       return
     }
+    // Instant hydrate & pipeline computation from cached jobs
+    if (jobs.length > 0) {
+      const initialJobId = paramJobId || selectedJob || (jobs[0].id || jobs[0]._id)
+      if (initialJobId) {
+        setSelectedJob(initialJobId)
+        computePipeline(initialJobId)
+      }
+    }
     loadCompanyJobs()
   }, [])
 
