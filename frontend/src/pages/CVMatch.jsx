@@ -1829,8 +1829,8 @@ export default function CVMatch() {
                       </span>
                     </div>
 
-                    <div style={{ width: '100%', height: 7, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
-                      <div className="progress-bar-fill" style={{ width: `${Math.min(skillScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-primary-hover), var(--color-info))', borderRadius: 4, boxShadow: '0 0 10px rgba(10, 132, 255, 0.5)' }} />
+                    <div className="cvm-progress-track">
+                      <div className="progress-bar-fill" style={{ width: `${Math.min(skillScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-primary), var(--color-info))', borderRadius: 4, boxShadow: '0 0 10px rgba(10, 132, 255, 0.4)' }} />
                     </div>
 
                     <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1839,8 +1839,8 @@ export default function CVMatch() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                    <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                  <div className="cvm-card-divider">
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 4 }}>
                       <CheckCircle2 size={12} /> Key Verified Strengths:
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, maxHeight: 68, overflowY: 'auto' }}>
@@ -1873,8 +1873,8 @@ export default function CVMatch() {
                       </span>
                     </div>
 
-                    <div style={{ width: '100%', height: 7, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
-                      <div className="progress-bar-fill" style={{ width: `${Math.min(expScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-success), var(--color-success-hover))', borderRadius: 4, boxShadow: '0 0 10px rgba(48, 209, 88, 0.5)' }} />
+                    <div className="cvm-progress-track">
+                      <div className="progress-bar-fill" style={{ width: `${Math.min(expScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-success), var(--color-success-hover))', borderRadius: 4, boxShadow: '0 0 10px rgba(48, 209, 88, 0.4)' }} />
                     </div>
 
                     <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1883,7 +1883,7 @@ export default function CVMatch() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)', fontSize: 'var(--p-text-xs)' }}>
+                  <div className="cvm-card-divider" style={{ fontSize: 'var(--p-text-xs)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Verified Total Tenure:</span>
                       <strong style={{ color: 'var(--color-fg)' }}>{candExp.toFixed(1)} years ({totalMonths.toFixed(0)} mos)</strong>
@@ -1911,8 +1911,8 @@ export default function CVMatch() {
                       </span>
                     </div>
 
-                    <div style={{ width: '100%', height: 7, background: 'rgba(255, 255, 255, 0.08)', borderRadius: 4, overflow: 'hidden', marginBottom: 10 }}>
-                      <div className="progress-bar-fill" style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-purple), var(--color-primary-hover))', borderRadius: 4, boxShadow: '0 0 10px rgba(191, 90, 242, 0.5)' }} />
+                    <div className="cvm-progress-track">
+                      <div className="progress-bar-fill" style={{ width: `${Math.min(eduScore, 100)}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-purple), var(--color-primary-hover))', borderRadius: 4, boxShadow: '0 0 10px rgba(191, 90, 242, 0.4)' }} />
                     </div>
 
                     <div style={{ fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1921,7 +1921,7 @@ export default function CVMatch() {
                     </div>
                   </div>
 
-                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)', fontSize: 'var(--p-text-xs)' }}>
+                  <div className="cvm-card-divider" style={{ fontSize: 'var(--p-text-xs)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
                       <span style={{ color: 'var(--color-fg-muted)' }}>Degree Qualification:</span>
                       <strong style={{ color: 'var(--color-fg)', textAlign: 'right', maxWidth: '65%', wordBreak: 'break-word' }} title={c1Result?.education || currentResumeDoc?.education}>
