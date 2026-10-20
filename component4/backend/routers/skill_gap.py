@@ -98,7 +98,7 @@ limiter = Limiter(key_func=get_remote_address)
 
 # In-memory high performance TTL cache for applied jobs analysis
 _APPLIED_JOBS_CACHE: Dict[str, Any] = {}
-_CACHE_TTL_SECS = 45.0
+_CACHE_TTL_SECS = 180.0
 
 def get_cached_applied_jobs(candidate_id: str):
     entry = _APPLIED_JOBS_CACHE.get(candidate_id)
@@ -397,19 +397,18 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
     from bson import ObjectId
     from services.ml_engine import RESOURCES, JOB_REQ, compute_gap
 
-    cand_id_filters = [{"candidate_id": candidate_id}]
+    cand_id_keys = [candidate_id]
     if ObjectId.is_valid(candidate_id):
-        cand_id_filters.append({"candidate_id": ObjectId(candidate_id)})
-        cand_id_filters.append({"_id": ObjectId(candidate_id)})
+        cand_id_keys.append(ObjectId(candidate_id))
 
-    # Parallel batch fetch of candidate's core collections
-    resumes_task = db.resumes.find({"$or": [{"candidate_id": candidate_id}] + ([{"candidate_id": ObjectId(candidate_id)}] if ObjectId.is_valid(candidate_id) else [])}).sort("created_at", -1).to_list(10)
-    apps_task = db.applications.find({"$or": cand_id_filters}).sort("applied_at", -1).to_list(100)
-    preds_task = db.predictions.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
-    scores_task = db.interview_scores.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
-    results_task = db.results.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
-    sessions_task = db.sessions.find({"$or": cand_id_filters}).sort("created_at", -1).to_list(100)
-    cv_analyses_task = db.cv_analyses.find({"$or": cand_id_filters}).sort("analysis_timestamp", -1).to_list(100)
+    # Parallel batch fetch of candidate's core collections using indexed $in
+    resumes_task = db.resumes.find({"candidate_id": {"$in": cand_id_keys}}).sort("created_at", -1).to_list(10)
+    apps_task = db.applications.find({"candidate_id": {"$in": cand_id_keys}}).sort("applied_at", -1).to_list(100)
+    preds_task = db.predictions.find({"candidate_id": {"$in": cand_id_keys}}).sort("created_at", -1).to_list(100)
+    scores_task = db.interview_scores.find({"candidate_id": {"$in": cand_id_keys}}).sort("created_at", -1).to_list(100)
+    results_task = db.results.find({"candidate_id": {"$in": cand_id_keys}}).sort("created_at", -1).to_list(100)
+    sessions_task = db.sessions.find({"candidate_id": {"$in": cand_id_keys}}).sort("created_at", -1).to_list(100)
+    cv_analyses_task = db.cv_analyses.find({"candidate_id": {"$in": cand_id_keys}}).sort("analysis_timestamp", -1).to_list(100)
 
     resumes_list, apps_list, preds_list, scores_list, results_list, sessions_list, cv_analyses_list = await asyncio.gather(
         resumes_task, apps_task, preds_task, scores_task, results_task, sessions_task, cv_analyses_task
