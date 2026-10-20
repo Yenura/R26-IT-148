@@ -56,6 +56,8 @@ class CVTextRequest(BaseModel):
     job_description:  Optional[str] = Field(None, description="Job posting text for JD-matching")
     target_role:      Optional[str] = Field(None, description="Target job role for requirements scoring")
     job_role:         Optional[str] = Field(None, description="Alternative field name for target role")
+    job_id:           Optional[str] = Field(None, max_length=100, description="Company Job ID if evaluating against specific job")
+    job_spec:         Optional[Dict[str, Any]] = Field(None, description="Structured company job requirements specification")
 
     @model_validator(mode="before")
     @classmethod

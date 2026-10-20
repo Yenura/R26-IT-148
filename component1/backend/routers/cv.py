@@ -45,7 +45,7 @@ from backend.models.schemas import (
     RolesListResponse,
 )
 from backend.services import extractor, parser, scorer
-from backend.services.job_extractor import extract_job_requirements
+from backend.services.job_extractor import extract_job_requirements, map_title_to_canonical_role
 from data.role_requirements import ALL_ROLES, REQUIRED_SKILLS, REQUIRED_YEARS
 
 logger = logging.getLogger("component1.router.cv")
@@ -98,7 +98,13 @@ async def _full_analysis(
 ) -> CVAnalysisResponse:
     """Core pipeline: extract → classify → score → return 3 independent scores."""
     pred = predictor.predict(text)
-    scored_role = target_role if (target_role and target_role in ALL_ROLES) else pred.job_role
+    role_candidate = target_role or (job_spec.get("role") or job_spec.get("job_role") or job_spec.get("title") if job_spec else None)
+    if role_candidate:
+        scored_role = role_candidate if role_candidate in ALL_ROLES else map_title_to_canonical_role(role_candidate)
+    else:
+        scored_role = pred.job_role
+    if scored_role not in ALL_ROLES:
+        scored_role = pred.job_role
 
     features = extractor.extract(text, target_role=scored_role)
     resolved_name = candidate_name.strip() if candidate_name and candidate_name.strip() not in ("Unknown", "Candidate") else getattr(features, "candidate_name", "Candidate Profile")
@@ -261,14 +267,58 @@ async def analyze_cv_text(
     candidate_name = payload.candidate_name or "Unknown"
     text           = parser.extract_text_from_raw(payload.text)
 
+    job_id = getattr(payload, "job_id", None)
+    job_spec = getattr(payload, "job_spec", None)
+    job_desc = payload.job_description
+    target_role = getattr(payload, "target_role", None)
+
+    # If job_id provided, look up company job from MongoDB if job_spec is missing or incomplete
+    if job_id and db is not None:
+        try:
+            from bson import ObjectId as Oid
+            job_doc = None
+            try:
+                job_doc = await db.jobs.find_one({"_id": Oid(job_id)})
+            except Exception:
+                try:
+                    job_doc = await db.jobs.find_one({"id": job_id})
+                except Exception:
+                    pass
+            if not job_doc:
+                try:
+                    job_doc = await db.jobs.find_one({"title": job_id})
+                except Exception:
+                    pass
+
+            if job_doc:
+                if not job_spec:
+                    job_spec = {
+                        "title": job_doc.get("title", ""),
+                        "role": job_doc.get("job_role") or job_doc.get("title", ""),
+                        "required_skills": job_doc.get("required_skills", []),
+                        "preferred_skills": job_doc.get("preferred_skills", []),
+                        "required_experience_years": job_doc.get("experience_required", 0),
+                        "required_education": job_doc.get("education_required", ""),
+                        "responsibilities": job_doc.get("responsibilities", ""),
+                        "description": job_doc.get("description", ""),
+                    }
+                if not job_desc:
+                    job_desc = f"{job_doc.get('title', '')} {job_doc.get('description', '')} {job_doc.get('responsibilities', '')}".strip()
+                if not target_role:
+                    target_role = job_doc.get("job_role") or job_doc.get("title", "")
+        except Exception as e:
+            logger.warning(f"Error resolving job {job_id} from database: {e}")
+
     result = await _full_analysis(
         text=text,
         candidate_id=candidate_id,
         candidate_name=candidate_name,
-        job_description=payload.job_description,
+        job_description=job_desc,
         predictor=predictor,
         matcher=matcher,
-        target_role=getattr(payload, "target_role", None),
+        job_id=job_id or "JOB001",
+        job_spec=job_spec,
+        target_role=target_role,
     )
     await _upsert(db, result)
     return result
@@ -297,12 +347,50 @@ async def analyze_cv_file(
     c_id   = _bind_candidate_id(identity, candidate_id)
     c_name = (candidate_name or "Unknown").strip()
 
+    job_spec = None
+    target_role = None
+    if job_id and db is not None:
+        try:
+            from bson import ObjectId as Oid
+            job_doc = None
+            try:
+                job_doc = await db.jobs.find_one({"_id": Oid(job_id)})
+            except Exception:
+                try:
+                    job_doc = await db.jobs.find_one({"id": job_id})
+                except Exception:
+                    pass
+            if not job_doc:
+                try:
+                    job_doc = await db.jobs.find_one({"title": job_id})
+                except Exception:
+                    pass
+
+            if job_doc:
+                job_spec = {
+                    "title": job_doc.get("title", ""),
+                    "role": job_doc.get("job_role") or job_doc.get("title", ""),
+                    "required_skills": job_doc.get("required_skills", []),
+                    "preferred_skills": job_doc.get("preferred_skills", []),
+                    "required_experience_years": job_doc.get("experience_required", 0),
+                    "required_education": job_doc.get("education_required", ""),
+                    "responsibilities": job_doc.get("responsibilities", ""),
+                    "description": job_doc.get("description", ""),
+                }
+                if not job_description:
+                    job_description = f"{job_doc.get('title', '')} {job_doc.get('description', '')} {job_doc.get('responsibilities', '')}".strip()
+                target_role = job_doc.get("job_role") or job_doc.get("title", "")
+        except Exception as e:
+            logger.warning(f"Error resolving job {job_id} in analyze-file: {e}")
+
     result = await _full_analysis(
         text=text,
         candidate_id=c_id,
         candidate_name=c_name,
         job_description=job_description,
         job_id=job_id or "JOB001",
+        job_spec=job_spec,
+        target_role=target_role,
         predictor=predictor,
         matcher=matcher,
     )
@@ -314,6 +402,7 @@ async def analyze_cv_file(
 
 @router.post("/screen-resume", summary="Screen CV file or text and return 3 independent scores for Component 3")
 async def screen_resume(
+    request: Request,
     file: Optional[UploadFile] = File(None),
     job_id: Optional[str] = Form(None),
     candidate_id: Optional[str] = Form(None),
@@ -347,13 +436,51 @@ async def screen_resume(
 
     c_id = _bind_candidate_id(identity, candidate_id)
     j_id = job_id or "JOB001"
+
+    job_spec = None
+    db = getattr(request.app.state, "db", None) if hasattr(request, "app") and hasattr(request.app, "state") else None
+    if job_id and db is not None:
+        try:
+            from bson import ObjectId as Oid
+            job_doc = None
+            try:
+                job_doc = await db.jobs.find_one({"_id": Oid(job_id)})
+            except Exception:
+                try:
+                    job_doc = await db.jobs.find_one({"id": job_id})
+                except Exception:
+                    pass
+            if not job_doc:
+                try:
+                    job_doc = await db.jobs.find_one({"title": job_id})
+                except Exception:
+                    pass
+            if job_doc:
+                job_spec = {
+                    "title": job_doc.get("title", ""),
+                    "role": job_doc.get("job_role") or job_doc.get("title", ""),
+                    "required_skills": job_doc.get("required_skills", []),
+                    "preferred_skills": job_doc.get("preferred_skills", []),
+                    "required_experience_years": job_doc.get("experience_required", 0),
+                    "required_education": job_doc.get("education_required", ""),
+                    "responsibilities": job_doc.get("responsibilities", ""),
+                    "description": job_doc.get("description", ""),
+                }
+        except Exception as e:
+            logger.warning(f"Error resolving job {job_id} in screen-resume: {e}")
+
     pred = predictor.predict(text)
-    features = extractor.extract(text, target_role=pred.job_role)
+    role_candidate = (job_spec.get("role") or job_spec.get("title")) if job_spec else pred.job_role
+    scored_role = role_candidate if role_candidate in ALL_ROLES else map_title_to_canonical_role(role_candidate)
+    if scored_role not in ALL_ROLES:
+        scored_role = pred.job_role
+
+    features = extractor.extract(text, target_role=scored_role)
     c_name = candidate_name.strip() if candidate_name and candidate_name.strip() not in ("Unknown", "Candidate") else getattr(features, "candidate_name", "Candidate Profile")
-    job_reqs = extract_job_requirements(target_role=pred.job_role)
+    job_reqs = extract_job_requirements(job_spec=job_spec, target_role=scored_role)
 
     scores = scorer.score(
-        role=pred.job_role,
+        role=scored_role,
         edu_level=features.edu_level,
         experience_years=features.experience_years,
         skills=features.skills,

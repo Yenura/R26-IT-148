@@ -13,6 +13,7 @@ the final weighted-average candidate ranking model. DO NOT COLLAPSE THEM.
 
 from __future__ import annotations
 
+import re
 import logging
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Union
@@ -172,6 +173,59 @@ SENIORITY_RANKS = {
 }
 
 
+def is_skill_match(skill_a: str, skill_b: str) -> bool:
+    """Accurately determine if candidate skill matches job required skill.
+    Prevents false-positive substring collisions (e.g. 'c' in 'docker', 'go' in 'mongodb', 'java' in 'javascript').
+    """
+    if not skill_a or not skill_b:
+        return False
+
+    sa = SKILL_ALIASES.get(str(skill_a).strip().lower(), str(skill_a).strip().lower())
+    sb = SKILL_ALIASES.get(str(skill_b).strip().lower(), str(skill_b).strip().lower())
+
+    if sa == sb:
+        return True
+
+    # 1. Collision guard: Java vs JavaScript
+    if (sa == "java" and "javascript" in sb) or (sb == "java" and "javascript" in sa):
+        return False
+
+    # 2. Collision guard: C language family (C != C++ != C# != .NET)
+    c_family = {"c", "c++", "c#", ".net"}
+    if sa in c_family or sb in c_family:
+        return sa == sb
+
+    # 3. Collision guard: Short exact abbreviations must not match words containing them
+    short_exact = {"r", "go", "sql", "ai", "ml", "ui", "ux", "qa", "ci", "cd", "it", "ip", "os", "git"}
+    if sa in short_exact or sb in short_exact:
+        if sa in short_exact and sb in short_exact:
+            return sa == sb
+        shorter, longer = (sa, sb) if len(sa) <= len(sb) else (sb, sa)
+        # Disallow 'nosql' for 'sql'
+        if shorter == "sql" and "nosql" in longer:
+            return False
+        # Disallow 'mongodb' or 'django' or 'algorithms' for 'go'
+        if shorter == "go" and any(bad in longer for bad in ["mongo", "django", "algorithm"]):
+            return False
+        # Disallow 'digitalocean' for 'git'
+        if shorter == "git" and "digital" in longer:
+            return False
+        pattern = r'(?:\b|_)' + re.escape(shorter) + r'(?:\b|_)'
+        return bool(re.search(pattern, longer))
+
+    # 4. Word-boundary token / phrase containment
+    # E.g. 'react' matches 'react native' or 'react.js'
+    # E.g. 'rest apis' matches 'building rest apis'
+    # E.g. 'tailwind css' matches 'tailwind'
+    shorter, longer = (sa, sb) if len(sa) <= len(sb) else (sb, sa)
+    if len(shorter) >= 3:
+        pattern = r'(?:\b|_)' + re.escape(shorter) + r'(?:\b|_)'
+        if re.search(pattern, longer):
+            return True
+
+    return False
+
+
 def calculate_skill_score(
     candidate_skills: List[str],
     required_skills_spec: Union[List[str], List[Dict[str, Any]]],
@@ -211,11 +265,8 @@ def calculate_skill_score(
         s_canonical = SKILL_ALIASES.get(s_name.lower(), s_name.lower())
         total_weight += weight
 
-        # Check exact or substring alias match
-        is_match = (
-            s_canonical in cand_set or
-            any(s_canonical == c or s_canonical in c or c in s_canonical for c in cand_set)
-        )
+        # Check accurate match against candidate skills using collision-guarded is_skill_match
+        is_match = any(is_skill_match(s_canonical, c) for c in cand_set)
 
         if is_match:
             matched_skills.append(s_name)
@@ -234,7 +285,7 @@ def calculate_skill_score(
     if preferred_skills_spec:
         for pref in preferred_skills_spec:
             pref_norm = SKILL_ALIASES.get(pref.strip().lower(), pref.strip().lower())
-            if pref_norm in cand_set or any(pref_norm == c or pref_norm in c for c in cand_set):
+            if any(is_skill_match(pref_norm, c) for c in cand_set):
                 matched_pref.append(pref)
         pref_ratio = len(matched_pref) / max(1, len(preferred_skills_spec))
         pref_bonus = min(15.0, pref_ratio * 15.0)
