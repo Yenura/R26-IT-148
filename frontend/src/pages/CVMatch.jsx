@@ -10,7 +10,7 @@ import {
   CheckSquare, X, Copy, UserCheck, Building2, Code, Lightbulb, Bookmark, Square
 } from 'lucide-react'
 import {
-  uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch,
+  uResumeDelete, uResumeUpload, c0JobsAll, uResumeList, c0ResumeMatch, c0SyncMatch,
   c1Analyze, c1Classify, c4SkillGap, c4SkillGapSimulate, c4CareerRec, c4LearningPath, c1Roles
 } from '../api'
 import { useAuth } from '../hooks/useAuth'
@@ -844,7 +844,29 @@ export default function CVMatch() {
       if (gapRes?.data) setSkillGapResult(gapRes.data)
       if (careerRes?.data) setCareerResult(careerRes.data)
       if (pathRes?.data) setLearningPathResult(pathRes.data)
-      if (c1Res?.data) setC1Result(c1Res.data)
+      if (c1Res?.data) {
+        setC1Result(c1Res.data)
+        try {
+          const c1ScoreVal = c1Res.data.cv_matching_score ?? c1Res.data.optional_legacy_score
+          const skVal = c1Res.data.S_skill ?? c1Res.data.s_skill ?? c1Res.data.component_1_scores?.S_skill
+          const exVal = c1Res.data.S_exp ?? c1Res.data.s_exp ?? c1Res.data.component_1_scores?.S_exp
+          const edVal = c1Res.data.S_edu ?? c1Res.data.s_edu ?? c1Res.data.component_1_scores?.S_edu
+          const finalScoreVal = c1ScoreVal !== undefined && c1ScoreVal !== null
+            ? c1ScoreVal
+            : ((skVal || 70) * 0.50 + (exVal || 70) * 0.30 + (edVal || 80) * 0.20)
+          await c0SyncMatch({
+            candidate_id: safeCandId,
+            job_id: selectedJob || '',
+            role: finalRole,
+            cv_score: finalScoreVal,
+            skill_score: skVal,
+            experience_score: exVal,
+            education_score: edVal
+          })
+        } catch (syncErr) {
+          console.warn('Sync match error:', syncErr)
+        }
+      }
 
       // Invalidate Skill Gap and Progress local caches so fresh data is loaded
       try {
