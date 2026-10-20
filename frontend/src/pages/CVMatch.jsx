@@ -937,9 +937,9 @@ export default function CVMatch() {
 
     try {
       const targetResumeDoc = resumes.find((res) => res.id === selectedResume) || {}
-      const currentSkills = targetResumeDoc.skills || []
+      const currentSkills = c1Result?.skills || targetResumeDoc.skills || []
       const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
-      const roleName = matchedJobDoc ? matchedJobDoc.title : selectedCanonicalRole || 'Software Engineer'
+      const roleName = matchedJobDoc ? matchedJobDoc.title : (selectedCanonicalRole || displayJobTitle || 'Software Engineer')
 
       const simRes = await c4SkillGapSimulate({
         current_skills: currentSkills,
@@ -1842,7 +1842,12 @@ export default function CVMatch() {
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
-                    onClick={() => navigate('/candidate/skill-gap')}
+                    onClick={() => {
+                      const q = new URLSearchParams()
+                      if (selectedJob) q.set('jobId', selectedJob)
+                      if (displayJobTitle) q.set('role', displayJobTitle)
+                      navigate(`/candidate/skill-gap?${q.toString()}`)
+                    }}
                   >
                     <Sparkles size={13} /> View Skill Gap Report
                   </button>
@@ -2197,7 +2202,7 @@ export default function CVMatch() {
                   <button
                     type="button"
                     onClick={() => {
-                      (matchResult.missing_skills || []).forEach((s) => {
+                      (activeMissingSkills || []).forEach((s) => {
                         if (!simulatedAcquiredSkills.includes(s)) handleSimulateSkill(s)
                       })
                     }}
@@ -2230,8 +2235,8 @@ export default function CVMatch() {
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-                  {(matchResult.missing_skills || []).length > 0 ? (
-                    (matchResult.missing_skills || []).map((skill, i) => {
+                  {(activeMissingSkills || []).length > 0 ? (
+                    (activeMissingSkills || []).map((skill, i) => {
                       const isSelected = simulatedAcquiredSkills.includes(skill)
                       return (
                         <button
@@ -2297,7 +2302,7 @@ export default function CVMatch() {
                       <div>
                         <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span>+{simulationResult.coverage_improvement || 0}% Projected Match Coverage Boost!</span>
-                          <span style={{ fontSize: '11px', background: 'rgba(48, 209, 88, 0.25)', padding: '2px 8px', borderRadius: 10, color: 'var(--p-white)fff' }}>
+                          <span style={{ fontSize: '11px', background: 'rgba(48, 209, 88, 0.25)', padding: '2px 8px', borderRadius: 10, color: '#ffffff' }}>
                             {simulationResult.original_coverage || 0}% → {simulationResult.simulated_coverage || 0}%
                           </span>
                         </div>
@@ -2603,7 +2608,7 @@ export default function CVMatch() {
                                 background: isCompleted
                                   ? 'linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%)'
                                   : 'linear-gradient(135deg, rgba(0, 113, 227, 0.3) 0%, rgba(10, 132, 255, 0.5) 100%)',
-                                color: 'var(--p-white)fff',
+                                color: '#ffffff',
                                 fontWeight: 900,
                                 fontSize: '14px',
                                 fontFamily: 'var(--p-font-mono)',
@@ -2997,7 +3002,7 @@ export default function CVMatch() {
                   <div style={{ padding: '14px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, textAlign: 'center' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Skills (S_skill)</div>
                     <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', marginTop: 4 }}>{skillScore.toFixed(0)}%</div>
-                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>{matchResult.matched_skills?.length || 0} Matched</div>
+                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>{activeMatchedSkills.length} Matched</div>
                   </div>
 
                   {/* Experience Score */}
@@ -3023,20 +3028,20 @@ export default function CVMatch() {
                 </h3>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                   {[...new Set(matchResult.matched_skills || [])].map((s, i) => (
+                   {[...new Set(activeMatchedSkills || [])].map((s, i) => (
                      <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 6 }}>
                       ✓ {s}
                     </span>
                   ))}
                 </div>
 
-                {matchResult.missing_skills?.length > 0 && (
+                {activeMissingSkills.length > 0 && (
                   <div>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', marginBottom: 6 }}>
                       Identified Competency Gaps:
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                       {[...new Set(matchResult.missing_skills || [])].map((s, i) => (
+                       {[...new Set(activeMissingSkills || [])].map((s, i) => (
                          <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '3px 10px', borderRadius: 6 }}>
                           - {s}
                         </span>
