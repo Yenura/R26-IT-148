@@ -58,7 +58,32 @@ const cleanEducationText = (rawEdu) => {
   if (edu.includes('|')) {
     edu = edu.split('|')[0].trim()
   }
+  // Unsquish tokens without spaces from PDF streams
+  edu = edu
+    .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uff0d\x96\x97]/g, ' - ')
+    .replace(/([a-zA-Z0-9])\(/g, '$1 (')
+    .replace(/\)([a-zA-Z0-9])/g, ') $1')
+    .replace(/,([a-zA-Z0-9])/g, ', $1')
+    .replace(/:([a-zA-Z0-9])/g, ': $1')
+    .replace(/([a-zA-Z])(\d)/g, '$1 $2')
+    .replace(/(\d)([a-zA-Z])/g, '$1 $2')
+    .replace(/([a-z])(of|in|at|for|to|and|with)([A-Z])/g, '$1 $2 $3')
+    .replace(/\b(of|in|at|for|to|and|with)([A-Z])/g, '$1 $2')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/\b(BSc|MSc|BTech|MTech|PhD|MBA|BA|MA|BEng|MEng)([A-Z][a-z])/g, '$1 $2')
+    .replace(/[ \t]+/g, ' ')
+    .trim()
+
   return edu.length > 55 ? `${edu.slice(0, 52)}...` : edu
+}
+
+const formatExperience = (r) => {
+  const exp = Number(r?.experience_years) || 0
+  if (exp > 0) {
+    if (exp === 1) return '1 yr experience'
+    return `${exp} yrs experience`
+  }
+  return '0 yrs (Entry Level)'
 }
 
 export default function CandidateDashboard() {
@@ -418,7 +443,7 @@ export default function CandidateDashboard() {
                                       <span>•</span>
                                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                                         <Clock size={13} style={{ color: 'var(--color-success)' }} />
-                                        {r.experience_years || 0} yrs experience
+                                        {formatExperience(r)}
                                       </span>
                                     </div>
                                   </div>

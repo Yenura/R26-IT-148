@@ -558,6 +558,35 @@ const CANONICAL_CAREER_PATHWAYS = {
   ]
 }
 
+export const checkSkillMatch = (reqSkill, candSkill) => {
+  const rs = String(reqSkill || '').toLowerCase().trim()
+  const cs = String(candSkill || '').toLowerCase().trim()
+  if (!rs || !cs) return false
+  if (rs === cs) return true
+
+  // Explicit collision guards
+  if ((rs === 'java' && cs.includes('javascript')) || (cs === 'java' && rs.includes('javascript'))) return false
+  const cFamily = ['c', 'c++', 'c#', '.net']
+  if (cFamily.includes(rs) || cFamily.includes(cs)) return rs === cs
+  const shortExact = ['r', 'go', 'sql', 'ai', 'ml', 'ui', 'ux', 'qa', 'ci', 'cd', 'it', 'ip', 'os', 'git']
+  if (shortExact.includes(rs) || shortExact.includes(cs)) {
+    if (rs === cs) return true
+    const [shorter, longer] = rs.length <= cs.length ? [rs, cs] : [cs, rs]
+    if (shorter === 'sql' && longer.includes('nosql')) return false
+    if (shorter === 'go' && (longer.includes('mongo') || longer.includes('django') || longer.includes('algorithm'))) return false
+    if (shorter === 'git' && longer.includes('digital')) return false
+    const escaped = shorter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:\\b|_)${escaped}(?:\\b|_)`, 'i').test(longer)
+  }
+
+  const [shorter, longer] = rs.length <= cs.length ? [rs, cs] : [cs, rs]
+  if (shorter.length >= 3) {
+    const escaped = shorter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`(?:\\b|_)${escaped}(?:\\b|_)`, 'i').test(longer)
+  }
+  return false
+}
+
 export default function CVMatch() {
   const navigate = useNavigate()
   useAuth()
@@ -769,8 +798,7 @@ export default function CVMatch() {
         const missing = []
 
         reqSkills.forEach((rs) => {
-          const rsl = String(rs).toLowerCase().trim()
-          const isMatched = candSkillsLower.some((cs) => cs === rsl || cs.includes(rsl) || rsl.includes(cs))
+          const isMatched = candSkillsLower.some((cs) => checkSkillMatch(rs, cs))
           if (isMatched) matched.push(rs)
           else missing.push(rs)
         })
@@ -817,15 +845,20 @@ export default function CVMatch() {
         target_role: finalRole,
       }
 
-      if (selectedJob) {
-        c1Payload.job_id = selectedJob
+      if (jobIdToUse) {
+        c1Payload.job_id = jobIdToUse
       }
       if (matchedJobDoc) {
         c1Payload.job_description = `${matchedJobDoc.title} ${matchedJobDoc.description || ''} ${matchedJobDoc.responsibilities || ''}`.trim()
         c1Payload.job_spec = {
+          title: matchedJobDoc.title,
+          role: matchedJobDoc.job_role || matchedJobDoc.title,
           required_skills: matchedJobDoc.required_skills || [],
+          preferred_skills: matchedJobDoc.preferred_skills || [],
           required_experience_years: matchedJobDoc.experience_required ?? matchedJobDoc.experience_years ?? 0,
-          required_education: matchedJobDoc.education_required || ''
+          required_education: matchedJobDoc.education_required || '',
+          responsibilities: matchedJobDoc.responsibilities || '',
+          description: matchedJobDoc.description || ''
         }
       }
 
@@ -985,7 +1018,7 @@ export default function CVMatch() {
   const candSkillsList = c1Result?.skills || currentResumeDoc?.skills || []
 
   const localMatched = jobReqSkills.filter((js) =>
-    candSkillsList.some((cs) => cs.toLowerCase().includes(js.toLowerCase()) || js.toLowerCase().includes(cs.toLowerCase()))
+    candSkillsList.some((cs) => checkSkillMatch(js, cs))
   )
   const localMissing = jobReqSkills.filter((js) => !localMatched.includes(js))
 

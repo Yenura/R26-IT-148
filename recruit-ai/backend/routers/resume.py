@@ -90,6 +90,9 @@ def _resume_out(doc: dict) -> ResumeOut:
             edu = ent.get("education", "")
         except Exception:
             pass
+    if edu:
+        from services.resume_parser import unsquish_text
+        edu = unsquish_text(edu)
 
     return ResumeOut(
         id=str(doc["_id"]),
@@ -340,17 +343,44 @@ async def match_resume(
         job_skills_lower = [s.strip().lower() for s in job_skills_original]
         required_years = float(role_data["exp"])
 
-    # Skill matching: bidirectional substring match (fuzzy)
+    # Skill matching: accurate matching with collision guards
     def _skill_matches(job_skill: str, cand_skills: list) -> bool:
-        """Check if a job skill matches any candidate skill via substring containment."""
+        """Check if a job skill matches any candidate skill via collision-guarded word matching."""
         js = job_skill.lower().strip()
         for cs in cand_skills:
             cs_lower = cs.lower().strip()
             if js == cs_lower:
                 return True
-            # Substring match: "flutter" in "flutter sdk" or "flutter sdk" in "flutter"
-            if len(js) >= 3 and len(cs_lower) >= 3:
-                if js in cs_lower or cs_lower in js:
+            # Collision guard: Java vs JavaScript
+            if (js == "java" and "javascript" in cs_lower) or (cs_lower == "java" and "javascript" in js):
+                continue
+            # Collision guard: C language family
+            c_family = {"c", "c++", "c#", ".net"}
+            if js in c_family or cs_lower in c_family:
+                if js == cs_lower:
+                    return True
+                continue
+            # Collision guard: short exact abbreviations
+            short_exact = {"r", "go", "sql", "ai", "ml", "ui", "ux", "qa", "ci", "cd", "it", "ip", "os", "git"}
+            if js in short_exact or cs_lower in short_exact:
+                if js == cs_lower:
+                    return True
+                shorter, longer = (js, cs_lower) if len(js) <= len(cs_lower) else (cs_lower, js)
+                if shorter == "sql" and "nosql" in longer:
+                    continue
+                if shorter == "go" and any(b in longer for b in ["mongo", "django", "algorithm"]):
+                    continue
+                if shorter == "git" and "digital" in longer:
+                    continue
+                pattern = r'(?:\b|_)' + re.escape(shorter) + r'(?:\b|_)'
+                if re.search(pattern, longer):
+                    return True
+                continue
+            # Word-boundary phrase/token match
+            shorter, longer = (js, cs_lower) if len(js) <= len(cs_lower) else (cs_lower, js)
+            if len(shorter) >= 3:
+                pattern = r'(?:\b|_)' + re.escape(shorter) + r'(?:\b|_)'
+                if re.search(pattern, longer):
                     return True
         return False
 

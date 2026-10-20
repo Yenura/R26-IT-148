@@ -64,3 +64,50 @@ class TestScoreBounds:
         for role in ALL_ROLES:
             result = score(role=role, edu_level=2, experience_years=2.0, skills=["python"])
             assert 0.0 <= result.cv_matching_score <= 100.0
+
+    def test_skill_match_collision_guards(self):
+        """Verify that single-letter skills, short abbreviations, and false collisions do not cause false positives."""
+        from backend.services.scorer import is_skill_match, calculate_skill_score
+
+        # 1. C language must NOT match words containing the letter 'c'
+        assert not is_skill_match("Docker", "C")
+        assert not is_skill_match("React", "C")
+        assert not is_skill_match("Statistics", "C")
+        assert not is_skill_match("Machine Learning", "C")
+        assert not is_skill_match("C++", "C")
+        assert not is_skill_match("C#", "C")
+        assert is_skill_match("C", "C")
+
+        # 2. R language must NOT match words containing 'r'
+        assert not is_skill_match("Docker", "R")
+        assert not is_skill_match("Terraform", "R")
+        assert is_skill_match("R", "R")
+
+        # 3. Go must NOT match 'mongodb', 'django', 'algorithms'
+        assert not is_skill_match("MongoDB", "Go")
+        assert not is_skill_match("Django", "Go")
+        assert not is_skill_match("Algorithms", "Go")
+        assert is_skill_match("Go", "Golang")
+
+        # 4. Java must NOT match JavaScript
+        assert not is_skill_match("Java", "JavaScript")
+        assert not is_skill_match("JavaScript", "Java")
+
+        # 5. SQL must NOT match NoSQL
+        assert not is_skill_match("SQL", "NoSQL")
+
+        # 6. Real company job matching evaluation
+        company_job_skills = ["React", "TypeScript", "Tailwind CSS", "Docker"]
+        candidate_skills = ["C", "R", "Go", "Java"]
+        # Candidate has none of the 4 required skills -> score must be 0.0!
+        s_skill, analysis = calculate_skill_score(candidate_skills, company_job_skills)
+        assert s_skill == 0.0
+        assert analysis.matched_count == 0
+        assert len(analysis.missing_skills) == 4
+
+        # Candidate with real matching skills
+        qualified_skills = ["React.js", "TypeScript", "Tailwind"]
+        s_skill2, analysis2 = calculate_skill_score(qualified_skills, company_job_skills)
+        assert analysis2.matched_count == 3  # React, TypeScript, Tailwind CSS match
+        assert s_skill2 == 75.0
+        assert "Docker" in analysis2.missing_skills
