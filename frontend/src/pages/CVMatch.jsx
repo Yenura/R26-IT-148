@@ -32,20 +32,23 @@ const cleanCandidateName = (rawName, fallbackFilename) => {
   return name || 'Candidate Profile'
 }
 
-const cleanEducationText = (rawEdu) => {
+const cleanEducationText = (rawEdu, maxLen = 65) => {
   if (!rawEdu) return 'BSc Degree'
   let edu = String(rawEdu).trim()
-  // Separate glued letters from PDF/OCR like BSc(Hons)SoftwareEngineering
+  edu = edu.replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uff0d\x96\x97]/g, ' - ')
+  edu = edu.replace(/([a-zA-Z0-9])\(/g, '$1 (')
+  edu = edu.replace(/\)([a-zA-Z0-9])/g, ') $1')
   edu = edu.replace(/([a-z])([A-Z])/g, '$1 $2')
   edu = edu.replace(/(\))\s*([A-Za-z])/g, '$1 $2')
   edu = edu.replace(/([A-Za-z])\s*(\()/g, '$1 $2')
-  // Strip trailing dates, GPA, and section delimiters
+  edu = edu.replace(/([a-z])(of|in|at|for|to|and|with)([A-Z])/g, '$1 $2 $3')
   edu = edu.split(/\s*[|;•\n\r]\s*/)[0].trim()
+  edu = edu.replace(/\s*\b(?:expected|exp|graduating|graduation|anticipated)\b.*$/i, '')
   edu = edu.replace(/\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$/i, '')
   edu = edu.replace(/\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$/i, '')
   edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
   edu = edu.replace(/\s+/g, ' ').trim()
-  return edu.length > 40 ? edu.slice(0, 40) + '...' : edu
+  return edu.length > maxLen ? edu.slice(0, maxLen - 3) + '...' : edu
 }
 
 const cleanExperienceText = (r) => {
