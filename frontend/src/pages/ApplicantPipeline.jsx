@@ -27,6 +27,7 @@ import ScoreBadge from '../components/ScoreBadge'
 import EmptyState from '../components/EmptyState'
 
 import SkeletonLoader from '../components/SkeletonLoader'
+import CandidateRankingTable from '../components/CandidateRankingTable'
 
 
 
