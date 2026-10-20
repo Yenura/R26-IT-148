@@ -417,12 +417,23 @@ async def match_resume(
     # Weighted overall: 3-pillar formula 50% Skills + 30% Experience + 20% Education
     overall_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
 
-    # Check if Component 1 deep ML analysis is available in db.cv_analyses for this candidate
+    # Check if Component 1 deep ML analysis is available in db.cv_analyses strictly for THIS SPECIFIC job or role
     try:
         from bson import ObjectId
-        c_filter = {"$or": [{"candidate_id": str(user["_id"])}]}
-        if ObjectId.is_valid(str(user["_id"])):
-            c_filter["$or"].append({"candidate_id": ObjectId(str(user["_id"]))})
+        job_id_str = str(real_job_id or (job_doc.get("_id") if job_doc else "") or "")
+        target_title = (job_doc.get("title") if job_doc else "") or target_role or ""
+        job_role_matches = [{"job_role": target_title}]
+        if job_id_str:
+            job_role_matches.append({"job_id": job_id_str})
+        if target_role:
+            job_role_matches.append({"job_role": target_role})
+
+        c_filter = {
+            "$and": [
+                {"$or": cand_filters},
+                {"$or": job_role_matches}
+            ]
+        }
         cva = await db.cv_analyses.find_one(c_filter, sort=[("analysis_timestamp", -1)])
         if cva and (cva.get("cv_matching_score") is not None or cva.get("optional_legacy_score") is not None or cva.get("S_skill") is not None):
             s_sk = cva.get("S_skill") or cva.get("s_skill") or (cva.get("component_1_scores") or {}).get("S_skill")
@@ -753,6 +764,17 @@ async def sync_match_score(payload: MatchSyncPayload, request: Request, user: di
         }
         await db.applications.update_many(filter_q, {"$set": update_data})
         await db.predictions.update_many(filter_q, {"$set": update_data})
+        cva_data = {
+            "cv_matching_score": round(payload.cv_score, 1),
+            "optional_legacy_score": round(payload.cv_score, 1),
+        }
+        if payload.skill_score is not None:
+            cva_data["S_skill"] = round(payload.skill_score, 1)
+        if payload.experience_score is not None:
+            cva_data["S_exp"] = round(payload.experience_score, 1)
+        if payload.education_score is not None:
+            cva_data["S_edu"] = round(payload.education_score, 1)
+        await db.cv_analyses.update_many(filter_q, {"$set": cva_data})
     elif payload.role:
         await db.applications.update_many(
             {"$and": [{"$or": cand_filters}, {"$or": [{"job_title": payload.role}, {"job_role": payload.role}]}]},
@@ -761,6 +783,20 @@ async def sync_match_score(payload: MatchSyncPayload, request: Request, user: di
         await db.predictions.update_many(
             {"$and": [{"$or": cand_filters}, {"$or": [{"predicted_role": payload.role}, {"job_role": payload.role}]}]},
             {"$set": update_data}
+        )
+        cva_data = {
+            "cv_matching_score": round(payload.cv_score, 1),
+            "optional_legacy_score": round(payload.cv_score, 1),
+        }
+        if payload.skill_score is not None:
+            cva_data["S_skill"] = round(payload.skill_score, 1)
+        if payload.experience_score is not None:
+            cva_data["S_exp"] = round(payload.experience_score, 1)
+        if payload.education_score is not None:
+            cva_data["S_edu"] = round(payload.education_score, 1)
+        await db.cv_analyses.update_many(
+            {"$and": [{"$or": cand_filters}, {"$or": [{"job_role": payload.role}, {"job_title": payload.role}]}]},
+            {"$set": cva_data}
         )
 
     return {"success": True, "cv_score": payload.cv_score}

@@ -709,12 +709,17 @@ async def delete_cv(candidate_id: str, db=Depends(_get_db), identity: dict = Dep
 # ── DB helper ─────────────────────────────────────────────────────────────────
 
 async def _upsert(db, result: CVAnalysisResponse):
-    """Upsert (insert or replace) a CV analysis document."""
+    """Upsert (insert or replace) a CV analysis document per candidate and job."""
     doc = result.model_dump()
     if isinstance(doc.get("analysis_timestamp"), datetime):
         doc["analysis_timestamp"] = doc["analysis_timestamp"].isoformat()
+    filter_q = {"candidate_id": result.candidate_id}
+    if result.job_id and result.job_id != "JOB001":
+        filter_q["job_id"] = str(result.job_id)
+    elif result.job_role:
+        filter_q["job_role"] = result.job_role
     await db.cv_analyses.replace_one(
-        {"candidate_id": result.candidate_id},
+        filter_q,
         doc,
         upsert=True,
     )

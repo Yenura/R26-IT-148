@@ -384,9 +384,8 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
     if not candidate_id or candidate_id in ("web-user", "candidate-user", "undefined", "null", "none"):
         return {"success": True, "candidate_id": candidate_id or "", "total_applied_jobs": 0, "reports": [], "data": []}
 
-    cached = get_cached_applied_jobs(candidate_id)
-    if cached:
-        return cached
+    # Always compute fresh live results so any new CV match or interview updates instantly
+    # (in-memory caching bypassed for real-time consistency)
 
     db = request.app.state.db
     from bson import ObjectId
@@ -461,11 +460,7 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
         jid = str(app.get("job_id", "")).strip()
         if jid and jid in job_docs_map and jid not in seen_job_ids:
             seen_job_ids.add(jid)
-            candidate_jobs.append({
-                "job_id": jid,
-                "status": app.get("status", "applied"),
-                "applied_at": app.get("applied_at")
-            })
+            candidate_jobs.append(dict(app, job_id=jid))
 
     for p in preds_list:
         jid = str(p.get("job_id", "")).strip()
@@ -565,14 +560,18 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
         job_skills = job.get("required_skills", [])
         company_name = job.get("company_name") or company_names_map.get(str(job.get("company_id", "")), "Tech Employer")
 
-        # In-memory lookup for cv analyses, predictions, and interviews
-        cva = next((ca for ca in cv_analyses_list if str(ca.get("job_id")) == job_id or str(ca.get("job_id")) == str(job.get("_id", "")) or ca.get("job_role") == job_title), None)
-        if not cva and cv_analyses_list:
-            cva = cv_analyses_list[0]
-        pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", "")) or p.get("predicted_role") == job_title), None)
-        interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id or r.get("job_role") == job_title), None)
-        session = next((s for s in sessions_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
-        score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
+        # In-memory lookup for applications, cv analyses, predictions, and interviews strictly for THIS SPECIFIC job
+        app_doc = next((a for a in apps_list if str(a.get("job_id")) == job_id or str(a.get("job_id")) == str(job.get("_id", "")) or (a.get("job_title") and a.get("job_title").lower() == job_title.lower())), None)
+        if app_doc and not app.get("cv_score") and app_doc.get("cv_score") is not None:
+            app["cv_score"] = app_doc.get("cv_score")
+        if app_doc and not app.get("interview_score") and app_doc.get("interview_score") is not None:
+            app["interview_score"] = app_doc.get("interview_score")
+
+        cva = next((ca for ca in cv_analyses_list if str(ca.get("job_id")) == job_id or str(ca.get("job_id")) == str(job.get("_id", "")) or (ca.get("job_role") and ca.get("job_role").lower() == job_title.lower())), None)
+        pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", "")) or (p.get("predicted_role") and p.get("predicted_role").lower() == job_title.lower())), None)
+        interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id or str(r.get("job_id")) == str(job.get("_id", "")) or (r.get("job_role") and r.get("job_role").lower() == job_title.lower())), None)
+        session = next((s for s in sessions_list if str(s.get("job_id")) == job_id or str(s.get("job_id")) == str(job.get("_id", "")) or (s.get("job_role") and s.get("job_role").lower() == job_title.lower())), None)
+        score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id or str(s.get("job_id")) == str(job.get("_id", "")) or (s.get("job_role") and s.get("job_role").lower() == job_title.lower())), None)
 
         # Resolve CV Match scores: prioritize Component 1 cv_analyses ML results
         has_cv = bool(cva is not None or pred is not None or app.get("cv_score") is not None or (cand_skills and len(cand_skills) > 0))
@@ -860,5 +859,4 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
             reports.append(rep)
 
     resp_data = {"success": True, "candidate_id": candidate_id, "total_applied_jobs": len(reports), "reports": reports, "data": reports}
-    set_cached_applied_jobs(candidate_id, resp_data)
     return resp_data

@@ -325,10 +325,10 @@ export default function SkillGap() {
                       {/* 3 Marks Quick Pill Strip */}
                       <div style={{ display: 'flex', gap: 6, marginTop: 8, fontSize: '10px', fontFamily: 'var(--p-font-mono)' }}>
                         <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg)', color: rep.cv_score != null ? 'var(--color-primary)' : 'var(--color-fg-muted)', border: '1px solid var(--color-border-subtle)' }}>
-                          CV: {rep.cv_score != null ? `${Number(rep.cv_score).toFixed(0)}%` : 'Pending'}
+                          CV: {rep.cv_score != null ? `${Number(rep.cv_score) % 1 === 0 ? Number(rep.cv_score) : Number(rep.cv_score).toFixed(1)}%` : 'Pending'}
                         </span>
                         <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg)', color: (rep.interview_completed && rep.interview_score != null) ? 'var(--color-purple)' : 'var(--color-fg-muted)', border: '1px solid var(--color-border-subtle)' }}>
-                          Int: {(rep.interview_completed && rep.interview_score != null) ? `${Number(rep.interview_score).toFixed(0)}%` : 'Pending'}
+                          Int: {(rep.interview_completed && rep.interview_score != null) ? `${Number(rep.interview_score) % 1 === 0 ? Number(rep.interview_score) : Number(rep.interview_score).toFixed(1)}%` : 'Pending'}
                         </span>
                         <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--color-bg)', fontWeight: 700, color: (rep.composite_score != null || rep.total_mark != null) ? 'var(--color-fg)' : 'var(--color-fg-muted)', border: '1px solid var(--color-border-subtle)' }}>
                           CSS: {rep.composite_score != null ? `${Number(rep.composite_score).toFixed(0)}%` : (rep.total_mark != null ? `${Number(rep.total_mark).toFixed(0)}%` : '—')}
@@ -385,13 +385,13 @@ export default function SkillGap() {
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                               <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>CV Mark</div>
                               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasCV ? 'var(--color-primary)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                                {hasCV ? `${Math.round(Number(selectedReport.cv_score))}%` : 'Pending'}
+                                {hasCV ? `${Number(selectedReport.cv_score) % 1 === 0 ? Number(selectedReport.cv_score) : Number(selectedReport.cv_score).toFixed(1)}%` : 'Pending'}
                               </div>
                             </div>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)' }}>
                               <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-fg-muted)', textTransform: 'uppercase' }}>Interview Mark</div>
                               <div style={{ fontSize: '1.15rem', fontWeight: 800, color: hasInt ? 'var(--color-purple)' : 'var(--color-warning)', fontFamily: 'var(--p-font-mono)' }}>
-                                {hasInt ? `${Math.round(Number(selectedReport.interview_score))}%` : 'Pending'}
+                                {hasInt ? `${Number(selectedReport.interview_score) % 1 === 0 ? Number(selectedReport.interview_score) : Number(selectedReport.interview_score).toFixed(1)}%` : 'Pending'}
                               </div>
                             </div>
                             <div style={{ textAlign: 'center', padding: '8px 14px', background: (hasCV && hasInt) ? 'var(--color-primary-muted)' : 'var(--color-bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${(hasCV && hasInt) ? 'rgba(10, 132, 255, 0.4)' : 'var(--color-border)'}` }}>

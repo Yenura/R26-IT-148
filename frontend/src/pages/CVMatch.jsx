@@ -753,7 +753,7 @@ export default function CVMatch() {
         ? targetResumeDoc.skills
         : (typeof targetResumeDoc.skills === 'string' ? targetResumeDoc.skills.split(',').map((s) => s.trim()) : [])
 
-      const matchedJobDoc = jobsListToUse.find((j) => j.id === jobIdToUse)
+      const matchedJobDoc = jobsListToUse.find((j) => (j.id || j._id) === jobIdToUse || String(j._id) === String(jobIdToUse))
       let targetRoleName = matchedJobDoc ? matchedJobDoc.title : targetRoleOverride
 
       // Dynamic Auto-Classification using Model 1 if no explicit role is chosen
@@ -877,28 +877,49 @@ export default function CVMatch() {
       if (gapRes?.data) setSkillGapResult(gapRes.data)
       if (careerRes?.data) setCareerResult(careerRes.data)
       if (pathRes?.data) setLearningPathResult(pathRes.data)
+      // Compute the exact unified CV fit score that is displayed to the user
+      const candExpVal = parseFloat(targetResumeDoc?.experience_years ?? 2.0)
+      const reqExpVal = parseFloat(matchedJobDoc?.experience_required ?? 2.0)
+      const rawExp = c1Res?.data?.S_exp ?? c1Res?.data?.s_exp ?? c1Res?.data?.component_1_scores?.S_exp ?? matchData.experience_score
+      const unifiedExp = candExpVal >= reqExpVal
+        ? 100.0
+        : (rawExp !== undefined && rawExp !== null
+            ? (rawExp <= 1.0 ? Math.round(rawExp * 100) : (rawExp < 30 && candExpVal >= 1.5 ? Math.min((candExpVal / (reqExpVal || 1)) * 100, 100) : rawExp))
+            : Math.min((candExpVal / (reqExpVal || 1)) * 100, 100))
+
+      const unifiedSkill = c1Res?.data?.S_skill ?? c1Res?.data?.s_skill ?? c1Res?.data?.component_1_scores?.S_skill ?? matchData.skill_score ?? 70.0
+      const unifiedEdu = c1Res?.data?.S_edu ?? c1Res?.data?.s_edu ?? c1Res?.data?.component_1_scores?.S_edu ?? matchData.education_score ?? (targetResumeDoc?.education ? 100.0 : 80.0)
+      const unifiedScore = Math.min(100, Math.max(0, Math.round(unifiedSkill * 0.50 + unifiedExp * 0.30 + unifiedEdu * 0.20)))
+
       if (c1Res?.data) {
+        c1Res.data.cv_matching_score = unifiedScore
+        c1Res.data.optional_legacy_score = unifiedScore
+        c1Res.data.S_skill = unifiedSkill
+        c1Res.data.S_exp = unifiedExp
+        c1Res.data.S_edu = unifiedEdu
         setC1Result(c1Res.data)
-        try {
-          const c1ScoreVal = c1Res.data.cv_matching_score ?? c1Res.data.optional_legacy_score
-          const skVal = c1Res.data.S_skill ?? c1Res.data.s_skill ?? c1Res.data.component_1_scores?.S_skill
-          const exVal = c1Res.data.S_exp ?? c1Res.data.s_exp ?? c1Res.data.component_1_scores?.S_exp
-          const edVal = c1Res.data.S_edu ?? c1Res.data.s_edu ?? c1Res.data.component_1_scores?.S_edu
-          const finalScoreVal = c1ScoreVal !== undefined && c1ScoreVal !== null
-            ? c1ScoreVal
-            : ((skVal || 70) * 0.50 + (exVal || 70) * 0.30 + (edVal || 80) * 0.20)
-          await c0SyncMatch({
-            candidate_id: safeCandId,
-            job_id: selectedJob || '',
-            role: finalRole,
-            cv_score: finalScoreVal,
-            skill_score: skVal,
-            experience_score: exVal,
-            education_score: edVal
-          })
-        } catch (syncErr) {
-          console.warn('Sync match error:', syncErr)
-        }
+      }
+
+      matchData.cv_matching_score = unifiedScore
+      matchData.overall_score = unifiedScore
+      matchData.skill_score = unifiedSkill
+      matchData.experience_score = unifiedExp
+      matchData.education_score = unifiedEdu
+      setMatchResult(matchData)
+
+      const actualJobId = jobIdToUse || (matchedJobDoc ? (matchedJobDoc.id || matchedJobDoc._id) : '') || selectedJob || ''
+      try {
+        await c0SyncMatch({
+          candidate_id: safeCandId,
+          job_id: actualJobId,
+          role: finalRole,
+          cv_score: unifiedScore,
+          skill_score: unifiedSkill,
+          experience_score: unifiedExp,
+          education_score: unifiedEdu
+        })
+      } catch (syncErr) {
+        console.warn('Sync match error:', syncErr)
       }
 
       // Invalidate Skill Gap and Progress local caches so fresh data is loaded
@@ -1050,7 +1071,11 @@ export default function CVMatch() {
         : computedExpScore)
 
   const eduScore = c1Result?.S_edu ?? c1Result?.s_edu ?? c1Result?.component_1_scores?.S_edu ?? matchResult?.education_score ?? (currentResumeDoc?.education ? 100.0 : 80.0)
-  const overallFitScore = Math.min(100, Math.max(0, Math.round(skillScore * 0.50 + expScore * 0.30 + eduScore * 0.20)))
+  const overallFitScore = (c1Result?.cv_matching_score && c1Result.cv_matching_score > 0)
+    ? c1Result.cv_matching_score
+    : (matchResult?.cv_matching_score && matchResult.cv_matching_score > 0
+        ? matchResult.cv_matching_score
+        : Math.min(100, Math.max(0, Math.round(skillScore * 0.50 + expScore * 0.30 + eduScore * 0.20))))
 
   // Fit Tier Determination
   const getFitTier = (score) => {

@@ -259,7 +259,24 @@ from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
 
 _PIPELINE_CACHE: Dict[str, Any] = {}
-_PIPELINE_TTL = 300.0
+_PIPELINE_TTL = 0.0
+
+def _is_doc_for_job(doc: dict, job_id: str, job: Optional[dict], job_keys: list) -> bool:
+    if not doc or not isinstance(doc, dict):
+        return False
+    doc_job_id = str(doc.get('job_id') or '').strip()
+    if doc_job_id and any(str(k).strip() == doc_job_id for k in job_keys):
+        return True
+    from bson import ObjectId
+    if ObjectId.is_valid(job_id) and doc_job_id == str(ObjectId(job_id)):
+        return True
+    doc_role = str(doc.get('job_role') or doc.get('job_title') or '').strip().lower()
+    if job and doc_role:
+        j_title = str(job.get('title', '')).strip().lower()
+        j_role = str(job.get('job_role', '')).strip().lower()
+        if (j_title and doc_role == j_title) or (j_role and doc_role == j_role):
+            return True
+    return False
 
 class PipelineBatchRequest(BaseModel):
     job_ids: List[str]
@@ -429,23 +446,23 @@ async def _compute_single_job_pipeline(db, job_id: str):
 
     for p in p_list:
         cid = str(p.get("candidate_id", ""))
-        if cid and (cid not in pred_map or str(p.get("job_id")) == str(job_id)):
+        if cid and cid not in pred_map and _is_doc_for_job(p, job_id, job, job_keys):
             pred_map[cid] = p
 
     for s in s_list:
         cid = str(s.get("candidate_id", ""))
-        if cid and (cid not in scores_map or str(s.get("job_id")) == str(job_id)):
+        if cid and cid not in scores_map and _is_doc_for_job(s, job_id, job, job_keys):
             scores_map[cid] = s
 
     for res in res_list:
         cid = str(res.get("candidate_id", ""))
-        if cid and (cid not in scores_map or str(res.get("job_id")) == str(job_id)):
+        if cid and cid not in scores_map and _is_doc_for_job(res, job_id, job, job_keys):
             scores_map[cid] = res
 
     cva_map = {}
     for ca in (cva_list or []):
         cid = str(ca.get("candidate_id", ""))
-        if cid and (cid not in cva_map or str(ca.get("job_id")) == str(job_id)):
+        if cid and cid not in cva_map and _is_doc_for_job(ca, job_id, job, job_keys):
             cva_map[cid] = ca
 
     # 4. Build candidate inputs and calculate exact scores
@@ -539,8 +556,13 @@ async def _compute_single_job_pipeline(db, job_id: str):
             p_mcq = round(float(latest_score.get("mcq_score", 0) or 0) / 100.0, 4)
             p_desc = round(float(latest_score.get("descriptive_score", 0) or 0) / 100.0, 4)
             p_code = round(float(latest_score.get("coding_score", 0) or 0) / 100.0, 4)
+            has_actual_code = any(bool(cd.get("code_text", "").strip()) for cd in latest_score.get("coding_details", [])) if latest_score.get("coding_details") else (p_code > 0.045)
+            if not has_actual_code and p_mcq == 0 and p_desc == 0:
+                p_code = 0.0
             if latest_score.get("interview_score") is not None:
                 s_int = round(float(latest_score["interview_score"]) / 100.0, 4)
+                if not has_actual_code and p_mcq == 0 and p_desc == 0:
+                    s_int = 0.0
             else:
                 s_int = round(0.20 * p_mcq + 0.30 * p_desc + 0.50 * p_code, 4)
 

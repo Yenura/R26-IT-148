@@ -245,15 +245,32 @@ def _link_candidate_application_sync(
     if job_id:
         try:
             job_oid = ObjectId(job_id) if ObjectId.is_valid(job_id) else job_id
+            cand_oid = ObjectId(candidate_id) if ObjectId.is_valid(candidate_id) else candidate_id
             app_filter = {
-                "$or": [
-                    {"job_id": job_oid, "candidate_id": str(candidate_id)},
-                    {"job_id": str(job_id), "candidate_id": str(candidate_id)},
+                "$and": [
+                    {"$or": [{"candidate_id": str(candidate_id)}, {"candidate_id": cand_oid}]},
+                    {"$or": [{"job_id": job_oid}, {"job_id": str(job_id)}]}
                 ]
             }
-            app_update = {
-                "$set": {
-                    "job_id": job_oid if ObjectId.is_valid(job_id) else str(job_id),
+            existing_app = mongo_db["applications"].find_one(app_filter)
+            if existing_app:
+                mongo_db["applications"].update_one(
+                    {"_id": existing_app["_id"]},
+                    {
+                        "$set": {
+                            "status": "interview_completed",
+                            "interview_completed": True,
+                            "interview_score": round(interview_score, 2),
+                            "mcq_score": round(mcq_score, 2),
+                            "descriptive_score": round(desc_score, 2),
+                            "coding_score": round(code_score, 2),
+                            "updated_at": now,
+                        }
+                    }
+                )
+            else:
+                mongo_db["applications"].insert_one({
+                    "job_id": job_oid,
                     "candidate_id": str(candidate_id),
                     "candidate_name": cand_name,
                     "resume_id": resume_id,
@@ -265,9 +282,7 @@ def _link_candidate_application_sync(
                     "coding_score": round(code_score, 2),
                     "applied_at": now,
                     "updated_at": now,
-                }
-            }
-            mongo_db["applications"].update_one(app_filter, app_update, upsert=True)
+                })
             logger.info("Auto-linked application for candidate %s and job %s (Score: %.2f)", candidate_id, job_id, interview_score)
         except Exception as e:
             logger.warning("Failed to link application in db.py: %s", e)

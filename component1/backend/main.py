@@ -72,7 +72,7 @@ async def lifespan(app: FastAPI):
 
     # Indexes (idempotent)
     try:
-        await db.cv_analyses.create_index([("candidate_id", 1)], unique=True)
+        await db.cv_analyses.create_index([("candidate_id", 1), ("job_id", 1)])
         await db.cv_analyses.create_index([("analysis_timestamp", -1)])
         await db.cv_analyses.create_index([("job_role", 1)])
         await db.cv_analyses.create_index([("cv_matching_score", -1)])

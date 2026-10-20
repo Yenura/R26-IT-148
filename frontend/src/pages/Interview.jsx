@@ -326,6 +326,13 @@ export default function Interview() {
           const r = await c2Submit(payload)
           setResult(r.data)
           setStep('result')
+          try {
+            const uId = localStorage.getItem('recruitai.user_id')
+            if (uId) {
+              sessionStorage.removeItem(`recruitai.skillgap.${uId}`)
+              sessionStorage.removeItem(`recruitai.progress.${uId}`)
+            }
+          } catch {}
           toast.success('Interview evaluation complete!')
         } catch (err) {
           toast.error(err?.response?.data?.detail || 'Submission failed')
@@ -971,10 +978,19 @@ export default function Interview() {
     const mcqScore = result.mcq_score || 0
     const descScore = result.descriptive_score || 0
     let codeScore = result.coding_score || 0
-    // Bug fix #3: if no coding answer was submitted, force code score to 0
     if (!anyCodingSubmitted()) codeScore = 0
-    // Recalculate overall score locally so backend's incorrect baseline doesn't leak through
-    const overallScore = mcqScore * 0.25 + descScore * 0.35 + codeScore * 0.40
+
+    // Use normalized weights matching role configuration (e.g. 45% MCQ + 55% Theory + 0% Coding)
+    const wMcq = result.weights_used?.mcq ?? 0.25
+    const wDesc = result.weights_used?.descriptive ?? 0.35
+    const wCode = result.weights_used?.coding ?? 0.40
+    let overallScore = (result.interview_score !== undefined && result.interview_score !== null)
+      ? Number(result.interview_score)
+      : (mcqScore * wMcq + descScore * wDesc + codeScore * wCode)
+
+    if (!anyCodingSubmitted() && mcqScore === 0 && descScore === 0) {
+      overallScore = 0
+    }
 
     const chartData = [
       { name: 'MCQ Test', score: mcqScore },
