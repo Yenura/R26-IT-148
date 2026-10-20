@@ -32,20 +32,23 @@ const cleanCandidateName = (rawName, fallbackFilename) => {
   return name || 'Candidate Profile'
 }
 
-const cleanEducationText = (rawEdu) => {
+const cleanEducationText = (rawEdu, maxLen = 65) => {
   if (!rawEdu) return 'BSc Degree'
   let edu = String(rawEdu).trim()
-  // Separate glued letters from PDF/OCR like BSc(Hons)SoftwareEngineering
+  edu = edu.replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212\uff0d\x96\x97]/g, ' - ')
+  edu = edu.replace(/([a-zA-Z0-9])\(/g, '$1 (')
+  edu = edu.replace(/\)([a-zA-Z0-9])/g, ') $1')
   edu = edu.replace(/([a-z])([A-Z])/g, '$1 $2')
   edu = edu.replace(/(\))\s*([A-Za-z])/g, '$1 $2')
   edu = edu.replace(/([A-Za-z])\s*(\()/g, '$1 $2')
-  // Strip trailing dates, GPA, and section delimiters
+  edu = edu.replace(/([a-z])(of|in|at|for|to|and|with)([A-Z])/g, '$1 $2 $3')
   edu = edu.split(/\s*[|;•\n\r]\s*/)[0].trim()
+  edu = edu.replace(/\s*\b(?:expected|exp|graduating|graduation|anticipated)\b.*$/i, '')
   edu = edu.replace(/\s*(?:20\d\d|19\d\d)\s*[-–—]\s*(?:Present|Current|20\d\d|19\d\d|\b).*$/i, '')
   edu = edu.replace(/\s*\(?\s*(?:20\d\d|19\d\d)\s*\)?\s*$/i, '')
   edu = edu.replace(/^(?:i'm|i am|student|undergraduate)\s+.*?towards\s+/i, '')
   edu = edu.replace(/\s+/g, ' ').trim()
-  return edu.length > 40 ? edu.slice(0, 40) + '...' : edu
+  return edu.length > maxLen ? edu.slice(0, maxLen - 3) + '...' : edu
 }
 
 const cleanExperienceText = (r) => {
@@ -934,9 +937,9 @@ export default function CVMatch() {
 
     try {
       const targetResumeDoc = resumes.find((res) => res.id === selectedResume) || {}
-      const currentSkills = targetResumeDoc.skills || []
+      const currentSkills = c1Result?.skills || targetResumeDoc.skills || []
       const matchedJobDoc = jobs.find((j) => j.id === selectedJob)
-      const roleName = matchedJobDoc ? matchedJobDoc.title : selectedCanonicalRole || 'Software Engineer'
+      const roleName = matchedJobDoc ? matchedJobDoc.title : (selectedCanonicalRole || displayJobTitle || 'Software Engineer')
 
       const simRes = await c4SkillGapSimulate({
         current_skills: currentSkills,
@@ -1179,34 +1182,17 @@ export default function CVMatch() {
       />
 
       {/* Profile & Target Selection Hub */}
-      <div className="card no-print" style={{
-        padding: 'var(--p-space-5)',
-        marginBottom: 'var(--p-space-6)',
-        background: 'var(--color-bg-elevated)',
-        border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.12)'
-      }}>
+      <div className="card no-print cvm-hub-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--p-space-4)', flexWrap: 'wrap', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: 'var(--radius-md)',
-              background: 'linear-gradient(135deg, rgba(10, 132, 255, 0.2), rgba(191, 90, 242, 0.2))',
-              color: 'var(--color-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid rgba(10, 132, 255, 0.3)'
-            }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="cvm-hub-icon-badge">
               <FileText size={20} />
             </div>
             <div>
-              <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--color-fg)' }}>
+              <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--color-fg)', letterSpacing: '-0.01em' }}>
                 Applicant Profile & Benchmark Configuration
               </h3>
-              <p style={{ margin: 0, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)' }}>
+              <p style={{ margin: 0, fontSize: 'var(--p-text-xs)', color: 'var(--color-fg-muted)', marginTop: 2 }}>
                 Upload or select a candidate CV to screen against company job openings or the 20 canonical IT roles.
               </p>
             </div>
@@ -1214,26 +1200,15 @@ export default function CVMatch() {
 
           {currentResumeDoc && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '4px 12px',
-                borderRadius: 'var(--radius-full)',
-                background: 'var(--color-bg)',
-                border: '1px solid var(--color-border-subtle)',
-                color: 'var(--color-fg-secondary)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 6
-              }}>
-                <FileCheck size={13} style={{ color: 'var(--color-success)' }} />
-                Active CV: <strong>{currentResumeDoc.filename}</strong>
+              <span className="cvm-active-cv-badge">
+                <FileCheck size={14} style={{ color: 'var(--color-success)' }} />
+                <span>Active CV: <strong>{currentResumeDoc.filename}</strong></span>
               </span>
             </div>
           )}
         </div>
 
-        {/* Simple, Clean & Balanced 2-Card Configuration Grid */}
+        {/* 2-Card Configuration Grid */}
         <div style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
@@ -1242,32 +1217,20 @@ export default function CVMatch() {
         }}>
           
           {/* CARD 1: CANDIDATE RESUME */}
-          <div style={{
-            padding: '22px',
-            background: 'var(--color-bg-elevated)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 'var(--radius-lg)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: 14,
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
-            backdropFilter: 'blur(12px)'
-          }}>
+          <div className="cvm-config-panel">
             <div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-hover)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className="cvm-panel-title">
                   <UserCheck size={16} /> 1. Candidate Profile
                 </span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', background: 'rgba(255, 255, 255, 0.04)', padding: '2px 8px', borderRadius: 'var(--radius-full)' }}>
+                  <span className="cvm-badge-muted">
                     {resumes.length} Ingested
                   </span>
                   <button
                     type="button"
                     onClick={() => setShowUploadZone(!showUploadZone)}
-                    className="btn btn-ghost btn-sm"
-                    style={{ fontSize: '11px', padding: '3px 8px', border: '1px solid rgba(10, 132, 255, 0.3)', color: 'var(--color-primary-hover)' }}
+                    className="cvm-upload-toggle-btn"
                   >
                     {showUploadZone ? 'Close Upload' : '+ Upload New CV'}
                   </button>
@@ -1295,22 +1258,14 @@ export default function CVMatch() {
                     const rId = e.target.value
                     setSelectedResume(rId)
                   }}
-                  style={{
-                    flex: 1,
-                    fontSize: '13px',
-                    padding: '9px 12px',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--color-bg)',
-                    border: '1px solid var(--color-border)',
-                    color: 'var(--color-fg)',
-                    fontWeight: 600
-                  }}
+                  className="cvm-select-input"
+                  style={{ flex: 1 }}
                 >
                   <option value="">Select an applicant resume to evaluate...</option>
                   {resumes.map((r) => {
                     const cleanName = cleanCandidateName(r.candidate_name, r.filename)
                     const cleanExp = cleanExperienceText(r)
-                    const cleanEdu = cleanEducationText(r.education)
+                    const cleanEdu = cleanEducationText(r.education, 50)
                     return (
                       <option key={r.id} value={r.id}>
                         {cleanName} · {cleanExp} · {cleanEdu}
@@ -1321,50 +1276,28 @@ export default function CVMatch() {
                 {selectedResume && (
                   <button
                     type="button"
-                    className="btn-ghost btn-sm"
+                    className="cvm-delete-btn"
                     onClick={() => deleteResume(selectedResume)}
-                    style={{ padding: '8px', color: 'var(--color-danger)', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: 'var(--radius-md)' }}
                     title="Delete resume"
                   >
-                    <Trash2 size={15} />
+                    <Trash2 size={16} />
                   </button>
                 )}
               </div>
 
               {/* Active Candidate Profile Card Showcase */}
               {currentResumeDoc && (
-                <div style={{
-                  padding: '12px 14px',
-                  background: 'var(--color-bg-elevated)',
-                  border: '1px solid rgba(10, 132, 255, 0.2)',
-                  borderRadius: 'var(--radius-md)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 8
-                }}>
+                <div className="cvm-candidate-card">
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 'var(--radius-md)',
-                      background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-purple) 100%)',
-                      color: 'var(--p-white)fff',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontWeight: 800,
-                      fontSize: '14px',
-                      boxShadow: '0 4px 12px rgba(10, 132, 255, 0.3)',
-                      flexShrink: 0
-                    }}>
+                    <div className="cvm-candidate-avatar">
                       {cleanCandidateName(currentResumeDoc.candidate_name, currentResumeDoc.filename).split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: '14px', color: 'var(--color-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div className="cvm-candidate-name">
                         {cleanCandidateName(currentResumeDoc.candidate_name, currentResumeDoc.filename)}
                       </div>
-                      <div style={{ fontSize: '11px', color: 'var(--color-fg-muted)', display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 2 }}>
-                        <span>🎓 {cleanEducationText(currentResumeDoc.education)}</span>
+                      <div className="cvm-candidate-sub">
+                        <span>🎓 {cleanEducationText(currentResumeDoc.education, 55)}</span>
                         <span>•</span>
                         <span>💼 {cleanExperienceText(currentResumeDoc)}</span>
                       </div>
@@ -1372,14 +1305,14 @@ export default function CVMatch() {
                   </div>
 
                   {currentResumeDoc.skills?.length > 0 && (
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', paddingTop: 6, borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                    <div className="cvm-skills-wrap">
                       {[...new Set(currentResumeDoc.skills)].slice(0, 5).map((s, i) => (
-                        <span key={`${s}-${i}`} className="chip" style={{ fontSize: '10px', margin: 0, padding: '2px 7px', background: 'rgba(255, 255, 255, 0.04)' }}>
+                        <span key={`${s}-${i}`} className="cvm-chip">
                           {s}
                         </span>
                       ))}
                       {currentResumeDoc.skills.length > 5 && (
-                        <span style={{ fontSize: '10px', color: 'var(--color-fg-muted)', alignSelf: 'center' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--color-fg-muted)', alignSelf: 'center', fontWeight: 600, paddingLeft: 2 }}>
                           +{currentResumeDoc.skills.length - 5} more
                         </span>
                       )}
@@ -1399,54 +1332,25 @@ export default function CVMatch() {
           </div>
 
           {/* CARD 2: TARGET COMPANY & ROLE */}
-          <div style={{
-            padding: '22px',
-            background: 'var(--color-bg-elevated)',
-            border: '1px solid rgba(255, 255, 255, 0.08)',
-            borderRadius: 'var(--radius-lg)',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            gap: 14,
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.3)',
-            backdropFilter: 'blur(12px)'
-          }}>
+          <div className="cvm-config-panel">
             <div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-primary-hover)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
+                <span className="cvm-panel-title">
                   <Briefcase size={16} /> 2. Target Evaluation Standard
                 </span>
                 {/* Mode Selector Tabs */}
-                <div style={{ display: 'flex', gap: 4, background: 'rgba(0,0,0,0.3)', padding: '2px 4px', borderRadius: 'var(--radius-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                <div className="cvm-mode-switch">
                   <button
                     type="button"
                     onClick={() => setTargetMode('company')}
-                    style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: targetMode === 'company' ? 'var(--color-primary)' : 'transparent',
-                      color: targetMode === 'company' ? 'var(--p-white)' : 'var(--color-fg-muted)',
-                      fontWeight: targetMode === 'company' ? 700 : 500
-                    }}
+                    className={`cvm-mode-btn ${targetMode === 'company' ? 'active-company' : ''}`}
                   >
                     🏢 Company Job ({jobs.length})
                   </button>
                   <button
                     type="button"
                     onClick={() => setTargetMode('benchmark')}
-                    style={{
-                      fontSize: '11px',
-                      padding: '4px 10px',
-                      borderRadius: '4px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      background: targetMode === 'benchmark' ? 'var(--color-purple)' : 'transparent',
-                      color: targetMode === 'benchmark' ? 'var(--p-white)' : 'var(--color-fg-muted)',
-                      fontWeight: targetMode === 'benchmark' ? 700 : 500
-                    }}
+                    className={`cvm-mode-btn ${targetMode === 'benchmark' ? 'active-benchmark' : ''}`}
                   >
                     🎯 20 IT Roles
                   </button>
@@ -1456,9 +1360,9 @@ export default function CVMatch() {
               {targetMode === 'company' ? (
                 <>
                   {/* 1. Select Company */}
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Building2 size={12} style={{ color: 'var(--color-primary)' }} /> Target Company:
+                  <div style={{ marginBottom: 12 }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.04em' }}>
+                      <Building2 size={13} style={{ color: 'var(--color-primary)' }} /> Target Company:
                     </label>
                     <select
                       value={selectedCompany}
@@ -1475,15 +1379,7 @@ export default function CVMatch() {
                           setSelectedJob('')
                         }
                       }}
-                      style={{
-                        width: '100%',
-                        fontSize: 'var(--p-text-sm)',
-                        padding: '8px 12px',
-                        borderRadius: 'var(--radius-md)',
-                        background: 'var(--color-bg)',
-                        border: '1px solid var(--color-border)',
-                        color: 'var(--color-fg)'
-                      }}
+                      className="cvm-select-input"
                     >
                       <option value="">🏢 All Companies ({jobs.length} roles)</option>
                       {companyOptions.map((c) => (
@@ -1495,9 +1391,9 @@ export default function CVMatch() {
                   </div>
 
                   {/* 2. Select Role (Filtered by Company) */}
-                  <div style={{ marginBottom: 10 }}>
-                    <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                      <Briefcase size={12} style={{ color: 'var(--color-success)' }} /> Target Role {selectedCompany ? `at ${selectedCompany}` : ''}:
+                  <div style={{ marginBottom: 6 }}>
+                    <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.04em' }}>
+                      <Briefcase size={13} style={{ color: 'var(--color-success)' }} /> Target Role {selectedCompany ? `at ${selectedCompany}` : ''}:
                     </label>
                     <select
                       value={selectedJob}
@@ -1510,15 +1406,7 @@ export default function CVMatch() {
                           if (found) setSelectedCompany(cleanCompanyName(found.company_name))
                         }
                       }}
-                      style={{
-                        width: '100%',
-                        fontSize: 'var(--p-text-sm)',
-                        padding: '8px 12px',
-                        borderRadius: 'var(--radius-md)',
-                        background: 'var(--color-bg)',
-                        border: '1px solid var(--color-border)',
-                        color: 'var(--color-fg)'
-                      }}
+                      className="cvm-select-input"
                     >
                       <option value="">
                         {selectedCompany ? `Select role at ${selectedCompany}...` : 'Select any role...'}
@@ -1545,9 +1433,9 @@ export default function CVMatch() {
                 </>
               ) : (
                 /* Benchmark Canonical 20 Roles */
-                <div style={{ marginBottom: 10 }}>
-                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <Compass size={12} style={{ color: 'var(--color-purple)' }} /> Standard Canonical IT Role:
+                <div style={{ marginBottom: 6 }}>
+                  <label style={{ fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', color: 'var(--color-fg-muted)', marginBottom: 5, display: 'flex', alignItems: 'center', gap: 5, letterSpacing: '0.04em' }}>
+                    <Compass size={13} style={{ color: 'var(--color-purple)' }} /> Standard Canonical IT Role:
                   </label>
                   <select
                     value={selectedCanonicalRole}
@@ -1559,15 +1447,7 @@ export default function CVMatch() {
                         setSelectedCompany('')
                       }
                     }}
-                    style={{
-                      width: '100%',
-                      fontSize: 'var(--p-text-sm)',
-                      padding: '9px 12px',
-                      borderRadius: 'var(--radius-md)',
-                      background: 'var(--color-bg)',
-                      border: '1px solid var(--color-purple)',
-                      color: 'var(--color-fg)'
-                    }}
+                    className="cvm-select-input canon"
                   >
                     <option value="">🎯 AI Auto-Detect Best Fit Role (from CV text)</option>
                     {Object.entries(CANONICAL_CATEGORIES).map(([catName, roleList]) => (
@@ -1587,27 +1467,9 @@ export default function CVMatch() {
 
         {/* Primary Action Button */}
         <button
-          className="btn btn-primary"
+          className="cvm-cta-btn"
           onClick={() => runUnifiedAnalysis()}
           disabled={busy || (!selectedResume && resumes.length === 0)}
-          style={{
-            width: '100%',
-            padding: '14px 24px',
-            fontSize: '1.05rem',
-            fontWeight: 800,
-            borderRadius: 'var(--radius-lg)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 12,
-            background: 'var(--color-primary)',
-            border: 'none',
-            color: 'var(--p-white)fff',
-            boxShadow: 'var(--shadow-md)',
-            cursor: busy ? 'not-allowed' : 'pointer',
-            transition: 'all 0.3s ease',
-            letterSpacing: '0.01em'
-          }}
         >
           <Sparkles size={20} className={busy ? 'animate-spin' : ''} />
           {busy ? 'Running AI Multi-Factor Resume Analysis...' : '⚡ Screen Candidate Fit & Run AI Intelligence'}
@@ -1980,7 +1842,12 @@ export default function CVMatch() {
                   </button>
                   <button
                     className="btn btn-ghost btn-sm"
-                    onClick={() => navigate('/candidate/skill-gap')}
+                    onClick={() => {
+                      const q = new URLSearchParams()
+                      if (selectedJob) q.set('jobId', selectedJob)
+                      if (displayJobTitle) q.set('role', displayJobTitle)
+                      navigate(`/candidate/skill-gap?${q.toString()}`)
+                    }}
                   >
                     <Sparkles size={13} /> View Skill Gap Report
                   </button>
@@ -2335,7 +2202,7 @@ export default function CVMatch() {
                   <button
                     type="button"
                     onClick={() => {
-                      (matchResult.missing_skills || []).forEach((s) => {
+                      (activeMissingSkills || []).forEach((s) => {
                         if (!simulatedAcquiredSkills.includes(s)) handleSimulateSkill(s)
                       })
                     }}
@@ -2368,8 +2235,8 @@ export default function CVMatch() {
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
-                  {(matchResult.missing_skills || []).length > 0 ? (
-                    (matchResult.missing_skills || []).map((skill, i) => {
+                  {(activeMissingSkills || []).length > 0 ? (
+                    (activeMissingSkills || []).map((skill, i) => {
                       const isSelected = simulatedAcquiredSkills.includes(skill)
                       return (
                         <button
@@ -2435,7 +2302,7 @@ export default function CVMatch() {
                       <div>
                         <div style={{ fontSize: 'var(--p-text-base)', fontWeight: 900, color: 'var(--color-success)', display: 'flex', alignItems: 'center', gap: 8 }}>
                           <span>+{simulationResult.coverage_improvement || 0}% Projected Match Coverage Boost!</span>
-                          <span style={{ fontSize: '11px', background: 'rgba(48, 209, 88, 0.25)', padding: '2px 8px', borderRadius: 10, color: 'var(--p-white)fff' }}>
+                          <span style={{ fontSize: '11px', background: 'rgba(48, 209, 88, 0.25)', padding: '2px 8px', borderRadius: 10, color: '#ffffff' }}>
                             {simulationResult.original_coverage || 0}% → {simulationResult.simulated_coverage || 0}%
                           </span>
                         </div>
@@ -2741,7 +2608,7 @@ export default function CVMatch() {
                                 background: isCompleted
                                   ? 'linear-gradient(135deg, var(--color-success) 0%, var(--color-success-hover) 100%)'
                                   : 'linear-gradient(135deg, rgba(0, 113, 227, 0.3) 0%, rgba(10, 132, 255, 0.5) 100%)',
-                                color: 'var(--p-white)fff',
+                                color: '#ffffff',
                                 fontWeight: 900,
                                 fontSize: '14px',
                                 fontFamily: 'var(--p-font-mono)',
@@ -3135,7 +3002,7 @@ export default function CVMatch() {
                   <div style={{ padding: '14px', background: '#f8fafc', border: '1px solid #cbd5e1', borderRadius: 8, textAlign: 'center' }}>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>Skills (S_skill)</div>
                     <div style={{ fontSize: '1.8rem', fontWeight: 900, color: '#0f172a', marginTop: 4 }}>{skillScore.toFixed(0)}%</div>
-                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>{matchResult.matched_skills?.length || 0} Matched</div>
+                    <div style={{ fontSize: '10px', color: '#64748b', marginTop: 2 }}>{activeMatchedSkills.length} Matched</div>
                   </div>
 
                   {/* Experience Score */}
@@ -3161,20 +3028,20 @@ export default function CVMatch() {
                 </h3>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 14 }}>
-                   {[...new Set(matchResult.matched_skills || [])].map((s, i) => (
+                   {[...new Set(activeMatchedSkills || [])].map((s, i) => (
                      <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 700, background: '#dcfce7', color: '#166534', border: '1px solid #86efac', padding: '3px 10px', borderRadius: 6 }}>
                       ✓ {s}
                     </span>
                   ))}
                 </div>
 
-                {matchResult.missing_skills?.length > 0 && (
+                {activeMissingSkills.length > 0 && (
                   <div>
                     <div style={{ fontSize: '11px', fontWeight: 700, color: '#991b1b', textTransform: 'uppercase', marginBottom: 6 }}>
                       Identified Competency Gaps:
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                       {[...new Set(matchResult.missing_skills || [])].map((s, i) => (
+                       {[...new Set(activeMissingSkills || [])].map((s, i) => (
                          <span key={`${s}-${i}`} style={{ fontSize: '11px', fontWeight: 600, background: '#fee2e2', color: '#991b1b', border: '1px solid #fca5a5', padding: '3px 10px', borderRadius: 6 }}>
                           - {s}
                         </span>

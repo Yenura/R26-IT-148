@@ -429,6 +429,10 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
         jid = str(res.get("job_id", "")).strip()
         if jid:
             raw_job_ids.add(jid)
+    for cva in cv_analyses_list:
+        jid = str(cva.get("job_id", "")).strip()
+        if jid:
+            raw_job_ids.add(jid)
 
     # Batch fetch all matching jobs in a single query
     job_docs_map = {}
@@ -497,12 +501,24 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
                 "applied_at": res.get("created_at")
             })
 
+    for cva in cv_analyses_list:
+        jid = str(cva.get("job_id", "")).strip()
+        if jid and jid in job_docs_map and jid not in seen_job_ids:
+            seen_job_ids.add(jid)
+            candidate_jobs.append({
+                "job_id": jid,
+                "status": "cv_evaluated",
+                "applied_at": cva.get("analysis_timestamp") or cva.get("created_at")
+            })
+
     # If new candidate has no applications, predictions, or interviews, return clean empty reports
     if not candidate_jobs and not resume:
         return {"success": True, "candidate_id": candidate_id, "total_applied_jobs": 0, "reports": []}
 
     cand_skills = resume.get("skills", []) if resume else []
-    cand_name = resume.get("candidate_name", "") if resume else ""
+    if not cand_skills and cv_analyses_list:
+        cand_skills = cv_analyses_list[0].get("skills", [])
+    cand_name = resume.get("candidate_name", "") if resume else (cv_analyses_list[0].get("candidate_name", "") if cv_analyses_list else "")
     cand_exp = resume.get("experience_years", 0) if resume else 0
     cand_edu = resume.get("education", "B.Sc. Computer Science") if resume else "B.Sc. Computer Science"
 
@@ -715,11 +731,13 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
                     "severity": "High"
                 })
 
+        app_cand_skills = cva.get("skills") if (cva and cva.get("skills")) else cand_skills
+
         analysis = run_skill_gap_analysis(
             candidate_id=candidate_id,
             candidate_name=cand_name or "Candidate",
             job_role=job_title,
-            skills=cand_skills,
+            skills=app_cand_skills,
             experience_years=int(cand_exp),
             education=cand_edu,
             cv_matching_score=cv_matching_score,
@@ -741,6 +759,12 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
         missing_set = {s.lower() for s in missing_required + missing_optional}
         matched_cv_skills = [s for s in present_skills if s.lower() not in missing_set]
 
+        # Merge Component 1 ML-detected matched skills
+        if cva and cva.get("skill_analysis"):
+            for ms in cva.get("skill_analysis", {}).get("matched_skills", []):
+                if ms.lower() not in {s.lower() for s in matched_cv_skills}:
+                    matched_cv_skills.append(ms)
+
         for ms in matched_cv_skills:
             if not any(s["skill"].lower() == ms.lower() for s in interview_strengths):
                 cv_strengths.append({
@@ -748,6 +772,12 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
                     "source": "CV Skill Match",
                     "details": f"Required skill verified on candidate resume"
                 })
+
+        # Merge Component 1 ML-detected missing skills
+        if cva and cva.get("skill_analysis"):
+            for mr in cva.get("skill_analysis", {}).get("missing_skills", []):
+                if mr.lower() not in {s.lower() for s in missing_required}:
+                    missing_required.append(mr)
 
         for mr in missing_required:
             if not any(w["skill"].lower() == mr.lower() for w in interview_weaknesses):
