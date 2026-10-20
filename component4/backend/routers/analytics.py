@@ -194,29 +194,37 @@ async def leaderboard(request: Request, limit: int = 50):
     candidate_ids = [str(u["_id"]) for u in cand_users]
     obj_ids = [u["_id"] for u in cand_users if ObjectId.is_valid(u["_id"])]
 
-    # Batch fetch in 4 queries
+    # Optimized concurrent parallel batch fetch with projection
+    c_in = list(set(candidate_ids + [str(o) for o in obj_ids])) + obj_ids
+    r_task = db.resumes.find({"candidate_id": {"$in": c_in}}, projection={"candidate_id": 1, "skills": 1, "experience_years": 1, "education": 1, "created_at": 1}).sort("created_at", -1).to_list(300)
+    p_task = db.predictions.find({"candidate_id": {"$in": c_in}}, projection={"candidate_id": 1, "predicted_role": 1, "overall_score": 1, "skill_score": 1, "created_at": 1}).sort("created_at", -1).to_list(300)
+    res_task = db.results.find({"candidate_id": {"$in": c_in}}).sort("created_at", -1).to_list(300)
+    s_task = db.interview_scores.find({"candidate_id": {"$in": c_in}}).sort("created_at", -1).to_list(300)
+
+    r_list, p_list, res_list, s_list = await asyncio.gather(r_task, p_task, res_task, s_task)
+
     resumes_map = {}
-    async for r in db.resumes.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+    for r in r_list:
         cid = str(r.get("candidate_id", ""))
-        if cid not in resumes_map:
+        if cid and cid not in resumes_map:
             resumes_map[cid] = r
 
     preds_map = {}
-    async for p in db.predictions.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+    for p in p_list:
         cid = str(p.get("candidate_id", ""))
-        if cid not in preds_map:
+        if cid and cid not in preds_map:
             preds_map[cid] = p
 
     results_map = {}
-    async for res in db.results.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+    for res in res_list:
         cid = str(res.get("candidate_id", ""))
-        if cid not in results_map:
+        if cid and cid not in results_map:
             results_map[cid] = res
 
     scores_map = {}
-    async for sc in db.interview_scores.find({"$or": [{"candidate_id": {"$in": candidate_ids}}, {"candidate_id": {"$in": obj_ids}}]}).sort("created_at", -1):
+    for sc in s_list:
         cid = str(sc.get("candidate_id", ""))
-        if cid not in scores_map:
+        if cid and cid not in scores_map:
             scores_map[cid] = sc
 
     candidates_ranked = []
@@ -360,7 +368,7 @@ async def leaderboard(request: Request, limit: int = 50):
         "data": candidates_ranked[:limit]
     }
     _LEADERBOARD_CACHE["data"] = res
-    _LEADERBOARD_CACHE["expires_at"] = now_ts + 45.0
+    _LEADERBOARD_CACHE["expires_at"] = now_ts + 180.0
     _LEADERBOARD_CACHE["limit"] = limit
     return res
 

@@ -2468,3 +2468,18 @@ button,
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CANDIDATE RANKING & LEADERBOARD TABLE ENHANCEMENTS
+   ═══════════════════════════════════════════════════════════════════ */
+.table-row-hoverable {
+  transition: background var(--duration-fast, 120ms) ease;
+}
+
+.table-row-hoverable:hover {
+  background: var(--color-surface-hover, rgba(255, 255, 255, 0.05)) !important;
+}
+
+[data-theme="light"] .table-row-hoverable:hover {
+  background: #f1f5f9 !important;
+}
