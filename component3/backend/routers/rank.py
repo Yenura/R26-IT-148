@@ -402,9 +402,10 @@ async def rank_pipeline(request: Request, job_id: str, identity: dict = Depends(
         p_task = db.predictions.find({"$or": cand_filters}).sort("created_at", -1).to_list(200)
         s_task = db.interview_scores.find({"$or": cand_filters}).sort("created_at", -1).to_list(200)
         res_task = db.results.find({"$or": cand_filters}).sort("created_at", -1).to_list(200)
+        cva_task = db.cv_analyses.find({"$or": cand_filters}).sort("analysis_timestamp", -1).to_list(200)
 
-        u_list, r_list, p_list, s_list, res_list = await asyncio.gather(
-            u_task, r_task, p_task, s_task, res_task
+        u_list, r_list, p_list, s_list, res_list, cva_list = await asyncio.gather(
+            u_task, r_task, p_task, s_task, res_task, cva_task
         )
 
         for u in (u_list or []):
@@ -432,6 +433,12 @@ async def rank_pipeline(request: Request, job_id: str, identity: dict = Depends(
             if cid and (cid not in scores_map or str(res.get("job_id")) == str(job_id)):
                 scores_map[cid] = res
 
+        cva_map = {}
+        for ca in (cva_list or []):
+            cid = str(ca.get("candidate_id", ""))
+            if cid and (cid not in cva_map or str(ca.get("job_id")) == str(job_id)):
+                cva_map[cid] = ca
+
         # 4. Build candidate inputs and calculate exact scores
         scored_candidates = []
         for app in applicants:
@@ -441,6 +448,7 @@ async def rank_pipeline(request: Request, job_id: str, identity: dict = Depends(
             resume = resume_map.get(candidate_id)
             pred_doc = pred_map.get(candidate_id)
             latest_score = scores_map.get(candidate_id)
+            cva_doc = cva_map.get(candidate_id)
 
             resume_skills = app.get("resume_skills", []) or (resume.get("skills", []) if resume else [])
             experience_years = app.get("experience_years", 0) or (resume.get("experience_years", 0) if resume else 0)
@@ -470,29 +478,47 @@ async def rank_pipeline(request: Request, job_id: str, identity: dict = Depends(
             s_cv = None
 
             if cand_has_cv:
-                if pred_doc and pred_doc.get("skill_score") is not None:
+                if cva_doc and (cva_doc.get("cv_matching_score") is not None or cva_doc.get("optional_legacy_score") is not None or cva_doc.get("S_skill") is not None):
+                    s_skill = round(float(cva_doc.get("S_skill") or cva_doc.get("s_skill") or (cva_doc.get("component_1_scores") or {}).get("S_skill", 70)) / 100.0, 4)
+                    s_exp = round(float(cva_doc.get("S_exp") or cva_doc.get("s_exp") or (cva_doc.get("component_1_scores") or {}).get("S_exp", 70)) / 100.0, 4)
+                    s_edu = round(float(cva_doc.get("S_edu") or cva_doc.get("s_edu") or (cva_doc.get("component_1_scores") or {}).get("S_edu", 80)) / 100.0, 4)
+                    raw_cv = cva_doc.get("cv_matching_score") or cva_doc.get("optional_legacy_score")
+                    if raw_cv is not None:
+                        s_cv = round(float(raw_cv) / 100.0, 4)
+                    else:
+                        s_cv = round(0.50 * s_skill + 0.30 * s_exp + 0.20 * s_edu, 4)
+                elif pred_doc and pred_doc.get("skill_score") is not None:
                     s_skill = round(float(pred_doc["skill_score"]) / 100.0, 4)
+                    if pred_doc.get("experience_score") is not None:
+                        s_exp = round(float(pred_doc["experience_score"]) / 100.0, 4)
+                    else:
+                        s_exp = round(min(float(experience_years or 2.0) / max(exp_required, 1.0), 1.0), 4)
+                    if pred_doc.get("education_score") is not None:
+                        s_edu = round(float(pred_doc["education_score"]) / 100.0, 4)
+                    else:
+                        edu_weights = {1: 0.60, 2: 0.75, 3: 0.85, 4: 1.00}
+                        s_edu = round(0.60 * edu_weights.get(edu_level, 0.75) + 0.40 * 0.90, 4)
+                    if pred_doc.get("overall_score") is not None:
+                        s_cv = round(float(pred_doc["overall_score"]) / 100.0, 4)
+                    else:
+                        s_cv = round(0.50 * s_skill + 0.30 * s_exp + 0.20 * s_edu, 4)
+                elif app.get("cv_score") is not None or app.get("overall_score") is not None:
+                    s_cv = round(float(app.get("cv_score") or app.get("overall_score") or 0) / 100.0, 4)
+                    s_skill = round(float(app.get("skill_score") or 70) / 100.0, 4)
+                    s_exp = round(float(app.get("experience_score") or 70) / 100.0, 4)
+                    s_edu = round(float(app.get("education_score") or 80) / 100.0, 4)
                 elif resume_skills and required_skills:
                     matched = sum(1 for s in required_skills if any(s.lower() in rs.lower() or rs.lower() in s.lower() for rs in resume_skills))
                     s_skill = round(float(matched) / max(len(required_skills), 1), 4)
-                else:
-                    s_skill = 0.70
-
-                if pred_doc and pred_doc.get("experience_score") is not None:
-                    s_exp = round(float(pred_doc["experience_score"]) / 100.0, 4)
-                else:
                     s_exp = round(min(float(experience_years or 2.0) / max(exp_required, 1.0), 1.0), 4)
-
-                if pred_doc and pred_doc.get("education_score") is not None:
-                    s_edu = round(float(pred_doc["education_score"]) / 100.0, 4)
-                else:
                     edu_weights = {1: 0.60, 2: 0.75, 3: 0.85, 4: 1.00}
                     s_edu = round(0.60 * edu_weights.get(edu_level, 0.75) + 0.40 * 0.90, 4)
-
-                if pred_doc and pred_doc.get("overall_score") is not None:
-                    s_cv = round(float(pred_doc["overall_score"]) / 100.0, 4)
-                else:
                     s_cv = round(0.50 * s_skill + 0.30 * s_exp + 0.20 * s_edu, 4)
+                else:
+                    s_skill = 0.70
+                    s_exp = 0.70
+                    s_edu = 0.80
+                    s_cv = 0.72
 
             # Interview Sub-Scores
             p_mcq = None
@@ -531,8 +557,6 @@ async def rank_pipeline(request: Request, job_id: str, identity: dict = Depends(
                              if integ_raw is not None else None)
             except (TypeError, ValueError):
                 integ_val = None
-            if integ_val is not None:
-                css = round(css * (0.70 + 0.30 * integ_val / 100.0), 4)
 
             # Hard Filter Validation
             passed_hard_filter = True
@@ -644,16 +668,21 @@ async def rank_pipeline(request: Request, job_id: str, identity: dict = Depends(
                 "weaknesses": weaknesses if weaknesses else ["No critical deficits detected"],
             })
 
-        # Separate passed and failed candidates, sort passed by CSS descending
-        passed_cands = sorted([c for c in scored_candidates if c["passed_hard_filter"]], key=lambda x: x["CSS"], reverse=True)
-        failed_cands = sorted([c for c in scored_candidates if not c["passed_hard_filter"]], key=lambda x: x["CSS"], reverse=True)
+        # Priority Sorting: Completed Both (Tier 1, score desc) > Incomplete (Tier 2, score desc)
+        completed = sorted(
+            [c for c in scored_candidates if c.get("has_cv") and c.get("interview_completed")],
+            key=lambda x: x.get("CSS", 0),
+            reverse=True
+        )
+        incomplete = sorted(
+            [c for c in scored_candidates if not (c.get("has_cv") and c.get("interview_completed"))],
+            key=lambda x: x.get("CSS", 0),
+            reverse=True
+        )
 
-        for i, c in enumerate(passed_cands):
+        out = completed + incomplete
+        for i, c in enumerate(out):
             c["rank"] = i + 1
-        for i, c in enumerate(failed_cands):
-            c["rank"] = len(passed_cands) + i + 1
-
-        out = passed_cands + failed_cands
         res_data = {"success": True, "job_id": job_id, "job_role": job_role, "data": out}
         _PIPELINE_CACHE[job_id] = (time.time(), res_data)
         return res_data
