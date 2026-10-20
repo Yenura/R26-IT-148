@@ -202,6 +202,7 @@ export const c2RunCode     = (payload)      => C2.post('/interview/code/run', pa
 
 // ── Component 3: Candidate Ranking ────────────────────────────
 export const c3Pipeline    = (jobId)        => C3.get(`/rank/pipeline/${jobId}`)
+export const c3PipelineBatch = (jobIds)       => C3.post('/rank/pipeline/batch', { job_ids: jobIds })
 export const c3Explain     = (candidateId)  => C3.get(`/rank/explain/${candidateId}`)
 
 // ── Component 4: Skill Gap & Career Development ───────────────
