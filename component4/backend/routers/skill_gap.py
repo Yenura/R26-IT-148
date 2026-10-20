@@ -565,21 +565,32 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
         job_skills = job.get("required_skills", [])
         company_name = job.get("company_name") or company_names_map.get(str(job.get("company_id", "")), "Tech Employer")
 
-        # In-memory lookup for predictions
+        # In-memory lookup for cv analyses, predictions, and interviews
+        cva = next((ca for ca in cv_analyses_list if str(ca.get("job_id")) == job_id or str(ca.get("job_id")) == str(job.get("_id", "")) or ca.get("job_role") == job_title), None)
+        if not cva and cv_analyses_list:
+            cva = cv_analyses_list[0]
         pred = next((p for p in preds_list if str(p.get("job_id")) == job_id or str(p.get("job_id")) == str(job.get("_id", "")) or p.get("predicted_role") == job_title), None)
-        # In-memory lookup for interview results & scores
         interview_res = next((r for r in results_list if str(r.get("job_id")) == job_id or r.get("job_role") == job_title), None)
         session = next((s for s in sessions_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
         score_doc = next((s for s in scores_list if str(s.get("job_id")) == job_id or s.get("job_role") == job_title), None)
 
-        # Resolve CV Match scores without artificial defaults
-        has_cv = bool(pred is not None or app.get("cv_score") is not None or (cand_skills and len(cand_skills) > 0))
+        # Resolve CV Match scores: prioritize Component 1 cv_analyses ML results
+        has_cv = bool(cva is not None or pred is not None or app.get("cv_score") is not None or (cand_skills and len(cand_skills) > 0))
         skill_score = None
         experience_score = None
         education_score = None
         cv_matching_score = None
 
-        if pred:
+        if cva and (cva.get("cv_matching_score") is not None or cva.get("optional_legacy_score") is not None or cva.get("S_skill") is not None):
+            skill_score = round(float(cva.get("S_skill") or cva.get("s_skill") or (cva.get("component_1_scores") or {}).get("S_skill", 70)), 1)
+            experience_score = round(float(cva.get("S_exp") or cva.get("s_exp") or (cva.get("component_1_scores") or {}).get("S_exp", 70)), 1)
+            education_score = round(float(cva.get("S_edu") or cva.get("s_edu") or (cva.get("component_1_scores") or {}).get("S_edu", 80)), 1)
+            raw_cv = cva.get("cv_matching_score") or cva.get("optional_legacy_score")
+            if raw_cv is not None:
+                cv_matching_score = round(float(raw_cv), 1)
+            else:
+                cv_matching_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
+        elif pred:
             skill_score = round(float(pred["skill_score"]), 1) if pred.get("skill_score") is not None else None
             experience_score = round(float(pred["experience_score"]), 1) if pred.get("experience_score") is not None else None
             education_score = round(float(pred["education_score"]), 1) if pred.get("education_score") is not None else None
@@ -613,8 +624,13 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
             mcq_score = float(interview_res.get("mcq_score", 0))
             descriptive_score = float(interview_res.get("descriptive_score", 0))
             coding_score = float(interview_res.get("coding_score", 0))
+            has_actual_code = any(bool(cd.get("code_text", "").strip()) for cd in interview_res.get("coding_details", [])) if interview_res.get("coding_details") else (coding_score > 4.5)
+            if not has_actual_code and mcq_score == 0 and descriptive_score == 0:
+                coding_score = 0.0
             if interview_res.get("interview_score") is not None:
                 interview_score = round(float(interview_res["interview_score"]), 1)
+                if not has_actual_code and mcq_score == 0 and descriptive_score == 0:
+                    interview_score = 0.0
             else:
                 interview_score = round(0.20 * mcq_score + 0.30 * descriptive_score + 0.50 * coding_score, 1)
             grade = interview_res.get("grade", "Average")
@@ -640,8 +656,12 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
             mcq_score = float(score_doc.get("mcq_score", 0))
             descriptive_score = float(score_doc.get("descriptive_score", 0))
             coding_score = float(score_doc.get("coding_score", 0))
+            if mcq_score == 0 and descriptive_score == 0 and coding_score <= 4.5:
+                coding_score = 0.0
             if score_doc.get("interview_score") is not None:
                 interview_score = round(float(score_doc["interview_score"]), 1)
+                if mcq_score == 0 and descriptive_score == 0 and coding_score == 0.0:
+                    interview_score = 0.0
             else:
                 interview_score = round(0.20 * mcq_score + 0.30 * descriptive_score + 0.50 * coding_score, 1)
             grade = score_doc.get("grade", "Average")
@@ -651,6 +671,9 @@ async def get_applied_jobs_skill_gap(candidate_id: str, request: Request, identi
             mcq_score = round(float(app.get("mcq_score", 0)), 1) if app.get("mcq_score") is not None else None
             descriptive_score = round(float(app.get("descriptive_score", 0)), 1) if app.get("descriptive_score") is not None else None
             coding_score = round(float(app.get("coding_score", 0)), 1) if app.get("coding_score") is not None else None
+            if (mcq_score or 0) == 0 and (descriptive_score or 0) == 0 and (coding_score or 0) <= 4.5:
+                coding_score = 0.0
+                interview_score = 0.0
             grade = app.get("grade", "Good" if interview_score >= 70 else "Average")
 
         topic_performance = []

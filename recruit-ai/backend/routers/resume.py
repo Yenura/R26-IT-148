@@ -387,6 +387,31 @@ async def match_resume(
     # Weighted overall: 3-pillar formula 50% Skills + 30% Experience + 20% Education
     overall_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
 
+    # Check if Component 1 deep ML analysis is available in db.cv_analyses for this candidate
+    try:
+        from bson import ObjectId
+        c_filter = {"$or": [{"candidate_id": str(user["_id"])}]}
+        if ObjectId.is_valid(str(user["_id"])):
+            c_filter["$or"].append({"candidate_id": ObjectId(str(user["_id"]))})
+        cva = await db.cv_analyses.find_one(c_filter, sort=[("analysis_timestamp", -1)])
+        if cva and (cva.get("cv_matching_score") is not None or cva.get("optional_legacy_score") is not None or cva.get("S_skill") is not None):
+            s_sk = cva.get("S_skill") or cva.get("s_skill") or (cva.get("component_1_scores") or {}).get("S_skill")
+            s_ex = cva.get("S_exp") or cva.get("s_exp") or (cva.get("component_1_scores") or {}).get("S_exp")
+            s_ed = cva.get("S_edu") or cva.get("s_edu") or (cva.get("component_1_scores") or {}).get("S_edu")
+            raw_c = cva.get("cv_matching_score") or cva.get("optional_legacy_score")
+            if s_sk is not None:
+                skill_score = float(s_sk)
+            if s_ex is not None:
+                experience_score = float(s_ex)
+            if s_ed is not None:
+                education_score = float(s_ed)
+            if raw_c is not None:
+                overall_score = float(raw_c)
+            else:
+                overall_score = round(0.50 * skill_score + 0.30 * experience_score + 0.20 * education_score, 1)
+    except Exception:
+        pass
+
     classifier = _get_classifier()
     predicted_role, confidence = classifier.predict(resume_text, cand_skills_raw)
     final_predicted = target_role or (job_doc.get("title") if job_doc else None) or predicted_role
